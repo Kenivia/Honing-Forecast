@@ -5,12 +5,14 @@
 use crate::one_adv_sim::one_sim;
 use crate::scenario::{Scenario, upgrade};
 use ahash::AHashMap;
+use hf_core::advanced_honing::utils::MAX_ADV_STATE;
 use hf_core::chest::Chest;
 use hf_core::constants::ARTISAN_MULTIPLIER;
 use hf_core::materials::{BandValue, NUM_BASE_MATS, OneMaterial, ValuationPlan};
 use hf_core::optimizer::solve;
 use hf_core::payload::Payload;
 use hf_core::probe::Probe;
+use hf_core::state::{StreakInfo, get_pool_ids};
 use hf_core::state_bundle::StateBundle;
 use hf_core::upgrade::Upgrade;
 use rand::distr::Distribution;
@@ -20,9 +22,9 @@ use rand_distr::StandardNormal;
 use serde_json::{Map, Value, json};
 use std::collections::BTreeMap;
 
-pub const AXES: [&str; 16] = [
+pub const AXES: [&str; 18] = [
     "tier", "size", "level", "pieces", "jitter", "adv", "progress", "wealth", "imbalance", "split",
-    "juice_owned", "juice_price", "free_taps", "plan", "chests", "price_noise",
+    "juice_owned", "juice_price", "free_taps", "plan", "chests", "price_noise", "chest_base", "chest_optional",
 ];
 
 pub fn axis(name: &str) -> usize {
@@ -146,21 +148,111 @@ fn quantile(state_bundle: &StateBundle, row: usize, q: f64, low: f64, high: f64)
 pub struct Refs {
     used: AHashMap<String, f64>,
     special: f64,
+    /// the average used with every tap taking all it can
+    max_used: AHashMap<String, f64>,
+    /// what it takes on average to free tap every upgrade
+    special_scale: f64,
+    /// of `max_used`, what one stack gives of a base material and of an optional one
+    shares: [f64; 2],
 }
 
-fn chest_stack<R: Rng>(rng: &mut R, options: &[Vec<&str>], refs: &Refs, special_label: &str) -> (String, Chest) {
-    let count = log_uniform(rng.random(), 1.0, 200.0) as i64;
-    let share = log_uniform(rng.random(), 0.05, 1.0);
-    let band = pick(rng.random(), &[(0.5, 0), (0.3, 1), (0.2, 2)]);
+/// The average used of each material when every tap takes a juice and a book and advanced
+/// honing takes both on every tap: the most over which id of a pool it is.
+fn max_used(payload: &Payload) -> Vec<f64> {
+    let mut out: Vec<f64> = vec![0.0; payload.material_labels.len()];
+    for choice in 0..3 {
+        let mut state_bundle = StateBundle::init_from_payload(payload.clone());
+        let juice_info = state_bundle.prep_output.juice_info.clone();
+        for this in state_bundle.upgrade_arr.iter_mut() {
+            let (piece_type, upgrade_index, len) = (this.piece_type_usize, this.upgrade_index, this.state.len());
+            if this.is_normal_honing {
+                let pools = get_pool_ids(piece_type, upgrade_index, &juice_info);
+                let info = StreakInfo {
+                    front: pools.iter().map(|ids| (ids.get(choice.min(ids.len().max(1) - 1)).copied(), len)).collect(),
+                    back: vec![(None, 0); pools.len()],
+                };
+                this.state.apply_new_streak_info(&info, piece_type, upgrade_index, &juice_info);
+            } else {
+                for val in this.state.iter_mut() {
+                    val[0] = MAX_ADV_STATE;
+                }
+                this.state.update_hash();
+            }
+        }
+        let (_, used, _) = state_bundle.ui_average_gold_metric(&mut Probe::default());
+        for (most, this) in out.iter_mut().zip(used) {
+            *most = most.max(this);
+        }
+    }
+    out
+}
+
+/// The options of one stack, each the labels it gives. After the game's chests: a pick between
+/// stones, between free taps and base materials, between juices and books, and obtain-alls.
+fn chest_family<'a, R: Rng>(rng: &mut R, labels: &'a [String], special: &'a str) -> Vec<Vec<&'a str>> {
+    let l = |row: usize| labels[row].as_str();
+    let (red, blue, leaps, shards, fusion) = (l(0), l(1), l(2), l(3), l(4));
+    let optional: Vec<&str> = labels[NUM_BASE_MATS..].iter().map(|label| label.as_str()).collect();
+    let (glacier, lava) = (optional[0], optional[1]);
+    let books = &optional[2..];
+    let some = |rng: &mut R, from: &[&'a str], least: usize, most: usize| -> Vec<&'a str> {
+        let count = rng.random_range(least.min(from.len())..=most.min(from.len()));
+        from.choose_multiple(rng, count).copied().collect()
+    };
+    let alone = |labels: Vec<&'a str>| -> Vec<Vec<&'a str>> { labels.into_iter().map(|label| vec![label]).collect() };
+    let family = pick(
+        rng.random(),
+        &[
+            (0.1, 0), (0.08, 1), (0.06, 2), (0.05, 3), (0.04, 4), (0.12, 5), (0.12, 6), (0.07, 7),
+            (0.05, 8), (0.05, 9), (0.04, 10), (0.1, 11), (0.07, 12), (0.05, 13),
+        ],
+    );
+    match family {
+        0 => alone(vec![red, blue]),
+        1 => alone(vec![fusion, special, shards]),
+        2 => alone(vec![special, red, blue]),
+        3 => alone(vec![fusion, special, shards, red, blue]),
+        4 => alone(vec![special, leaps]),
+        5 => alone(vec![lava, glacier]),
+        6 => alone([vec![lava, glacier], some(rng, books, 1, 3)].concat()),
+        7 if books.len() > 1 => alone(some(rng, books, 2, 4)),
+        7 => alone(vec![lava, glacier]),
+        8 => vec![vec![red, blue], vec![leaps], vec![shards, fusion]],
+        9 => alone(vec![fusion, lava, special]),
+        10 => alone(vec![l(GOLD), lava, glacier]),
+        11 => vec![[some(rng, &[red, blue, leaps, shards, fusion], 1, 5), some(rng, &[l(GOLD)], 0, 1)].concat()],
+        12 => vec![some(rng, &optional, 1, 2)],
+        _ => vec![vec![special]],
+    }
+}
+
+fn chest_stack<R: Rng>(rng: &mut R, labels: &[String], special_label: &str, refs: &Refs) -> (String, Chest) {
+    let options = chest_family(rng, labels, special_label);
+    // a serca stack of t4 materials: a fifth of a unit each, roster bound at best
+    let converted = special_label == SPECIAL_LABELS[1] && rng.random_bool(0.4);
+    let has_gold = options.iter().flatten().any(|&label| label == labels[GOLD]);
+    let band = pick(rng.random(), &[(0.45, 0), (0.35, 1), (0.2, 2)]).min(if converted || has_gold { 1 } else { 2 });
+    let noise = (0.6 * normal(rng)).exp();
+    // what the whole stack gives of a label when every chest goes to its option
+    let total = |label: &str| -> f64 {
+        let base = labels[..NUM_BASE_MATS].iter().any(|this| this == label);
+        let (reference, fallback) = match label {
+            _ if label == special_label => (refs.special_scale, 100.0),
+            _ if base => (refs.max_used[label], 50.0),
+            _ => (refs.max_used[label], 20.0),
+        };
+        (if reference > 0.0 { reference } else { fallback }) * refs.shares[!base as usize] * noise
+    };
+    let most = options.iter().flatten().map(|&label| total(label)).fold(1.0, f64::max);
+    let count = (log_uniform(rng.random(), 1.0, 300.0) as i64).min(most.round() as i64);
     let options: Vec<BTreeMap<String, f64>> = options
         .iter()
         .map(|option| {
             option
                 .iter()
                 .map(|&label| {
-                    let typical = if label == special_label { refs.special } else { refs.used[label] };
-                    let each = typical.max(50.0) * share / count as f64;
-                    let each = if each >= 10.0 { each.round() } else { ((each * 10.0).round() / 10.0).max(0.2) };
+                    let each = total(label) / count as f64;
+                    let each = if converted { (each * 5.0).round().max(1.0) / 5.0 } else { each.round().max(1.0) };
                     (label.to_string(), each)
                 })
                 .collect()
@@ -172,22 +264,6 @@ fn chest_stack<R: Rng>(rng: &mut R, options: &[Vec<&str>], refs: &Refs, special_
         rng.random_range(0..1000)
     );
     (key, Chest { count, band, options })
-}
-
-/// kind 1 has no choice in it, 2 chooses between materials, 3 also between those and free taps
-fn chest_templates<'a>(labels: &'a [String], special_label: &'a str, kind: usize) -> Vec<Vec<Vec<&'a str>>> {
-    let l = |row: usize| labels[row].as_str();
-    let fixed = vec![vec![vec![l(0), l(1), l(2), l(3), l(4)]], vec![vec![l(GOLD), l(4)]]];
-    let choice = vec![vec![vec![l(0)], vec![l(1)]], vec![vec![l(2)], vec![l(3)]], vec![vec![l(7)], vec![l(8)]]];
-    let special = vec![
-        vec![vec![special_label], vec![l(GOLD)], vec![l(8)], vec![l(4)]],
-        vec![vec![special_label], vec![l(2)]],
-    ];
-    match kind {
-        1 => fixed,
-        2 => choice,
-        _ => special,
-    }
 }
 
 pub struct Built {
@@ -404,19 +480,24 @@ pub fn build(a: &[f64], seed: u64, full: bool) -> Built {
         }
     }
 
+    // base materials from chests are mostly a small part of what is used, the optional ones anything
+    let base_share = a[axis("chest_base")];
+    let base_share = if base_share < 0.8 {
+        log_uniform(base_share / 0.8, 0.01, 0.15)
+    } else {
+        log_uniform((base_share - 0.8) / 0.2, 0.15, 1.5)
+    };
     let refs = Refs {
         used: labels.iter().cloned().zip(typical).collect(),
         special: special_scale * 0.3,
+        max_used: labels.iter().cloned().zip(max_used(&payload)).collect(),
+        special_scale,
+        shares: [base_share, log_uniform(a[axis("chest_optional")], 0.02, 3.0)],
     };
-    let chest_kind = pick(a[axis("chests")], &[(0.45, 0), (0.15, 1), (0.25, 2), (0.15, 3)]);
-    if chest_kind > 0 {
-        let mut stacks = chest_templates(&labels, special_label, chest_kind);
-        if chest_kind == 3 {
-            stacks.extend(chest_templates(&labels, special_label, 2));
-        }
-        let keep = rng.random_range(1..=stacks.len());
-        for options in stacks.choose_multiple(&mut rng, keep) {
-            let (key, chest) = chest_stack(&mut rng, options, &refs, special_label);
+    let stacks = a[axis("chests")];
+    if stacks >= 0.12 {
+        for _ in 0..1 + ((stacks - 0.12) / 0.88 * 8.0) as usize {
+            let (key, chest) = chest_stack(&mut rng, &labels, special_label, &refs);
             payload.chests.insert(key, chest);
         }
     }
@@ -600,9 +681,7 @@ fn other_change<R: Rng>(payload: &mut Payload, refs: &Refs, kind: &str, rng: &mu
                 chest.count = (chest.count + rng.random_range(-chest.count / 2..=chest.count / 2 + 5)).max(1);
             } else {
                 let (labels, special_label) = (payload.material_labels.clone(), payload.special_label.clone());
-                let stacks = chest_templates(&labels, &special_label, rng.random_range(1..=3));
-                let options = stacks.choose(rng).unwrap();
-                let (key, chest) = chest_stack(rng, options, refs, &special_label);
+                let (key, chest) = chest_stack(rng, &labels, &special_label, refs);
                 payload.chests.insert(key, chest);
             }
         }
@@ -620,7 +699,7 @@ pub fn chain(built: Built, steps: usize, seed: u64, chests: bool) -> (Vec<Payloa
             rng.random(),
             &[(0.7, "tap"), (0.1, "income"), (0.08, "price"), (0.06, "goal"), (0.06, "chest")],
         );
-        // disabled until the optimizer has chest moves
+        // only for a set generated with chests
         let kind = if kind == "chest" && !chests { "income" } else { kind };
         let kind = if kind == "tap" {
             tap(&mut next, &mut rng)
@@ -661,13 +740,13 @@ pub struct Spec {
     pub sweeps: bool,
     pub stress: bool,
     pub offset: u32,
-    /// off until the optimizer has chest moves
+    /// off for a set like `explore`, which was generated without
     pub chests: bool,
 }
 
 /// One axis at a time around a few anchors, to see what each axis does on its own.
 fn sweeps(chests: bool) -> Vec<(String, Vec<f64>, u64)> {
-    const LEVELS: [(&str, &[f64]); 10] = [
+    const LEVELS: [(&str, &[f64]); 12] = [
         ("size", &[0.0, 0.3, 0.49, 0.67, 0.84, 0.999]),
         ("level", &[0.0, 0.25, 0.5, 0.75, 1.0]),
         ("wealth", &[0.0, 0.15, 0.3, 0.5, 0.7, 0.85, 1.0]),
@@ -678,6 +757,8 @@ fn sweeps(chests: bool) -> Vec<(String, Vec<f64>, u64)> {
         ("free_taps", &[0.0, 0.3, 0.55, 0.8, 1.0]),
         ("plan", &[0.1, 0.35, 0.55, 0.65, 0.75, 0.82, 0.87, 0.92, 0.97]),
         ("chests", &[0.2, 0.5, 0.7, 0.9]),
+        ("chest_base", &[0.0, 0.4, 0.79, 0.9, 0.999]),
+        ("chest_optional", &[0.0, 0.25, 0.5, 0.75, 0.999]),
     ];
     let mut out = Vec::new();
     for (anchor, tier) in [0.1, 0.55, 0.8].into_iter().enumerate() {
@@ -687,9 +768,12 @@ fn sweeps(chests: bool) -> Vec<(String, Vec<f64>, u64)> {
         base[axis("adv")] = 0.6;
         base[axis("progress")] = 0.0;
         base[axis("chests")] = 0.0;
-        for (name, levels) in LEVELS.into_iter().filter(|(name, _)| chests || *name != "chests") {
+        for (name, levels) in LEVELS.into_iter().filter(|(name, _)| chests || !name.starts_with("chest")) {
             for (level, value) in levels.iter().enumerate() {
                 let mut a = base.clone();
+                if name.starts_with("chest_") {
+                    a[axis("chests")] = 0.6;
+                }
                 a[axis(name)] = *value;
                 out.push((format!("sweep_{anchor}_{name}_{level}"), a, 1000 + anchor as u64));
             }

@@ -1,6 +1,13 @@
 # small and quick, on cases the optimizer of October 2026 hit a quarter to three quarters of the time
+# no chests, kept from the pilot of before chests
 chain_0011_t4_n7:4
-chain_0057_serca_n8:4
-single_0466_t4_n10
-single_0085_t4_n17
 single_0552_serca_n16
+# chests: optional materials only; almost no base materials over 8 stacks; mostly base materials; serca fifths with free taps and without
+single_1221_t4_n9
+single_1117_t4_n10
+sweep_1_chest_base_3_t4_n12
+single_1047_serca_n11
+single_1252_serca_n34
+# chests over a chain: 8 stacks of material choices, and one where a chest step adds a stack
+chain_1044_t4_n7:3
+chain_1033_serca_n25:3

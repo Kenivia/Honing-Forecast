@@ -38,6 +38,10 @@ pub struct Tuning {
     pub cooling_phase_start: f64,
     pub special_affinity_decay: f64,
     pub special_affinity_growth: f64,
+    /// the share of moves that reopen some chests of a stack, where a stack has a choice
+    pub chest_move_rate: f64,
+    /// evaluations between two polishes of the best state's chests; 0 for never
+    pub chest_polish_every: i64,
 
     // chained runs
     pub max_blob_bytes: usize,
@@ -63,6 +67,8 @@ impl Default for Tuning {
             cooling_phase_start: 0.65,
             special_affinity_decay: 0.999,
             special_affinity_growth: 1.02,
+            chest_move_rate: 0.15,
+            chest_polish_every: 6000,
 
             max_blob_bytes: 5 * 1024 * 1024,
         }

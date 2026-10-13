@@ -122,7 +122,7 @@ impl StateBundle {
         }
     }
 
-    /// placeholder for an optimizer move
+    /// for a state away from any plan, as `scramble` makes them
     pub fn randomize_chest_state<R: Rng>(&mut self, rng: &mut R) {
         self.chest_states = self
             .prep_output

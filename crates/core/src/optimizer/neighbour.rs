@@ -19,7 +19,42 @@ use rand::rngs::SmallRng;
 // use std::f64::{MAX, MIN};
 
 impl SolverStateBundle {
+    /// Reopens some chests of one stack as another of its options. False, with nothing drawn,
+    /// where no stack has a choice.
+    fn chest_move(&mut self) -> bool {
+        let rate = self.state_bundle.tuning.chest_move_rate;
+        let progress = self.progress();
+        let movable: Vec<&String> = self
+            .state_bundle
+            .prep_output
+            .chests
+            .iter()
+            .filter(|(_, chest)| chest.options.len() > 1 && chest.count > 0)
+            .map(|(key, _)| key)
+            .collect();
+        if rate <= 0.0 || movable.is_empty() || !self.rng.random_bool(rate) {
+            return false;
+        }
+        let key = movable[self.rng.random_range(0..movable.len())];
+        let state = self.state_bundle.chest_states.get_mut(key).unwrap();
+        let filled: Vec<usize> = (0..state.len()).filter(|&option| state[option] > 0).collect();
+        let from = filled[self.rng.random_range(0..filled.len())];
+        let mut to = self.rng.random_range(0..state.len() - 1);
+        if to >= from {
+            to += 1;
+        }
+        let most = ((1.0 - progress).powi(2) * state[from] as f64).ceil().max(1.0) as i64;
+        let moved = self.rng.random_range(1..=most);
+        state[from] -= moved;
+        state[to] += moved;
+        self.state_bundle.apply_chest_state(false);
+        true
+    }
+
     pub fn neighbour(&mut self) -> bool {
+        if self.chest_move() {
+            return false;
+        }
         let mutate_special = self.rng.random_bool(
             (1.0 - self.state_bundle.special_probs()[0])
                 * self.special_affinity,

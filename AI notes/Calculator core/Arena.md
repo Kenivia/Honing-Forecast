@@ -48,13 +48,25 @@ Every scenario runs **cold** (each step alone) and **chained** (each step is han
 
 `pnpm arena gen <set> --singles N --chains N --steps N --sweeps --stress` (`generate.rs`) writes a set into `test_cases/scenarios/<set>/`. Loading a folder does not descend, so a set is run with `--scenarios test_cases/scenarios/<set>` and the default folder stays the dummy.
 
-- **A case is a point on 16 axes** (`AXES`: tier, size, level band, piece mix, jitter between pieces, advanced share, progress, wealth, imbalance, band split, juice owned, juice price, free taps, plan, chests, price noise), each in [0, 1), and `build` turns the point into a payload. Drawing payload fields independently makes every case look alike; drawing these does not. The point is kept in the scenario's `meta.axes`.
+- **A case is a point on 18 axes** (`AXES`: tier, size, level band, piece mix, jitter between pieces, advanced share, progress, wealth, imbalance, band split, juice owned, juice price, free taps, plan, chests, price noise, chest base share, chest optional share), each in [0, 1), and `build` turns the point into a payload. Drawing payload fields independently makes every case look alike; drawing these does not. The point is kept in the scenario's `meta.axes`.
 - **Owned amounts are quantiles**: the wealth axis is how often the owned amount is enough under the default state, and imbalance spreads that between materials. So the same wealth means the same thing at any size. Juices, which the default state does not use, are a share of one juice per tap instead.
 - **Singles and chains are points of a Sobol sequence** (seeds 1 and 2), so `--offset` gives a set that shares nothing with another, and a longer set starts with the shorter one.
 - **A chain replays a player**: most steps solve the payload, do the upgrade the plan wants next (`generate::next_up` and `generate::play`, which `replan` shares) and apply one outcome of it (done, free tapped, or some failed taps in), by the rules `monte_carlo::simulate` uses. The rest are income, a price move, a goal added or removed. `meta.kinds` names what happened before each step. Unopened chests are not drawn on when a material runs out.
 - **Sweeps** move one axis at a time around three anchors; **stress** is every upgrade a character has.
-- **Chests are off** unless `--chests`: the axis is pinned to none and a chain's chest step becomes income, until the optimizer has chest moves.
+- **Chests are off** unless `--chests`: the axis is pinned to none and a chain's chest step becomes income. `explore` was generated without. See "Chests in a generated case".
 - A case whose generation panics is left out and the panic is on stderr. A chain step the optimizer panics on is kept, with the player following the default state.
+
+## Chests in a generated case
+
+The cases are meant to cover what the optimizer can be handed, not what a player usually has.
+
+- **The `chests` axis is how many stacks**: none under 0.12, then 1 to 8.
+- **A stack is sized against the average used with every tap taking all it can** (`max_used`: a juice and a book on every tap, both on every advanced tap, the most over which id of a pool it is), not against what the default state uses, which is no juice at all. Free taps are sized against what it takes on average to free tap every upgrade.
+- **Base materials from a stack are mostly small**: `chest_base` gives 1 to 15% of that reference four times in five and 15 to 150% otherwise. **Optional ones (juices, books, scrolls, free taps) are anything**: `chest_optional` is 2% to 300%. Each stack has its own noise on top, and stacks add up.
+- **What a stack gives is one of 14 families** (`chest_family`), after the game's chests: red or blue; fusion, free taps or shards; free taps, red or blue; all five of those; free taps or leapstones; lava or glacier, alone or with books; books only; bundles of several materials an option; fusion, lava or free taps; gold or a juice; and obtain-alls of base materials, of optional ones and of free taps. A book no upgrade of the case can use is a legitimate option.
+- **A stack is 1 to 300 chests**, fewer where the whole stack gives only a few units. Four Serca stacks in ten are converted T4 materials: fifths of a unit a chest, roster bound at best.
+- **`test_cases/scenarios/chests`** is `gen chests --singles 300 --chains 60 --steps 8 --sweeps --chests --offset 1000`, less the sweeps that have no chests: 402 scenarios, 822 payloads, 43 of them without a chest and 260 with a choice that includes free taps. The offset keeps its names apart from `explore`'s, which sets look scenarios up by.
+- `python scripts/arena/chest_report.py [session] [--by choice|stacks|kind]` puts a session's variants side by side with the gap as a share of `flow`.
 
 ## Sets
 
@@ -63,7 +75,8 @@ A set is a named list of scenarios for one purpose, in `test_cases/sets/<name>.t
 - `pnpm arena sets` lists them. `--set <name>` on `run`, `verify` and `carry` uses one in place of the folder: `pnpm arena run baseline current --set pilot`.
 - `pnpm arena define <name> --note "..." --kind single --where n=32..41 --where juice_owned=0.4..0.7 --steps 4 --limit 12` writes one from filters: `--kind` is a prefix of the name (single, chain, sweep, stress), a `--where` key is an axis of `meta.axes`, `n` (upgrades of the first step) or `steps`. The command is kept in the file. Or write the file by hand.
 - A truncated chain's steps are the same payloads, so they share their best known with the full chain.
-- `pilot` is the quick first run for a new variant: two chains cut to four steps and three singles, 11 payloads, 20 CPU seconds a seed. It was picked from the exploratory run (session 14) as cases the optimizer of the time hit a quarter to three quarters of the time, which is where a variant can move the result either way, and to cover both tiers, juice, free taps, advanced honing and every kind of chain step but a goal or price change.
+- `pilot` is the quick first run for a new variant: 16 payloads, 8 CPU seconds a seed. Two scenarios without chests are from the pilot of before (a chain cut to four steps and a single, picked from session 14), and their runs match sessions 18 to 25 seed for seed. Seven have chests (picked from session 29): optional materials only, almost no base materials over 8 stacks, mostly base materials, Serca fifths with a free tap choice and without, and two chains cut to three steps, one with 8 stacks and one where a chest step adds a stack. All were hit a quarter to three quarters of the time, which is where a variant can move the result either way. The three that were dropped (`chain_0057_serca_n8`, `single_0466_t4_n10`, `single_0085_t4_n17`) are still in `explore`.
+- `chests` is every case of the `chests` folder that has a choice in it, chains cut to three steps: 349 scenarios, 453 payloads, about 15 minutes for three variants and three seeds at 16 jobs.
 
 ## The exploratory run
 
@@ -78,6 +91,10 @@ A set is a named list of scenarios for one purpose, in `test_cases/sets/<name>.t
 | 21 | `pilot`, 3 seeds, `--jobs 1`, with the advanced honing table: 13.0 CPU seconds a seed against 21.0 |
 | 23 | `explore`, 8 seeds, the `adv_table` snapshot: the faster distributions and the table. Every run has the state and metric of session 20; 13468 CPU seconds became 5867, in 59 minutes |
 | 25 | `pilot`, 3 seeds, `--jobs 1`, after the optimizer's own work was cut (`Optimizer.md`): 11.0 CPU seconds a seed |
+| 28 | the `chests` folder, 1 seed: the random chest state (`chest_base` snapshot) against chest moves and polishes |
+| 29, 31, 32 | the `chests` set, 3 seeds: variants of the chest moves (`Optimizer.md`, "Chests"). In 31 the compound variants died, a bug of theirs |
+| 30 | the `chests` set, 1 seed, 96,000 evaluations: the best known to measure against |
+| 33 | the new `pilot`, 3 seeds, `--jobs 1`: `chest_base` 7.6 CPU seconds a seed, `chest_moves` 7.9 |
 
 Sessions 3 to 5 are of the payloads before the folder was generated again and match nothing in it now. Session 17 is session 20 with a root finder bug that killed 3 of its jobs; 15 is 18 before that fix.
 
@@ -144,8 +161,10 @@ The metric assumes the plan made now is followed to the end. `pnpm arena replan 
 - **A seed must repeat exactly.** Two things broke that before and would again: the global `rand::random_*` functions (use the solver's `rng`), and summing floats in hash map iteration order (`brute.rs` uses fixed hasher seeds for this reason; `ahash` maps are seeded per instance otherwise). The `a_seed_repeats_exactly` test guards it.
 - **CPU time needs `--jobs 1`.** Running many workers at once inflated it about threefold here. Windows also accounts thread time in ticks of about 15 ms, so short measurements are repeated (`time_evaluation`).
 - **The Monte Carlo samples normal honing from the upgrade's own tap distribution.** It checks everything built on that distribution, and free taps and advanced honing from the game rules, but not the tap distribution itself.
-- **The Monte Carlo reads the bands and the free-tap budget of the state it is given**, so it checks the evaluator under a chest state, not `resolve_chests` itself; that has a unit test in `chest.rs`. `scramble` goes through `start_solver`, so scrambled states have random chest states.
-- **The chest state is random per seed for now**, so gaps between seeds on a scenario with chests are large and say nothing about the annealer.
+- **The Monte Carlo reads the bands and the free-tap budget of the state it is given**, so it checks the evaluator under a chest state, not `resolve_chests` itself; that has a unit test in `chest.rs`. `scramble` opens the chests at random first (`randomize_chest_state`), so scrambled states have random chest states.
+- **A snapshot from before `chest_moves` opens the chests at random**, once, so its gaps on a scenario with chests are tens of percent and say nothing about its annealer.
+- **`--jobs` defaults to half the logical cores.** Pass the number of cores for a long run, and 1 when the time is what is measured.
+- **A mean of gaps over flow is ruled by a few payloads with almost no flow** (millions of percent). `chest_report.py` prints it, but read the median, the 90th percentile and the hit rate.
 - **Where everything is owned the true metric is zero and the optimizer chases approximation error**: best states with a few thousand gold of negative cost were found on jobs moving millions. Gaps there are noise, whatever they are divided by.
 - **Best known is per payload.** Editing a scenario's payload makes it a new case with no history. The payload is hashed with its keys sorted; hashed as serialised, its hash maps gave a new row on every driver run.
 - The database (`test_cases/arena.sqlite`) is gitignored and can be deleted; snapshots in `target/arena/bin` then lose their rows and must be taken again.
