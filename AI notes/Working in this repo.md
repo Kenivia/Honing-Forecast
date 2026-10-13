@@ -48,6 +48,7 @@ was picked up by a commit because it was not ignored.
 | `pnpm e2e`           | Playwright browser tests.                                                |
 | `pnpm test`          | Rust unit tests for the core, and the arena's short checks.              |
 | `pnpm arena`         | The core's test harness. See `Calculator core/Arena.md`.                 |
+| `pnpm arena stress`  | The evaluator's probabilities against an exact convolution.              |
 | `pnpm scanner-suite` | The scanner over every recording and still, natively; compares two runs. |
 
 TypeScript is pinned to 5.x because `vue-tsc` needs the `./lib/tsc` entry point that

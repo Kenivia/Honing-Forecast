@@ -1,6 +1,6 @@
 //! Serves in place of saddlepoint_approximation when the complexity isn't too bad
 
-use crate::constants::FLOAT_TOL;
+use crate::constants::{FLOAT_TOL, float_tol};
 use crate::state_bundle::StateBundle;
 use ahash::{AHashMap, RandomState};
 use either::Either;
@@ -44,6 +44,7 @@ impl StateBundle {
         };
 
         let prune_flipped: bool = budget > mean;
+        let budget = budget + float_tol(budget);
 
         // min_suffix[i] = sum of minimum costs from layer i to end
         // max_suffix[i] = sum of maximum costs from layer i to end
@@ -101,12 +102,12 @@ impl StateBundle {
                     let step_prob = current_prob * p;
 
                     if prune_flipped {
-                        if new_cost + next_max_rem < budget + FLOAT_TOL {
+                        if new_cost + next_max_rem < budget {
                             //  will always succeed (excatly enough => success => don't add to failure prob => break early)
                             break;
                         }
 
-                        if new_cost + next_min_rem > budget + FLOAT_TOL {
+                        if new_cost + next_min_rem > budget {
                             //  can never succeed  (exactly enough => success => dont add to failure prob => exclude from here
                             if biased {
                                 total_guaranteed_prob +=
@@ -118,11 +119,11 @@ impl StateBundle {
                             continue;
                         }
                     } else {
-                        if new_cost + next_min_rem > budget + FLOAT_TOL {
+                        if new_cost + next_min_rem > budget {
                             // can never succeed (DONT break on equal because having exactly enough should be success)
                             break;
                         }
-                        if new_cost + next_max_rem < budget + FLOAT_TOL {
+                        if new_cost + next_max_rem < budget {
                             // will always succeed (count equal case)
                             if biased {
                                 total_guaranteed_prob +=

@@ -1,4 +1,5 @@
 use crate::constants::{FLOAT_TOL, SPECIAL_TOL};
+use crate::core::lattice::Lattice;
 use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 
@@ -117,6 +118,8 @@ impl StateBundle {
         let last_price: f64 = thresh_price_pairs[num_thresholds - 1].1;
 
         let mut out: f64 = last_price * (last_thresh - simple_mean);
+        // exact and shared by every threshold, where it is cheap enough
+        let mut lattice: Option<Option<Lattice>> = None;
 
         for (index, &(thresh, price)) in thresh_price_pairs.iter().enumerate().skip(1) {
             let prev_price = thresh_price_pairs[index - 1].1;
@@ -125,6 +128,14 @@ impl StateBundle {
             // it has to stay for the term above, because it carries a constant rather than
             // a kink, but it is free whenever the band under it is credited at the buy price.
             if (prev_price - price).abs() < FLOAT_TOL {
+                continue;
+            }
+
+            if let Some(lattice) = lattice.get_or_insert_with(|| self.lattice(support_index, skip_count)) {
+                probe.count(Counter::Lattice);
+                out += (prev_price - price)
+                    * (thresh * lattice.within(thresh, false)
+                        - lattice.within(thresh, true) * simple_mean);
                 continue;
             }
 

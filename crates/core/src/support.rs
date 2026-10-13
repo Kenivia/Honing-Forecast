@@ -78,6 +78,14 @@ impl Support {
             self.min_value
         }
     }
+    /// One certain outcome, for splitting a sum on this upgrade's outcomes
+    pub fn pin(&mut self, value: f64) {
+        self.collapsed_pair = vec![(value, 1.0)];
+        self.max_value = value;
+        self.min_value = value;
+        self.ignore = value.abs() < FLOAT_TOL;
+    }
+
     /// Incredibly crucial pre-processing, collapses identical values into 1 thing, and removes values with p = 0.
     /// cumulant.rs makes the assumption that nothing has p = 0
     ///

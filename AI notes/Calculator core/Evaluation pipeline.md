@@ -24,14 +24,20 @@ Step 4 needs, at each price threshold, the probability that total consumption st
 
 ## Method selection
 
-`saddlepoint_approximation_wrapper` picks one of:
+`saddlepoint_approximation_wrapper` picks one of, in this order:
 
 - **Trivial**: the threshold is outside the possible range.
-- **Brute force** (`core/brute.rs`): exact convolution with pruning. Used when the outcome space is small, or when the threshold is very close to the minimum or maximum, where pruning is effective and the approximation is weak.
-- **Saddlepoint** (`core/saddlepoint_approximation.rs`): the Lugannani-Rice formula with a lattice continuity correction. Needs the root of the cumulant function's first derivative, found by `core/root_finder.rs`. `Tuning::root_finder` picks the finder, so a second one is a new enum variant and a match arm.
-- **Edgeworth fallback**: used near the mean, where the main formula is singular, and when the main formula returns something out of range.
+- **Lattice** (`core/lattice.rs`): the whole distribution of the sum, exactly, as an array over the lattice it lives on. Used when lattice points times outcomes is within `Tuning::max_lattice_work`, which is mostly juices and books. `one_dimension_average_gold` builds it once and reads every threshold of the material from it, plain and biased, so it never reaches the wrapper there.
+- **Brute force** (`core/brute.rs`): exact convolution with pruning, for one threshold. Used when the product of the outcome counts is small, or when the threshold is very close to the minimum or maximum, where pruning is effective and the approximation is weak.
+- **Saddlepoint** (`core/saddlepoint_approximation.rs`): the Lugannani-Rice formula with the second continuity correction on the sum's lattice, which starts at the minimum and whose span is the gcd of the gaps of the upgrades with more than one outcome. Needs the root of the cumulant function's first derivative, found by `core/root_finder.rs`. `Tuning::root_finder` picks the finder, so a second one is a new enum variant and a match arm.
+- **Edgeworth**: in place of the main formula near the mean, where that is singular. It takes the cumulants at zero, so it needs no root.
+- **Conditioning**: when either of the last two is outside [0, 1], or the main formula's slope term (`1 + k4/8 - 5 k3^2/24` at the saddlepoint, plain probabilities only) is not positive, the sum is split on the outcomes of the upgrade with the most variance and each part goes through the wrapper again. Two levels deep at most, then the value is clamped. Only a NaN there, or a root that does not converge, is a panic.
 
-A failure to converge or a result outside [0, 1] after the fallback is a panic, not a soft error. The root finder's safeguards are empirical; treat changes there with care, and check them with `pnpm arena verify` (`Arena.md`).
+**The saddlepoint formula is the weak part, not its implementation.** It is asymptotic in the number of comparable upgrades, and the pity tap puts some 15% of an upgrade's probability on its last outcome. With one upgrade outweighing the rest it has been 0.2 off inside [0, 1] with a positive slope term, so nothing flags it, and the optimizer found such a state and was paid 3 million gold of error for it (`test_cases/scenarios/regressions`). The lattice route is what makes that case right; the conditioning only catches what leaves the range. In the stress sweep, which packs its thresholds where the formula is worst, three in ten of the saddlepoint's answers are more than 0.01 off with 2 or 3 upgrades in the sum, one in eight with 4 to 7, and under 1% with 32 or more. Raising `max_lattice_work` trades time for that: 200,000 cost 5% on the `juice` set and a million 60%.
+
+`FLOAT_TOL` is smaller than the gap between f64s past about 8 million, so thresholds are compared with `float_tol(value)`. With the bare constant a threshold equal to a reachable total counted as short of it.
+
+The root finder's safeguards are empirical; treat changes there with care. Check a change anywhere on this path with `pnpm arena stress` and `pnpm arena verify` (`Arena.md`).
 
 Every function on this path takes a `&mut Probe` and counts which method it used. See `Arena.md`.
 

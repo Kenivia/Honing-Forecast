@@ -12,6 +12,7 @@ mod one_adv_sim;
 mod replan;
 mod report;
 mod scenario;
+mod stress;
 mod worker;
 
 use clap::{Parser, Subcommand, ValueEnum};
@@ -151,6 +152,18 @@ enum Cmd {
         /// random states per step, on top of the given one
         #[arg(long, default_value_t = 5)]
         scrambles: usize,
+    },
+    /// check the probabilities under the metric against an exact convolution, at many thresholds
+    Stress {
+        /// only scenarios whose name contains this
+        #[arg(long, default_value = "")]
+        filter: String,
+        /// random states per step, on top of the given one, each further from it (at most 3)
+        #[arg(long, default_value_t = 3)]
+        scrambles: usize,
+        /// `key=value,key=value` over the default tuning
+        #[arg(long, default_value = "")]
+        tuning: String,
     },
     /// tables for a session (the latest by default) or for variants across sessions
     Compare {
@@ -383,7 +396,8 @@ fn run_jobs(
 
             let results: Vec<StepResult> = String::from_utf8_lossy(&output.stdout)
                 .lines()
-                .map(|line| serde_json::from_str(line).unwrap())
+                // a worker that panics may have printed something else
+                .filter_map(|line| serde_json::from_str(line).ok())
                 .collect();
             let scored: Vec<(f64, f64, f64)> = results
                 .iter()
@@ -493,6 +507,19 @@ fn main() {
             let selection = Selection { session: Some(session), variants: Vec::new() };
             report::verify(&conn, &selection);
             report::errors(&conn, &selection);
+        }
+        Cmd::Stress { filter, scrambles, tuning } => {
+            let overrides = tuning
+                .split(',')
+                .filter(|pair| !pair.is_empty())
+                .map(|pair| {
+                    let (key, value) = pair.split_once('=').unwrap();
+                    (key.to_string(), serde_json::from_str(value).unwrap())
+                })
+                .collect();
+            let scenarios = scenarios(&cli, filter);
+            assert!(!scenarios.is_empty(), "no scenarios in {:?}", cli.scenarios);
+            stress::report(&stress::run(&scenarios, *scrambles, &worker::tuning_with(&overrides)));
         }
         Cmd::Compare { variants, session, eps } => {
             let conn = db::open(&cli.db);

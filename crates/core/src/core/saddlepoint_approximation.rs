@@ -1,67 +1,79 @@
-use crate::constants::FLOAT_TOL;
+use crate::constants::{FLOAT_TOL, float_tol};
 use crate::core::cumulants::KsTuple;
-use crate::my_dbg;
 use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 use crate::support::Support;
 use crate::tuning::RootFinder;
+use ahash::AHashMap;
+use num::Integer;
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
-use std::f64::INFINITY;
+use std::f64::{INFINITY, NAN};
 
-pub const DEBUG_SA: bool = false;
 pub const MIN_LATTICE_SPAN: f64 = 1.0;
+/// how many upgrades deep a probability may be split on outcomes before it is clamped
+const MAX_CONDITION_DEPTH: usize = 2;
 
-fn float_gcd(inp_a: f64, inp_b: f64) -> f64 {
-    let mut a = inp_a;
-    let mut b = inp_b;
-    while b > MIN_LATTICE_SPAN {
-        (a, b) = (b, a % b);
-        if (b - a).abs() < MIN_LATTICE_SPAN {
-            b = 0.0;
-        }
-    }
-    a
-}
-
-/// Find out how much continuity correction to perform
-fn lattice_span<'a, I>(meta_support_arr: I) -> f64
+/// The spacing of the lattice the sum lives on, which is how much continuity correction
+/// to perform, and the smallest gap of any one upgrade. An upgrade with one outcome only
+/// moves the lattice, so it is left out.
+fn span_of<'a, I>(meta_support_arr: I) -> (f64, f64)
 where
     I: Iterator<Item = &'a Support>,
 {
-    let mut cur_span: f64 = MIN_LATTICE_SPAN;
-    let mut found_non_zeros: bool = false;
-
+    let mut span: i64 = 0;
+    let mut min_delta: f64 = INFINITY;
     for support in meta_support_arr {
-        if support.gap_size < FLOAT_TOL || support.ignore {
+        if support.access_collapsed(false).len() < 2 {
             continue;
         }
-        if !found_non_zeros {
-            cur_span = support.gap_size;
-            found_non_zeros = true;
-        } else {
-            cur_span = float_gcd(support.gap_size, cur_span);
+        if !support.gap_size.is_finite() {
+            panic!("non finite gap size")
         }
-        if cur_span < MIN_LATTICE_SPAN {
-            return MIN_LATTICE_SPAN; // always do a little bit of cont correction ig cos why not
-        }
+        min_delta = min_delta.min(support.gap_size);
+        span = span.gcd(&(support.gap_size.round() as i64));
     }
-    cur_span
+    if min_delta < MIN_LATTICE_SPAN {
+        return (MIN_LATTICE_SPAN, min_delta); // always do a little bit of cont correction ig cos why not
+    }
+    ((span as f64).max(MIN_LATTICE_SPAN), min_delta)
+}
+
+fn variance(pairs: &[(f64, f64)]) -> f64 {
+    let mean: f64 = pairs.iter().map(|(s, p)| s * p).sum();
+    pairs.iter().map(|(s, p)| (s - mean).powi(2) * p).sum()
+}
+
+/// Edgeworth series, with the cumulants at zero. Only any good near the mean.
+fn edgeworth(at_zero: KsTuple, budget: f64, compute_biased: bool, normal_dist: &Normal) -> f64 {
+    let std = at_zero.2.sqrt();
+    let z = (budget - at_zero.1) / std;
+    let gamma3 = at_zero.3 / std.powi(3);
+    let cdf_correction = normal_dist.pdf(z)
+        * ((gamma3 / 6.0) * (z.powi(2) - 1.0)
+            + if compute_biased {
+                0.0
+            } else {
+                let gamma4 = at_zero.4 / std.powi(4);
+                (gamma4 / 24.0) * (z.powi(3) - 3.0 * z)
+                    + (gamma3 * gamma3 / 72.0) * (z.powi(5) - 10.0 * z.powi(3) + 15.0 * z)
+            });
+    normal_dist.cdf(z) - cdf_correction
 }
 
 impl StateBundle {
+    pub fn lattice_span(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
+        span_of(
+            self.extract_all_support_with_meta(support_index)
+                .skip(skip_count), // this one genuinely can skip
+        )
+    }
+
     pub fn support_size_too_big(&self, support_index: i64, skip_count: usize) -> bool {
-        let mut out: usize = 0;
+        let mut product: usize = 1;
         for a in self.extract_collapsed_pair(support_index, skip_count) {
-            if out == 0 {
-                out = a.len();
-            } else {
-                out *= a.len();
-                if out >= self.tuning.max_brute_size {
-                    return true;
-                }
-            }
+            product = product.saturating_mul(a.len());
         }
-        false
+        product > self.tuning.max_brute_size
     }
 
     pub fn saddlepoint_approximation_wrapper(
@@ -73,73 +85,66 @@ impl StateBundle {
         simple_mean_log: f64,
         probe: &mut Probe,
     ) -> f64 {
+        self.probability_within(
+            support_index,
+            skip_count,
+            inp_budget,
+            compute_biased,
+            simple_mean_log,
+            probe,
+            0,
+        )
+    }
+
+    fn probability_within(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+        inp_budget: f64,
+        compute_biased: bool,
+        simple_mean_log: f64,
+        probe: &mut Probe,
+        depth: usize,
+    ) -> f64 {
         let (min_value, max_value) = self.find_min_max(support_index, skip_count);
-        if inp_budget > max_value - FLOAT_TOL {
+        if inp_budget > max_value - float_tol(max_value) {
             probe.count(Counter::Trivial);
             return 1.0;
         }
 
-        if inp_budget < min_value - FLOAT_TOL {
+        if inp_budget < min_value - float_tol(min_value) {
             probe.count(Counter::Trivial);
             return 0.0;
         };
+        if let Some(lattice) = self.lattice(support_index, skip_count) {
+            probe.count(Counter::Lattice);
+            return lattice.within(inp_budget, compute_biased);
+        }
+        let (span, min_delta) = self.lattice_span(support_index, skip_count);
         if self.support_size_too_big(support_index, skip_count) {
-            let min_delta = self
-                .extract_all_support_with_meta(support_index)
-                .skip(skip_count) // this one genuinely can skip
-                .map(|x| {
-                    if x.gap_size.is_finite() {
-                        x.gap_size
-                    } else {
-                        panic!("non finite gap size")
-                    }
-                })
-                .fold(INFINITY, |prev, next| {
-                    if next > FLOAT_TOL {
-                        prev.min(next)
-                    } else {
-                        prev
-                    }
-                }); // UM this should be the size of the second gap so might not be accurate for combined cost ? CBB
-
-            let span = lattice_span(
-                self.extract_all_support_with_meta(support_index)
-                    .skip(skip_count),
-            ); // this one also
-            let budget = ((inp_budget / span).floor() * span)
+            // the lattice starts at the minimum, not at zero
+            let budget = (min_value + ((inp_budget - min_value) / span + FLOAT_TOL).floor() * span)
                 .min(max_value - span)
                 .max(min_value)
                 + span / 2.0;
 
-            if min_delta.is_finite() // trivial empty case with fold being the default
-                && max_value - min_value > min_delta // only one or two outcomes
-                && min_value + min_delta + 1.0 < budget // brute should only have to handle like n = number of upgrades cases or so. In general any higher (e.g. 2* min_delta) and this explodes insanely quickly 
+            if max_value - min_value > min_delta // only one or two outcomes
+                && min_value + min_delta + 1.0 < budget // brute should only have to handle like n = number of upgrades cases or so. In general any higher (e.g. 2* min_delta) and this explodes insanely quickly
                 && budget < max_value - min_delta - 1.0
             {
-                let res: KsTuple = self.ks(
-                    0.0,
-                    compute_biased,
-                    simple_mean_log,
-                    support_index,
-                    skip_count,
-                    probe,
-                );
-                let mean_var_skew: (f64, f64, f64) = (res.1, res.2, res.3);
-                let (soft_low_limit, guess, soft_high_limit) =
-                    self.min_guess_max_triplet(budget, min_value, max_value, mean_var_skew);
                 return self.saddlepoint_approximation(
                     support_index,
                     skip_count,
                     min_value,
                     max_value,
                     span,
+                    inp_budget,
                     budget,
                     compute_biased,
                     simple_mean_log,
-                    mean_var_skew,
                     probe,
-                    (soft_low_limit, guess, soft_high_limit),
                     min_delta,
+                    depth,
                 );
             }
         }
@@ -162,165 +167,149 @@ impl StateBundle {
         min_value: f64,
         max_value: f64,
         span: f64,
+        inp_budget: f64,
         budget: f64,
         compute_biased: bool,
         simple_mean_log: f64,
-        mean_var: (f64, f64, f64),
         probe: &mut Probe,
-        guess_triplet: (f64, f64, f64),
         min_delta: f64,
+        depth: usize,
     ) -> f64 {
         probe.count(Counter::Saddlepoint);
-        let k1_zero = mean_var.0;
-        let (_, guess, _) = guess_triplet;
-
-        let result_opt = match self.tuning.root_finder {
-            RootFinder::Householder => self.householder(
+        let at_zero: KsTuple = self.ks(
+            0.0,
             compute_biased,
             simple_mean_log,
             support_index,
             skip_count,
-            budget,
-            guess,
-            min_value,
-            max_value,
-            min_delta,
             probe,
-        ),
-        };
-
-        let result: (f64, f64, usize, KsTuple) = result_opt.unwrap();
-        let theta_hat = result.0;
-        let ks_tuple: KsTuple = result.3;
+        );
+        let k1_zero = at_zero.1;
         let normal_dist: Normal = Normal::new(0.0, 1.0).unwrap();
 
-        let w = |t: f64, ks_inp: f64| t.signum() * (2.0 * (t * budget - ks_inp)).sqrt();
-        let u = |t: f64, ks2_inp: f64| 2.0 / span * (span * t / 2.0).sinh() * ks2_inp.sqrt(); // second continuity correction 
-        let w_hat = w(theta_hat, ks_tuple.0);
-        let u_hat = u(theta_hat, ks_tuple.2);
-
-        let sa_out: f64 =
-            normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat);
-
-        #[allow(unused)]
-        let mut approx: f64 = -6.9;
-        let mut actual_out = sa_out;
-
-        // the threshold is complete trial-and-error heuristic
-        if (k1_zero - budget).abs() / (k1_zero.max(budget).max(1.0)) < 1e-4
-            || !(-FLOAT_TOL..=1.0 + FLOAT_TOL).contains(&actual_out)
-            || !actual_out.is_finite()
-        {
+        // the main formula is singular at the mean. the threshold is complete trial-and-error heuristic
+        let (out, trusted) = if (k1_zero - budget).abs() / (k1_zero.max(budget).max(1.0)) < 1e-4 {
             probe.count(Counter::Edgeworth);
-            let std = ks_tuple.2.sqrt();
-            let z = (budget - ks_tuple.1) / std;
-
-            let gamma3 = ks_tuple.3 / std.powi(3);
-            let pdf = normal_dist.pdf(z);
-            let cdf = normal_dist.cdf(z);
-            let cdf_correction = pdf
-                * ((gamma3 / 6.0) * (z.powi(2) - 1.0)
-                    + if compute_biased {
-                        0.0
-                    } else {
-                        let gamma4 = ks_tuple.4 / std.powi(4);
-                        (gamma4 / 24.0) * (z.powi(3) - 3.0 * z)
-                            + (gamma3 * gamma3 / 72.0) * (z.powi(5) - 10.0 * z.powi(3) + 15.0 * z)
-                    });
-
-            approx = cdf - cdf_correction;
-            actual_out = approx;
+            (edgeworth(at_zero, budget, compute_biased, &normal_dist), true)
         } else {
             probe.count(Counter::Lugannani);
-        }
-
-        // most of the time if something's wrong it's probably because the proabability distribution didn't add up to 1 for some reason
-        // i should probably add a check for that somewhere but whatever
-        if DEBUG_SA
-            || !(-FLOAT_TOL..=1.0 + FLOAT_TOL).contains(&actual_out)
-            || !actual_out.is_finite()
-        {
-            my_dbg!(theta_hat, k1_zero);
-            my_dbg!(w_hat, u_hat, sa_out);
-
-            #[cfg(feature = "wasm")]
-            web_sys::console::log_1(
-                &format!(
-                    "{:?}",
-                    self.extract_collapsed_pair(support_index, skip_count)
-                        .into_iter()
-                        .collect::<Vec<&Vec<(f64, f64)>>>()
-                )
-                .into(),
-            );
-
-            my_dbg!(
-                self.extract_collapsed_pair(support_index, skip_count)
-                    .collect::<Vec<&Vec<(f64, f64)>>>()
-            );
-
-            my_dbg!(
+            let (_, guess, _) = self.min_guess_max_triplet(
                 budget,
                 min_value,
                 max_value,
-                k1_zero,
-                compute_biased,
-                support_index,
-                // low_limit,
-                guess,
-                // high_limit
+                (at_zero.1, at_zero.2, at_zero.3),
             );
-
-            my_dbg!(
-                "zero {:?}",
-                self.ks(
-                    0.0,
+            let result_opt = match self.tuning.root_finder {
+                RootFinder::Householder => self.householder(
                     compute_biased,
                     simple_mean_log,
                     support_index,
                     skip_count,
-                    probe,
-                )
-            );
-
-            my_dbg!(
-                "guess {:?}",
-                self.ks(
+                    budget,
                     guess,
-                    compute_biased,
-                    simple_mean_log,
+                    min_value,
+                    max_value,
+                    min_delta,
+                    probe,
+                ),
+            };
+
+            let result: (f64, f64, usize, KsTuple) = result_opt.unwrap();
+            let theta_hat = result.0;
+            let ks_tuple: KsTuple = result.3;
+
+            let w_hat = theta_hat.signum() * (2.0 * (theta_hat * budget - ks_tuple.0)).sqrt();
+            let u_hat = 2.0 / span * (span * theta_hat / 2.0).sinh() * ks_tuple.2.sqrt(); // second continuity correction
+
+            // the approximation's slope is the density times this, so it is not a
+            // distribution function where this is negative. the biased one has no 4th cumulant
+            let slope = 1.0 + ks_tuple.4 / ks_tuple.2.powi(2) / 8.0
+                - 5.0 * ks_tuple.3.powi(2) / ks_tuple.2.powi(3) / 24.0;
+            (
+                normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat),
+                compute_biased || slope > 0.0,
+            )
+        };
+
+        if trusted && (-FLOAT_TOL..=1.0 + FLOAT_TOL).contains(&out) {
+            return out;
+        }
+        if depth >= MAX_CONDITION_DEPTH {
+            assert!(out.is_finite());
+            return out.clamp(0.0, 1.0);
+        }
+        probe.count(Counter::Conditioned);
+        self.conditioned(
+            support_index,
+            skip_count,
+            inp_budget,
+            compute_biased,
+            probe,
+            depth,
+        )
+    }
+
+    /// Where the sum is too far from normal for the formula above, which is one upgrade
+    /// outweighing the rest: splits on that upgrade's outcomes, which is exact, and leaves
+    /// a sum of the others for each.
+    fn conditioned(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+        inp_budget: f64,
+        compute_biased: bool,
+        probe: &mut Probe,
+        depth: usize,
+    ) -> f64 {
+        let (index, pairs) = self
+            .extract_collapsed_pair(support_index, skip_count)
+            .enumerate()
+            .max_by(|a, b| variance(a.1).total_cmp(&variance(b.1)))
+            .unwrap();
+        let pairs = pairs.clone();
+        let u_index = self.special_state[index];
+        let mean = self.simple_avg(support_index, skip_count);
+
+        // the caches are not read on this path
+        let mut pinned = StateBundle {
+            upgrade_arr: self.upgrade_arr.clone(),
+            special_state: self.special_state.clone(),
+            chest_states: self.chest_states.clone(),
+            special_invalid_index: self.special_invalid_index,
+            latest_special_probs: None,
+            metric_type: self.metric_type,
+            metric: self.metric,
+            min_resolution: self.min_resolution,
+            prep_output: self.prep_output.clone(),
+            num_threads: self.num_threads,
+            special_cache: AHashMap::new(),
+            adv_cache: AHashMap::new(),
+            tuning: self.tuning.clone(),
+        };
+
+        let mut out: f64 = 0.0;
+        for (value, p) in pairs {
+            pinned.upgrade_arr[u_index].cost_dist[support_index as usize].pin(value);
+            let this_mean = pinned.simple_avg(support_index, skip_count);
+            if compute_biased && this_mean < FLOAT_TOL {
+                continue;
+            }
+            let weight = if compute_biased {
+                p * this_mean / mean
+            } else {
+                p
+            };
+            out += weight
+                * pinned.probability_within(
                     support_index,
                     skip_count,
+                    inp_budget,
+                    compute_biased,
+                    if compute_biased { this_mean.ln() } else { NAN },
                     probe,
-                )
-            );
-
-            my_dbg!("final {:?}", ks_tuple);
-
-            my_dbg!(
-                compute_biased,
-                theta_hat,
-                ks_tuple,
-                k1_zero,
-                support_index,
-                2.0 * (theta_hat * budget - ks_tuple.0),
-                w_hat,
-                u_hat,
-                normal_dist.cdf(w_hat),
-                normal_dist.pdf(w_hat),
-                1.0 / w_hat - 1.0 / u_hat,
-                min_value,
-                budget,
-                self.simple_avg(support_index, skip_count),
-                max_value,
-                sa_out,
-                approx,
-                actual_out
-            );
-            println!("==============================");
-            panic!();
+                    depth + 1,
+                );
         }
-
-        actual_out
+        out
     }
 }

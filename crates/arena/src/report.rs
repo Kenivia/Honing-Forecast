@@ -36,7 +36,7 @@ fn median(values: &[f64]) -> f64 {
     sorted[sorted.len() / 2]
 }
 
-fn table(header: &[&str]) -> Table {
+pub fn table(header: &[&str]) -> Table {
     let mut out = Table::new();
     out.load_style(UTF8_BORDERS_ONLY).set_header(header.to_vec());
     out

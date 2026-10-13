@@ -18,6 +18,7 @@ pub struct Tuning {
     pub y_value_tol: f64,
     pub max_root_find_iter: usize, // was 20 before, but crashed 1 time
     pub max_brute_size: usize,
+    pub max_lattice_work: usize, // lattice points times outcomes
 
     // optimizer
     pub max_iters: i64,
@@ -41,6 +42,7 @@ impl Default for Tuning {
             y_value_tol: 1e-6,
             max_root_find_iter: 30,
             max_brute_size: 50000,
+            max_lattice_work: 200000,
 
             max_iters: 24000,
             max_best_size: 10,
