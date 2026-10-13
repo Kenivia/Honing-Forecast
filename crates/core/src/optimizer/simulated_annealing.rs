@@ -1,3 +1,4 @@
+use super::response::Response;
 use super::scaler::AdaptiveScaler;
 use super::{Previous, Solved};
 
@@ -186,6 +187,58 @@ fn chest_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64
     evals
 }
 
+/// From the best state, each normal upgrade in turn takes its best plan against the rest
+/// where the metric agrees, for a few passes or until one moves nothing. The chain goes on
+/// from the result. Returns what it took, in evaluations.
+fn response_polish(solver_bundle: &mut SolverStateBundle, sweeps: usize, probe: &mut Probe) -> i64 {
+    let (essence, best_metric) = solver_bundle.best_n_states.peek_max().unwrap();
+    let state_bundle = &mut solver_bundle.state_bundle;
+    state_bundle.clone_from_essence(essence, best_metric);
+    let start = state_bundle.metric;
+    let mut work: f64 = 0.0;
+    for _ in 0..sweeps {
+        let mut moved = false;
+        for index in 0..state_bundle.upgrade_arr.len() {
+            if !state_bundle.upgrade_arr[index].is_normal_honing {
+                continue;
+            }
+            let response = Response::of(state_bundle, index, probe);
+            let before = state_bundle.upgrade_arr[index].state.payload.clone();
+            let now = response.model.canonical(&response.model.indices(&before));
+            let plan = response.better(&now, state_bundle.tuning.response_joint).1;
+            work += response.work(state_bundle.tuning.response_steps);
+            if now == plan {
+                continue;
+            }
+            state_bundle.upgrade_arr[index].state.update_payload(response.model.plan(&plan));
+            let metric = state_bundle.metric_router(probe);
+            work += 1.0;
+            if metric > state_bundle.metric {
+                state_bundle.metric = metric;
+                moved = true;
+            } else {
+                state_bundle.upgrade_arr[index].state.update_payload(before);
+            }
+        }
+        if !moved {
+            break;
+        }
+    }
+    if state_bundle.metric > start {
+        my_push(
+            &mut solver_bundle.best_n_states,
+            state_bundle.to_essence(),
+            OrderedFloat(state_bundle.metric),
+            state_bundle.tuning.max_best_size,
+        );
+        probe.put("best", state_bundle.metric);
+    }
+    // a move that was turned down leaves its supports behind
+    state_bundle.metric = state_bundle.metric_router(probe);
+    solver_bundle.prev_state.my_clone_from(&solver_bundle.state_bundle);
+    work.ceil() as i64
+}
+
 /// A random valid state some moves away from the given one, for testing the evaluator
 /// away from the optimum.
 pub fn scramble<R: Rng>(rng: &mut R, mut state_bundle: StateBundle, moves: usize) -> StateBundle {
@@ -234,6 +287,7 @@ pub fn solve<R: Rng>(
     let mut last_progress_sec: f64 = 0.0;
 
     let mut next_polish: i64 = 0;
+    let mut next_response: i64 = tuning.response_every;
     while eqv_wall_time_iters < tuning.max_iters {
         probe.at(eqv_wall_time_iters + 1);
         if tuning.chest_polish_every > 0 && eqv_wall_time_iters >= next_polish {
@@ -241,6 +295,12 @@ pub fn solve<R: Rng>(
             solver_bundle.count += evals;
             eqv_wall_time_iters += evals;
             next_polish = eqv_wall_time_iters + tuning.chest_polish_every;
+        }
+        if tuning.response_every > 0 && eqv_wall_time_iters >= next_response {
+            let cost = response_polish(&mut solver_bundle, 1, probe);
+            solver_bundle.count += cost;
+            eqv_wall_time_iters += cost;
+            next_response = eqv_wall_time_iters + tuning.response_every;
         }
         let restarted = solver_bundle.temps_without_improvement as f64
             > (10.0 * solver_bundle.progress()).max(3.0);
@@ -251,6 +311,10 @@ pub fn solve<R: Rng>(
         } else {
             solver_bundle.neighbour()
         };
+
+        let extra = std::mem::take(&mut solver_bundle.extra_cost);
+        solver_bundle.count += extra;
+        eqv_wall_time_iters += extra;
 
         let clock = probe.clock();
         solver_bundle.state_bundle.metric = solver_bundle.state_bundle.metric_router(probe);
@@ -319,6 +383,9 @@ pub fn solve<R: Rng>(
         }
     }
 
+    if tuning.response_polish > 0 {
+        response_polish(&mut solver_bundle, tuning.response_polish, probe);
+    }
     solver_bundle.state_bundle.clone_from_essence(
         &solver_bundle.best_n_states.peek_max().unwrap().0,
         solver_bundle.best_n_states.peek_max().unwrap().1,

@@ -15,6 +15,7 @@
 
 mod neighbour;
 mod one_batch;
+pub mod response;
 mod scaler;
 mod simulated_annealing;
 

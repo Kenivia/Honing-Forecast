@@ -65,6 +65,12 @@ impl StateBundle {
         self.latest_special_probs = Some(out);
     }
 
+    /// The taps that go together: from an upgrade's next tap on, each run of this many takes
+    /// the same, so that every streak but the last before the pity is a multiple of it.
+    pub fn block(&self) -> usize {
+        if self.tuning.streak_length > 0 { self.tuning.streak_length } else { self.min_resolution.max(1) }
+    }
+
     pub fn metric_router(&mut self, probe: &mut Probe) -> f64 {
         match self.metric_type {
             0 => unreachable!(), //self.success_prob_metric(performance),

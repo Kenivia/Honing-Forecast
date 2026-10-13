@@ -50,7 +50,11 @@ Each upgrade taking its best plan in turn (`ascend`):
 - **It does not choose the free tap order.** On the small cases, from nothing and the given order, 11 of its 13 misses (up to 14%) were the order.
 - As written it is slow, 0.01 to 0.6 seconds a response: every table entry is its own evaluation of a material. One pass over the sum of the other upgrades would give a whole table.
 
+## Since
+
+The response is in the core now (`optimizer/response.rs`), with one evaluation pass per table in place of one per entry, and the optimizer runs a pass of it at the end. `Optimizer.md`, "Responses", has what was tried and what it gave. The arena's `exhaust`, `ascend` and `landscape` use the core's.
+
 ## Not done
 
-- No change to `neighbour.rs`. The candidates are a move that takes an upgrade's best response, moves that go from one pity to the next, and a state without the dead slots.
+- Moves that go from one pity to the next, and a state without the dead slots.
 - Chests with a choice and advanced honing were left as given throughout.

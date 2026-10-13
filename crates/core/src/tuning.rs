@@ -42,6 +42,26 @@ pub struct Tuning {
     pub chest_move_rate: f64,
     /// evaluations between two polishes of the best state's chests; 0 for never
     pub chest_polish_every: i64,
+    /// the share of normal honing moves that give an upgrade its best plan against the rest
+    /// (`optimizer/response.rs`) in place of a random change of its streaks; 0 for none
+    pub response_rate: f64,
+    /// the share of those that first change another upgrade at random
+    pub response_kick: f64,
+    /// steps of a response's recursion that count as one evaluation
+    pub response_steps: f64,
+    /// steps a response may take over every plan of its upgrade at once; past that each pool
+    /// takes its best taps in turn
+    pub response_joint: usize,
+    /// amounts of a material a response evaluates where the lattice does not answer
+    pub response_points: usize,
+    /// evaluations between two passes of responses over the best state, from which the
+    /// chain goes on; 0 for never
+    pub response_every: i64,
+    /// passes of responses over the best state at the end; 0 for none
+    pub response_polish: usize,
+
+    /// taps a streak length is a multiple of, in place of the payload's `min_resolution`; 0 for the payload's
+    pub streak_length: usize,
 
     // chained runs
     pub max_blob_bytes: usize,
@@ -69,6 +89,14 @@ impl Default for Tuning {
             special_affinity_growth: 1.02,
             chest_move_rate: 0.15,
             chest_polish_every: 6000,
+            response_rate: 0.0,
+            response_kick: 0.0,
+            response_steps: 700.0,
+            response_joint: 20000,
+            response_points: 16,
+            response_every: 0,
+            response_polish: 3,
+            streak_length: 0,
 
             max_blob_bytes: 5 * 1024 * 1024,
         }

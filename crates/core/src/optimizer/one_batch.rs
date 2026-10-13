@@ -23,6 +23,10 @@ pub struct SolverStateBundle {
     pub temps_without_improvement: i64,
     pub upgrade_impact: Vec<f64>,
     pub special_affinity: f64,
+    /// per upgrade, its state and the rest of the state when it last took its best plan
+    pub settled: Vec<(u64, u64)>,
+    /// evaluations the last move counts as, on top of its own
+    pub extra_cost: i64,
 }
 
 impl SolverStateBundle {
@@ -46,6 +50,8 @@ impl SolverStateBundle {
             count: 0,
             temps_without_improvement: 0,
             upgrade_impact: upgrade_impact.clone(),
+            settled: vec![(0, 0); state_bundle.upgrade_arr.len()],
+            extra_cost: 0,
         }
     }
     pub fn perform_crossover(&mut self) {

@@ -8,125 +8,38 @@ use crate::db;
 use crate::generate::{self, axis};
 use crate::scenario::{Scenario, upgrade};
 use crate::worker::Essence;
-use ahash::{AHashMap, AHashSet};
-use hf_core::constants::juice_info::JuiceInfo;
-use hf_core::constants::{ARTISAN_MULTIPLIER, FLOAT_TOL, SPECIAL_TOL};
-use hf_core::materials::NUM_BASE_MATS;
+use ahash::AHashSet;
+use hf_core::optimizer::response::{Model, Response};
 use hf_core::optimizer::solve;
 use hf_core::parser::OneUpgradeInput;
 use hf_core::payload::Payload;
 use hf_core::probe::Probe;
-use hf_core::state::{OneState, State, get_pool_ids};
+use hf_core::state::{OneState, State};
 use hf_core::state_bundle::StateBundle;
 use hf_core::tuning::Tuning;
-use hf_core::upgrade::Upgrade;
 use itertools::Itertools;
 use rand::prelude::*;
 use rayon::prelude::*;
 use rusqlite::Connection;
 use serde_json::{Value, json};
-use smallvec::SmallVec;
 use std::io::Write;
 use std::path::PathBuf;
 use std::time::Instant;
 
 type Plan = Vec<OneState>;
 
-/// One normal upgrade's taps: what a tap may take and what that does to its chance.
-/// A plan is the option each tap takes.
-#[derive(Clone)]
-pub struct Model {
-    pub pools: Vec<Vec<usize>>,
-    /// every way to take at most one id of each pool, nothing first
-    pub options: Vec<OneState>,
-    pub extra: Vec<f64>,
-    /// what picking the nth id of a pool adds to an option's index
-    strides: Vec<usize>,
-    pub len: usize,
-    base: f64,
-    event: f64,
-    rate: f64,
-    pub artisan: f64,
-    pub taps: usize,
+/// What the arena asks of a `Model` and the optimizer does not.
+trait Explore {
+    fn walk(&self, count: usize, artisan: f64, plan: &mut Vec<usize>, out: &mut Option<Vec<Vec<usize>>>, total: &mut f64, cap: f64);
+    fn plans(&self) -> Vec<Vec<usize>>;
+    fn count(&self, cap: f64) -> f64;
+    fn after(&self, taps: usize) -> Model;
+    fn streaks_of(&self, pool: usize) -> Vec<Vec<usize>>;
+    fn streaks(&self) -> AHashSet<Vec<usize>>;
+    fn pattern(&self, indices: &[usize]) -> String;
 }
 
-impl Model {
-    pub fn of(upgrade: &Upgrade, juice_info: &JuiceInfo) -> Model {
-        let chance = |id: usize| juice_info.access(id, upgrade.piece_type_usize, upgrade.upgrade_index).normal_chance;
-        let pools: Vec<Vec<usize>> = get_pool_ids(upgrade.piece_type_usize, upgrade.upgrade_index, juice_info)
-            .into_iter()
-            .map(|ids| ids.into_iter().filter(|&id| chance(id) > FLOAT_TOL).collect())
-            .collect();
-        let mut strides = Vec::new();
-        let mut total = 1;
-        for ids in &pools {
-            strides.push(total);
-            total *= ids.len() + 1;
-        }
-        let options: Vec<OneState> = (0..total)
-            .map(|index| {
-                pools
-                    .iter()
-                    .zip(&strides)
-                    .filter_map(|(ids, stride)| (index / stride % (ids.len() + 1)).checked_sub(1).map(|which| ids[which]))
-                    .collect()
-            })
-            .collect();
-        let extra = options.iter().map(|option| option.iter().fold(0.0, |sum, &id| sum + chance(id))).collect();
-        Model {
-            pools,
-            options,
-            extra,
-            strides,
-            len: upgrade.state.len(),
-            base: upgrade.base_chance,
-            event: upgrade.extra_chance,
-            rate: upgrade.artisan_rate,
-            artisan: upgrade.starting_artisan,
-            taps: upgrade.starting_num_taps,
-        }
-    }
-
-    fn chance(&self, count: usize, extra: f64) -> f64 {
-        let ramp = (count + self.taps).min(10) as f64;
-        (self.base + self.event + (ramp * self.base) * 0.1 + extra).min(1.0)
-    }
-
-    fn step(&self, artisan: f64, chance: f64) -> f64 {
-        artisan + ARTISAN_MULTIPLIER * chance * self.rate
-    }
-
-    pub fn indices(&self, plan: &[OneState]) -> Vec<usize> {
-        plan.iter().map(|slot| self.options.iter().position(|option| option == slot).unwrap()).collect()
-    }
-
-    pub fn plan(&self, indices: &[usize]) -> Plan {
-        indices.iter().map(|&option| self.options[option].clone()).collect()
-    }
-
-    /// the tap that cannot fail, and whether that is a chance of one and not the artisan
-    pub fn pity(&self, indices: &[usize]) -> (usize, bool) {
-        let mut artisan = self.artisan;
-        for count in 0.. {
-            if artisan >= 1.0 || count + 1 >= self.len {
-                return (count + 1, false);
-            }
-            let chance = self.chance(count, self.extra[indices[count]]);
-            if chance == 1.0 {
-                return (count + 1, true);
-            }
-            artisan = self.step(artisan, chance);
-        }
-        unreachable!()
-    }
-
-    /// the same plan with nothing on the taps that are never reached or never charged
-    pub fn canonical(&self, indices: &[usize]) -> Vec<usize> {
-        let (pity, by_chance) = self.pity(indices);
-        let live = if by_chance { pity } else { pity - 1 };
-        indices.iter().enumerate().map(|(tap, &option)| if tap < live { option } else { 0 }).collect()
-    }
-
+impl Explore for Model {
     fn walk(&self, count: usize, artisan: f64, plan: &mut Vec<usize>, out: &mut Option<Vec<Vec<usize>>>, total: &mut f64, cap: f64) {
         if artisan >= 1.0 || count + 1 >= self.len || *total > cap {
             *total += 1.0;
@@ -135,7 +48,9 @@ impl Model {
             }
             return;
         }
-        for option in 0..self.options.len() {
+        // inside a block a tap takes what the tap before it took
+        let options = if count % self.block == 0 { 0..self.options.len() } else { plan[count - 1]..plan[count - 1] + 1 };
+        for option in options {
             let chance = self.chance(count, self.extra[option]);
             plan[count] = option;
             if chance == 1.0 {
@@ -151,7 +66,7 @@ impl Model {
     }
 
     /// every distinct plan
-    pub fn plans(&self) -> Vec<Vec<usize>> {
+    fn plans(&self) -> Vec<Vec<usize>> {
         let mut out = Some(Vec::new());
         self.walk(0, self.artisan, &mut vec![0; self.len], &mut out, &mut 0.0, f64::INFINITY);
         out.unwrap()
@@ -183,6 +98,8 @@ impl Model {
         let ends = |len: usize| -> Vec<usize> { if len == 0 || ids == 0 { vec![0] } else { (1..=ids).collect() } };
         (0..=self.len)
             .flat_map(|front| (0..=self.len - front).map(move |back| (front, back)))
+            // a streak starts and ends where a block does, but for the end of the state
+            .filter(|(front, back)| front % self.block == 0 && (*back == 0 || (self.len - back) % self.block == 0))
             .flat_map(|(front, back)| {
                 ends(front).into_iter().cartesian_product(ends(back)).map(move |(first, last)| {
                     (0..self.len)
@@ -204,7 +121,7 @@ impl Model {
     }
 
     /// every plan the streaks can make, with the taps never charged emptied
-    pub fn streaks(&self) -> AHashSet<Vec<usize>> {
+    fn streaks(&self) -> AHashSet<Vec<usize>> {
         let per_pool: Vec<Vec<Vec<usize>>> = (0..self.pools.len()).map(|pool| self.streaks_of(pool)).collect();
         per_pool
             .iter()
@@ -216,7 +133,7 @@ impl Model {
     }
 
     /// per pool, which of its ids each tap up to the pity takes
-    pub fn pattern(&self, indices: &[usize]) -> String {
+    fn pattern(&self, indices: &[usize]) -> String {
         let pity = self.pity(indices).0;
         self.pools
             .iter()
@@ -234,200 +151,41 @@ impl Model {
     }
 }
 
-/// one material's part of the metric, as the evaluator has it, without the memo
-fn material_gold(state_bundle: &StateBundle, row: usize) -> f64 {
-    let prep = &state_bundle.prep_output;
-    let bands = &prep.bands[prep.optimizer_plan][row];
-    let skips: Vec<(usize, f64)> =
-        state_bundle.special_probs().iter().copied().enumerate().filter(|skip| skip.1 >= SPECIAL_TOL).collect();
-    let table = if bands.windows(2).any(|pair| (pair[0].1 - pair[1].1).abs() >= FLOAT_TOL) {
-        let thresholds: Vec<f64> = bands.iter().map(|pair| pair.0).collect();
-        state_bundle.lattice_table(row as i64, &skips.iter().map(|skip| skip.0).collect::<Vec<_>>(), &thresholds)
-    } else {
-        vec![None; skips.len()]
-    };
-    skips
-        .iter()
-        .zip(&table)
-        .map(|(&(skip, weight), lattice)| {
-            weight * state_bundle.one_dimension_average_gold(row as i64, skip, bands, lattice.as_deref(), &mut Probe::default())
+/// an upgrade's response to the state as it is, which is left as it was
+fn response_of(state_bundle: &StateBundle, index: usize) -> Response {
+    Response::of(&mut state_bundle.clone(), index, &mut Probe::default())
+}
+
+/// the best of the plans the streaks can make
+fn best_streak(response: &Response) -> (f64, Vec<usize>) {
+    let model = &response.model;
+    let per_pool: Vec<Vec<Vec<usize>>> = (0..model.pools.len()).map(|pool| model.streaks_of(pool)).collect();
+    per_pool[0]
+        .par_iter()
+        .map(|first| {
+            let mut best = (f64::NEG_INFINITY, Vec::new());
+            let mut indices = vec![0; model.len];
+            for rest in per_pool[1..].iter().multi_cartesian_product() {
+                for (tap, option) in indices.iter_mut().enumerate() {
+                    *option = first[tap] + rest.iter().map(|row| row[tap]).sum::<usize>();
+                }
+                let score = response.score(&indices);
+                if score > best.0 {
+                    best = (score, indices.clone());
+                }
+            }
+            best
         })
-        .sum()
-}
-
-type Used = SmallVec<[u16; 4]>;
-
-/// What one upgrade's plan is worth with the rest of the state as it is. The metric is a sum
-/// over materials and, the upgrades being independent, an average over the tap this one
-/// succeeds on. So it is known for every plan there is from what each amount of each
-/// material is worth, and the best plan comes from the last tap backwards.
-pub struct Response {
-    pub model: Model,
-    /// the ids of each option, as places in `juice_worth`
-    adds: Vec<SmallVec<[usize; 2]>>,
-    /// by taps paid
-    base_worth: Vec<f64>,
-    /// by id and times used
-    juice_worth: Vec<Vec<f64>>,
-}
-
-impl Response {
-    /// the state must have been evaluated
-    pub fn of(state_bundle: &StateBundle, index: usize) -> Response {
-        let mut work = state_bundle.clone();
-        let this = state_bundle.upgrade_arr[index].clone();
-        let prep = &state_bundle.prep_output;
-        let model = Model::of(&this, &prep.juice_info);
-        let ids: Vec<usize> = model.pools.iter().flatten().copied().collect();
-        let mut pinned = |row: usize, amounts: &mut dyn Iterator<Item = f64>| -> Vec<f64> {
-            let kept = work.upgrade_arr[index].cost_dist[row].clone();
-            let out = amounts
-                .map(|amount| {
-                    work.upgrade_arr[index].cost_dist[row].pin(amount);
-                    material_gold(&work, row)
-                })
-                .collect();
-            work.upgrade_arr[index].cost_dist[row] = kept;
-            out
-        };
-        let mut base_worth = vec![0.0; model.len + 1];
-        for row in 0..NUM_BASE_MATS {
-            let start = if this.unlocked { 0.0 } else { this.unlock_costs[row] };
-            let worth = pinned(row, &mut (0..=model.len).map(|taps| start + taps as f64 * this.costs[row]));
-            for (sum, worth) in base_worth.iter_mut().zip(worth) {
-                *sum += worth;
-            }
-        }
-        let juice_worth = ids
-            .iter()
-            .map(|&id| {
-                let amount = prep.juice_info.access(id, this.piece_type_usize, this.upgrade_index).normal_amt_used as f64;
-                pinned(prep.table.juice_row(id), &mut (0..=model.len).map(|times| times as f64 * amount))
-            })
-            .collect();
-        let adds = model
-            .options
-            .iter()
-            .map(|option| option.iter().map(|id| ids.iter().position(|x| x == id).unwrap()).collect())
-            .collect();
-        Response { model, adds, base_worth, juice_worth }
-    }
-
-    fn done(&self, taps: usize, used: &Used) -> f64 {
-        self.base_worth[taps] + used.iter().zip(&self.juice_worth).map(|(&times, worth)| worth[times as usize]).sum::<f64>()
-    }
-
-    /// The part of the metric this upgrade's plan moves: the metric less a constant, where
-    /// no free tap can skip the upgrade, and a share of that where one can.
-    pub fn score(&self, indices: &[usize]) -> f64 {
-        let model = &self.model;
-        let (mut artisan, mut alive, mut out) = (model.artisan, 1.0, 0.0);
-        let mut used: Used = SmallVec::from_elem(0, self.juice_worth.len());
-        for count in 0.. {
-            if artisan >= 1.0 || count + 1 >= model.len {
-                return out + alive * self.done(count + 1, &used);
-            }
-            let chance = model.chance(count, model.extra[indices[count]]);
-            if chance == 1.0 {
-                return out + alive * self.done(count + 1, &used);
-            }
-            for &id in &self.adds[indices[count]] {
-                used[id] += 1;
-            }
-            out += alive * chance * self.done(count + 1, &used);
-            alive *= 1.0 - chance;
-            artisan = model.step(artisan, chance);
-        }
-        unreachable!()
-    }
-
-    /// the best of every plan
-    pub fn best(&self) -> (f64, Vec<usize>) {
-        fn go(this: &Response, count: usize, artisan: f64, used: &Used, memo: &mut AHashMap<(usize, Used), (f64, usize)>) -> f64 {
-            let model = &this.model;
-            if artisan >= 1.0 || count + 1 >= model.len {
-                return this.done(count + 1, used);
-            }
-            if let Some(known) = memo.get(&(count, used.clone())) {
-                return known.0;
-            }
-            let mut best = (f64::NEG_INFINITY, 0);
-            for option in 0..model.options.len() {
-                let chance = model.chance(count, model.extra[option]);
-                let value = if chance == 1.0 {
-                    this.done(count + 1, used)
-                } else {
-                    let mut next = used.clone();
-                    for &id in &this.adds[option] {
-                        next[id] += 1;
-                    }
-                    chance * this.done(count + 1, &next)
-                        + (1.0 - chance) * go(this, count + 1, model.step(artisan, chance), &next, memo)
-                };
-                // a tie goes to the plan that takes nothing
-                if option == 0 || value > best.0 + best.0.abs() * 1e-13 {
-                    best = (value, option);
-                }
-            }
-            memo.insert((count, used.clone()), best);
-            best.0
-        }
-        let model = &self.model;
-        let mut memo = AHashMap::new();
-        let mut used: Used = SmallVec::from_elem(0, self.juice_worth.len());
-        let value = go(self, 0, model.artisan, &used, &mut memo);
-        let mut indices = vec![0; model.len];
-        let mut artisan = model.artisan;
-        for count in 0.. {
-            if artisan >= 1.0 || count + 1 >= model.len {
-                break;
-            }
-            // two orders of the same taps can differ in the last bit of the artisan, and one of them stop a tap early
-            let Some(&(_, option)) = memo.get(&(count, used.clone())) else { break };
-            indices[count] = option;
-            let chance = model.chance(count, model.extra[option]);
-            if chance == 1.0 {
-                break;
-            }
-            for &id in &self.adds[option] {
-                used[id] += 1;
-            }
-            artisan = model.step(artisan, chance);
-        }
-        (value, indices)
-    }
-
-    /// the best of the plans the streaks can make
-    pub fn best_streak(&self) -> (f64, Vec<usize>) {
-        let model = &self.model;
-        let per_pool: Vec<Vec<Vec<usize>>> = (0..model.pools.len()).map(|pool| model.streaks_of(pool)).collect();
-        per_pool[0]
-            .par_iter()
-            .map(|first| {
-                let mut best = (f64::NEG_INFINITY, Vec::new());
-                let mut indices = vec![0; model.len];
-                for rest in per_pool[1..].iter().multi_cartesian_product() {
-                    for (tap, option) in indices.iter_mut().enumerate() {
-                        *option = first[tap] + rest.iter().map(|row| row[tap]).sum::<usize>();
-                    }
-                    let score = self.score(&indices);
-                    if score > best.0 {
-                        best = (score, indices.clone());
-                    }
-                }
-                best
-            })
-            .reduce(|| (f64::NEG_INFINITY, Vec::new()), |a, b| if b.0 > a.0 { b } else { a })
-    }
+        .reduce(|| (f64::NEG_INFINITY, Vec::new()), |a, b| if b.0 > a.0 { b } else { a })
 }
 
 /// the tuning that sums every probability
 fn exact_tuning() -> Tuning {
-    Tuning { max_brute_size: usize::MAX, ..Default::default() }
+    Tuning { max_brute_size: usize::MAX, response_points: usize::MAX, ..Default::default() }
 }
 
 fn models(state_bundle: &StateBundle) -> Vec<Model> {
-    state_bundle.upgrade_arr.iter().map(|this| Model::of(this, &state_bundle.prep_output.juice_info)).collect()
+    state_bundle.upgrade_arr.iter().map(|this| Model::of(this, &state_bundle.prep_output.juice_info, state_bundle.block())).collect()
 }
 
 /// the state with these plans and this free tap order, evaluated under a tuning
@@ -514,6 +272,9 @@ pub struct ExhaustArgs {
     /// solves of the optimizer to compare with
     #[arg(long, default_value_t = 4)]
     pub seeds: u64,
+    /// taps a streak length is a multiple of
+    #[arg(long, default_value_t = 1)]
+    pub block: usize,
     /// one json line a case
     #[arg(long)]
     pub out: Option<PathBuf>,
@@ -532,7 +293,7 @@ fn solved(payload: &Payload, seeds: u64, tuning: &Tuning) -> Vec<StateBundle> {
 
 fn exhaust_one(scenario: &Scenario, args: &ExhaustArgs) -> Option<Value> {
     let payload = &scenario.steps[0];
-    let exact = exact_tuning();
+    let exact = Tuning { streak_length: args.block, ..exact_tuning() };
     let base = retuned(&StateBundle::init_from_payload(payload.clone()), &exact);
     let n = base.upgrade_arr.len();
     if n == 0
@@ -552,9 +313,9 @@ fn exhaust_one(scenario: &Scenario, args: &ExhaustArgs) -> Option<Value> {
         (with_plans(&base, &[found.1.clone()], &orders[0], &exact).metric, vec![found.1.clone()], orders[0].clone())
     };
 
-    let (any, streak, counted): (Vec<Found>, Vec<Found>, f64) = if n == 1 {
-        let response = Response::of(&base, 0);
-        (vec![at(&response.best())], vec![at(&response.best_streak())], states)
+    let (any, streak, counted): (Vec<Found>, Vec<Found>, f64) = if n == 1 && states > args.cap {
+        let response = response_of(&base, 0);
+        (vec![at(&response.best())], vec![at(&best_streak(&response))], states)
     } else {
         let plans: Vec<Vec<Vec<usize>>> = models.iter().map(|model| model.plans()).collect();
         let is_streak: Vec<Vec<bool>> = plans
@@ -599,7 +360,7 @@ fn exhaust_one(scenario: &Scenario, args: &ExhaustArgs) -> Option<Value> {
 
     let (best, best_streak) = (&any[0], &streak[0]);
     let best_bundle = with_plans(&base, &best.1, &best.2, &exact);
-    let approx = Tuning::default();
+    let approx = Tuning { streak_length: args.block, ..Tuning::default() };
     // what the optimizer finds, on the exact metric and on its own
     let scored = |tuning: &Tuning| -> Vec<f64> {
         solved(payload, args.seeds, tuning).iter().map(|found| retuned(found, &exact).metric).collect()
@@ -681,11 +442,11 @@ pub fn ascend(start: &StateBundle, streaks_only: bool, sweeps: usize) -> (StateB
             if !state_bundle.upgrade_arr[index].is_normal_honing {
                 continue;
             }
-            let response = Response::of(&state_bundle, index);
+            let response = response_of(&state_bundle, index);
             responses += 1;
             let model = &response.model;
             let now = model.indices(&state_bundle.upgrade_arr[index].state.payload);
-            let (score, plan) = if streaks_only { response.best_streak() } else { response.best() };
+            let (score, plan) = if streaks_only { best_streak(&response) } else { response.best() };
             if score <= response.score(&now) + 1e-9 * score.abs().max(1.0) {
                 continue;
             }
@@ -717,7 +478,7 @@ pub struct AscendArgs {
     #[arg(long, default_value_t = 10)]
     pub sweeps: usize,
     /// the tuning the responses and the metric are taken under, `key=value,key=value`
-    #[arg(long, default_value = "max_brute_size=2000000,max_lattice_work=20000000")]
+    #[arg(long, default_value = "max_brute_size=2000000,max_lattice_work=20000000,response_points=100000")]
     pub tuning: String,
     /// one json line a step
     #[arg(long)]
@@ -876,7 +637,7 @@ pub struct LandscapeArgs {
     #[arg(long, default_value = "1f")]
     pub y: String,
     /// the tuning of the second metric, `key=value,key=value`
-    #[arg(long, default_value = "max_brute_size=2000000,max_lattice_work=20000000")]
+    #[arg(long, default_value = "max_brute_size=2000000,max_lattice_work=20000000,response_points=100000")]
     pub tuning: String,
     #[arg(long)]
     pub out: PathBuf,
@@ -916,12 +677,12 @@ pub fn landscape(conn: &Connection, scenarios: &[Scenario], args: &LandscapeArgs
             .collect();
         for index in chosen {
             let this = &base.upgrade_arr[index];
-            let model = Model::of(this, &juice_info);
+            let model = Model::of(this, &juice_info, base.block());
             let (piece_type, upgrade_index) = (this.piece_type_usize, this.upgrade_index);
             if [x_axis, y_axis].iter().any(|axis| model.pools.get(axis.0).is_none_or(|ids| ids.is_empty())) {
                 continue;
             }
-            let response = Response::of(&other, index);
+            let response = response_of(&other, index);
             let start = this.state.clone().compute_streak_info(piece_type, upgrade_index, &juice_info);
             let cells: Vec<(usize, usize)> = (0..model.len).cartesian_product(0..model.len).collect();
             let rows: Vec<(usize, usize, usize, [f64; 3])> = cells
