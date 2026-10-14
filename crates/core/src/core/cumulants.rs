@@ -118,54 +118,45 @@ impl Support {
             };
 
         if self.arithmetic {
-            // The outcomes are evenly spaced, so the moments are taken of q, the count of
-            // outcomes from the light end, and scaled after. Running sums of running sums
-            // give its factorial moments with one multiplication an outcome.
+            // The outcomes are evenly spaced, so the moments are taken of q, a count of outcomes
+            // from one end, and scaled after. Running sums of running sums give its factorial
+            // moments with one multiplication an outcome, q counting from the outcome added last.
             let pairs = self.access_collapsed(skipped);
-            let decay_factor = (-self.gap_size * theta.abs()).exp();
-            let mut current_exp_val = 1.0;
-            let (mut r0, mut r1, mut r2, mut r3, mut r4) = (0.0, 0.0, 0.0, 0.0, 0.0);
-            let mut add = |p: f64| {
-                r4 += r3;
-                r3 += r2;
-                r2 += r1;
-                r1 += r0;
-                r0 += p * current_exp_val;
-                current_exp_val *= decay_factor;
-            };
-            if theta >= 0.0 {
-                pairs.iter().rev().for_each(|pair| add(pair.1));
-            } else {
-                pairs.iter().for_each(|pair| add(pair.1));
+            let n = pairs.len();
+            let (top, bottom, gap) = (pairs[n - 1].0, pairs[0].0, self.gap_size);
+            let rate = gap * theta.abs();
+            // the probability of the outcome this far from the one the tilt puts the weight on
+            let heavy = |far: usize| pairs[if theta >= 0.0 { n - 1 - far } else { far }].1;
+            // that one first, so that one factor makes every weight
+            let decay = (-rate).exp();
+            let mut sums = [0.0; 5];
+            let mut weight = 1.0;
+            for far in 0..n {
+                push(&mut sums, heavy(far) * weight);
+                weight *= decay;
             }
-            let inv_sum = r0.recip();
-            let (f1, f2, f3, f4) = (r1 * inv_sum, 2.0 * r2 * inv_sum, 6.0 * r3 * inv_sum, 24.0 * r4 * inv_sum);
-            let (m1, m2, m3, m4) = (f1, f2 + f1, f3 + 3.0 * f2 + f1, f4 + 6.0 * f3 + 7.0 * f2 + f1);
-            let mu2 = (m2 - m1 * m1).max(0.0);
-            let mu3 = m3 - 3.0 * m2 * m1 + 2.0 * m1 * m1 * m1;
-            let mu4 = m4 - 4.0 * m3 * m1 + 6.0 * m2 * m1 * m1 - 3.0 * m1 * m1 * m1 * m1;
-            // the value is light + scale * q
-            let (light, scale) =
-                if theta >= 0.0 { (pairs[0].0, self.gap_size) } else { (pairs[pairs.len() - 1].0, -self.gap_size) };
-            let scale2 = scale * scale;
-            return KsTuple(
-                biggest_shift + r0.ln(),
-                light + scale * m1,
-                scale2 * mu2,
-                scale2 * scale * mu3,
-                scale2 * scale2 * (mu4 - 3.0 * mu2 * mu2),
-            );
-        } else {
-            for (s, p) in self.access_collapsed(skipped).iter() {
-                let u: f64 = p * (s * theta - biggest_shift).exp();
-                mean += s * u;
-                let x2: f64 = s * s;
-                second += x2 * u;
-                let x3: f64 = x2 * s;
-                third += x3 * u;
-                fourth += x3 * s * u;
-                sum += u;
+            let (lost, out) = from_sums(sums, biggest_shift, if theta >= 0.0 { (bottom, gap) } else { (top, -gap) });
+            if !lost {
+                return out;
             }
+            // Where the weight sits far from the end q counts from, the moments about the mean
+            // are small differences of large numbers and come out as noise: a negative mean,
+            // once, and no root for the probability. Counted from the heavy end instead, each
+            // weight its own exponential.
+            let mut sums = [0.0; 5];
+            for far in (0..n).rev() {
+                push(&mut sums, heavy(far) * (-rate * far as f64).exp());
+            }
+            return from_sums(sums, biggest_shift, if theta >= 0.0 { (top, -gap) } else { (bottom, gap) }).1;
+        }        for (s, p) in self.access_collapsed(skipped).iter() {
+            let u: f64 = p * (s * theta - biggest_shift).exp();
+            mean += s * u;
+            let x2: f64 = s * s;
+            second += x2 * u;
+            let x3: f64 = x2 * s;
+            third += x3 * u;
+            fourth += x3 * s * u;
+            sum += u;
         }
         let inv_sum = sum.recip();
 
@@ -186,4 +177,26 @@ impl Support {
             mu4 - 3.0 * mu2 * mu2,
         )
     }
+}
+
+/// one outcome of weight w into the running sums of running sums
+fn push(sums: &mut [f64; 5], w: f64) {
+    sums[4] += sums[3];
+    sums[3] += sums[2];
+    sums[2] += sums[1];
+    sums[1] += sums[0];
+    sums[0] += w;
+}
+
+/// The cumulants from those sums, the value being origin + step * q, and whether the variance
+/// came out of a difference that kept fewer than 8 of its digits.
+fn from_sums(sums: [f64; 5], shift: f64, (origin, step): (f64, f64)) -> (bool, KsTuple) {
+    let inv_sum = sums[0].recip();
+    let (f1, f2, f3, f4) = (sums[1] * inv_sum, 2.0 * sums[2] * inv_sum, 6.0 * sums[3] * inv_sum, 24.0 * sums[4] * inv_sum);
+    let (m1, m2, m3, m4) = (f1, f2 + f1, f3 + 3.0 * f2 + f1, f4 + 6.0 * f3 + 7.0 * f2 + f1);
+    let mu2 = (m2 - m1 * m1).max(0.0);
+    let mu3 = m3 - 3.0 * m2 * m1 + 2.0 * m1 * m1 * m1;
+    let mu4 = m4 - 4.0 * m3 * m1 + 6.0 * m2 * m1 * m1 - 3.0 * m1 * m1 * m1 * m1;
+    let step2 = step * step;
+    (m2 - m1 * m1 < 1e-8 * m2, KsTuple(shift + sums[0].ln(), origin + step * m1, step2 * mu2, step2 * step * mu3, step2 * step2 * (mu4 - 3.0 * mu2 * mu2)))
 }

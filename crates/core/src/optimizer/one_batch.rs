@@ -60,6 +60,11 @@ impl SolverStateBundle {
         }
         let best = self.best_n_states.peek_max().unwrap();
         self.state_bundle.clone_from_essence(best.0, best.1);
+        if self.state_bundle.tuning.fresh_streaks {
+            for upgrade in self.state_bundle.upgrade_arr.iter_mut() {
+                upgrade.state.streak_cache = None;
+            }
+        }
         if self.rng.random_bool(self.progress()) {
             let u_len = self.state_bundle.upgrade_arr.len();
             let source_index = self.rng.random_range(0..u_len);
@@ -79,6 +84,9 @@ impl SolverStateBundle {
                         && target.is_normal_honing
                         && target.upgrade_index == source.upgrade_index
                         && target.piece_type == source.piece_type
+                        // one further along has fewer taps left, and a plan of another length
+                        && target.starting_artisan == source.starting_artisan
+                        && target.starting_num_taps == source.starting_num_taps
                 })
                 .map(|(i, _)| i)
                 .collect();

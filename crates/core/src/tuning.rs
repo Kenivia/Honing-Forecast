@@ -59,12 +59,46 @@ pub struct Tuning {
     pub response_every: i64,
     /// passes of responses over the best state at the end; 0 for none
     pub response_polish: usize,
+    /// a response may take two ids of one pool, on different taps
+    pub response_mixed: bool,
 
     /// taps a streak length is a multiple of, in place of the payload's `min_resolution`; 0 for the payload's
     pub streak_length: usize,
 
+    /// going back to the best state reads its streaks again, in place of going on from the chain's
+    pub fresh_streaks: bool,
+    /// rounds of the polishes at the end (free tap order, responses, chests) while any moves; 0 for the responses alone
+    pub polish_rounds: usize,
+
+    /// chains that share `max_iters` between them, each from the start and polished, the best kept;
+    /// 0 for as many as fit at `chain_iters_per_upgrade` evaluations an upgrade each, no less than
+    /// `chain_iters_min` a chain and no fewer than 4 chains
+    pub chains: usize,
+    pub chain_iters_per_upgrade: f64,
+    pub chain_iters_min: i64,
+    /// stop once this many chains have ended on the same best; 0 for never
+    pub agree_exit: usize,
+    /// the best chain's result takes what the others ended on, piece by piece, where that is better
+    pub merge: bool,
+    /// the best result is polished by moving uses of a juice or book between two upgrades
+    pub exchange: bool,
+    /// the least share of moves that change the free tap order, while there is a budget
+    pub special_floor: f64,
+    /// a move of the free tap order puts an upgrade where a free tap can get to
+    pub order_reach: bool,
+    /// start from a free tap order made by what a free tap saves for what it takes
+    pub greedy_order: bool,
+
     // chained runs
     pub max_blob_bytes: usize,
+    /// start from the plan of the run before, where it is better than the one given
+    pub carry: bool,
+    /// the share of `max_iters` a run that starts from a carried plan gets
+    pub carry_iters: f64,
+    /// a run that starts from a carried plan polishes it first
+    pub carry_polish: bool,
+    /// such a run stops once this many chains in a row have not bettered the best; 0 for never
+    pub carry_stall: usize,
 }
 
 impl Default for Tuning {
@@ -79,7 +113,7 @@ impl Default for Tuning {
             seed_biased: true,
             max_memo_size: 1 << 16,
 
-            max_iters: 24000,
+            max_iters: 48000,
             max_best_size: 10,
             non_impact_weight: 3.0,
             magic_number: 0.44,
@@ -96,9 +130,25 @@ impl Default for Tuning {
             response_points: 16,
             response_every: 0,
             response_polish: 3,
+            response_mixed: true,
             streak_length: 0,
+            fresh_streaks: true,
+            polish_rounds: 3,
 
+            chains: 0,
+            chain_iters_per_upgrade: 375.0,
+            chain_iters_min: 4000,
+            agree_exit: 5,
+            merge: true,
+            exchange: true,
+            special_floor: 0.2,
+            order_reach: true,
+            greedy_order: true,
             max_blob_bytes: 5 * 1024 * 1024,
+            carry: true,
+            carry_iters: 1.0,
+            carry_polish: true,
+            carry_stall: 4,
         }
     }
 }

@@ -54,6 +54,8 @@ Each upgrade taking its best plan in turn (`ascend`):
 
 The response is in the core now (`optimizer/response.rs`), with one evaluation pass per table in place of one per entry, and the optimizer runs a pass of it at the end. `Optimizer.md`, "Responses", has what was tried and what it gave. The arena's `exhaust`, `ascend` and `landscape` use the core's.
 
+Later in October 2026 the response learned to mix two ids of a pool, which was the largest single gain of that round, and `State::compute_streak_info` was found to read the back streak from the wrong end (`Optimizer.md`). The `ascend` numbers above are from before both.
+
 ## Not done
 
 - Moves that go from one pity to the next, and a state without the dead slots.

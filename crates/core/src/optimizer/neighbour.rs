@@ -1,6 +1,7 @@
 use std::cmp::Ordering::{Equal, Greater, Less};
 
 use crate::advanced_honing::utils::MAX_ADV_STATE;
+use crate::constants::SPECIAL_TOL;
 use crate::constants::juice_info::JuiceInfo;
 // use crate::my_dbg;
 use crate::probe::Probe;
@@ -111,11 +112,21 @@ impl SolverStateBundle {
         if self.chest_move() {
             return false;
         }
-        let mutate_special = self.rng.random_bool(
-            (1.0 - self.state_bundle.special_probs()[0])
-                * self.special_affinity,
-        );
-        if mutate_special {
+        let tuning = &self.state_bundle.tuning;
+        let (special_floor, order_reach) = (tuning.special_floor, tuning.order_reach);
+        let reached = 1.0 - self.state_bundle.special_probs()[0];
+        // a first upgrade that is out of reach says nothing of the others
+        let floor = if self.state_bundle.affords_a_free_tap() { special_floor } else { 0.0 };
+        let mutate_special = self.rng.random_bool(reached.max(floor) * self.special_affinity);
+        if mutate_special && order_reach {
+            // any upgrade, to a place a free tap can get to
+            let u_len = self.state_bundle.special_state.len();
+            let reach = self.state_bundle.special_probs().iter().rposition(|&chance| chance >= SPECIAL_TOL).unwrap_or(0);
+            let idx1: usize = self.rng.random_range(0..u_len);
+            let idx2: usize = self.rng.random_range(0..=reach.min(u_len - 1));
+            let elem = self.state_bundle.special_state.remove(idx1);
+            self.state_bundle.special_state.insert(idx2, elem);
+        } else if mutate_special {
             let u_len = self.state_bundle.special_state.len();
             let max_dist = u_len; //((u_len as f64) * 0.5).round().max(1.0) as usize;
 
@@ -215,7 +226,7 @@ impl Upgrade {
             let (front_id, front_len) = streak_info.front[p];
             let (back_id, back_len) = streak_info.back[p];
             let total = (front_len + back_len) as i64;
-            
+
             let new_total =
                 (total + rng.random_range(-max_change_len..max_change_len)).clamp(0, len as i64);
             let delta = new_total - total;

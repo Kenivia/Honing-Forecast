@@ -138,6 +138,8 @@ pub struct Response {
     base_worth: Vec<f64>,
     /// by id and times used
     juice_worth: Vec<Vec<f64>>,
+    /// whether a plan may take two ids of one pool, on different taps
+    mixed: bool,
     /// what the tables took, in evaluations of the metric
     table_work: f64,
     /// what `best` took, in steps of its recursion
@@ -163,9 +165,15 @@ struct Kept {
     worth: Vec<f64>,
 }
 
-/// One id of each pool that has any: what taking it adds to an option's index, where it is
-/// in `juice_worth`, and the most times a plan can take it.
-type Picks = SmallVec<[(usize, usize, usize); 3]>;
+/// The ids a search may take: what taking each adds to an option's index, where it is in
+/// `juice_worth`, the most times a plan can take it, and its pool. A tap takes at most one id
+/// of a pool.
+type Picks = SmallVec<[(usize, usize, usize, usize); 3]>;
+
+/// whether a set of the picks takes two ids of one pool
+fn clash(picks: &Picks, set: usize) -> bool {
+    (0..picks.len()).any(|a| (0..a).any(|b| set >> a & 1 == 1 && set >> b & 1 == 1 && picks[a].3 == picks[b].3))
+}
 
 impl StateBundle {
     /// What each of these amounts of one material is worth when this upgrade uses exactly
@@ -274,7 +282,8 @@ impl Response {
         let mut base_worth = vec![0.0; model.len + 1];
         for row in (0..NUM_BASE_MATS).filter(|&row| costs[row] > 0.0) {
             let amounts: Vec<f64> = (0..=model.len).map(|taps| start[row] + taps as f64 * costs[row]).collect();
-            for (sum, worth) in base_worth.iter_mut().zip(state_bundle.worth(index, row, &amounts, &skips, &mut work, probe)) {
+            let worth = state_bundle.worth(index, row, &amounts, &skips, &mut work, probe);
+            for (sum, worth) in base_worth.iter_mut().zip(&worth) {
                 *sum += worth;
             }
         }
@@ -298,7 +307,8 @@ impl Response {
                 (next - ids.len()..next).collect()
             })
             .collect();
-        Response { model, places, base_worth, juice_worth, table_work, steps: AtomicUsize::new(0) }
+        let mixed = state_bundle.tuning.response_mixed;
+        Response { model, places, base_worth, juice_worth, mixed, table_work, steps: AtomicUsize::new(0) }
     }
 
     /// The part of the metric this upgrade's plan moves, less a constant.
@@ -386,7 +396,7 @@ impl Response {
         }
         self.steps.fetch_add(model.block << picks.len(), Ordering::Relaxed);
         let mut best = (f64::NEG_INFINITY, 0);
-        for set in 0..1usize << picks.len() {
+        for set in (0..1usize << picks.len()).filter(|&set| !clash(picks, set)) {
             let value = self.play(picks, kept, count, artisan, used, set, memo);
             // a tie goes to the plan that takes nothing
             if set == 0 || value > best.0 + best.0.abs() * 1e-13 {
@@ -445,10 +455,10 @@ impl Response {
         self.table_work + self.steps.load(Ordering::Relaxed) as f64 / steps_per_evaluation
     }
 
-    fn pick(&self, pool: usize, which: usize) -> (usize, usize, usize) {
+    fn pick(&self, pool: usize, which: usize) -> (usize, usize, usize, usize) {
         let option = self.model.strides[pool] * (which + 1);
         // taken on every tap it is taken the most times
-        (option, self.places[pool][which], self.model.pity(&vec![option; self.model.len]).0)
+        (option, self.places[pool][which], self.model.pity(&vec![option; self.model.len]).0, pool)
     }
 
     /// a plan less what some pools take, and what the rest of it is worth by taps charged
@@ -480,7 +490,15 @@ impl Response {
             choices *= ids.len();
         }
         // a third of the cells are reached, about
-        if cells / 3 * choices <= joint_steps { self.best() } else { self.improve(indices) }
+        if cells / 3 * choices > joint_steps {
+            return self.improve(indices);
+        }
+        // the best with one id a pool, and from it with two where a pool has them
+        let found = self.best();
+        if choices == 1 || !self.mixed {
+            return found;
+        }
+        self.improve(if self.score(indices) > found.0 { indices } else { &found.1 })
     }
 
     /// The best of every plan that keeps to one id a pool. Two ids of a pool in one plan
@@ -521,8 +539,14 @@ impl Response {
             let mut moved = false;
             for &pool in &used_pools {
                 let kept = self.kept(&now.1, &[pool]);
-                for which in 0..model.pools[pool].len() {
-                    let picks: Picks = std::iter::once(self.pick(pool, which)).collect();
+                let ids = model.pools[pool].len();
+                // one id of the pool, then two of them, a tap taking either
+                let alone = (0..ids).map(|which| std::iter::once(self.pick(pool, which)).collect::<Picks>());
+                let pairs = (0..ids).flat_map(|a| (0..a).map(move |b| (a, b))).filter(|_| self.mixed).map(|(a, b)| [self.pick(pool, b), self.pick(pool, a)].into_iter().collect::<Picks>());
+                for picks in alone.chain(pairs) {
+                    if picks.iter().map(|pick| pick.2 + 1).product::<usize>() * (model.len + 1) > 2_000_000 {
+                        continue;
+                    }
                     let found = self.best_of(&picks, &kept);
                     if found.0 > now.0 + now.0.abs() * 1e-12 {
                         now = found;

@@ -262,6 +262,7 @@ impl StateBundle {
             probe.count(Counter::Edgeworth);
             (edgeworth(at_zero, budget, compute_biased, &normal_dist), true)
         } else {
+            'root: {
             probe.count(Counter::Lugannani);
             let mut find = |guess: f64, seed: Option<KsTuple>| match self.tuning.root_finder {
                 RootFinder::Householder => self.householder(
@@ -288,7 +289,11 @@ impl StateBundle {
                 None => find(own_guess(), None),
             };
 
-            let result: (f64, f64, usize, KsTuple, KsTuple) = result_opt.unwrap();
+            // No root, which a threshold at the very end of the range can do. The series at
+            // zero stands in, not trusted, so that the sum is split and tried again.
+            let Some(result) = result_opt else {
+                break 'root (edgeworth(at_zero, budget, compute_biased, &normal_dist), false);
+            };
             let theta_hat = result.0;
             let ks_tuple: KsTuple = result.3;
             if !compute_biased {
@@ -306,6 +311,7 @@ impl StateBundle {
                 normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat),
                 compute_biased || slope > 0.0,
             )
+            }
         };
 
         if trusted && (-FLOAT_TOL..=1.0 + FLOAT_TOL).contains(&out) {

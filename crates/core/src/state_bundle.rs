@@ -71,6 +71,12 @@ impl StateBundle {
         if self.tuning.streak_length > 0 { self.tuning.streak_length } else { self.min_resolution.max(1) }
     }
 
+    /// whether the budget pays for one free tap of any upgrade; where not, the order is nothing
+    pub fn affords_a_free_tap(&self) -> bool {
+        let budget = self.prep_output.special_budget;
+        self.upgrade_arr.iter().any(|upgrade| upgrade.is_normal_honing && upgrade.special_cost <= budget)
+    }
+
     pub fn metric_router(&mut self, probe: &mut Probe) -> f64 {
         match self.metric_type {
             0 => unreachable!(), //self.success_prob_metric(performance),

@@ -12,7 +12,8 @@ pub fn get_extra_arr(state: &State, juice_info: &JuiceInfo, upgrade: &Upgrade) -
         .map(|ids| {
             let mut chance: f64 = 0.0;
 
-            for id in ids {
+            // an id twice on a tap is paid for once, so it counts once
+            for id in ids.iter().enumerate().filter(|(at, id)| !ids[..*at].contains(id)).map(|(_, id)| id) {
                 if !juice_info.normal_uindex_to_id[upgrade.piece_type_usize][upgrade.upgrade_index]
                     .contains(id)
                 {

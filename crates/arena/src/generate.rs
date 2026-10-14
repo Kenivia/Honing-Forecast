@@ -635,8 +635,8 @@ pub fn play<R: Rng>(
     kind
 }
 
-/// the player solves the payload and plays the result
-fn tap<R: Rng>(payload: &mut Payload, rng: &mut R) -> &'static str {
+/// the plan the player follows: a short solve of the payload
+fn planned<R: Rng>(payload: &Payload, rng: &mut R) -> StateBundle {
     let mut state_bundle = StateBundle::init_from_payload(payload.clone());
     state_bundle.tuning.max_iters = 6000;
     // where the optimizer panics the player follows the default state, so the case is kept
@@ -645,7 +645,98 @@ fn tap<R: Rng>(payload: &mut Payload, rng: &mut R) -> &'static str {
     }));
     let mut best = solved.unwrap_or_else(|_| StateBundle::init_from_payload(payload.clone()));
     best.metric = best.metric_router(&mut Probe::default());
+    best
+}
+
+/// the player solves the payload and plays the result
+fn tap<R: Rng>(payload: &mut Payload, rng: &mut R) -> &'static str {
+    let best = planned(payload, rng);
     play(payload, &best, next_up(&best), true, rng)
+}
+
+/// whether what is owned covers these amounts of the base materials; a juice short is bought
+fn covers(payload: &Payload, best: &StateBundle, used: &[f64]) -> bool {
+    best.prep_output.table.labels.iter().zip(used).take(NUM_BASE_MATS).all(|(label, amount)| {
+        let mat = &payload.materials[label];
+        mat.market_price <= 0.0 || mat.bound + mat.roster + mat.tradable >= *amount
+    })
+}
+
+/// The player does this upgrade for as long as what is owned covers the next tap. False where
+/// it stopped short, with the taps that were paid for kept as progress.
+fn hone_owned<R: Rng>(payload: &mut Payload, best: &StateBundle, index: usize, rng: &mut R) -> bool {
+    let this = &best.upgrade_arr[index];
+    if !covers(payload, best, &normal_used(best, index, 0)) {
+        return false;
+    }
+    let affordable = payload.special_budget / this.special_cost;
+    if index == best.special_state[0] && affordable > 0 {
+        let tries = (rng.random::<f64>().log(1.0 - this.base_chance).ceil() as i64).max(1);
+        payload.special_budget -= tries.min(affordable) * this.special_cost;
+        if tries <= affordable {
+            pay(payload, best, &normal_used(best, index, 0));
+            payload.upgrade_info.remove(index);
+            return true;
+        }
+    }
+    let succeeds_on = WeightedIndex::new(this.normal_dist.iter()).unwrap().sample(rng);
+    let taps = (1..=succeeds_on).take_while(|&taps| covers(payload, best, &normal_used(best, index, taps))).count();
+    pay(payload, best, &normal_used(best, index, taps));
+    if taps == succeeds_on {
+        payload.upgrade_info.remove(index);
+        return true;
+    }
+    let (artisan, num_taps) = after_failed(this, best, taps);
+    let info = &mut payload.upgrade_info[index];
+    info.starting_artisan = Some(artisan);
+    info.starting_num_taps = Some(num_taps);
+    info.unlocked = true;
+    false
+}
+
+/// A player with the same income every week, re-planning once a week: the payload at the start
+/// of each week. With `hone` the player follows the plan for as long as what is owned covers
+/// the taps; without, nothing is honed and only the income moves.
+pub fn weekly(built: Built, steps: usize, seed: u64, hone: bool) -> (Vec<Payload>, Vec<String>) {
+    let mut rng = StdRng::seed_from_u64(seed);
+    // about thirty weeks of it cover what the default state uses
+    let cover = log_uniform(rng.random(), 0.7, 1.6) / 30.0;
+    let optional = if rng.random_bool(0.3) { 0.0 } else { log_uniform(rng.random(), 0.05, 1.0) };
+    let free = if rng.random_bool(0.4) { 0.0 } else { log_uniform(rng.random(), 0.02, 0.5) };
+    let labels = built.payload.material_labels.clone();
+    let income: Vec<f64> = labels
+        .iter()
+        .enumerate()
+        .map(|(row, label)| {
+            built.refs.used[label] * cover * (0.4 * normal(&mut rng)).exp() * if row >= NUM_BASE_MATS { optional } else { 1.0 }
+        })
+        .collect();
+    let special = built.refs.special_scale * cover * free;
+
+    let mut out = vec![built.payload];
+    let mut kinds = vec!["base".to_string()];
+    while out.len() < steps && !out.last().unwrap().upgrade_info.is_empty() {
+        let mut next = out.last().unwrap().clone();
+        if hone {
+            while !next.upgrade_info.is_empty() {
+                let best = planned(&next, &mut rng);
+                if !hone_owned(&mut next, &best, next_up(&best), &mut rng) {
+                    break;
+                }
+            }
+            if next.upgrade_info.is_empty() {
+                break;
+            }
+        }
+        let week = out.len() as f64;
+        for (label, each) in labels.iter().zip(&income) {
+            next.materials.get_mut(label).unwrap().bound += (week * each).floor() - ((week - 1.0) * each).floor();
+        }
+        next.special_budget += ((week * special).floor() - ((week - 1.0) * special).floor()) as i64;
+        out.push(next);
+        kinds.push(if hone { "week" } else { "income" }.to_string());
+    }
+    (out, kinds)
 }
 
 fn other_change<R: Rng>(payload: &mut Payload, refs: &Refs, kind: &str, rng: &mut R) {
@@ -752,6 +843,10 @@ pub struct Spec {
     pub offset: u32,
     /// off for a set like `explore`, which was generated without
     pub chests: bool,
+    /// normal honing only
+    pub no_adv: bool,
+    /// chains of a constant weekly income, this many with the player honing and as many without
+    pub weekly: u32,
 }
 
 /// One axis at a time around a few anchors, to see what each axis does on its own.
@@ -795,14 +890,42 @@ fn sweeps(chests: bool) -> Vec<(String, Vec<f64>, u64)> {
 pub fn generate(spec: &Spec) -> Vec<Scenario> {
     use rayon::prelude::*;
     let mut todo: Vec<Box<dyn Fn() -> Scenario + Send + Sync>> = Vec::new();
-    let chests = spec.chests;
+    let (chests, no_adv) = (spec.chests, spec.no_adv);
     let sobol = move |index: u32, seed: u32| -> Vec<f64> {
         let mut a = sobol(index, seed);
         if !chests {
             a[axis("chests")] = 0.0;
         }
+        if no_adv {
+            a[axis("adv")] = 0.0;
+        }
         a
     };
+    let steps = spec.steps;
+    for index in spec.offset..spec.offset + spec.weekly {
+        for hone in [false, true] {
+            todo.push(Box::new(move || {
+                let mut a = sobol(index, 3);
+                a[axis("size")] = 0.45 + 0.55 * a[axis("size")];
+                a[axis("wealth")] *= 0.5;
+                a[axis("adv")] = 0.0;
+                a[axis("chests")] = 0.0;
+                let mut built = build(&a, 2_000_000 + index as u64, false);
+                if hone {
+                    // a player who hones what is owned starts with little of it
+                    let start = (sobol_burley::sample(index, 40, 3) as f64 - 0.4).max(0.0);
+                    for label in built.payload.material_labels.iter().take(NUM_BASE_MATS) {
+                        let mat = built.payload.materials.get_mut(label).unwrap();
+                        (mat.bound, mat.roster, mat.tradable) =
+                            ((mat.bound * start).floor(), (mat.roster * start).floor(), (mat.tradable * start).floor());
+                    }
+                }
+                let name = format!("week_{}_{index:04}_{}", if hone { "hone" } else { "inc" }, tag(&built.payload));
+                let (steps, kinds) = weekly(built, steps, index as u64, hone);
+                Scenario { name, steps, meta: meta(&a, &kinds) }
+            }));
+        }
+    }
     for index in spec.offset..spec.offset + spec.singles {
         todo.push(Box::new(move || {
             let a = sobol(index, 1);

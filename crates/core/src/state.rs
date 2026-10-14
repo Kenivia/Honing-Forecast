@@ -142,15 +142,15 @@ impl State {
                     .count(),
             };
 
-            let back_region_end = len - front_len;
-            let back_id = if back_region_end > 0 {
-                find_id(&self.payload[back_region_end - 1])
+            // what is left after the front streak, from the last tap backwards
+            let back_id = if front_len < len {
+                find_id(&self.payload[len - 1])
             } else {
                 None
             };
             let back_len = match back_id {
                 None => 0,
-                Some(id) => self.payload[..back_region_end]
+                Some(id) => self.payload[front_len..]
                     .iter()
                     .rev()
                     .take_while(|slot| find_id(slot) == Some(id))

@@ -42,7 +42,7 @@ The binary is both driver and worker. The driver (always the current build) load
 
 `test_cases/scenarios/*.json`, each `{ "steps": [payload, ...] }` with every step a full `Payload`. `pnpm arena dummy` writes the placeholder one; real cases are still to come. Its payloads carry four chest stacks, keyed "0" to "3": a three-way choice, an obtain-all with gold, fractional amounts, and one that gives special leaps. A worker's `Essence` carries `chest_states` next to `special_state`; one whose keys are not the reference's (a snapshot older than the keys has none) is left out and the reference's default is kept. A variant built before chests were keyed cannot read these payloads.
 
-Every scenario runs **cold** (each step alone) and **chained** (each step is handed a `Previous`: the last payload, the last best `StateBundle`, and the optimizer's own blob, capped at `Tuning::max_blob_bytes`). A step is seeded the same way in both, so until the optimizer reads `Previous` the two give identical results. That is the current state: the plumbing exists, `solve` ignores it.
+Every scenario runs **cold** (each step alone) and **chained** (each step is handed a `Previous`: the last payload, the last best `StateBundle`, and the optimizer's own blob, capped at `Tuning::max_blob_bytes`). A step is seeded the same way in both. A chained step starts from the plan of the step before (`Optimizer.md`, "Chained runs"); `carry=false` makes it a cold one again.
 
 ## Generated scenarios
 
@@ -54,6 +54,12 @@ Every scenario runs **cold** (each step alone) and **chained** (each step is han
 - **A chain replays a player**: most steps solve the payload, do the upgrade the plan wants next (`generate::next_up` and `generate::play`, which `replan` shares) and apply one outcome of it (done, free tapped, or some failed taps in), by the rules `monte_carlo::simulate` uses. The rest are income, a price move, a goal added or removed. `meta.kinds` names what happened before each step. Unopened chests are not drawn on when a material runs out.
 - **Sweeps** move one axis at a time around three anchors; **stress** is every upgrade a character has.
 - **Chests are off** unless `--chests`: the axis is pinned to none and a chain's chest step becomes income. `explore` was generated without. See "Chests in a generated case".
+- **`--no-adv`** pins the advanced share to none. `test_cases/scenarios/normal` is `gen normal --singles 500 --offset 3000 --no-adv`.
+- **`--weekly N`** writes 2N chains of `--steps` weeks (`generate::weekly`, Sobol seed 3): a player with the same income every week who plans once a week. No chests, no advanced honing. A step is the payload at the start of a week.
+  - The income is what the default state uses on average over about thirty weeks (0.7 to 1.6 of it), each material with its own constant noise; juices, books and free taps are a share of that or none.
+  - `week_inc_*`: nothing is honed, only the income moves. All 30 steps have the same upgrades, and the cost goes to nothing as the stock grows.
+  - `week_hone_*`: the player starts with little, and each week follows a short solve's plan (`next_up`, as chains do) for as long as what is owned covers the base materials of the next tap, buying only juices; a tap short leaves the upgrade in progress. The chain ends when the upgrades do.
+  - `test_cases/scenarios/weekly` is `gen weekly --weekly 24 --steps 30`: 48 chains, 24 of each.
 - A case whose generation panics is left out and the panic is on stderr. A chain step the optimizer panics on is kept, with the player following the default state.
 
 ## Chests in a generated case
@@ -76,7 +82,24 @@ A set is a named list of scenarios for one purpose, in `test_cases/sets/<name>.t
 - `pnpm arena define <name> --note "..." --kind single --where n=32..41 --where juice_owned=0.4..0.7 --steps 4 --limit 12` writes one from filters: `--kind` is a prefix of the name (single, chain, sweep, stress), a `--where` key is an axis of `meta.axes`, `n` (upgrades of the first step) or `steps`. The command is kept in the file. Or write the file by hand.
 - A truncated chain's steps are the same payloads, so they share their best known with the full chain.
 - `pilot` is the quick first run for a new variant: 16 payloads, 8 CPU seconds a seed. Two scenarios without chests are from the pilot of before (a chain cut to four steps and a single, picked from session 14), and their runs match sessions 18 to 25 seed for seed. Seven have chests (picked from session 29): optional materials only, almost no base materials over 8 stacks, mostly base materials, Serca fifths with a free tap choice and without, and two chains cut to three steps, one with 8 stacks and one where a chest step adds a stack. All were hit a quarter to three quarters of the time, which is where a variant can move the result either way. The three that were dropped (`chain_0057_serca_n8`, `single_0466_t4_n10`, `single_0085_t4_n17`) are still in `explore`.
+- `nh_dev` and `nh_test` are the singles of the `normal` folder with 4 upgrades or more, the even ones (158) and the odd ones (157): normal honing only. The first is what the optimizer of October 2026 was developed on, the second was kept out of it. `nh_quick` is every fourth of `nh_dev`.
+- `test_cases/scenarios/seeded` is `nh_dev` with the state `v0` found on seed 0 (session 50) given in each payload, as the frontend gives the plan it shows when the user optimizes again. Its names start with `seed_`; compare with the same payload unseeded by name.
+- `weekly` is the 48 weekly chains, `weekly_dev` the first six of each kind, which the chained runs were tuned on, and `weekly_test` the other 36.
 - `chests` is every case of the `chests` folder that has a choice in it, chains cut to three steps: 349 scenarios, 453 payloads, about 15 minutes for three variants and three seeds at 16 jobs.
+
+## Against a fixed baseline
+
+The best known moves every time a variant finds something new, so a hit rate read today is not the one read tomorrow. For the optimizer work of October 2026 one variant was frozen instead:
+
+- **`v0` is a snapshot of the code at `2dacbf9a`**, the optimizer before that work: one chain of 24,000 evaluations and a pass of responses at the end. Run it next to a new variant, or in a session of its own, and compare with `python scripts/arena/diff_report.py <sessions> [--base v0] [--by n|kind|week] [--like text] [--strip text] [--worst 10]`.
+- **`diff` is signed**: a variant's mean over seeds less the baseline's on the same seeds, per payload, as a share of the flow of the baseline's best seed. `+` and `-` count the payloads that moved by more than `--eps`. Nothing in it depends on what else is in the database.
+- `hit`, `x10` and `gap` are still against the best any run has reached (within `eps`, within ten times it, and the mean), and so still move.
+- `spread` is the best seed less the worst of a payload, and `same` the share of payloads whose seeds all agree: the run to run variance.
+- The database keeps every run's metric and state, so all of it can be read another way later.
+
+**A run with an error is never the best known.** An experiment that could put the same id twice on a tap was scored well above any real plan by the evaluator, which does not check; its 6 runs were marked as errors by hand (`error` starts with `invalid state`). Check a new kind of move for that before believing a new best.
+
+**The driver checks a variant's keys against its own `Tuning`**, so the driver has to be a build that knows them. The working loop: build, `snap <label>`, copy `target/release/hf-arena.exe` somewhere (`target/arena/driver.exe`) and run that copy with the labels. The tree can then be edited and built while a run goes on, and a variant is always a snapshot.
 
 ## The exploratory run
 
@@ -95,6 +118,19 @@ A set is a named list of scenarios for one purpose, in `test_cases/sets/<name>.t
 | 29, 31, 32 | the `chests` set, 3 seeds: variants of the chest moves (`Optimizer.md`, "Chests"). In 31 the compound variants died, a bug of theirs |
 | 30 | the `chests` set, 1 seed, 96,000 evaluations: the best known to measure against |
 | 33 | the new `pilot`, 3 seeds, `--jobs 1`: `chest_base` 7.6 CPU seconds a seed, `chest_moves` 7.9 |
+
+The optimizer round of October 2026 (`Optimizer.md`, "The shape of a solve"), all cold at 16 jobs unless said:
+
+| session | what |
+| --- | --- |
+| 50 | `nh_dev`, 8 seeds: `v0` at 24,000 and at 48,000 evaluations |
+| 51, 52, 54 | `nh_dev`, 4 seeds: single knobs, the free tap order's fixes, chains |
+| 55, 57, 61 to 64, 67, 68 | `nh_dev`, 4 seeds: mixed responses, leaving early, merge, exchange, chains by size, the streak fix |
+| 70 | `nh_dev`, 4 seeds: `v1`, the new defaults, and other chain lengths |
+| 73 to 76 | `v0` against `v1`: `nh_test` (8 seeds), `explore` singles 100 to 199 (3), the `chests` set (1), `nh_quick` at a streak length of 10 (4) |
+| 59, 60, 65, 66, 71, 72, 77 | `weekly_dev`, 2 seeds, cold and chained: what a carried plan is worth and when to stop |
+
+`v1` and `v2` are snapshots of the defaults at the end of it; `v2` differs only in `carry_stall`. `v6` is the defaults as handed over, `v7` that with an id counted once a tap and the crossover kept to plans of one length, `v8` that with the cumulants fixed for hard tilts (sessions 97 and 98 have `v7`). The `k*` labels in those sessions are the steps on the way, with their diffs in the `snapshot` table.
 
 Sessions 3 to 5 are of the payloads before the folder was generated again and match nothing in it now. Session 17 is session 20 with a root finder bug that killed 3 of its jobs; 15 is 18 before that fix.
 
@@ -125,7 +161,24 @@ The metric assumes the plan made now is followed to the end. `pnpm arena replan 
 - **The run of October 2026** (session 8: the `replan` set, 36 singles of 5 to 14 upgrades, 30 paths, every upgrade, 24000 iterations): the gain averaged 0.12% of flow over scenarios, median 0.02%, the largest scenario 0.64% and the largest single path 3.7%. As a share of what the optimizer gains over the default state: mean 4%, median 0.3%. The control was zero everywhere and the exact gain was 0.99 of the approximate one. A third of the scenarios had no gain at all; the gain was near zero where most is owned (wealth above 0.75) and did not go to zero where little is.
 - Not covered: chests, re-planning in the middle of an advanced upgrade, and choosing a plan knowing that it will be re-planned. Free taps left over when they run out on an upgrade are kept by the player, which the evaluator does not count on.
 
-`test_cases/scenarios/regressions` holds payloads that broke the evaluator. `pnpm arena run --scenarios test_cases/scenarios/regressions --mode cold --seeds 3` is the check: seed 2 of the first one used to panic.
+`test_cases/scenarios/regressions` holds payloads that broke the evaluator. `pnpm arena run --scenarios test_cases/scenarios/regressions --mode cold --seeds 3` is the check: seed 2 of the first one used to panic, and every seed of `no_root_week_inc_0022` (the second week of a weekly chain) did until the root finder's failure stopped being one.
+
+**`verify` on that weekly chain is off by 1%**, on its first week too, where nothing ever panicked, and as much before that change as after: Red, Fusion, Shards and the total of the given state and of scrambles, the evaluator cheaper than the simulation by 5 to 6 standard errors. It is the saddlepoint formula: with the free taps taken out it is still there (2% on one scramble), and with `max_lattice_work=2000000000`, which answers every material exactly, every row passes within 0.4 standard errors. The payload is one weapon from +8 to +24, so a few high levels make most of the spread of the sum. As a share of flow it is 0.12 to 0.28%; the 1 to 2% is of the total, which credit makes small.
+
+**How far the default evaluator is from the exact one** (October 2026, `max_lattice_work=2000000000` as the reference, which agreed with 100k-sample Monte Carlo on every total of `nh_dev` and `weekly_dev` but for rare events under one gold). Error as a share of the step's best known `flow`:
+
+| states | over 1e-4 | over 1e-3 | worst | optimistic, of those over 1e-4 |
+| --- | --- | --- | --- | --- |
+| `nh_dev`, given and 3 scrambles (632) | 18.5% | 2.5% | 0.49% | 82% |
+| `nh_dev`, best known plan (158) | 12.0% | 1.3% | 0.27% | 95% |
+| `weekly_dev`, given and 1 scramble (634) | 14.4% | 1.1% | 0.16% | 100% |
+| `weekly_dev`, best known plan (317) | 20.2% | 3.2% | 0.22% | 97% |
+
+- On `nh_dev` optimized plans are no worse than random ones; on `weekly_dev` somewhat worse, so the optimizer leans a little towards the error there. Where best known and v0's seed 0 differ (54 and 159 steps), the exact evaluator orders them the other way on 3 and 4, each by under 2e-5 of flow.
+- In a weekly chain it grows as the chain goes on: 9% of states over 1e-4 in weeks 0 to 4, 27% in weeks 25 to 29.
+- Not a matter of the number of upgrades: 13% over 1e-4 at 4 to 7 upgrades, 23% at 25 and up. Red, Fusion and Serca Red carry it.
+- The exact evaluator is slow: 790 states took 40 minutes on 8 threads and 1585 weekly ones 87 minutes on 12, against seconds.
+- Scripts in the session scratchpad only; `verify` with the two variants and `bench --states --out` under each tuning reproduce it.
 
 **`verify` on the `juice` set fails 13 rows, and they are the saddlepoint formula, not the simulation.** The worst are juice rows (`Glacier's Breath`, up to 66 standard errors). On those states the simulation agrees with an exact sum over the evaluator's own supports, and the evaluator does not: the material has 3 or 4 upgrades with more than one outcome, just over both `max_brute_size` (65,400 against 50,000) and `max_lattice_work` (234,000 against 200,000), so it gets the saddlepoint formula, which is 0.01 to 0.06 off there. That is multiplied by the threshold and the price. A failing juice row means look at which method the material got before suspecting the supports.
 

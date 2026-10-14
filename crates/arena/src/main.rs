@@ -147,6 +147,12 @@ enum Cmd {
         offset: u32,
         #[arg(long)]
         chests: bool,
+        /// normal honing only
+        #[arg(long)]
+        no_adv: bool,
+        /// chains of a constant weekly income: this many with the player honing and as many without
+        #[arg(long, default_value_t = 0)]
+        weekly: u32,
     },
     /// check the evaluator against monte carlo, and time it
     Verify {
@@ -516,7 +522,7 @@ fn main() {
             db::add_snapshot(&conn, label, git(&["rev-parse", "HEAD"]).trim(), &working_tree_diff());
             println!("snapshot {label} at {exe:?}");
         }
-        Cmd::Gen { set, singles, chains, steps, sweeps, stress, offset, chests } => {
+        Cmd::Gen { set, singles, chains, steps, sweeps, stress, offset, chests, no_adv, weekly } => {
             let dir = cli.scenarios.join(set);
             std::fs::create_dir_all(&dir).unwrap();
             let spec = generate::Spec {
@@ -527,6 +533,8 @@ fn main() {
                 stress: *stress,
                 offset: *offset,
                 chests: *chests,
+                no_adv: *no_adv,
+                weekly: *weekly,
             };
             let scenarios = generate::generate(&spec);
             for scenario in &scenarios {
