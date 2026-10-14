@@ -27,6 +27,10 @@ counters!(
     Householder,
     Bisection,
     TaylorSkip,
+    Coarse,
+    CoarseTooBig,
+    Direct,
+    DirectFallback,
 );
 
 #[cfg(feature = "trace")]

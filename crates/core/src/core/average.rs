@@ -1,6 +1,7 @@
 use crate::constants::{FLOAT_TOL, SPECIAL_TOL};
 use ahash::AHashMap;
 use smallvec::SmallVec;
+use crate::core::saddlepoint_approximation::Shape;
 use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 
@@ -148,7 +149,7 @@ impl StateBundle {
         let needs_probability = thresh_price_pairs.windows(2).any(|pair| (pair[0].1 - pair[1].1).abs() >= FLOAT_TOL);
         let table = if needs_probability {
             let thresholds: SmallVec<[f64; 4]> = thresh_price_pairs.iter().map(|pair| pair.0).collect();
-            self.lattice_table(support_index, &missing, &thresholds)
+            self.lattice_table(support_index, &missing, &thresholds, probe)
         } else {
             vec![None; missing.len()]
         };
@@ -251,8 +252,6 @@ impl StateBundle {
         let shape = self.shape(support_index, skip_count);
         let simple_mean: f64 = shape.mean;
 
-        let simple_mean_log: f64 = simple_mean.ln();
-
         let last_thresh: f64 = thresh_price_pairs[num_thresholds - 1].0;
         let last_price: f64 = thresh_price_pairs[num_thresholds - 1].1;
 
@@ -268,11 +267,29 @@ impl StateBundle {
                 continue;
             }
 
-            let (prob, biased_prob) =
-                self.probability_pair(support_index, skip_count, &shape, thresh, simple_mean_log, probe);
-
-            out += (prev_price - price) * (thresh * prob - biased_prob * simple_mean);
+            out += (prev_price - price) * self.saddlepoint_leftover(support_index, skip_count, &shape, thresh, probe);
         }
         return out;
+    }
+
+    /// E[(t - S)+] where no lattice answers
+    fn saddlepoint_leftover(&self, support_index: i64, skip_count: usize, shape: &Shape, thresh: f64, probe: &mut Probe) -> f64 {
+        if self.tuning.direct_put {
+            if let Some(out) = self.leftover(support_index, skip_count, shape, thresh, probe) {
+                return out;
+            }
+        }
+        let (prob, biased_prob) = self.probability_pair(support_index, skip_count, shape, thresh, shape.mean.ln(), probe);
+        thresh * prob - biased_prob * shape.mean
+    }
+
+    /// E[(t - S)+] of one material under one free tap outcome, by whatever the metric would use
+    pub fn expected_leftover(&self, support_index: i64, skip_count: usize, thresh: f64, probe: &mut Probe) -> f64 {
+        let shape = self.shape(support_index, skip_count);
+        if let Some(table) = self.lattice_table(support_index, &[skip_count], &[thresh], probe).pop().flatten() {
+            probe.count(Counter::Lattice);
+            return thresh * table[0].0 - table[0].1 * shape.mean;
+        }
+        self.saddlepoint_leftover(support_index, skip_count, &shape, thresh, probe)
     }
 }

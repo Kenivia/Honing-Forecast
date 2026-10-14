@@ -3,6 +3,8 @@
 //! `verify` checks the metric a payload asks for. This asks the evaluator for the
 //! probability at many thresholds of every material instead: around the mean, where the
 //! saddlepoint formula is singular, at quantiles, at the ends of the range and in between.
+//! And the expected leftover E[(t - S)+], which is what the metric takes of the two, in
+//! standard deviations of the sum: a coarse lattice is only meant to get that right.
 
 use crate::report::table;
 use crate::scenario::Scenario;
@@ -158,6 +160,8 @@ struct Bucket {
     histogram: [u64; 5],
     max_error: f64,
     sum_error: f64,
+    /// negative is an evaluator that is short, which for the leftover is optimistic
+    sum_signed: f64,
     seconds: f64,
     root_iters: u64,
     max_root_iters: u64,
@@ -165,8 +169,8 @@ struct Bucket {
 
 #[derive(Default)]
 pub struct Summary {
-    /// by (method, region, biased)
-    buckets: BTreeMap<(&'static str, &'static str, bool), Bucket>,
+    /// by (method, region, kind)
+    buckets: BTreeMap<(&'static str, &'static str, &'static str), Bucket>,
     pub panics: BTreeMap<String, u64>,
     notes: BTreeMap<&'static str, u64>,
     /// (error, what it was)
@@ -183,6 +187,7 @@ impl Summary {
             }
             mine.max_error = mine.max_error.max(theirs.max_error);
             mine.sum_error += theirs.sum_error;
+            mine.sum_signed += theirs.sum_signed;
             mine.seconds += theirs.seconds;
             mine.root_iters += theirs.root_iters;
             mine.max_root_iters = mine.max_root_iters.max(theirs.max_root_iters);
@@ -235,10 +240,14 @@ fn sweep(name: &str, state_bundle: &StateBundle, rng: &mut StdRng, summary: &mut
             summary.note("materials swept");
             let mean_log = state_bundle.simple_avg(material as i64, skip).ln();
             for (budget, region) in reference.budgets(rng) {
-                for biased in [false, true] {
+                for kind in ["plain", "biased", "leftover"] {
+                    let biased = kind == "biased";
                     let mut probe = Probe::default();
                     let start = Instant::now();
                     let result = catch_unwind(AssertUnwindSafe(|| {
+                        if kind == "leftover" {
+                            return state_bundle.expected_leftover(material as i64, skip, budget, &mut probe);
+                        }
                         state_bundle.saddlepoint_approximation_wrapper(
                             material as i64,
                             skip,
@@ -250,7 +259,11 @@ fn sweep(name: &str, state_bundle: &StateBundle, rng: &mut StdRng, summary: &mut
                     }));
                     let seconds = start.elapsed().as_secs_f64();
                     let count = |counter: Counter| probe.data.counts[counter as usize] as u64;
-                    let method = if count(Counter::Conditioned) > 0 {
+                    let method = if count(Counter::Coarse) > 0 {
+                        "coarse"
+                    } else if count(Counter::Direct) > count(Counter::DirectFallback) {
+                        "direct"
+                    } else if count(Counter::Conditioned) > 0 {
                         "conditioned"
                     } else if count(Counter::Edgeworth) > 0 {
                         "edgeworth"
@@ -263,7 +276,7 @@ fn sweep(name: &str, state_bundle: &StateBundle, rng: &mut StdRng, summary: &mut
                     } else {
                         "trivial"
                     };
-                    let bucket = summary.buckets.entry((method, region, biased)).or_default();
+                    let bucket = summary.buckets.entry((method, region, kind)).or_default();
                     bucket.calls += 1;
                     bucket.seconds += seconds;
                     bucket.root_iters += count(Counter::RootIter);
@@ -272,18 +285,23 @@ fn sweep(name: &str, state_bundle: &StateBundle, rng: &mut StdRng, summary: &mut
                         summary.panicked(method);
                         continue;
                     };
-                    let truth = reference.at(budget, biased);
-                    let error = (got - truth).abs();
+                    let truth = if kind == "leftover" {
+                        budget * reference.at(budget, false) - reference.mean * reference.at(budget, true)
+                    } else {
+                        reference.at(budget, biased)
+                    };
+                    let signed = if kind == "leftover" { (got - truth) / reference.sd } else { got - truth };
+                    let error = signed.abs();
                     bucket.histogram[ERROR_EDGES.iter().position(|&edge| error < edge).unwrap_or(4)] += 1;
                     bucket.max_error = bucket.max_error.max(error);
                     bucket.sum_error += error;
+                    bucket.sum_signed += signed;
                     if summary.worst.len() < 15 || error > summary.worst[summary.worst.len() - 1].0 {
                         let upgrades = pairs.iter().filter(|arr| arr.len() > 1).count();
                         summary.worst.push((
                             error,
                             format!(
-                                "{name} material {material} skip {skip} {method} {region}{} budget {budget} got {got:.5} exact {truth:.5}, {upgrades} upgrades, {} lattice points",
-                                if biased { " biased" } else { "" },
+                                "{name} material {material} skip {skip} {method} {region} {kind} budget {budget} got {got:.5} exact {truth:.5}, {upgrades} upgrades, {} lattice points",
                                 reference.cdf.len(),
                             ),
                         ));
@@ -354,19 +372,15 @@ pub fn report(summary: &Summary) {
     }
     let mut out = table(&[
         "method", "region", "kind", "calls", "<1e-6", "<1e-4", "<1e-2", "<1e-1", ">=1e-1", "max error",
-        "mean error", "us/call", "root iters", "max iters",
+        "mean error", "mean signed", "us/call", "root iters", "max iters",
     ]);
-    for ((method, region, biased), bucket) in &summary.buckets {
-        let mut row = vec![
-            method.to_string(),
-            region.to_string(),
-            if *biased { "biased" } else { "plain" }.to_string(),
-            bucket.calls.to_string(),
-        ];
+    for ((method, region, kind), bucket) in &summary.buckets {
+        let mut row = vec![method.to_string(), region.to_string(), kind.to_string(), bucket.calls.to_string()];
         row.extend(bucket.histogram.iter().map(|count| count.to_string()));
         row.extend([
             format!("{:.1e}", bucket.max_error),
             format!("{:.1e}", bucket.sum_error / bucket.calls as f64),
+            format!("{:+.1e}", bucket.sum_signed / bucket.calls as f64),
             format!("{:.1}", bucket.seconds / bucket.calls as f64 * 1e6),
             format!("{:.2}", bucket.root_iters as f64 / bucket.calls as f64),
             bucket.max_root_iters.to_string(),
@@ -374,6 +388,7 @@ pub fn report(summary: &Summary) {
         out.add_row(row);
     }
     println!("{out}");
+    println!("leftover errors are in standard deviations of the sum; a negative mean signed leftover is optimistic");
     println!("worst:");
     for (error, what) in &summary.worst {
         println!("  {error:.4}  {what}");

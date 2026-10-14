@@ -1,5 +1,6 @@
 use crate::constants::{FLOAT_TOL, float_tol};
 use crate::core::cumulants::KsTuple;
+use crate::core::lattice::Lattice;
 use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 use crate::support::Support;
@@ -59,6 +60,23 @@ fn edgeworth(at_zero: KsTuple, budget: f64, compute_biased: bool, normal_dist: &
             });
     normal_dist.cdf(z) - cdf_correction
 }
+
+/// E[(x - S)+] at a lattice point x from the Edgeworth series, the integral of the one above. The
+/// last term is the lattice's: 1/s^2 becomes 1/s^2 - span^2/12 + ... on a lattice.
+fn edgeworth_leftover(at_zero: KsTuple, x: f64, span: f64, normal_dist: &Normal) -> f64 {
+    let sd = at_zero.2.sqrt();
+    let z = (x - at_zero.1) / sd;
+    let (gamma3, gamma4) = (at_zero.3 / sd.powi(3), at_zero.4 / sd.powi(4));
+    let series = 1.0
+        + gamma3 / 6.0 * z
+        + gamma4 / 24.0 * (z * z - 1.0)
+        + gamma3 * gamma3 / 72.0 * (z.powi(4) - 6.0 * z * z + 3.0);
+    sd * (z * normal_dist.cdf(z) + normal_dist.pdf(z) * series) - span * span / 12.0 * normal_dist.pdf(z) / sd
+}
+
+/// Closer to the mean than this many standard deviations, the one saddlepoint formula for the
+/// leftover is a difference of terms in 1/w^3 and the series stands in.
+const LEFTOVER_EDGEWORTH_Z: f64 = 0.01;
 
 /// What every threshold of one material shares, under one free tap outcome
 pub struct Shape {
@@ -204,7 +222,7 @@ impl StateBundle {
             return 0.0;
         };
         if try_lattice && let Some(lattice) = self.lattice(support_index, skip_count) {
-            probe.count(Counter::Lattice);
+            probe.count(if matches!(lattice, Lattice::Coarse(_)) { Counter::Coarse } else { Counter::Lattice });
             return lattice.within(inp_budget, compute_biased);
         }
         if shape.too_big {
@@ -235,6 +253,81 @@ impl StateBundle {
         probe.count(Counter::Brute);
 
         self.brute_success_prob(support_index, skip_count, inp_budget, shape.mean, compute_biased)
+    }
+
+    /// E[(t - S)+] from one saddlepoint: the inversion of 1/((2/span) sinh(span s/2))^2, which is
+    /// 1/s^2 on the lattice, at the lattice points either side of t, joined by a straight line,
+    /// which is exact between them. None where the pair of probabilities should answer: outside
+    /// the region the saddlepoint takes, no root, or an answer no distribution on the range has.
+    pub fn leftover(&self, support_index: i64, skip_count: usize, shape: &Shape, thresh: f64, probe: &mut Probe) -> Option<f64> {
+        let &Shape { min_value, max_value, span, min_delta, mean, .. } = shape;
+        if thresh > max_value - float_tol(max_value) {
+            return Some(thresh - mean);
+        }
+        if thresh < min_value - float_tol(min_value) {
+            return Some(0.0);
+        }
+        let low = min_value + ((thresh - min_value) / span + FLOAT_TOL).floor() * span;
+        let inside = |x: f64| min_value + min_delta + 1.0 < x && x < max_value - min_delta - 1.0;
+        if !shape.too_big || max_value - min_value <= min_delta || !inside(low) || !inside(low + span) {
+            probe.count(Counter::DirectFallback);
+            return None;
+        }
+        probe.count(Counter::Direct);
+        let mut root: Option<(f64, KsTuple)> = None;
+        let share = (thresh - low) / span;
+        let out = self.leftover_at(support_index, skip_count, shape, low, &mut root, probe).and_then(|at_low| {
+            if share < FLOAT_TOL {
+                return Some(at_low);
+            }
+            let at_high = self.leftover_at(support_index, skip_count, shape, low + span, &mut root, probe)?;
+            Some(at_low + share * (at_high - at_low))
+        });
+        if out.is_none() {
+            probe.count(Counter::DirectFallback);
+        }
+        out
+    }
+
+    /// At a lattice point. The root after the first starts from the one before.
+    fn leftover_at(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+        shape: &Shape,
+        x: f64,
+        root: &mut Option<(f64, KsTuple)>,
+        probe: &mut Probe,
+    ) -> Option<f64> {
+        let &Shape { min_value, max_value, span, min_delta, mean, zero, .. } = shape;
+        let normal_dist: Normal = Normal::new(0.0, 1.0).unwrap();
+        let out = if ((x - mean) / zero.2.sqrt()).abs() < LEFTOVER_EDGEWORTH_Z {
+            probe.count(Counter::Edgeworth);
+            edgeworth_leftover(zero, x, span, &normal_dist)
+        } else {
+            probe.count(Counter::Lugannani);
+            let own_guess = self.min_guess_max_triplet(x, min_value, max_value, (zero.1, zero.2, zero.3)).1;
+            let mut find = |guess: f64, seed: Option<KsTuple>| {
+                self.householder(false, NAN, support_index, skip_count, x, guess, min_value, max_value, min_delta, seed, probe)
+            };
+            let (theta, _, _, ks, raw) = match root.take() {
+                Some((theta, raw)) => find(theta, Some(raw)).or_else(|| find(own_guess, None)),
+                None => find(own_guess, None),
+            }?;
+            *root = Some((theta, raw));
+            // all of it at the point the root is of, then along the slope to x
+            let at = ks.1;
+            let d = at - mean;
+            let w = theta.signum() * (2.0 * (theta * at - ks.0)).max(0.0).sqrt();
+            let s_span = 2.0 / span * (span * theta / 2.0).sinh();
+            let below = normal_dist.cdf(w);
+            d * below
+                + normal_dist.pdf(w) * (d / w - d / w.powi(3) + 1.0 / (s_span * s_span * ks.2.sqrt()))
+                + (x - at) * below
+        };
+        let slack = 1e-9 * (max_value - min_value);
+        let ceiling = (x - min_value) / (max_value - min_value) * (max_value - mean);
+        (out.is_finite() && out >= (x - mean).max(0.0) - slack && out <= ceiling + slack).then_some(out)
     }
 
     /// Lugganani-Rice formula

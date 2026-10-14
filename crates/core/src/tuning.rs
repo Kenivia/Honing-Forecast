@@ -27,6 +27,13 @@ pub struct Tuning {
     pub seed_biased: bool,
     /// entries the memo of per material results may hold; 0 for no memo
     pub max_memo_size: usize,
+    /// grid points a standard deviation of a coarse lattice, which answers where the exact one is
+    /// too big and before the saddlepoint formula; 0 for none
+    pub coarse_cells: f64,
+    /// multiplications a coarse lattice may take before the saddlepoint formula answers instead
+    pub max_coarse_work: usize,
+    /// the expected leftover from one saddlepoint, in place of the pair of probabilities
+    pub direct_put: bool,
 
     // optimizer
     pub max_iters: i64,
@@ -112,6 +119,9 @@ impl Default for Tuning {
             taylor_skip: 1e-3,
             seed_biased: true,
             max_memo_size: 1 << 16,
+            coarse_cells: 0.0,
+            max_coarse_work: 20_000_000,
+            direct_put: false,
 
             max_iters: 48000,
             max_best_size: 10,
@@ -159,7 +169,8 @@ impl Tuning {
         let mut hasher = std::hash::DefaultHasher::new();
         (self.root_finder as u8, self.max_root_find_iter, self.max_brute_size, self.max_lattice_work, self.seed_biased)
             .hash(&mut hasher);
-        (self.y_value_tol.to_bits(), self.taylor_skip.to_bits()).hash(&mut hasher);
+        (self.y_value_tol.to_bits(), self.taylor_skip.to_bits(), self.coarse_cells.to_bits()).hash(&mut hasher);
+        (self.max_coarse_work, self.direct_put).hash(&mut hasher);
         hasher.finish()
     }
 }

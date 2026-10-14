@@ -2,32 +2,90 @@
 //!
 //! The saddlepoint formula needs many comparable upgrades, and is far off without any
 //! sign of it where one upgrade outweighs the rest. That is mostly juices and books,
-//! whose totals are small numbers, so few lattice points.
+//! whose totals are small numbers, so few lattice points. Where it is too big, a coarse one
+//! of a set number of points a standard deviation can stand in (`Coarse`).
 
 use crate::constants::float_tol;
+use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 use num::Integer;
 use smallvec::SmallVec;
 
-pub struct Lattice {
-    min_value: f64,
-    span: f64,
-    cdf: Vec<f64>,
-    biased_cdf: Vec<f64>,
+pub enum Lattice {
+    Exact { min_value: f64, span: f64, cdf: Vec<f64>, biased_cdf: Vec<f64> },
+    Coarse(Coarse),
 }
 
 impl Lattice {
     pub fn within(&self, budget: f64, biased: bool) -> f64 {
-        let index = ((budget + float_tol(budget) - self.min_value) / self.span).floor();
+        match self {
+            Lattice::Exact { min_value, span, cdf, biased_cdf } => {
+                let index = ((budget + float_tol(budget) - min_value) / span).floor();
+                if index < 0.0 {
+                    return 0.0;
+                }
+                let index = (index as usize).min(cdf.len() - 1);
+                if biased { biased_cdf[index] } else { cdf[index] }
+            }
+            Lattice::Coarse(coarse) => {
+                let pair = coarse.pair(budget);
+                if biased { pair.1 } else { pair.0 }
+            }
+        }
+    }
+}
+
+/// A sum the exact lattice is too big for, on a grid of about `Tuning::coarse_cells` points a
+/// standard deviation. Each outcome's mass is split between the two grid points around it in
+/// proportion, which keeps every mean: so t F - mean F' is exactly E[(t - S')+] of the gridded
+/// sum S', and S' only has `added` more variance, which is taken off as half of it times the
+/// density. Mass under 1e-16 at either end is dropped.
+pub struct Coarse {
+    min_value: f64,
+    max_value: f64,
+    mean: f64,
+    step: f64,
+    /// the grid point of `pmf[0]`, counted from the minimum
+    start: usize,
+    pmf: Vec<f64>,
+    cdf: Vec<f64>,
+    /// running sums of grid point times mass
+    moment: Vec<f64>,
+    added: f64,
+}
+
+const COARSE_TAIL: f64 = 1e-16;
+
+impl Coarse {
+    /// E[(t - S')+]
+    fn leftover(&self, t: f64) -> f64 {
+        let at = (t - self.min_value) / self.step;
+        let index = at.floor() - self.start as f64;
         if index < 0.0 {
             return 0.0;
         }
         let index = (index as usize).min(self.cdf.len() - 1);
-        if biased {
-            self.biased_cdf[index]
-        } else {
-            self.cdf[index]
+        self.step * (at * self.cdf[index] - self.moment[index])
+    }
+
+    /// The probability of being within t, and the biased one that makes t F - mean F' the
+    /// expected leftover less the bias.
+    pub fn pair(&self, t: f64) -> (f64, f64) {
+        if t > self.max_value - float_tol(self.max_value) {
+            return (1.0, 1.0);
         }
+        if t < self.min_value - float_tol(self.min_value) {
+            return (0.0, 0.0);
+        }
+        let half = self.step / 2.0;
+        let plain = ((self.leftover(t + half) - self.leftover(t - half)) / self.step).clamp(0.0, 1.0);
+        let near = ((t - self.min_value) / self.step).round() as i64 - self.start as i64;
+        let density: f64 = (near - 2..=near + 2)
+            .filter_map(|i| usize::try_from(i).ok().and_then(|i| self.pmf.get(i)))
+            .sum::<f64>()
+            / (5.0 * self.step);
+        let leftover = (self.leftover(t) - 0.5 * self.added * density).max((t - self.mean).max(0.0));
+        (plain, (t * plain - leftover) / self.mean)
     }
 }
 
@@ -36,8 +94,11 @@ impl StateBundle {
     pub fn lattice(&self, support_index: i64, skip_count: usize) -> Option<Lattice> {
         let (min_value, max_value) = self.find_min_max(support_index, skip_count);
         let (span, min_delta) = self.lattice_span(support_index, skip_count);
-        if !min_delta.is_finite() || min_delta < 1.0 {
+        if !min_delta.is_finite() {
             return None;
+        }
+        if min_delta < 1.0 {
+            return self.coarse(support_index, skip_count, f64::INFINITY, &mut Probe::default()).map(Lattice::Coarse);
         }
         let outcomes: usize = self
             .extract_collapsed_pair(support_index, skip_count)
@@ -45,7 +106,7 @@ impl StateBundle {
             .map(|pairs| pairs.len())
             .sum();
         if (max_value - min_value) / span * outcomes as f64 > self.tuning.max_lattice_work as f64 {
-            return None;
+            return self.coarse(support_index, skip_count, f64::INFINITY, &mut Probe::default()).map(Lattice::Coarse);
         }
 
         let mut pmf: Vec<f64> = vec![1.0];
@@ -74,12 +135,7 @@ impl StateBundle {
             cdf.push(below);
             biased_cdf.push(biased_below);
         }
-        Some(Lattice {
-            min_value,
-            span,
-            cdf,
-            biased_cdf,
-        })
+        Some(Lattice::Exact { min_value, span, cdf, biased_cdf })
     }
 
     /// The lattice's answers at every threshold, plain and biased, for each of these free
@@ -91,6 +147,7 @@ impl StateBundle {
         support_index: i64,
         skips: &[usize],
         thresholds: &[f64],
+        probe: &mut Probe,
     ) -> Vec<Option<Vec<(f64, f64)>>> {
         let n = self.special_state.len();
         let support = |index: usize| self.support_from_index(self.special_state[index], support_index);
@@ -127,6 +184,7 @@ impl StateBundle {
             }
         }
         let Some(&(first, _)) = wanted.iter().min() else {
+            self.coarse_table(support_index, skips, thresholds, &mut out, probe);
             return out;
         };
         // by index, as far down as the pass went
@@ -203,6 +261,136 @@ impl StateBundle {
             }
             out[wanted[at].1] = Some(answers);
         }
+        self.coarse_table(support_index, skips, thresholds, &mut out, probe);
         out
+    }
+
+    /// The outcomes the exact lattice was too big for, each on a coarse lattice of its own
+    fn coarse_table(
+        &self,
+        support_index: i64,
+        skips: &[usize],
+        thresholds: &[f64],
+        out: &mut [Option<Vec<(f64, f64)>>],
+        probe: &mut Probe,
+    ) {
+        if self.tuning.coarse_cells <= 0.0 {
+            return;
+        }
+        let top = thresholds.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+        for (slot, &skip) in skips.iter().enumerate() {
+            if out[slot].is_some() {
+                continue;
+            }
+            let reach = top + float_tol(top) - self.find_min_max(support_index, skip).0;
+            if reach < 0.0 {
+                continue;
+            }
+            if let Some(coarse) = self.coarse(support_index, skip, reach, probe) {
+                out[slot] = Some(thresholds.iter().map(|&t| coarse.pair(t)).collect());
+            }
+        }
+    }
+
+    /// None where it is off, the sum has one outcome, or it would take more than `max_coarse_work`
+    pub fn coarse(&self, support_index: i64, skip_count: usize, reach: f64, probe: &mut Probe) -> Option<Coarse> {
+        if self.tuning.coarse_cells <= 0.0 {
+            return None;
+        }
+        let shape = self.shape(support_index, skip_count);
+        let sd = shape.zero.2.sqrt();
+        if !(sd > 0.0) || !shape.min_delta.is_finite() {
+            return None;
+        }
+        // a whole number of spans where there is a lattice, so outcomes on it stay put
+        let mut step = sd / self.tuning.coarse_cells;
+        if shape.min_delta >= 1.0 {
+            step = shape.span * (step / shape.span).floor().max(1.0);
+        }
+        // grid points past this are not needed
+        let keep = if reach.is_finite() { (reach / step) as usize + 4 } else { usize::MAX };
+        let (mut pmf, mut start, mut added, mut work) = (vec![1.0], 0usize, 0.0, 0usize);
+        let mut cells: Vec<f64> = Vec::new();
+        for pairs in self.extract_collapsed_pair(support_index, skip_count) {
+            if pairs.len() < 2 {
+                continue;
+            }
+            let low = pairs[0].0;
+            cells.clear();
+            for &(value, p) in pairs.iter() {
+                let at = (value - low) / step;
+                let mut below = at.floor();
+                let mut share = at - below;
+                if share > 1.0 - 1e-9 {
+                    (below, share) = (below + 1.0, 0.0);
+                } else if share < 1e-9 {
+                    share = 0.0;
+                }
+                let below = below as usize;
+                if cells.len() < below + 2 {
+                    cells.resize(below + 2, 0.0);
+                }
+                cells[below] += p * (1.0 - share);
+                cells[below + 1] += p * share;
+                added += p * share * (1.0 - share) * step * step;
+            }
+            let end = (start + pmf.len() + cells.len() - 1).min(keep);
+            if end <= start {
+                return None;
+            }
+            let mut next = vec![0.0; end - start];
+            for (offset, &weight) in cells.iter().enumerate() {
+                if offset >= next.len() {
+                    break;
+                }
+                if weight == 0.0 {
+                    continue;
+                }
+                let len = (next.len() - offset).min(pmf.len());
+                for (target, mass) in next[offset..offset + len].iter_mut().zip(&pmf[..len]) {
+                    *target += mass * weight;
+                }
+                work += len;
+            }
+            if work > self.tuning.max_coarse_work {
+                probe.count(Counter::CoarseTooBig);
+                return None;
+            }
+            let (mut front, mut tail) = (0, 0.0);
+            while front + 1 < next.len() && tail + next[front] < COARSE_TAIL {
+                tail += next[front];
+                front += 1;
+            }
+            let (mut back, mut tail) = (next.len(), 0.0);
+            while back > front + 1 && tail + next[back - 1] < COARSE_TAIL {
+                tail += next[back - 1];
+                back -= 1;
+            }
+            next.truncate(back);
+            next.drain(..front);
+            start += front;
+            pmf = next;
+        }
+        probe.count(Counter::Coarse);
+        let (mut below, mut moment) = (0.0, 0.0);
+        let mut cdf = Vec::with_capacity(pmf.len());
+        let mut moments = Vec::with_capacity(pmf.len());
+        for (index, mass) in pmf.iter().enumerate() {
+            below += mass;
+            moment += (start + index) as f64 * mass;
+            cdf.push(below);
+            moments.push(moment);
+        }
+        Some(Coarse {
+            min_value: shape.min_value,
+            max_value: shape.max_value,
+            mean: shape.mean,
+            step,
+            start,
+            pmf,
+            cdf,
+            moment: moments,
+            added,
+        })
     }
 }

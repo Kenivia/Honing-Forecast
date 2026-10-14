@@ -203,7 +203,7 @@ impl StateBundle {
         let shifted = |amount: f64| -> SmallVec<[(f64, f64); 4]> { bands.iter().map(|&(thresh, price)| (thresh - amount, price)).collect() };
         let thresholds: Vec<f64> = amounts.iter().flat_map(|&amount| bands.iter().map(move |pair| pair.0 - amount)).collect();
         let counts: SmallVec<[usize; 8]> = skips.iter().map(|skip| skip.0).collect();
-        let table = self.lattice_table(row as i64, &counts, &thresholds);
+        let table = self.lattice_table(row as i64, &counts, &thresholds, probe);
         let sampled: Vec<usize> = {
             let points = self.tuning.response_points.max(2);
             let last = amounts.len() - 1;

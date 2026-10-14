@@ -21,7 +21,7 @@ pub struct Args {
     /// json of "scenario:step" to a list of essences
     #[arg(long)]
     pub states: Option<PathBuf>,
-    /// one line per state: name, metric, seconds per evaluation
+    /// one line per state: name, metric, seconds per evaluation, flow
     #[arg(long)]
     pub out: Option<PathBuf>,
     #[arg(long, default_value_t = 1)]
@@ -49,7 +49,7 @@ pub fn run(scenarios: &[Scenario], args: &Args, tuning: &Tuning) {
         })
         .collect();
     let pool = rayon::ThreadPoolBuilder::new().num_threads(args.jobs).build().unwrap();
-    let rows: Vec<(String, f64, f64, Vec<i64>)> = pool.install(|| {
+    let rows: Vec<(String, f64, f64, Vec<i64>, f64)> = pool.install(|| {
         steps
             .par_iter()
             .flat_map(|(name, payload)| {
@@ -68,7 +68,7 @@ pub fn run(scenarios: &[Scenario], args: &Args, tuning: &Tuning) {
                     let mut rng = StdRng::seed_from_u64(seed);
                     let start = Instant::now();
                     let solved = hf_core::optimizer::solve(&mut rng, base, None, &mut probe);
-                    return vec![(name.clone(), solved.best.metric, start.elapsed().as_secs_f64(), probe.data.counts.to_vec())];
+                    return vec![(name.clone(), solved.best.metric, start.elapsed().as_secs_f64(), probe.data.counts.to_vec(), f64::NAN)];
                 }
                 let mut states: Vec<(String, StateBundle)> = vec![(format!("{name} given"), base.clone())];
                 for moves in [20, 200] {
@@ -90,7 +90,11 @@ pub fn run(scenarios: &[Scenario], args: &Args, tuning: &Tuning) {
                             state.metric_router(&mut Probe::default());
                             reps += 1;
                         }
-                        (label, metric, start.elapsed().as_secs_f64() / reps as f64, probe.data.counts.to_vec())
+                        // what it uses does not depend on the tuning, so not at an expensive one
+                        let mut plain = state.clone();
+                        plain.tuning = Tuning::default();
+                        let flow = crate::carry::flow(&plain);
+                        (label, metric, start.elapsed().as_secs_f64() / reps as f64, probe.data.counts.to_vec(), flow)
                     })
                     .collect()
             })
@@ -106,8 +110,8 @@ pub fn run(scenarios: &[Scenario], args: &Args, tuning: &Tuning) {
     }
     if let Some(path) = &args.out {
         let mut file = std::fs::File::create(path).unwrap();
-        for (label, metric, seconds, _) in &rows {
-            writeln!(file, "{label}\t{metric:e}\t{seconds:e}").unwrap();
+        for (label, metric, seconds, _, flow) in &rows {
+            writeln!(file, "{label}\t{metric:e}\t{seconds:e}\t{flow:e}").unwrap();
         }
     }
     println!("{} states, {:.3} ms for one evaluation of each, {:.1} us mean", rows.len(), total * 1e3, total / rows.len() as f64 * 1e6);
