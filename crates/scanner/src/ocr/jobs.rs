@@ -3,7 +3,7 @@ use super::{
     recognize::recognize_line,
     text::text_strip,
 };
-use crate::{scanner_state::ScannerState, setup::BASE_ICONS, timing::timed};
+use crate::{dev_utils::timing::timed, interface::setup::BASE_ICONS, scanner_state::ScannerState};
 use image::{GrayImage, RgbaImage};
 use serde::{Deserialize, Serialize};
 use std::mem::take;
@@ -30,7 +30,12 @@ mod pixels {
     }
 
     pub fn serialize<S: Serializer>(image: &RgbaImage, serializer: S) -> Result<S::Ok, S::Error> {
-        Out { width: image.width(), height: image.height(), data: image.as_raw() }.serialize(serializer)
+        Out {
+            width: image.width(),
+            height: image.height(),
+            data: image.as_raw(),
+        }
+        .serialize(serializer)
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<RgbaImage, D::Error> {
@@ -117,10 +122,19 @@ impl ScannerState {
         let next = self.ocr_ids.len() as u32;
         let id = *self.ocr_ids.entry(hash).or_insert(next);
         // a line that is waiting behind others goes again when something more urgent wants it
-        let urgent = self.ocr_priority.get(&id).is_some_and(|old| priority < *old) && !self.ocr_texts.contains_key(&id);
+        let urgent = self
+            .ocr_priority
+            .get(&id)
+            .is_some_and(|old| priority < *old)
+            && !self.ocr_texts.contains_key(&id);
         if id == next || urgent {
             self.ocr_priority.insert(id, priority);
-            self.ocr_queue.push(OcrJob { id, priority, group, line });
+            self.ocr_queue.push(OcrJob {
+                id,
+                priority,
+                group,
+                line,
+            });
         }
         id
     }
@@ -139,7 +153,10 @@ impl ScannerState {
 
     // for the native harnesses, which have no second worker
     pub fn run_ocr_inline(&mut self) {
-        let results = take(&mut self.ocr_queue).iter().map(|job| (job.id, job.line.read())).collect();
+        let results = take(&mut self.ocr_queue)
+            .iter()
+            .map(|job| (job.id, job.line.read()))
+            .collect();
         self.apply_ocr(results);
     }
 }

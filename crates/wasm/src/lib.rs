@@ -6,10 +6,11 @@ use hf_core::payload::Payload;
 use hf_core::probe::Probe;
 use hf_core::state_bundle::StateBundle;
 use hf_scanner::buffer::Buffer;
+use hf_scanner::dev_utils::capture::parse_scan;
+use hf_scanner::dev_utils::timing::{take, timed};
+use hf_scanner::interface::setup::{OneIconConfig, set_config};
 use hf_scanner::ocr::{jobs::OcrJob, recognize::load_ocr_engine};
 use hf_scanner::scanner_state::{ScannerState, SlotEdit};
-use hf_scanner::setup::{OneIconConfig, set_config};
-use hf_scanner::timing::timed;
 use rand::rngs::ThreadRng;
 use serde::Deserialize;
 use serde_wasm_bindgen::{from_value, to_value};
@@ -25,7 +26,11 @@ static ADV_FRESH: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/adv_fresh.bi
 
 fn add_fresh_adv(payload: &mut Payload) {
     let fresh = Some((0, 0, false, false));
-    if payload.upgrade_info.iter().any(|upgrade| !upgrade.is_normal_honing && upgrade.adv_progress == fresh) {
+    if payload
+        .upgrade_info
+        .iter()
+        .any(|upgrade| !upgrade.is_normal_honing && upgrade.adv_progress == fresh)
+    {
         let table: Vec<(AdvConfig, AdvDistTriplet)> = postcard::from_bytes(ADV_FRESH).unwrap();
         payload.adv_cache.get_or_insert_default().extend(table);
     }
@@ -88,7 +93,10 @@ pub fn cropper_wrapper(options: JsValue) -> JsValue {
         if !options.record {
             state.recorder = None;
         }
-        let inputs = state.recorder.is_some().then(|| (options.ocr_results.clone(), options.edits.clone()));
+        let inputs = state
+            .recorder
+            .is_some()
+            .then(|| (options.ocr_results.clone(), options.edits.clone()));
         state.apply_edits(options.edits);
         timed("apply_ocr", || state.apply_ocr(options.ocr_results));
         state.cropper();
@@ -117,7 +125,7 @@ pub fn replay_wrapper(record: &[u8], full: bool) -> JsValue {
 
     SCANNER.with_borrow_mut(|state| {
         let state = state.as_mut().unwrap();
-        state.replay_scan(hf_scanner::capture::parse_scan(record));
+        state.replay_scan(parse_scan(record));
         let out = to_value(&state.result(full)).unwrap();
         state.clear_changed();
         out
@@ -133,7 +141,7 @@ pub fn replay_mismatch() -> Option<f64> {
 // stage timings of the calls since the last take, as [name, total, calls]
 #[wasm_bindgen]
 pub fn take_timings() -> JsValue {
-    to_value(&hf_scanner::timing::take()).unwrap()
+    to_value(&take()).unwrap()
 }
 
 // what a new scanner state is built from
@@ -158,7 +166,12 @@ struct GameResolution {
 pub fn reserve_buffer_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
-    let ReserveInput { screen_info: game, mut buffer, config, record } = from_value(input).unwrap();
+    let ReserveInput {
+        screen_info: game,
+        mut buffer,
+        config,
+        record,
+    } = from_value(input).unwrap();
     buffer.reserve();
     set_config(config);
     let mut scanner_state =

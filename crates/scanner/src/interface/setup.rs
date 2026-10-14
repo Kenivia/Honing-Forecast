@@ -1,5 +1,5 @@
 use crate::{
-    constants::COMBINED_NUMBER_HEIGHT,
+    anchor_to_slot::{constants::COMBINED_NUMBER_HEIGHT, slots::constants::FROM_AFAR},
     image_utils::{common::Rect, resize::resize_one_config},
 };
 use ahash::AHashMap;
@@ -52,7 +52,11 @@ pub struct WireRect {
 impl From<&Rect> for WireRect {
     fn from(rect: &Rect) -> Self {
         let (width, height) = rect.pixel_size();
-        Self { top_left: rect.top_left, width: width as usize, height: height as usize }
+        Self {
+            top_left: rect.top_left,
+            width: width as usize,
+            height: height as usize,
+        }
     }
 }
 
@@ -133,7 +137,10 @@ pub fn icon_lookup(
         // the offset says where the template sits, so it moves with the cut
         let on_screen = Rect::ui(base_at, crop.width, crop.height)
             .scaled(resolution)
-            .shifted((crop.top_left.0 * scale_factor, crop.top_left.1 * scale_factor));
+            .shifted((
+                crop.top_left.0 * scale_factor,
+                crop.top_left.1 * scale_factor,
+            ));
         (crop.top_left, (crop.width, crop.height), on_screen)
     };
     // a template is whole pixels, and so is anything placed by its offset
@@ -165,6 +172,9 @@ pub fn icon_lookup(
 // The base templates everything is matched against. The file is written by
 // templates/make_msg_pack.py (icons) and scripts/anchor setup/anchors.py (anchors).
 pub fn set_config(config: Vec<OneIconConfig>) {
-    *BASE_ICONS.write() = config.into_iter().map(|icon| (icon.name.clone(), icon)).collect();
-    crate::cropper::slots::FROM_AFAR.write().clear();
+    *BASE_ICONS.write() = config
+        .into_iter()
+        .map(|icon| (icon.name.clone(), icon))
+        .collect();
+    FROM_AFAR.write().clear();
 }

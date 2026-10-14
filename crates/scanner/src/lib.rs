@@ -1,13 +1,10 @@
+pub mod anchor_to_slot;
 pub mod buffer;
-pub mod capture;
 pub mod constants;
 pub mod cropper;
+pub mod dev_utils;
 pub mod image_utils;
-#[cfg(not(target_arch = "wasm32"))]
-pub mod native;
+pub mod interface;
 pub mod ocr;
-pub mod scan_result;
 pub mod scanner_state;
-pub mod setup;
-pub mod timing;
 pub mod tooltip;

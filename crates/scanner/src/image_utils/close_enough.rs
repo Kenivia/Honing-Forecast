@@ -1,5 +1,6 @@
-use crate::setup::OneIconConfig;
 use image::RgbaImage;
+
+use crate::interface::setup::OneIconConfig;
 
 pub const DEFAULT_CONFIDENCE: f64 = 0.95;
 
@@ -16,7 +17,10 @@ fn shifted_distance(template: &RgbaImage, observed: &RgbaImage, skip: &[Area]) -
     for y in 1..h - 1 {
         let mut from = None;
         for x in 1..w {
-            let keep = x < w - 1 && !skip.iter().any(|s| s.0 <= x && x < s.2 && s.1 <= y && y < s.3);
+            let keep = x < w - 1
+                && !skip
+                    .iter()
+                    .any(|s| s.0 <= x && x < s.2 && s.1 <= y && y < s.3);
             match (keep, from) {
                 (true, None) => from = Some(x),
                 (false, Some(start)) => {
@@ -50,15 +54,11 @@ fn shifted_distance(template: &RgbaImage, observed: &RgbaImage, skip: &[Area]) -
 
 // How alike the two are, whatever the pass limit. Both are at the reference brightness already.
 pub fn confidence(template: &OneIconConfig, observed: &OneIconConfig) -> f64 {
-    confidence_without(template, observed, &[])
+    masked_confidence(template, observed, &[])
 }
 
 // the same with parts of the template left out, for a slot with something drawn over them
-pub fn confidence_without(
-    template: &OneIconConfig,
-    observed: &OneIconConfig,
-    skip: &[Area],
-) -> f64 {
+pub fn masked_confidence(template: &OneIconConfig, observed: &OneIconConfig, skip: &[Area]) -> f64 {
     assert_eq!(template.offset.space, observed.offset.space);
     assert_eq!(template.offset.pixel_size(), observed.offset.pixel_size());
 

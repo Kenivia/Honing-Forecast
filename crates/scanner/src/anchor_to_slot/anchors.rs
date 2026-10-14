@@ -1,25 +1,21 @@
-use ahash::AHashMap;
-
 use crate::{
-    constants::{ANCHORS, AnchorSpec, Bound, STORAGE_MIN, STORAGE_SHIFTS, WINDOW_SLACK, anchor_spec},
-    cropper::cropper::differing,
+    anchor_to_slot::constants::{ANCHORS, AnchorSpec, Bound, anchor_spec},
+    constants::{
+        CHAR_INV_FORCED_SEARCH_FREQ, CHAR_INV_SEARCH_THRESH, STORAGE_MIN, STORAGE_NPC_SHIFT,
+        WINDOW_ANCHOR_SLACK,
+    },
+    dev_utils::timing::timed,
     image_utils::{
         brightness::{est_ingame_brightness, mean_intensity, normalize_brightness},
         close_enough::close_enough,
         common::{Rect, get_resizer},
+        sample::diff_samples,
         template_matching::{DEFAULT_TEMPLATE_MATCHING_CONFIDENCE, template_match},
     },
+    interface::setup::icon_lookup,
     scanner_state::{AnchorType, InventoryType, ScannerState},
-    setup::icon_lookup,
-    timing::timed,
 };
-
-// Share of the thinned frame that has to differ from the one last searched as a whole for the lone
-// inventory to be searched for again at once. Its window showing up is 13 to 15% of a 3440x1440
-// frame; the cursor and a tooltip are under 3%.
-const SEARCH_CHANGED: f64 = 0.03;
-// otherwise one of its variants is searched for on every this many scans
-const SEARCH_EVERY: u64 = 8;
+use ahash::AHashMap;
 
 // cut on whole pixels: at a fraction of one it would be resampled
 fn on_pixels(mut area: Rect) -> Rect {
@@ -172,7 +168,7 @@ impl ScannerState {
         drop(template);
         // matched as captured: the score does not go by brightness
         let searched = self.crop_buffer(search_area);
-        let Some((found_in_area, confidence, best_mean_f)) = template_match(
+        let Some((found_in_area, confidence, mean_intensity)) = template_match(
             &icon_lookup(
                 variant.name,
                 self.screen_info.effective_height,
@@ -185,19 +181,24 @@ impl ScannerState {
         let found_position = found_in_area.shifted(search_area.top_left);
         let brightness = variant
             .brightness
-            .map(|curve| est_ingame_brightness(best_mean_f, &curve));
+            .map(|curve| est_ingame_brightness(mean_intensity, &curve));
 
         if confidence > required_confidence {
             let anchor_info = self.anchors.get_mut(&spec.anchor_type).unwrap();
-            anchor_info.positions[variant_index] =
-                Some(FoundVariant { position: found_position, confidence, brightness });
-            // variants place the root a pixel apart, so the first one found keeps it
+            anchor_info.positions[variant_index] = Some(FoundVariant {
+                position: found_position,
+                confidence,
+                brightness,
+            });
+            // variants place the root SLIGHTLY (like < 0.1 pixel) apart, we let the first one
+            // keep it to make comparisons more stable
             if !anchor_info.positions[..variant_index]
                 .iter()
                 .any(|x| x.is_some())
             {
                 anchor_info.position_root = Some(found_position.get_offset(&template_offset));
             }
+
             // only to start with: until an anchor has held up, there is nothing better
             if self.screen_info.brightness_anchors == 0 && brightness.is_some() {
                 self.screen_info.brightness = brightness;
@@ -213,7 +214,13 @@ impl ScannerState {
         // in list order, so the sum does not depend on map order
         let found: Vec<f64> = ANCHORS
             .iter()
-            .flat_map(|spec| self.anchors[&spec.anchor_type].positions.iter().flatten().filter_map(|x| x.brightness))
+            .flat_map(|spec| {
+                self.anchors[&spec.anchor_type]
+                    .positions
+                    .iter()
+                    .flatten()
+                    .filter_map(|x| x.brightness)
+            })
             .collect();
         // nothing held up at this estimate, so it is not one to keep: the next anchor found replaces it
         if found.is_empty() {
@@ -247,33 +254,33 @@ impl ScannerState {
         }
     }
 
-    // The lone inventory can be anywhere, and a search of the whole frame takes 180 to 590 ms. So
-    // it is searched for when the frame differs enough from the one last searched, measured
+    // a search takes 180 to 590 ms, so it's searched for when the frame differs enough from the one last searched, measured
     // against that frame and not the previous one so that a window fading in adds up; when it
-    // was lost at its re-check on this scan; and otherwise one variant on every few scans. No
-    // rule waits for a later frame: a still screen sends none.
     fn search_lone(&mut self, lost: bool) {
         let spec = anchor_spec(AnchorType::CharInventory);
         if !self.anchors[&spec.anchor_type].is_found() {
             self.clear_anchor(spec.anchor_type);
             let changed = self.search_samples.len() != self.last_samples.len()
-                || differing(&self.last_samples, &self.search_samples) > SEARCH_CHANGED;
-            let whole: Vec<usize> = if lost || changed {
+                || diff_samples(&self.last_samples, &self.search_samples) > CHAR_INV_SEARCH_THRESH;
+            let variants_to_search: Vec<usize> = if lost || changed {
                 self.search_samples = self.last_samples.clone();
                 self.search_ticks = 0;
                 (0..spec.variants.len()).collect()
             } else {
+                // search one at a time
                 self.search_ticks += 1;
-                let turn = self.search_ticks / SEARCH_EVERY;
-                if self.search_ticks % SEARCH_EVERY != 0 {
+                let turn = self.search_ticks / CHAR_INV_FORCED_SEARCH_FREQ;
+                if self.search_ticks % CHAR_INV_FORCED_SEARCH_FREQ != 0 {
                     return;
                 }
                 vec![turn as usize % spec.variants.len()]
             };
-            let frame = self.compute_search_area(&Bound::Frame);
-            for variant_index in whole {
+            let frame: Rect = self.compute_search_area(&Bound::Frame);
+            for variant_index in variants_to_search {
                 if !self.anchors[&spec.anchor_type].is_found() {
-                    timed("anchors/search", || self.search_variant(spec, variant_index, frame));
+                    timed("anchors/search", || {
+                        self.search_variant(spec, variant_index, frame)
+                    });
                 }
             }
         }
@@ -281,7 +288,7 @@ impl ScannerState {
         let Some(root) = self.anchors[&spec.anchor_type].position_root else {
             return;
         };
-        let slack = WINDOW_SLACK * self.screen_info.scale_factor;
+        let slack: f64 = WINDOW_ANCHOR_SLACK * self.screen_info.scale_factor;
         for (variant_index, variant) in spec.variants.iter().enumerate() {
             if self.anchors[&spec.anchor_type].positions[variant_index].is_none() {
                 let at = icon_lookup(
@@ -297,7 +304,9 @@ impl ScannerState {
                     height: at.height + slack * 2.0,
                     ..at
                 });
-                timed("anchors/near", || self.search_variant(spec, variant_index, near));
+                timed("anchors/near", || {
+                    self.search_variant(spec, variant_index, near)
+                });
             }
         }
     }
@@ -312,7 +321,7 @@ impl ScannerState {
             self.search_storage();
         } else {
             // closed, or only just opened: look where the pet and then the NPC would put it
-            for shift in STORAGE_SHIFTS {
+            for shift in STORAGE_NPC_SHIFT {
                 for spec in ANCHORS.iter() {
                     if spec.anchor_type != AnchorType::CharInventory {
                         self.clear_anchor(spec.anchor_type);

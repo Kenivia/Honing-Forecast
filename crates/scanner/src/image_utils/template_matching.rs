@@ -1,4 +1,4 @@
-use crate::{image_utils::common::Rect, setup::OneIconConfig};
+use crate::{image_utils::common::Rect, interface::setup::OneIconConfig};
 use image::{GrayImage, imageops::grayscale};
 use realfft::{ComplexToReal, RealFftPlanner, RealToComplex};
 use rustfft::{Fft, FftPlanner, num_complex::Complex32};
@@ -284,7 +284,7 @@ pub fn template_match(
     }
 
     let s1 = box_sum(&sum_table, w1, best_x, best_y, best_x + tw, best_y + th);
-    let best_mean_f = s1 / t_n;
+    let mean_intensity = s1 / t_n;
 
     let mut dx = 0.0;
     let mut x_peak_value = best_score;
@@ -358,6 +358,6 @@ pub fn template_match(
             .offset
             .with_top_left((best_x as f64 + dx, best_y as f64 + dy)),
         corrected_score.clamp(-1.0, 1.0),
-        best_mean_f,
+        mean_intensity,
     ))
 }

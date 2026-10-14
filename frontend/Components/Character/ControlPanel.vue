@@ -58,7 +58,7 @@ async function load_backup(event: Event) {
 
 // What a material the character owns but does not end up spending is worth. Calc.vue
 // watches band_values and restarts the workers.
-const leftover_tooltip = `How much a material you don't end up spending is worth.
+const leftover_tooltip = `We consider every possible outcome. In the event that you have material leftover, they are converted to gold according to the settings below. 
 `;
 
 // shown tradable first: it is the band people actually change, and the one below it can

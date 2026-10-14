@@ -1,9 +1,9 @@
 use crate::{
+    anchor_to_slot::anchors::AnchorInfo,
     buffer::Buffer,
-    capture::Recorder,
-    cropper::anchors::AnchorInfo,
+    dev_utils::capture::Recorder,
+    interface::setup::OneIconConfig,
     ocr::jobs::OcrJob,
-    setup::OneIconConfig,
     tooltip::{
         chest::Chest,
         hover::{Hover, PendingRead},
@@ -31,9 +31,23 @@ pub struct ScreenInfo {
 
 impl ScannerState {
     // over a frame buffer that is already reserved; the config is set apart, in set_config
-    pub fn new(buffer: Buffer, game_width: u32, game_height: u32, forced_21_9: bool) -> ScannerState {
-        let screen_info = ScreenInfo { game_width, game_height, forced_21_9, ..Default::default() };
-        let mut state = ScannerState { buffer, screen_info, ..Default::default() };
+    pub fn new(
+        buffer: Buffer,
+        game_width: u32,
+        game_height: u32,
+        forced_21_9: bool,
+    ) -> ScannerState {
+        let screen_info = ScreenInfo {
+            game_width,
+            game_height,
+            forced_21_9,
+            ..Default::default()
+        };
+        let mut state = ScannerState {
+            buffer,
+            screen_info,
+            ..Default::default()
+        };
         state.initialize_anchors();
         state.initialize_page_num_infos();
         state
@@ -119,7 +133,11 @@ impl OneSlotInfo {
     // One read under the cursor or a highlight does not undo several that agreed. The newest wins
     // a tie.
     pub fn vote_amount(&mut self, text: String) {
-        let digits = |text: &String| text.chars().filter(char::is_ascii_digit).collect::<String>();
+        let digits = |text: &String| {
+            text.chars()
+                .filter(char::is_ascii_digit)
+                .collect::<String>()
+        };
         self.amount_reads.push(text);
         if self.amount_reads.len() > AMOUNT_READS {
             self.amount_reads.remove(0);

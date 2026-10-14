@@ -1,18 +1,16 @@
 use ahash::AHashMap;
 
 use crate::{
-    constants::ALL_PAGE_NUM,
+    anchor_to_slot::constants::ALL_PAGE_NUM,
+    constants::{DARK_SCANS, PAGE_NUM_LEAD},
     image_utils::{
         brightness::normalize_brightness,
         close_enough::{DEFAULT_CONFIDENCE, confidence},
         common::get_resizer,
     },
+    interface::setup::icon_lookup,
     scanner_state::{InventoryType, ScannerState},
-    setup::icon_lookup,
 };
-
-const TAB_LEAD: f64 = 0.1; // an active tab leads by 0.2, one under the cursor by 0.05
-const DARK_SCANS: usize = 3; // scans a tab has to look dark for before its page is given up
 
 impl ScannerState {
     pub fn initialize_page_num_infos(&mut self) {
@@ -41,15 +39,18 @@ impl ScannerState {
                     );
                     let mut seen = self.crop_buffer(icon.offset.shifted(root));
                     normalize_brightness(&mut seen, self.screen_info.brightness.unwrap());
-                    (confidence(&icon, &seen), icon.required_confidence.unwrap_or(DEFAULT_CONFIDENCE))
+                    (
+                        confidence(&icon, &seen),
+                        icon.required_confidence.unwrap_or(DEFAULT_CONFIDENCE),
+                    )
                 };
                 // A tab under the cursor lights up and looks a little like both states (0.83 active,
                 // 0.78 inactive), so a state has to pass and be clearly the better of the two.
                 let ((active, active_limit), (inactive, inactive_limit)) =
                     (score(active_name), score(inactive_name));
-                let state = if active > active_limit && active - inactive > TAB_LEAD {
+                let state = if active > active_limit && active - inactive > PAGE_NUM_LEAD {
                     Some(true)
-                } else if inactive > inactive_limit && inactive - active > TAB_LEAD {
+                } else if inactive > inactive_limit && inactive - active > PAGE_NUM_LEAD {
                     Some(false)
                 } else {
                     None
@@ -60,25 +61,39 @@ impl ScannerState {
             // looked dark for a few scans: a tall tooltip covers the tabs of the very window it
             // belongs to. Under a tooltip a tab can look dark, which then says nothing.
             let states = &self.page_num_infos[inv_type];
-            let lit: Vec<usize> = (0..states.len()).filter(|i| states[*i] == Some(true)).collect();
-            let tooltip = self.hover.as_ref().filter(|hover| hover.missed == 0).map(|hover| hover.bar);
+            let lit: Vec<usize> = (0..states.len())
+                .filter(|i| states[*i] == Some(true))
+                .collect();
+            let tooltip = self
+                .hover
+                .as_ref()
+                .filter(|hover| hover.missed == 0)
+                .map(|hover| hover.bar);
             let last = self.last_pages.get(inv_type).copied();
             match (&lit[..], last) {
                 ([page], _) => {
                     self.last_pages.insert(*inv_type, (*page, 0));
                 }
-                ([], Some((page, dark))) => {
+                ([], Some((page, dark_frames))) => {
                     let (active, _) = &ALL_PAGE_NUM[inv_type][page];
-                    let tab = icon_lookup(active, self.screen_info.effective_height, get_resizer(&mut self.resizer))
-                        .offset
-                        .shifted(root);
+                    let tab = icon_lookup(
+                        active,
+                        self.screen_info.effective_height,
+                        get_resizer(&mut self.resizer),
+                    )
+                    .offset
+                    .shifted(root);
                     let covered = tooltip.is_some_and(|bar| {
                         let (left, top) = tab.top_left;
                         left < (bar.x + bar.width) as f64
                             && left + tab.width > bar.x as f64
                             && top + tab.height > bar.y as f64
                     });
-                    let dark = if states[page] == Some(false) && !covered { dark + 1 } else { 0 };
+                    let dark = if states[page] == Some(false) && !covered {
+                        dark_frames + 1
+                    } else {
+                        0
+                    };
                     if dark >= DARK_SCANS {
                         self.last_pages.remove(inv_type);
                     } else {

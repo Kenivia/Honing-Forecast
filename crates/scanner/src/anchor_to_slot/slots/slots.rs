@@ -1,123 +1,28 @@
 use crate::{
-    constants::{ALL_SLOT_ADDRESSS, COMBINED_NUMBER_HEIGHT, NUMBER_OFFSET, SLOT_ORDER},
+    anchor_to_slot::{
+        constants::{ALL_SLOT_ADDRESSS, COMBINED_NUMBER_HEIGHT, NUMBER_OFFSET, SLOT_ORDER},
+        slots::{
+            constants::{
+                AFAR_ROWS, ALTERNATIVE, OVERLAY_REACH, OVERLAYS, SLOT_BUDGET, SLOT_CONFIDENCE,
+                SLOT_UPDATE_FREQ, UNMATCHED_UNCHANGED,
+            },
+            utils::{from_afar, overlaid, overlay_areas},
+        },
+    },
+    dev_utils::timing::{now, timed},
     image_utils::{
         brightness::normalize_brightness,
-        close_enough::{Area, DEFAULT_CONFIDENCE, close_enough, confidence, confidence_without},
+        close_enough::{DEFAULT_CONFIDENCE, close_enough, confidence, masked_confidence},
         common::{Rect, get_resizer},
     },
+    interface::setup::{BASE_ICONS, OneIconConfig, icon_lookup},
     ocr::jobs::{Kind, Line},
     scanner_state::{OneSlotInfo, ScannerState, SlotAddress},
-    setup::{BASE_ICONS, OneIconConfig, icon_lookup},
-    timing::timed,
-    tooltip::items::has_level,
 };
-use ahash::AHashMap;
-use image::RgbaImage;
-use parking_lot::RwLock;
-use std::sync::LazyLock;
-
-const UNMATCHED_UNCHANGED: f64 = 0.995;
-// What a slot has to score as an icon. With the decoys in, true matches start at 0.946 and the
-// closest other slot is 0.924. What a slot may also be keeps the old limit.
-const SLOT_CONFIDENCE: f64 = 0.935;
-// Slots change slowly and a tooltip can be gone in a few frames, so the slots are only looked
-// at on every third scan. That keeps the average scan well under a frame at 30 frames a second.
-const SLOT_EVERY: u64 = 3;
-// ms of matching and number clean-up per look; slots left over are picked up by the next ones,
-// so opening a page does not hold up the frames that follow it
-const SLOT_BUDGET: f64 = 60.0;
-// Something the game draws over an icon.
-pub struct Overlay {
-    // the part of the compared icon it covers (1440p: x0, y0, x1, y1)
-    area: (f64, f64, f64, f64),
-    // how much more alike the slot and the icon have to be with that part left out for it to be there
-    gain: f64,
-    // the icons that can have it
-    on: fn(&str) -> bool,
-}
-pub const LEVEL: usize = 0;
-pub const OVERLAYS: [Overlay; 2] = [
-    // The item level a chest asks for, a helmet and "1640" across the lower part. Above it is the
-    // strip under the number, below it the last few rows.
-    Overlay { area: (0.0, 18.0, 61.0, 33.0), gain: 0.02, on: has_level },
-    // the clock of an item that expires, in the bottom left corner; any item can have one
-    Overlay { area: (0.0, 13.0, 20.0, 39.0), gain: 0.02, on: |_| true },
-];
-// No overlay hides more of an icon than this (0.071 seen), so one that scores further under the
-// limit is not tried with anything left out.
-const OVERLAY_REACH: f64 = 0.1;
-// Rows of the icon the shortlist goes by (1440p): the ones above the item level.
-const AFAR_ROWS: f64 = 18.0;
-// Only the icons that look most like the slot from afar are compared in full, and as many of the
-// decoys: comparing all 340 icons takes 13 ms a slot against 0.7, and on the recordings recognises
-// nothing more.
-const SHORTLIST: usize = 16;
-// Icons this close to the best one are kept as what the slot may also be: one plain chest scored
-// 0.967, 0.963 and 0.957 against three different chests.
-const ALTERNATIVE: f64 = 0.02;
-const CELLS: usize = 6;
-
-// each icon, and whether it is a decoy, as the mean colour of a few cells of its top rows, per resolution
-pub static FROM_AFAR: LazyLock<RwLock<AHashMap<u32, Vec<(String, bool, Vec<[f32; 3]>)>>>> =
-    LazyLock::new(|| RwLock::new(AHashMap::new()));
-
-// the parts of an icon these overlays cover, in screen pixels
-pub fn overlay_areas(overlays: u8, s: f64) -> Vec<Area> {
-    let px = |x: f64| (x * s).round() as usize;
-    (0..OVERLAYS.len())
-        .filter(|i| overlays >> i & 1 == 1)
-        .map(|i| OVERLAYS[i].area)
-        .map(|(x0, y0, x1, y1)| (px(x0), px(y0), px(x1), px(y1)))
-        .collect()
-}
-
-// How alike a slot and an icon are with the overlays on the slot left out, and which those are, as
-// bits. Of the overlays the icon can have, it is the set that gains the most over what each has to.
-pub fn overlaid(template: &OneIconConfig, observed: &OneIconConfig, name: &str, s: f64) -> (f64, u8) {
-    let whole = confidence(template, observed);
-    if whole < SLOT_CONFIDENCE - OVERLAY_REACH {
-        return (whole, 0);
-    }
-    let on = |set: u8, i: usize| set >> i & 1 == 1;
-    let can = (0..OVERLAYS.len()).filter(|i| (OVERLAYS[*i].on)(name)).fold(0u8, |set, i| set | 1 << i);
-    let (mut best, mut lead) = ((whole, 0), whole);
-    for set in (1..1u8 << OVERLAYS.len()).filter(|set| set & !can == 0) {
-        let score = confidence_without(template, observed, &overlay_areas(set, s));
-        let cost: f64 = (0..OVERLAYS.len()).filter(|i| on(set, *i)).map(|i| OVERLAYS[i].gain).sum();
-        if score - cost > lead {
-            (best, lead) = ((score, set), score - cost);
-        }
-    }
-    best
-}
-
-// the rows above the item level, which every slot shows
-fn from_afar(image: &RgbaImage, rows: usize) -> Vec<[f32; 3]> {
-    let (width, rows) = (image.width() as usize, rows.min(image.height() as usize));
-    let mut cells = vec![[0f32; 3]; CELLS * 2];
-    let mut counts = vec![0f32; CELLS * 2];
-    for y in 0..rows {
-        for x in 0..width {
-            let cell = (y * 2 / rows) * CELLS + x * CELLS / width;
-            let pixel = image.get_pixel(x as u32, y as u32).0;
-            for c in 0..3 {
-                cells[cell][c] += pixel[c] as f32;
-            }
-            counts[cell] += 1.0;
-        }
-    }
-    for (cell, count) in cells.iter_mut().zip(counts) {
-        *cell = cell.map(|x| x / count);
-    }
-    cells
-}
 
 impl ScannerState {
     // given the anchor found, find where this icon should be
-    pub fn anchored_slot_address_position(
-        &self,
-        slot_address: &SlotAddress,
-    ) -> Option<Rect> {
+    pub fn anchored_slot_address_position(&self, slot_address: &SlotAddress) -> Option<Rect> {
         let root = self.inventory_root(slot_address.inventory_type)?;
         return Some(
             ALL_SLOT_ADDRESSS[slot_address]
@@ -135,85 +40,34 @@ impl ScannerState {
         let number_position = NUMBER_OFFSET
             .scaled(self.screen_info.effective_height)
             .shifted(position.top_left);
-        let (height, s) = (self.screen_info.effective_height, self.screen_info.scale_factor);
-        let brightness = self.screen_info.brightness.unwrap();
+        let (height, scale) = (
+            self.screen_info.effective_height,
+            self.screen_info.scale_factor,
+        );
         let observed = seen.unwrap_or_else(|| {
             let mut crop = self.crop_buffer(position);
-            normalize_brightness(&mut crop, brightness);
+            normalize_brightness(&mut crop, self.screen_info.brightness.unwrap());
             crop
         });
-        let afar_rows = (AFAR_ROWS * s).round() as usize;
-        if !FROM_AFAR.read().contains_key(&height) {
-            let mut names: Vec<(String, bool)> = BASE_ICONS
-                .read()
-                .iter()
-                .filter(|(_, one_icon)| one_icon.is_slot_icon())
-                .map(|(name, one_icon)| (name.clone(), one_icon.is_decoy()))
-                .collect();
-            names.sort();
-            let all = names
-                .into_iter()
-                .map(|(name, decoy)| {
-                    let icon = icon_lookup(&name, height, get_resizer(&mut self.resizer));
-                    let cells = from_afar(&icon.data, afar_rows);
-                    (name, decoy, cells)
-                })
-                .collect();
-            FROM_AFAR.write().insert(height, all);
-        }
-        let seen = from_afar(&observed.data, afar_rows);
-        // The icons and the decoys are shortlisted apart, so that the decoys, which are many more,
-        // do not crowd an icon out.
-        let mut shortlist: Vec<String> = vec![];
-        for decoys in [false, true] {
-            let mut nearest: Vec<(f32, String)> = FROM_AFAR.read()[&height]
-                .iter()
-                .filter(|(_, decoy, _)| *decoy == decoys)
-                .map(|(name, _, cells)| {
-                    let apart: f32 = cells
-                        .iter()
-                        .zip(&seen)
-                        .map(|(a, b)| (0..3).map(|c| (a[c] - b[c]).abs()).sum::<f32>())
-                        .sum();
-                    (apart, name.clone())
-                })
-                .collect();
-            if nearest.len() > SHORTLIST {
-                nearest.select_nth_unstable_by(SHORTLIST, |a, b| a.0.total_cmp(&b.0));
-                nearest.truncate(SHORTLIST);
-            }
-            shortlist.extend(nearest.into_iter().map(|x| x.1));
-        }
 
-        // color variants of one icon can both pass, so the best comes first
-        let mut decoys: Vec<String> = vec![];
-        let mut passed: Vec<(String, f64, u8)> = shortlist
-            .into_iter()
-            .filter_map(|icon_name| {
-                let template = icon_lookup(&icon_name, height, get_resizer(&mut self.resizer));
-                if template.is_decoy() {
-                    decoys.push(icon_name);
-                    return None;
-                }
-                let limit = template.required_confidence.unwrap_or(SLOT_CONFIDENCE);
-                let (score, overlays) = overlaid(&template, &observed, &icon_name, s);
-                (score > limit).then_some((icon_name, score, overlays))
-            })
-            .collect();
-        // A slot closer to a decoy than to an icon holds that other thing. The decoy is compared
-        // whole and with the same parts left out as the icon was.
+        let (decoys, mut passed) = self.get_all_passed_icons(&observed, height, scale);
+
         let mut sets: Vec<u8> = passed.iter().map(|x| x.2).chain([0]).collect();
         sets.sort();
         sets.dedup();
         let mut closest_decoy = vec![0f64; 1 << OVERLAYS.len()];
         for name in &decoys {
             let template = icon_lookup(name, height, get_resizer(&mut self.resizer));
-            let whole = confidence(&template, &observed);
+            let whole_confidence = confidence(&template, &observed);
             for set in &sets {
                 let score = match set {
-                    0 => whole,
-                    _ if whole < SLOT_CONFIDENCE - OVERLAY_REACH => whole,
-                    _ => whole.max(confidence_without(&template, &observed, &overlay_areas(*set, s))),
+                    0 => whole_confidence,
+                    _ if whole_confidence < SLOT_CONFIDENCE - OVERLAY_REACH => whole_confidence,
+                    _ => whole_confidence.max(masked_confidence(
+                        &template,
+                        &observed,
+                        &overlay_areas(*set, scale),
+                    )),
                 };
                 closest_decoy[*set as usize] = closest_decoy[*set as usize].max(score);
             }
@@ -221,20 +75,26 @@ impl ScannerState {
         passed.retain(|x| x.1 >= closest_decoy[x.2 as usize]);
         passed.sort_by(|a, b| b.1.total_cmp(&a.1));
         let best = passed.first().map_or(0.0, |x| x.1);
-        let old_limit = |name: &String| BASE_ICONS.read()[name].required_confidence.unwrap_or(DEFAULT_CONFIDENCE);
+        let old_limit = |name: &String| {
+            BASE_ICONS.read()[name]
+                .required_confidence
+                .unwrap_or(DEFAULT_CONFIDENCE)
+        };
         let mut first = true;
-        passed.retain(|x| std::mem::take(&mut first) || (x.1 >= best - ALTERNATIVE && x.1 > old_limit(&x.0)));
+        passed.retain(|x: &(String, f64, u8)| {
+            std::mem::take(&mut first) || (x.1 >= best - ALTERNATIVE && x.1 > old_limit(&x.0))
+        });
 
         (passed, self.crop_buffer(number_position), observed)
     }
 
     pub fn update_slots(&mut self) {
         self.scans += 1;
-        if self.scans % SLOT_EVERY != 1 {
+        if self.scans % SLOT_UPDATE_FREQ != 1 {
             return;
         }
         let active_page_nums = self.active_page_num();
-        let (start, mut spent, mut matched) = (crate::timing::now(), 0.0, 0);
+        let (start, mut spent, mut matched) = (now(), 0.0, 0);
         self.slots_left = false;
         for slot_address in SLOT_ORDER.iter() {
             if active_page_nums[&slot_address.inventory_type] != Some(slot_address.page_num)
@@ -256,7 +116,10 @@ impl ScannerState {
                 (left + position.width).ceil() as usize,
                 (top + position.height).ceil() as usize,
             );
-            let same_pixels = self.slot_infos.get(slot_address).map(|info| info.raw_hash == raw_hash);
+            let same_pixels = self
+                .slot_infos
+                .get(slot_address)
+                .map(|info| info.raw_hash == raw_hash);
             // the crop that was compared, which the matching below takes as it is
             let mut seen = None;
             let unchanged = match same_pixels {
@@ -265,14 +128,16 @@ impl ScannerState {
                 Some(false) => {
                     let mut crop = self.crop_buffer(position);
                     normalize_brightness(&mut crop, self.screen_info.brightness.unwrap());
-                    let same = close_enough(&self.slot_infos[slot_address].observed_icon, &crop).is_some();
+                    let same =
+                        close_enough(&self.slot_infos[slot_address].observed_icon, &crop).is_some();
                     seen = Some(crop);
+                    if same {
+                        self.slot_infos.get_mut(slot_address).unwrap().raw_hash = raw_hash;
+                    }
                     same
                 }
             };
-            if unchanged {
-                self.slot_infos.get_mut(slot_address).unwrap().raw_hash = raw_hash;
-            } else {
+            if !unchanged {
                 // a replay stops where the recording did, whatever the clock says
                 let over = match self.replay_cut {
                     Some(cut) => cut.is_some_and(|cut| matched >= cut),
@@ -284,12 +149,12 @@ impl ScannerState {
                     continue;
                 }
                 matched += 1;
-                let (matched, observed_number, observed_icon) =
-                    timed("slots/all_icons", || {
-                        self.check_through_all_icons(position, seen)
-                    });
+                let (matched, observed_number, observed_icon) = timed("slots/all_icons", || {
+                    self.check_through_all_icons(position, seen)
+                });
                 let overlays = matched.first().map_or(0, |x| x.2);
-                let alternatives: Vec<String> = matched.iter().skip(1).map(|x| x.0.clone()).collect();
+                let alternatives: Vec<String> =
+                    matched.iter().skip(1).map(|x| x.0.clone()).collect();
                 let icon_name_score = matched.into_iter().next().map(|x| (x.0, x.1));
                 // what the page shows for this slot: the number strip and the icon below it
                 let never_recognised = self
@@ -320,7 +185,17 @@ impl ScannerState {
 
                     // what the tooltip said stays while the slot holds the same item, and so does
                     // the last number until the new one is read
-                    let (tooltip_amount, tradability, label, amount, amount_reads, hovered, tooltip_failed, best, passed_over) = self
+                    let (
+                        tooltip_amount,
+                        tradability,
+                        label,
+                        amount,
+                        amount_reads,
+                        hovered,
+                        tooltip_failed,
+                        best,
+                        passed_over,
+                    ) = self
                         .slot_infos
                         .get(slot_address)
                         .filter(|old| {
@@ -406,7 +281,7 @@ impl ScannerState {
                         }
                     }
                 }
-                spent = crate::timing::now() - start;
+                spent = crate::dev_utils::timing::now() - start;
             }
         }
     }
@@ -416,11 +291,18 @@ impl ScannerState {
     // A tooltip tied to another slot while this one was not known to hold what it is drawn with
     // may have been this one's: the cursor hides the slot it is on. That slot is to be hovered again.
     fn untie_rivals(&mut self, address: &SlotAddress) {
-        let icon = self.slot_infos[address].icon_name_score.as_ref().unwrap().0.clone();
+        let icon = self.slot_infos[address]
+            .icon_name_score
+            .as_ref()
+            .unwrap()
+            .0
+            .clone();
         let doubted: Vec<SlotAddress> = self
             .slot_infos
             .iter()
-            .filter(|(_, info)| info.passed_over.1.contains(address) && info.passed_over.0.contains(&icon))
+            .filter(|(_, info)| {
+                info.passed_over.1.contains(address) && info.passed_over.0.contains(&icon)
+            })
             .map(|x| *x.0)
             .collect();
         for other in doubted {
@@ -428,7 +310,11 @@ impl ScannerState {
             (info.hovered, info.tooltip_failed) = (false, false);
             (info.tooltip_amount, info.tradability, info.label) = (None, None, None);
             info.passed_over = (vec![], vec![]);
-            for chest in self.chests.iter_mut().filter(|chest| chest.slot == Some(other)) {
+            for chest in self
+                .chests
+                .iter_mut()
+                .filter(|chest| chest.slot == Some(other))
+            {
                 chest.slot = None;
                 self.chests_changed = true;
             }
@@ -438,7 +324,10 @@ impl ScannerState {
     // Debug only: the icons a slot is closest to, as (name, confidence, confidence without the
     // overlays found on it, place in the shortlist's order), whatever the pass limits.
     pub fn slot_scores(&mut self, slot_address: &SlotAddress) -> Vec<(String, f64, f64, usize)> {
-        let (height, s) = (self.screen_info.effective_height, self.screen_info.scale_factor);
+        let (height, s) = (
+            self.screen_info.effective_height,
+            self.screen_info.scale_factor,
+        );
         let brightness = self.screen_info.brightness.unwrap();
         let afar_rows = (AFAR_ROWS * s).round() as usize;
         let position = self.anchored_slot_address_position(slot_address).unwrap();
@@ -467,8 +356,17 @@ impl ScannerState {
             .collect();
         // DUMP=<folder> writes what the slot looks like next to the icon it is closest to
         if let Ok(folder) = std::env::var("DUMP") {
-            let best = all.iter().max_by(|a, b| a.1.max(a.2).total_cmp(&b.1.max(b.2))).unwrap();
-            let name = format!("{folder}/{:?}_{}_{}_{}", slot_address.inventory_type, slot_address.page_num, slot_address.pos_in_inv.0, slot_address.pos_in_inv.1);
+            let best = all
+                .iter()
+                .max_by(|a, b| a.1.max(a.2).total_cmp(&b.1.max(b.2)))
+                .unwrap();
+            let name = format!(
+                "{folder}/{:?}_{}_{}_{}",
+                slot_address.inventory_type,
+                slot_address.page_num,
+                slot_address.pos_in_inv.0,
+                slot_address.pos_in_inv.1
+            );
             observed.data.save(format!("{name}_seen.png")).unwrap();
             let number = COMBINED_NUMBER_HEIGHT * s;
             let mut whole = self.crop_buffer(Rect {
@@ -479,11 +377,16 @@ impl ScannerState {
             normalize_brightness(&mut whole, brightness);
             whole.data.save(format!("{name}_whole.png")).unwrap();
             let icon = icon_lookup(&best.0, height, get_resizer(&mut self.resizer));
-            icon.data.save(format!("{name}_icon_{}.png", best.0.replace('@', "_"))).unwrap();
+            icon.data
+                .save(format!("{name}_icon_{}.png", best.0.replace('@', "_")))
+                .unwrap();
         }
         all.sort_by(|a, b| a.3.total_cmp(&b.3));
-        let mut all: Vec<(String, f64, f64, usize)> =
-            all.into_iter().enumerate().map(|(rank, x)| (x.0, x.1, x.2, rank)).collect();
+        let mut all: Vec<(String, f64, f64, usize)> = all
+            .into_iter()
+            .enumerate()
+            .map(|(rank, x)| (x.0, x.1, x.2, rank))
+            .collect();
         all.sort_by(|a, b| b.1.max(b.2).total_cmp(&a.1.max(a.2)));
         all.truncate(4);
         all

@@ -1,13 +1,15 @@
 // What the native bins share: the config and the recogniser from public/, and a state over a
 // frame buffer the bin owns.
+
+use std::{fs, sync::Once};
+
 use crate::{
     buffer::Buffer,
-    scanner_state::ScannerState,
+    interface::setup::set_config,
     ocr::recognize::load_ocr_engine,
-    setup::set_config,
+    scanner_state::ScannerState,
     tooltip::{chest::Chest, hover::Hover},
 };
-use std::{fs, sync::Once};
 
 pub const ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
 
@@ -24,7 +26,10 @@ pub fn load() {
 // and a native ultrawide capture is as wide as the game.
 pub fn guess_game(width: usize, height: usize) -> (u32, u32) {
     let ui_height = (height as f64 / 360.0).round() as u32 * 360;
-    ((ui_height * 16 / 9).max(width as u32 / 100 * 100), ui_height)
+    (
+        (ui_height * 16 / 9).max(width as u32 / 100 * 100),
+        ui_height,
+    )
 }
 
 // a state and the frame it scans, to be filled by the caller
@@ -44,7 +49,10 @@ pub fn new_state(
         lut: None,
         brightness: 0.0,
     };
-    (ScannerState::new(buffer, game.0, game.1, forced_21_9), pixels)
+    (
+        ScannerState::new(buffer, game.0, game.1, forced_21_9),
+        pixels,
+    )
 }
 
 // what the bins print of a hover, a chest and the slots
@@ -86,9 +94,7 @@ pub fn describe_chest(chest: &Chest) -> String {
     let contents: Vec<String> = chest
         .contents
         .iter()
-        .map(|x| {
-format!("{} x{}", x.item, x.amount)
-        })
+        .map(|x| format!("{} x{}", x.item, x.amount))
         .collect();
     let place = match (chest.slot, chest.column) {
         (Some(slot), _) => format!(
@@ -101,7 +107,11 @@ format!("{} x{}", x.item, x.amount)
     format!(
         "{:?} [{}]  x{}  {:?}  {place}  '{}' {:?} {:?}",
         chest.kind,
-        if chest.irrelevant { "irrelevant".to_string() } else { contents.join(", ") },
+        if chest.irrelevant {
+            "irrelevant".to_string()
+        } else {
+            contents.join(", ")
+        },
         chest.amount.clone().unwrap_or_default(),
         chest.tradability,
         chest.title,
@@ -113,7 +123,13 @@ format!("{} x{}", x.item, x.amount)
 // what the page would colour each known slot
 pub fn print_statuses(state: &ScannerState) {
     let mut slots = state.result(true).slots;
-    slots.sort_by_key(|slot| (slot.address.inventory_type as u8, slot.address.page_num, slot.address.pos_in_inv));
+    slots.sort_by_key(|slot| {
+        (
+            slot.address.inventory_type as u8,
+            slot.address.page_num,
+            slot.address.pos_in_inv,
+        )
+    });
     for slot in slots {
         if let Some((icon, score)) = slot.icon_name_score {
             let a = slot.address;
@@ -130,7 +146,9 @@ pub fn print_statuses(state: &ScannerState) {
                 } else {
                     format!(
                         "  levelled {} also {:?} variants {:?}",
-                        state.slot_infos[&a].levelled(), slot.alternatives, slot.variants
+                        state.slot_infos[&a].levelled(),
+                        slot.alternatives,
+                        slot.variants
                     )
                 }
             );
@@ -200,7 +218,10 @@ impl Sim {
         let px = strip.width().next_multiple_of(50) as f64;
         let numbers = matches!(job.line.kind, crate::ocr::jobs::Kind::Number { .. });
         let text = crate::ocr::recognize::recognize_line(&strip, numbers);
-        let entry = self.sent.entry(self.kinds.get(&job.id).copied().unwrap_or("number")).or_default();
+        let entry = self
+            .sent
+            .entry(self.kinds.get(&job.id).copied().unwrap_or("number"))
+            .or_default();
         entry.0 += 1;
         entry.1 += px;
         self.waits.push(scan - queued);
@@ -215,7 +236,14 @@ impl Sim {
             let kinds = [
                 ("title", read.title.as_ref().map(|x| x.0.clone())),
                 ("amount", read.amount.map(|x| x.to_vec())),
-                ("chest", read.chest.as_ref().map(|x| x.iter().flat_map(|x| x.0.iter().copied().chain([x.1])).collect())),
+                (
+                    "chest",
+                    read.chest.as_ref().map(|x| {
+                        x.iter()
+                            .flat_map(|x| x.0.iter().copied().chain([x.1]))
+                            .collect()
+                    }),
+                ),
                 ("description", read.body.clone()),
             ];
             for (kind, jobs) in kinds {
@@ -242,7 +270,12 @@ impl Sim {
         // as the page's workers take them, see OcrRelay.ts
         let begun = &self.begun;
         self.backlog.sort_by_key(|(job, _)| {
-            (job.priority, !begun.contains(&job.group), std::cmp::Reverse(job.group), job.id)
+            (
+                job.priority,
+                !begun.contains(&job.group),
+                std::cmp::Reverse(job.group),
+                job.id,
+            )
         });
         self.peak = self.peak.max(self.backlog.len());
         self.busy += (self.backlog.len() > 30) as usize;
@@ -264,7 +297,11 @@ impl Sim {
                 }
             }
             Some(capacity) => {
-                self.credit = if self.backlog.is_empty() { 0.0 } else { self.credit + capacity };
+                self.credit = if self.backlog.is_empty() {
+                    0.0
+                } else {
+                    self.credit + capacity
+                };
                 while self.credit > 0.0 && !self.backlog.is_empty() {
                     let (job, queued) = self.backlog.remove(0);
                     self.credit -= self.read(job, queued, scan);
@@ -309,11 +346,22 @@ impl Sim {
             if list.is_empty() {
                 return "-".to_string();
             }
-            format!("{}/{}/{}", list[list.len() / 2], list[list.len() * 9 / 10], list[list.len() - 1])
+            format!(
+                "{}/{}/{}",
+                list[list.len() / 2],
+                list[list.len() * 9 / 10],
+                list[list.len() - 1]
+            )
         };
-        let (lines, px) = self.sent.values().fold((0, 0.0), |a, b| (a.0 + b.0, a.1 + b.1));
-        let kinds: Vec<String> =
-            self.sent.iter().map(|(kind, (lines, px))| format!("{kind} {lines}/{:.0}k", px / 1000.0)).collect();
+        let (lines, px) = self
+            .sent
+            .values()
+            .fold((0, 0.0), |a, b| (a.0 + b.0, a.1 + b.1));
+        let kinds: Vec<String> = self
+            .sent
+            .iter()
+            .map(|(kind, (lines, px))| format!("{kind} {lines}/{:.0}k", px / 1000.0))
+            .collect();
         format!(
             "sim: capacity {:?} scans {} lines {lines} px {:.0}k [{}] peak {} over30 {:.0}% idle {:.0}% line wait med/p90/max {} useful hovers {} wrote after {}",
             self.capacity,

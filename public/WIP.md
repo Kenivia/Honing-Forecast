@@ -3,88 +3,48 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
-## NOW: OCR
+## Core
 
-- ~~add some kind of sanity assertion that rectangles are scaled correctly~~
+- test & decide wtf to do with the core
+  - code review
 
-## Roadmap
+## OCR
 
-some kind of discord loging & persistent like cloud storage here  
+- code review
 
-## 5.5th Luck tracking & leaderboard
+- sort out how page num works
+- try brightness calibration with 2160p
+- test if close enough actually needs the 9 shifts
 
-A leaderboard of normalized "luck" values (prolly for characters? can do roster also ig). I will probably use cloudflare's serverless stuff to host this, need to think more about this (Discord integration? How to prevent spam / fake entries? idk)
+- measure where the char inventory anchor can be
+- gold shard silver reading
 
-## 6th : Box opening recommendation
+- constant extraction script
 
-This needs [#6](https://github.com/Kenivia/Honing-Forecast/issues/6) to be complete (just because no user is gonna input these manually I think) to be usable, but ig the infrastructure doesn't need to wait.
+- enhanced book distinguishing???
 
-This legit only matters for weap / armor juices, but ig it'll also work for shard / leap chests and red / blue chests
+## Forecast mode
 
-Oh it also works for paradise hell chest selection (specifically special vs juice vs gold vs mats ig)
+- forecast mode UI
 
-### Specifics
+- need to sort out the UI:
+  - chest display & editing
+  - preview manifest
 
-1. Need to think about how to represent all this properly ( need to accomodate more than 2 mat types, different ratios etc)
-2. Set up stores & interface in js side to accomodate these things, set up payload to pass this
-3. Set up parser & Rust state_bundle
-4. Set up a box_state for each box
-5. Set up neighbour to perturb these states
-6. Add these to the appropriate budgets at SA call
-7. Display these in UI
+## Misc UI
 
-## 7th: Optimizer Improvements
+- just need to add the UI for choices and hard code some examples
+  - need to get paradise data from somewhere
+  - gold chests
+  - something happening over n weeks?
 
-There's a lot that can be improved about the [optimizer](https://github.com/Kenivia/Honing-Forecast/blob/main/docs/Optimizer.md). However it's hard to know when a change is actually good without a way to evaluate them fairly.
+- save previous optimizer work
 
-## Arena
+- gold distribution graph (using coarse lattice maybe?)
 
-There's a tradeoff to be balanced here: "accuracy" and speed (number of iterations). By accuracy I mean how close it is to the best known answer. How we quantify these is very important and kinda hard to decide. Here's some things I'm considering:
+## Price forecasting
 
-1. Percentage difference from best known solution is not comparable between different payloads (and we cannot set a static threshold) because it can be skewed by tradable mats
-2. Neither is the number of iterations because saving 1000 iters on a "hard" payload is more difficult and impactful than saving 1000 iters on a trivial one
-3. The algorithm must not have too much run-to-run variance (we need to punish these)
-
-I don't think there's a one-size-fit-all way to do this. Here's some options I've come up with:
-
-1. We can elect to ignore problem 1 and 2 and just calculate something like "Average percentage difference reduced per iter"
-2. We can have an elo system that just compares the percentage differences (or the raw value), and tiebreaks (within some kind of tolerance, which, by the way, if the threshold is static, will contradict problem 1) with iters used.
-
-^ both of these can kinda address problem 3 by comparing the worst run out of a batch
-
-(actually problem 1 can be solved by comparing to TreatTradableAsBound case instead?)
-
-### Specifically
-
-I really dont know what it takes to set up this arena thing. I've tried previously with the visualizer, but I think something that scales better is needed. Perhaps some kind of database.
-
-## Algorithm Ideas
-
-Once we have a way of evaluating them, here's some things I want to implement / try out:
-
-1. A better neighbour function that always makes impactful moves (how? idk)
-2. The optimal move should be relatively trivial to compute (how ever maxroll does the gold stuff) for small owned juice numbers ( and for small owned special). Surely this can be considered somehow?
-3. Some kind of adaptive thing that controls the number of iterations done. This will be very important for forecast mode when we need to run the optimizer on multiple weeks.
-
-ALSO it should be possible to do like 1 by 1 step optimization (assuming that the user do the upgrades in the same order), the question is whether or not this is necessary for like a simple markov chain like normal honing? If there's just one line of possibilities (no alternative ways to end up in the same place like adv honing, which btw is the reason why this is feasible in the first place), is the initial one guaranteed to be optimal theoretically? ig I'll see empirically once I write the deductin stuff (obv doing this across pieces is not feasible because there's many ways to end up here)
-
-This is VERY long term goal (before forecast mode tho)
-
-## 8th: Forecast mode
-
-There's 2 parts to this: player's mats earning && market price.
-
-### Income tracking & projection
-
-Lowkey there's so much random (literal stochastic and just so many arbitrary things) ways we earn mats, and it all depends on how much you play / what you do in the game so it's kind of hard to project how much mats you'll have. However with OCR inventory scanning we can derive weekly earnings from actual earning data. Perhaps we can aggregate this if a lot of people upload their earnings (but it's kinda of hard to distinguish because people can buy from market? idk)
-
-This will give us a week-on week budget.  We plot an average gold used vs week graph (and suggest a "best time to push (rat alt)", where the different per week is less than the gold income increase). This graph will need the optimizer to be able to run faster on already-good states [#8](https://github.com/Kenivia/Honing-Forecast/issues/8).
-
-### Quant bro
-
-Predicting market will be SO fun but it kinda needs the better OCR scanning to get better quality data. We actually know a LOT about the underlying things driving the market (ratio of costs, lifeskill -> oreha prices, weekly earnings, ilevel distribution via uwuowo etc) so I reckon we can actually make some pretty damn good predictions. This thing will be ULTRA long term so we'll cross that bridge when we get there
-
-## Below are some rambling / brainstorming / Misc stuff
+- ???
 
 ### Misc
 
@@ -111,11 +71,85 @@ Predicting market will be SO fun but it kinda needs the better OCR scanning to g
 
 - maybe use indexdb instead of localstorage? (this will pobably be done as part of either inventory scanning or honing luck scanning)
 
-### Optimizations
-
-- find_min_max can probably do with some kind of caching but i can't figure it out rn
-
 ## Done / cancelled
+
+- ~~add some kind of sanity assertion that rectangles are scaled correctly~~
+~~### Optimizations~~
+
+~~- find_min_max can probably do with some kind of caching but i can't figure it out rn~~
+
+~~some kind of discord loging & persistent like cloud storage here  ~~
+
+~~## 5.5th Luck tracking & leaderboard~~
+
+~~A leaderboard of normalized "luck" values (prolly for characters? can do roster also ig). I will probably use cloudflare's serverless stuff to host this, need to think more about this (Discord integration? How to prevent spam / fake entries? idk)~~
+
+~~This needs [#6](https://github.com/Kenivia/Honing-Forecast/issues/6) to be complete (just because no user is gonna input these manually I think) to be usable, but ig the infrastructure doesn't need to wait.~~
+
+~~This legit only matters for weap / armor juices, but ig it'll also work for shard / leap chests and red / blue chests~~
+
+~~Oh it also works for paradise hell chest selection (specifically special vs juice vs gold vs mats ig)~~
+
+~~### Specifics~~
+
+~~1. Need to think about how to represent all this properly ( need to accomodate more than 2 mat types, different ratios etc)~~
+~~2. Set up stores & interface in js side to accomodate these things, set up payload to pass this~~
+~~3. Set up parser & Rust state_bundle~~
+~~4. Set up a box_state for each box~~
+~~5. Set up neighbour to perturb these states~~
+~~6. Add these to the appropriate budgets at SA call~~
+~~7. Display these in UI~~
+
+~~## 7th: Optimizer Improvements~~
+
+~~There's a lot that can be improved about the [optimizer](https://github.com/Kenivia/Honing-Forecast/blob/main/docs/Optimizer.md). However it's hard to know when a change is actually good without a way to evaluate them fairly.~~
+
+~~## Arena~~
+
+~~There's a tradeoff to be balanced here: "accuracy" and speed (number of iterations). By accuracy I mean how close it is to the best known answer. How we quantify these is very important and kinda hard to decide. Here's some things I'm considering:~~
+
+~~1. Percentage difference from best known solution is not comparable between different payloads (and we cannot set a static threshold) because it can be skewed by tradable mats~~
+~~2. Neither is the number of iterations because saving 1000 iters on a "hard" payload is more difficult and impactful than saving 1000 iters on a trivial one~~
+~~3. The algorithm must not have too much run-to-run variance (we need to punish these)~~
+
+~~I don't think there's a one-size-fit-all way to do this. Here's some options I've come up with:~~
+
+~~1. We can elect to ignore problem 1 and 2 and just calculate something like "Average percentage difference reduced per iter"~~
+~~2. We can have an elo system that just compares the percentage differences (or the raw value), and tiebreaks (within some kind of tolerance, which, by the way, if the threshold is static, will contradict problem 1) with iters used.~~
+
+~~^ both of these can kinda address problem 3 by comparing the worst run out of a batch~~
+
+~~(actually problem 1 can be solved by comparing to TreatTradableAsBound case instead?)~~
+
+~~### Specifically~~
+
+~~I really dont know what it takes to set up this arena thing. I've tried previously with the visualizer, but I think something that scales better is needed. Perhaps some kind of database.~~
+
+~~## Algorithm Ideas~~
+
+~~Once we have a way of evaluating them, here's some things I want to implement / try out:~~
+
+~~1. A better neighbour function that always makes impactful moves (how? idk)~~
+~~2. The optimal move should be relatively trivial to compute (how ever maxroll does the gold stuff) for small owned juice numbers ( and for small owned special). Surely this can be considered somehow?~~
+~~3. Some kind of adaptive thing that controls the number of iterations done. This will be very important for forecast mode when we need to run the optimizer on multiple weeks.~~
+
+~~ALSO it should be possible to do like 1 by 1 step optimization (assuming that the user do the upgrades in the same order), the question is whether or not this is necessary for like a simple markov chain like normal honing? If there's just one line of possibilities (no alternative ways to end up in the same place like adv honing, which btw is the reason why this is feasible in the first place), is the initial one guaranteed to be optimal theoretically? ig I'll see empirically once I write the deductin stuff (obv doing this across pieces is not feasible because there's many ways to end up here)~~
+
+~~This is VERY long term goal (before forecast mode tho)~~
+
+## 8th: Forecast mode
+
+~~There's 2 parts to this: player's mats earning && market price.~~
+
+~~### Income tracking & projection~~
+
+~~Lowkey there's so much random (literal stochastic and just so many arbitrary things) ways we earn mats, and it all depends on how much you play / what you do in the game so it's kind of hard to project how much mats you'll have. However with OCR inventory scanning we can derive weekly earnings from actual earning data. Perhaps we can aggregate this if a lot of people upload their earnings (but it's kinda of hard to distinguish because people can buy from market? idk)~~
+
+~~This will give us a week-on week budget.  We plot an average gold used vs week graph (and suggest a "best time to push (rat alt)", where the different per week is less than the gold income increase). This graph will need the optimizer to be able to run faster on already-good states [#8](https://github.com/Kenivia/Honing-Forecast/issues/8).~~
+
+~~### Quant bro~~
+
+~~Predicting market will be SO fun but it kinda needs the better OCR scanning to get better quality data. We actually know a LOT about the underlying things driving the market (ratio of costs, lifeskill -> oreha prices, weekly earnings, ilevel distribution via uwuowo etc) so I reckon we can actually make some pretty damn good predictions. This thing will be ULTRA long term so we'll cross that bridge when we get there~~
 
 - ~~FIGURE OUT WHY THERES A MEMORY LEAK IN READER~~
 

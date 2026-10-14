@@ -2,25 +2,30 @@ use super::{
     chest::{Chest, ChestKind, ChestRow, ChestRowStrips, chest_strips, chests_listing},
     detect::{TitleBar, find_title},
     icon::tooltip_icon,
-    items::{ITEMS, bars_titled, item_from_body, match_bar_title, match_title, shares_icon, variant},
+    items::{
+        ITEMS, bars_titled, item_from_body, match_bar_title, match_title, shares_icon, variant,
+    },
     layout::parse_layout,
     title::{join_title, title_lines},
 };
 use crate::{
-    constants::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
-    cropper::{cropper::QUIET_SCANS, slots::overlay_areas},
+    anchor_to_slot::{
+        constants::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
+        slots::utils::overlay_areas,
+    },
+    constants::QUIET_SCANS,
+    dev_utils::timing::timed,
     image_utils::{
         brightness::{brightness_lut, normalize_brightness},
-        close_enough::confidence_without,
+        close_enough::masked_confidence,
         common::get_resizer,
     },
-    setup::icon_lookup,
+    interface::setup::icon_lookup,
     ocr::{
         jobs::Line,
         text::{text_line, yellow_line},
     },
     scanner_state::{InventoryType, ScannerState, SlotAddress, Tradability},
-    timing::timed,
 };
 use ahash::AHashMap;
 use std::{hash::Hash, mem::take};
@@ -155,7 +160,10 @@ impl PendingRead {
         let amount = self.amount.iter().flatten().copied();
         let chest = self.chest.iter().flatten();
         let chest = chest.flat_map(|row| row.0.iter().copied().chain([row.1]));
-        title.chain(amount).chain(chest).chain(self.body.iter().flatten().copied())
+        title
+            .chain(amount)
+            .chain(chest)
+            .chain(self.body.iter().flatten().copied())
     }
 }
 
@@ -182,16 +190,28 @@ impl ScannerState {
         let mut now = Strips::default();
         let waits = |kind: usize| hover.waiting[kind] > 0;
         if !waits(0) {
-            now.title = held.title.take().filter(|_| most(&hover.title_votes) < SETTLED * CENTRED_VOTE);
+            now.title = held
+                .title
+                .take()
+                .filter(|_| most(&hover.title_votes) < SETTLED * CENTRED_VOTE);
         }
         if !waits(1) {
-            now.amount = held.amount.take().filter(|_| most(&hover.amount_votes) < SETTLED);
+            now.amount = held
+                .amount
+                .take()
+                .filter(|_| most(&hover.amount_votes) < SETTLED);
         }
         if !waits(2) {
-            now.chest = held.chest.take().filter(|_| most(&hover.chest_votes) < SETTLED);
+            now.chest = held
+                .chest
+                .take()
+                .filter(|_| most(&hover.chest_votes) < SETTLED);
         }
         if !waits(3) {
-            now.body = held.body.take().filter(|_| most(&hover.body_votes) < SETTLED);
+            now.body = held
+                .body
+                .take()
+                .filter(|_| most(&hover.body_votes) < SETTLED);
         }
         hover.held = held;
         self.send_read(&mut hover, now);
@@ -216,11 +236,18 @@ impl ScannerState {
         let mut reads = vec![];
         let next = |state: &mut ScannerState| {
             state.read_count += 1;
-            PendingRead { hover: id, group: state.read_count, ..Default::default() }
+            PendingRead {
+                hover: id,
+                group: state.read_count,
+                ..Default::default()
+            }
         };
         if let Some((lines, centred)) = strips.title {
             let mut read = next(self);
-            let jobs = lines.into_iter().map(|line| self.request_ocr(line, priority, read.group)).collect();
+            let jobs = lines
+                .into_iter()
+                .map(|line| self.request_ocr(line, priority, read.group))
+                .collect();
             read.title = Some((jobs, centred));
             reads.push((0, read));
         }
@@ -233,7 +260,11 @@ impl ScannerState {
             let mut read = next(self);
             let mut jobs = vec![];
             for row in rows {
-                let names = row.names.into_iter().map(|x| self.request_ocr(x, priority, read.group)).collect();
+                let names = row
+                    .names
+                    .into_iter()
+                    .map(|x| self.request_ocr(x, priority, read.group))
+                    .collect();
                 jobs.push((names, self.request_ocr(row.count, priority, read.group)));
             }
             read.chest = Some(jobs);
@@ -241,7 +272,12 @@ impl ScannerState {
         }
         if let Some(lines) = strips.body {
             let mut read = next(self);
-            read.body = Some(lines.into_iter().map(|line| self.request_ocr(line, priority, read.group)).collect());
+            read.body = Some(
+                lines
+                    .into_iter()
+                    .map(|line| self.request_ocr(line, priority, read.group))
+                    .collect(),
+            );
             reads.push((3, read));
         }
         for (kind, read) in reads {
@@ -283,11 +319,20 @@ impl ScannerState {
             let (left, right, bottom) = located.iter().fold(
                 (f64::MAX, 0f64, 0f64),
                 |(left, right, bottom), ((x, y), edge)| {
-                    (left.min(*x), right.max(*edge), bottom.max(y + WINDOW_ROWS * s))
+                    (
+                        left.min(*x),
+                        right.max(*edge),
+                        bottom.max(y + WINDOW_ROWS * s),
+                    )
                 },
             );
             let reach = WINDOW_REACH * s;
-            let windows = ((left - reach).max(0.0) as usize, 0, (right + reach) as usize, bottom as usize);
+            let windows = (
+                (left - reach).max(0.0) as usize,
+                0,
+                (right + reach) as usize,
+                bottom as usize,
+            );
             let near = (NEAR * s).ceil() as usize;
             let mut regions = vec![];
             if let Some(bar) = last {
@@ -300,7 +345,9 @@ impl ScannerState {
                 ));
             }
             regions.push(windows);
-            regions.into_iter().find_map(|region| find_title(&buffer, s, &headers, region))
+            regions
+                .into_iter()
+                .find_map(|region| find_title(&buffer, s, &headers, region))
         }) else {
             // tooltips fade in and single frames get lost, so a hover survives a few misses
             if let Some(mut hover) = self.hover.take() {
@@ -318,11 +365,17 @@ impl ScannerState {
         // column, so a tooltip that has not moved is only the same one while its title looks the same.
         let title_columns: Vec<bool> = (0..bar.width)
             .map(|x| {
-                (0..bar.height).any(|y| buffer.rgb(bar.x + x, bar.y + y).into_iter().max().unwrap() > 120)
+                (0..bar.height)
+                    .any(|y| buffer.rgb(bar.x + x, bar.y + y).into_iter().max().unwrap() > 120)
             })
             .collect();
         let same = self.hover.as_ref().is_some_and(|hover| {
-            let changed = hover.title_columns.iter().zip(&title_columns).filter(|(a, b)| a != b).count();
+            let changed = hover
+                .title_columns
+                .iter()
+                .zip(&title_columns)
+                .filter(|(a, b)| a != b)
+                .count();
             (hover.position.0.abs_diff(bar.x) as f64) <= SAME_HOVER * s
                 && (hover.position.1.abs_diff(bar.y) as f64) <= SAME_HOVER * s
                 && (changed as f64) < TITLE_CHANGED * bar.width as f64
@@ -334,13 +387,20 @@ impl ScannerState {
                     self.retire_hover(old);
                 }
                 self.hover_count += 1;
-                Hover { id: self.hover_count, ..Default::default() }
+                Hover {
+                    id: self.hover_count,
+                    ..Default::default()
+                }
             }
         };
         // A title that is not settled by reads with nothing over it is read again whenever it looks
         // different, which is the cursor moving. A few reads of the same look are enough.
-        let look_changed = hover.read_columns.iter().zip(&title_columns).filter(|(a, b)| a != b).count()
-            as f64
+        let look_changed = hover
+            .read_columns
+            .iter()
+            .zip(&title_columns)
+            .filter(|(a, b)| a != b)
+            .count() as f64
             > LOOK_CHANGED * s;
         hover.position = (bar.x, bar.y);
         hover.title_columns = title_columns;
@@ -366,12 +426,17 @@ impl ScannerState {
             && (hover.sent[0] < SETTLED || look_changed)
         {
             let margin = TITLE_MARGINS[hover.sent[0] % TITLE_MARGINS.len()];
-            strips.title = Some(timed("tooltip/title", || title_lines(&buffer, &bar, s, margin)));
+            strips.title = Some(timed("tooltip/title", || {
+                title_lines(&buffer, &bar, s, margin)
+            }));
         }
 
         // A chest's icon is no material's, and a book's never leads the other book's, so both
         // would be compared on every frame for nothing.
-        if layout.chest.is_none() && most(&hover.icon_votes) < SETTLED && hover.icon_tries < MAX_READS {
+        if layout.chest.is_none()
+            && most(&hover.icon_votes) < SETTLED
+            && hover.icon_tries < MAX_READS
+        {
             hover.icon_tries += 1;
             if let Some((icon, clear)) = timed("tooltip/icon", || tooltip_icon(&buffer, &bar, s)) {
                 hover.shared_icon |= shares_icon(&icon);
@@ -405,8 +470,7 @@ impl ScannerState {
         if let Some(chest) = &layout.chest {
             *hover.chest_kind_votes.entry(chest.kind).or_default() += 1;
             if most(&hover.chest_votes) + hover.waiting[2] < SETTLED && hover.sent[2] < MAX_READS {
-                strips.chest =
-                    Some(timed("tooltip/chest", || chest_strips(&buffer, chest)));
+                strips.chest = Some(timed("tooltip/chest", || chest_strips(&buffer, chest)));
             }
         }
         // which book a book is: its description says so more often than its title, whose start
@@ -417,7 +481,11 @@ impl ScannerState {
             && hover.sent[3] < MAX_READS
         {
             let lines = layout.description.iter();
-            strips.body = Some(lines.map(|x| text_line(&buffer, x.0, x.1, x.2, x.3)).collect());
+            strips.body = Some(
+                lines
+                    .map(|x| text_line(&buffer, x.0, x.1, x.2, x.3))
+                    .collect(),
+            );
         }
         let mut now = Strips::default();
         if hover.waiting[0] < IN_FLIGHT && strips.title.is_some() {
@@ -455,7 +523,12 @@ impl ScannerState {
     // Of the slots the tooltip can belong to: whether one was never looked at, and the ones we
     // know that look hovered. The game lights the hovered slot up, so one that still looks like
     // its icon is not it.
-    fn looks_hovered(&mut self, beside: &[(SlotAddress, f64)], bar_top: f64, s: f64) -> (bool, Vec<SlotAddress>) {
+    fn looks_hovered(
+        &mut self,
+        beside: &[(SlotAddress, f64)],
+        bar_top: f64,
+        s: f64,
+    ) -> (bool, Vec<SlotAddress>) {
         let brightness = self.screen_info.brightness.unwrap();
         let height = self.screen_info.effective_height;
         let (mut unknown, mut lit) = (false, vec![]);
@@ -475,7 +548,7 @@ impl ScannerState {
             let mut crop = self.crop_buffer(position);
             normalize_brightness(&mut crop, brightness);
             let template = icon_lookup(&icon, height, get_resizer(&mut self.resizer));
-            if confidence_without(&template, &crop, &skip) < best - LIT {
+            if masked_confidence(&template, &crop, &skip) < best - LIT {
                 lit.push(*address);
             }
         }
@@ -512,27 +585,42 @@ impl ScannerState {
                 // a chest with a panel is told by its rows, a bar of gold only by its title
                 let bar = || {
                     let bare = hover.chest_kind_votes.is_empty();
-                    bare.then(|| match_bar_title(&read)).flatten().map(str::to_string)
+                    bare.then(|| match_bar_title(&read))
+                        .flatten()
+                        .map(str::to_string)
                 };
-                let title = match_title(&read).and_then(|item| item.title.clone()).or_else(bar);
+                let title = match_title(&read)
+                    .and_then(|item| item.title.clone())
+                    .or_else(bar);
                 if let Some(title) = title {
                     // a read with nothing over it that is a title to the letter settles it
                     let exact = *centred && read.eq_ignore_ascii_case(&title);
-                    *hover.title_votes.entry(title).or_default() +=
-                        if exact { SETTLED * CENTRED_VOTE } else if *centred { CENTRED_VOTE } else { 1 };
+                    *hover.title_votes.entry(title).or_default() += if exact {
+                        SETTLED * CENTRED_VOTE
+                    } else if *centred {
+                        CENTRED_VOTE
+                    } else {
+                        1
+                    };
                 }
                 hover.last_read_title = read;
                 hover.waiting[0] -= 1;
             }
             if let Some(jobs) = &read.amount {
-                let [first, second, third] = jobs
-                    .each_ref()
-                    .map(|id| text(id).chars().filter(char::is_ascii_digit).collect::<String>());
+                let [first, second, third] = jobs.each_ref().map(|id| {
+                    text(id)
+                        .chars()
+                        .filter(char::is_ascii_digit)
+                        .collect::<String>()
+                });
                 // the third is only there to break a tie
                 let amount = if first == second {
                     first
                 } else {
-                    [first, second].into_iter().find(|x| *x == third).unwrap_or_default()
+                    [first, second]
+                        .into_iter()
+                        .find(|x| *x == third)
+                        .unwrap_or_default()
                 };
                 if !amount.is_empty() {
                     *hover.amount_votes.entry(amount).or_default() += 1;
@@ -546,7 +634,10 @@ impl ScannerState {
                     .map(|(names, count)| {
                         let name_read = names.iter().map(text).collect::<Vec<_>>().join(" ");
                         texts.push((name_read.clone(), text(&count)));
-                        ChestRow { name_read, count_read: text(&count) }
+                        ChestRow {
+                            name_read,
+                            count_read: text(&count),
+                        }
                     })
                     .collect();
                 // The chests that list these rows best get the vote. Several do when they list the
@@ -560,7 +651,11 @@ impl ScannerState {
                 }
                 let best = listing.iter().map(|x| x.1).fold(0.0, f64::max);
                 // rows that read as a chest's to the letter, and are all of them, settle it
-                let weight = if whole && best >= EXACT_ROWS { SETTLED } else { 1 };
+                let weight = if whole && best >= EXACT_ROWS {
+                    SETTLED
+                } else {
+                    1
+                };
                 for (variant, _) in listing.iter().filter(|x| x.1 >= best - 1e-6) {
                     *hover.chest_votes.entry(variant.id).or_default() += weight;
                 }
@@ -600,7 +695,11 @@ impl ScannerState {
         hover.label = winner(&hover.body_votes)
             .map(|x| x.0)
             .or_else(|| titled?.label.clone());
-        let labelled = || ITEMS.iter().find(|item| item.label.is_some() && item.label == hover.label);
+        let labelled = || {
+            ITEMS
+                .iter()
+                .find(|item| item.label.is_some() && item.label == hover.label)
+        };
         hover.icon = titled
             .and_then(|item| item.icon.clone())
             .or_else(|| labelled()?.icon.clone())
@@ -611,15 +710,30 @@ impl ScannerState {
             Some(chest) => chest.icons.clone(),
             None => hover.icon.clone().into_iter().collect(),
         };
-        hover.slot =
-            self.hovered_slot(&hover.candidates, hover.bar.y as f64, s, &icons, hover.amount.as_ref(), &hover.lit);
+        hover.slot = self.hovered_slot(
+            &hover.candidates,
+            hover.bar.y as f64,
+            s,
+            &icons,
+            hover.amount.as_ref(),
+            &hover.lit,
+        );
         // a slot the user edited is left alone
         let slot = hover.slot.filter(|slot| !self.edits.contains_key(slot));
         // the slots it could have sat against as well, had they been known to show this
         let top = hover.bar.y as f64 - SLOT_ABOVE_TOOLTIP * s;
-        let unknown = |address: &SlotAddress| !self.slot_infos.get(address).is_some_and(|info| info.shows(&icons));
-        let passed_over: Vec<SlotAddress> =
-            hover.candidates.iter().filter(|x| x.1 >= top && unknown(&x.0)).map(|x| x.0).collect();
+        let unknown = |address: &SlotAddress| {
+            !self
+                .slot_infos
+                .get(address)
+                .is_some_and(|info| info.shows(&icons))
+        };
+        let passed_over: Vec<SlotAddress> = hover
+            .candidates
+            .iter()
+            .filter(|x| x.1 >= top && unknown(&x.0))
+            .map(|x| x.0)
+            .collect();
         if let Some(slot) = slot.and_then(|slot| self.slot_infos.get_mut(&slot)) {
             slot.hovered = true;
             slot.passed_over = (icons, passed_over);
@@ -647,12 +761,18 @@ impl ScannerState {
             // The slot the tooltip was level with can be a row it only happened to line up with,
             // pushed up. Then that slot holds something else.
             let other = |address: &SlotAddress| {
-                let info = self.slot_infos.get(address).filter(|info| info.icon_name_score.is_some());
+                let info = self
+                    .slot_infos
+                    .get(address)
+                    .filter(|info| info.icon_name_score.is_some());
                 info.is_some_and(|info| !info.shows(&chest.icons))
             };
-            chest.slot = hover.slot.or(hover.chest_place.1.filter(|address| !other(address)));
+            chest.slot = hover
+                .slot
+                .or(hover.chest_place.1.filter(|address| !other(address)));
             chest.rows = hover.chest_rows.clone();
-            hover.chest_index = Some(self.store_chest(chest, hover.chest_index, hover.slot.is_some()));
+            hover.chest_index =
+                Some(self.store_chest(chest, hover.chest_index, hover.slot.is_some()));
         }
     }
 
@@ -661,15 +781,28 @@ impl ScannerState {
     // With no rows read it is the bars of its title.
     fn hovered_chest(&self, hover: &Hover) -> Option<Chest> {
         let top = most(&hover.chest_votes);
-        let mut variants: Vec<u32> =
-            hover.chest_votes.iter().filter(|x| *x.1 == top).map(|x| *x.0).collect();
+        let mut variants: Vec<u32> = hover
+            .chest_votes
+            .iter()
+            .filter(|x| *x.1 == top)
+            .map(|x| *x.0)
+            .collect();
         variants.sort();
         if let (true, Some(title)) = (variants.is_empty(), &hover.title) {
             variants = bars_titled(title);
         }
-        let icons_of = |address: &SlotAddress| self.slot_infos.get(address).into_iter().flat_map(|info| info.icons());
+        let icons_of = |address: &SlotAddress| {
+            self.slot_infos
+                .get(address)
+                .into_iter()
+                .flat_map(|info| info.icons())
+        };
         let level: Vec<&String> = hover.chest_place.1.iter().flat_map(icons_of).collect();
-        let beside: Vec<&String> = hover.candidates.iter().flat_map(|(address, _)| icons_of(address)).collect();
+        let beside: Vec<&String> = hover
+            .candidates
+            .iter()
+            .flat_map(|(address, _)| icons_of(address))
+            .collect();
         let drawn_like = |icons: &[&String]| {
             let icons: Vec<String> = icons.iter().map(|x| x.to_string()).collect();
             move |id: &u32| variant(*id).template().is_some_and(|x| icons.contains(&x))
@@ -694,7 +827,8 @@ impl ScannerState {
             .filter_map(|address| {
                 let position = self.anchored_slot_address_position(address)?;
                 let (left, top) = position.top_left;
-                let in_column = (bar_left - SLOT_RIGHT_OF_TITLE * s - (left + position.width)).abs()
+                let in_column = (bar_left - SLOT_RIGHT_OF_TITLE * s - (left + position.width))
+                    .abs()
                     <= tolerance
                     || (bar_right + SLOT_LEFT_OF_TITLE * s - left).abs() <= tolerance;
                 in_column.then_some((*address, top - COMBINED_NUMBER_HEIGHT * s))
@@ -714,7 +848,11 @@ impl ScannerState {
     ) -> (Option<(InventoryType, usize, usize)>, Option<SlotAddress>) {
         let height = TITLE_BAR_HEIGHTS
             .into_iter()
-            .min_by(|a, b| (a * s - bar.height as f64).abs().total_cmp(&(b * s - bar.height as f64).abs()))
+            .min_by(|a, b| {
+                (a * s - bar.height as f64)
+                    .abs()
+                    .total_cmp(&(b * s - bar.height as f64).abs())
+            })
             .unwrap();
         let bar_top = (bar.y + bar.height) as f64 - height * s;
         let column = slots
@@ -745,7 +883,11 @@ impl ScannerState {
         let own = |address: &SlotAddress| {
             self.slot_infos[address].amount.as_ref().map(|x| {
                 let digits: String = x.chars().filter(char::is_ascii_digit).collect();
-                if digits.is_empty() { "1".to_string() } else { digits }
+                if digits.is_empty() {
+                    "1".to_string()
+                } else {
+                    digits
+                }
             })
         };
         let candidates: Vec<(SlotAddress, bool)> = beside
@@ -753,9 +895,10 @@ impl ScannerState {
             .copied()
             .filter(|(address, top)| {
                 *top >= bar_top - SLOT_ABOVE_TOOLTIP * s
-                    && self.slot_infos.get(address).is_some_and(|info| {
-                        info.shows(icons)
-                    })
+                    && self
+                        .slot_infos
+                        .get(address)
+                        .is_some_and(|info| info.shows(icons))
             })
             .map(|(address, top)| (address, (top - bar_top).abs() <= tolerance))
             .collect();
@@ -763,7 +906,9 @@ impl ScannerState {
         // same thing in its column. That one never lit up and shows another number.
         if let ([(address, _)], Some(amount)) = (&candidates[..], amount) {
             // 9999+ stands for any more
-            if !lit.contains(address) && own(address).is_some_and(|own| own != *amount && own != "9999") {
+            if !lit.contains(address)
+                && own(address).is_some_and(|own| own != *amount && own != "9999")
+            {
                 return None;
             }
         }
@@ -775,14 +920,19 @@ impl ScannerState {
         let any_lit = candidates.iter().any(|x| is_lit(&x));
         match candidates.len() {
             1 => Some(candidates[0].0),
-            _ => candidates.iter().find(|x| x.1 && (!any_lit || is_lit(x))).map(|x| x.0),
+            _ => candidates
+                .iter()
+                .find(|x| x.1 && (!any_lit || is_lit(x)))
+                .map(|x| x.0),
         }
         .or_else(|| {
             // several stacks of it in the column: the one whose own count matches the tooltip's,
             // and of several that do the one that was lit
             let matching: Vec<&(SlotAddress, bool)> = candidates
                 .iter()
-                .filter(|(address, _)| amount.is_some_and(|amount| own(address).as_ref() == Some(amount)))
+                .filter(|(address, _)| {
+                    amount.is_some_and(|amount| own(address).as_ref() == Some(amount))
+                })
                 .collect();
             let mut lit = matching.iter().copied().filter(is_lit);
             match matching.len() {

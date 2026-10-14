@@ -1,6 +1,6 @@
 use crate::image_utils::common::{Rect, Space, get_resizer};
+use crate::interface::setup::OneIconConfig;
 use crate::scanner_state::ScannerState;
-use crate::setup::OneIconConfig;
 use fast_image_resize::images::{Image, ImageRef};
 use fast_image_resize::{FilterType, PixelType, ResizeAlg, ResizeOptions, Resizer};
 use image::RgbaImage;
@@ -8,7 +8,10 @@ use image::RgbaImage;
 impl ScannerState {
     // a piece of the frame as captured, resampled to whole pixels
     pub fn crop_buffer(&mut self, position: Rect) -> OneIconConfig {
-        assert_eq!(position.space, Space::Screen(self.screen_info.effective_height));
+        assert_eq!(
+            position.space,
+            Space::Screen(self.screen_info.effective_height)
+        );
         let (width, height) = position.pixel_size();
         let mut dst_image: Image<'_> = Image::new(width, height, PixelType::U8x4);
 
@@ -16,8 +19,9 @@ impl ScannerState {
         let src_w = buffer.width as u32;
         let src_h = buffer.height as u32;
 
-        let src_buffer: &[u8] =
-            unsafe { std::slice::from_raw_parts(buffer.pointer.unwrap() as *const u8, buffer.size) };
+        let src_buffer: &[u8] = unsafe {
+            std::slice::from_raw_parts(buffer.pointer.unwrap() as *const u8, buffer.size)
+        };
         assert!(src_buffer.len() >= src_w as usize * src_h as usize * 4);
 
         let src_image = ImageRef::new(src_w, src_h, src_buffer, PixelType::U8x4)

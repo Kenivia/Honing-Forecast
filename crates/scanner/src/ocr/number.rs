@@ -1,5 +1,5 @@
 use crate::{
-    constants::{
+    anchor_to_slot::constants::{
         COMBINED_NUMBER_HEIGHT, ICON_HEIGHT, ICON_WIDTH, NUMBER_HEIGHT, NUMBER_TOP_MARGIN,
     },
     image_utils::brightness::brightness_lut,
@@ -24,7 +24,7 @@ pub struct NumberParams {
     pub max_shade: f64, // a pixel at most this fraction of the template's brightness is the number's shadow
     pub reach: f64,     // the shadow has to be within the strip's height over this, on both sides
     pub min_chroma: f64, // a background has to be at least this coloured for its colour to tell
-    pub low_alpha: f64,  // enough for a pixel that touches a digit pixel
+    pub low_alpha: f64, // enough for a pixel that touches a digit pixel
 }
 
 impl Default for NumberParams {

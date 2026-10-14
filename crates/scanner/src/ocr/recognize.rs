@@ -5,6 +5,8 @@ use rten::Model;
 use rten_imageproc::{PointF, RotatedRect, Vec2};
 use std::sync::LazyLock;
 
+use crate::dev_utils::timing::timed;
+
 pub const OCR_LINE_HEIGHT: u32 = 64; // what the recogniser works at
 
 pub static OCR_ENGINE: LazyLock<RwLock<Option<OcrEngine>>> = LazyLock::new(|| RwLock::new(None));
@@ -29,11 +31,15 @@ pub fn load_ocr_engine(model: Vec<u8>) {
 
 // the whole image is one line of text; `numbers` keeps it to what a slot's count can be
 pub fn recognize_line(image: &GrayImage, numbers: bool) -> String {
-    crate::timing::timed("ocr", || recognize_line_untimed(image, numbers))
+    timed("ocr", || recognize_line_untimed(image, numbers))
 }
 
 fn recognize_line_untimed(image: &GrayImage, numbers: bool) -> String {
-    let read = if numbers { OCR_NUMBER_ENGINE.read() } else { OCR_ENGINE.read() };
+    let read = if numbers {
+        OCR_NUMBER_ENGINE.read()
+    } else {
+        OCR_ENGINE.read()
+    };
     let engine = read.as_ref().unwrap();
     let (width, height) = image.dimensions();
     return engine

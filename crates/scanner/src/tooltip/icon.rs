@@ -1,6 +1,6 @@
 use crate::{
     buffer::Buffer,
-    setup::BASE_ICONS,
+    interface::setup::BASE_ICONS,
     tooltip::{detect::TitleBar, items::is_chest_icon},
 };
 use image::imageops::{FilterType, resize};
@@ -52,8 +52,9 @@ pub fn tooltip_icon(buffer: &Buffer, bar: &TitleBar, s: f64) -> Option<(String, 
                     for x in 0..TEMPLATE_SIZE {
                         let a = (y * TEMPLATE_SIZE + x) * 4;
                         let b = ((y + shift / 3) * side + x + shift % 3) * 4;
-                        let difference: usize =
-                            (0..3).map(|c| template[a + c].abs_diff(seen[b + c]) as usize).sum();
+                        let difference: usize = (0..3)
+                            .map(|c| template[a + c].abs_diff(seen[b + c]) as usize)
+                            .sum();
                         counts[difference] += 1;
                     }
                 }

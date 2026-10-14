@@ -1,10 +1,11 @@
 // A session as Rust saw it, to be run again: every input of every scan, the frames lossless.
 // A file is MAGIC, then records of [tag][payload length as u32 LE][payload]. Start and Scan
 // payloads are msgpack with field names.
-use crate::scanner_state::{ScannerState, SlotEdit};
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
 use std::hash::{DefaultHasher, Hash, Hasher};
+
+use crate::scanner_state::{ScannerState, SlotEdit};
 
 pub const MAGIC: &[u8] = b"HFCAP001";
 pub const START: u8 = b'S';
@@ -63,7 +64,11 @@ impl Recorder {
         self.rgb.resize(pixels * 3 + 1, 0);
         self.alpha.resize(pixels, 0);
         let mut alpha_changed = 0;
-        for (i, (new, old)) in data.chunks_exact(4).zip(self.previous.chunks_exact(4)).enumerate() {
+        for (i, (new, old)) in data
+            .chunks_exact(4)
+            .zip(self.previous.chunks_exact(4))
+            .enumerate()
+        {
             let new = u32::from_le_bytes(new.try_into().unwrap());
             let old = u32::from_le_bytes(old.try_into().unwrap());
             let delta = new ^ old;
@@ -139,14 +144,24 @@ impl ScannerState {
                 let icon = x.icon_name_score.as_ref().map(|x| &x.0);
                 format!(
                     "{:?}",
-                    (x.address, icon, x.alternatives, x.amount, x.tooltip_amount, x.tradability, x.label)
+                    (
+                        x.address,
+                        icon,
+                        x.alternatives,
+                        x.amount,
+                        x.tooltip_amount,
+                        x.tradability,
+                        x.label
+                    )
                 ) + &format!("{:?}", (x.status, &x.reason, x.value, &x.variants))
             })
             .collect();
         slots.sort();
         let mut pages: Vec<String> = result.pages.iter().map(|x| format!("{x:?}")).collect();
         pages.sort();
-        let hover = result.hover.map(|x| (x.last_read_title, x.title, x.amount, x.tradability));
+        let hover = result
+            .hover
+            .map(|x| (x.last_read_title, x.title, x.amount, x.tradability));
         let jobs: Vec<u32> = result.ocr_jobs.iter().map(|x| x.id).collect();
         let mut hasher = DefaultHasher::new();
         format!("{:?}", (slots, pages, hover, &self.chests, jobs)).hash(&mut hasher);
@@ -154,7 +169,11 @@ impl ScannerState {
     }
 
     // The scan that just ran, as a record; the first comes with the head of the file.
-    pub fn record_scan(&mut self, ocr_results: Vec<(u32, String)>, edits: Vec<SlotEdit>) -> Vec<u8> {
+    pub fn record_scan(
+        &mut self,
+        ocr_results: Vec<(u32, String)>,
+        edits: Vec<SlotEdit>,
+    ) -> Vec<u8> {
         let mut recorder = self.recorder.take().unwrap();
         let mut out = vec![];
         if !recorder.started {

@@ -1,12 +1,14 @@
 use crate::{
+    anchor_to_slot::slots::constants::LEVEL,
     buffer::Buffer,
-    cropper::slots::LEVEL,
+    interface::setup::{OneIconConfig, WireRect},
     ocr::jobs::OcrJob,
     scanner_state::{InventoryType, OneSlotInfo, ScannerState, SlotAddress, Tradability},
-    setup::{OneIconConfig, WireRect},
     tooltip::{
         chest::Chest,
-        items::{Variant, bound_alike, is_chest_icon, open_alike, shares_icon, variant, variants_of},
+        items::{
+            Variant, bound_alike, is_chest_icon, open_alike, shares_icon, variant, variants_of,
+        },
     },
 };
 use serde::{Serialize, Serializer, ser::SerializeStruct};
@@ -76,9 +78,15 @@ fn icon_number(text: &str) -> u32 {
 // The chests a slot's icon can be: those that ask for an item level when one is written across
 // the slot, and those that do not when none is.
 fn slot_variants(info: &OneSlotInfo) -> Vec<&'static Variant> {
-    let all: Vec<&Variant> = info.icons().flat_map(|icon| variants_of(icon).iter().copied()).collect();
-    let by_level: Vec<&Variant> =
-        all.iter().copied().filter(|x| x.level.is_some() == info.levelled()).collect();
+    let all: Vec<&Variant> = info
+        .icons()
+        .flat_map(|icon| variants_of(icon).iter().copied())
+        .collect();
+    let by_level: Vec<&Variant> = all
+        .iter()
+        .copied()
+        .filter(|x| x.level.is_some() == info.levelled())
+        .collect();
     if by_level.is_empty() { all } else { by_level }
 }
 
@@ -90,7 +98,10 @@ impl OneSlotInfo {
 
     // every icon the slot may be drawn with, the closest first
     pub fn icons(&self) -> impl Iterator<Item = &String> {
-        self.icon_name_score.iter().map(|x| &x.0).chain(&self.alternatives)
+        self.icon_name_score
+            .iter()
+            .map(|x| &x.0)
+            .chain(&self.alternatives)
     }
 
     pub fn shows(&self, icons: &[String]) -> bool {
@@ -102,7 +113,10 @@ impl Chest {
     // read in this very slot, or with the amount the slot shows
     fn stands_for(&self, address: &SlotAddress, number: Option<u32>) -> bool {
         self.slot == Some(*address)
-            || self.amount.as_ref().is_some_and(|x| Some(icon_number(x)) == number)
+            || self
+                .amount
+                .as_ref()
+                .is_some_and(|x| Some(icon_number(x)) == number)
     }
 }
 
@@ -116,11 +130,15 @@ impl ScannerState {
         variants: &[&Variant],
     ) -> (SlotStatus, String, Option<Tradability>) {
         let (status, reason, tradability) = self.read_status(address, info, variants);
-        let shared = info.icon_name_score.as_ref().is_some_and(|x| shares_icon(&x.0));
+        let shared = info
+            .icon_name_score
+            .as_ref()
+            .is_some_and(|x| shares_icon(&x.0));
         if matches!(status, SlotStatus::Good) && shared && info.label.is_none() {
             return (
                 SlotStatus::NeedHover,
-                "Several items share this icon, and only the tooltip says which this is. Hover it.".into(),
+                "Several items share this icon, and only the tooltip says which this is. Hover it."
+                    .into(),
                 tradability,
             );
         }
@@ -144,7 +162,11 @@ impl ScannerState {
         let chest_tradability = || {
             info.icon_name_score.as_ref()?;
             let number = info.amount.as_ref().map(|text| icon_number(text));
-            let column = (address.inventory_type, address.page_num, address.pos_in_inv.1);
+            let column = (
+                address.inventory_type,
+                address.page_num,
+                address.pos_in_inv.1,
+            );
             let mut chests: Vec<&Chest> = self
                 .chests
                 .iter()
@@ -181,7 +203,10 @@ impl ScannerState {
         };
         if is_chest_icon(icon) {
             let good = |irrelevant: bool| match irrelevant {
-                true => (SlotStatus::Irrelevant, "It opens to nothing that is counted.".to_string()),
+                true => (
+                    SlotStatus::Irrelevant,
+                    "It opens to nothing that is counted.".to_string(),
+                ),
                 false => (SlotStatus::Good, String::new()),
             };
             // Nothing to find out when every chest it can be opens to the same things. One that
@@ -191,15 +216,21 @@ impl ScannerState {
             // A pushed-up tooltip only tells the column. A chest read there with this icon stands
             // for every slot showing its amount, whose tooltips would be the same; failing that
             // (a number misread), the slots are done once as many chests were read as there are slots.
-            let column = (address.inventory_type, address.page_num, address.pos_in_inv.1);
+            let column = (
+                address.inventory_type,
+                address.page_num,
+                address.pos_in_inv.1,
+            );
             let chests: Vec<&Chest> = self
                 .chests
                 .iter()
                 .filter(|chest| info.shows(&chest.icons) && chest.column == Some(column))
                 .collect();
             let number = info.amount.as_ref().map(|text| icon_number(text));
-            let standing: Vec<&&Chest> =
-                chests.iter().filter(|chest| chest.stands_for(address, number)).collect();
+            let standing: Vec<&&Chest> = chests
+                .iter()
+                .filter(|chest| chest.stands_for(address, number))
+                .collect();
             // the amount of a chest that counts for nothing does not matter
             if !sure && !standing.is_empty() && standing.iter().all(|chest| chest.irrelevant) {
                 return good(true);
@@ -215,7 +246,9 @@ impl ScannerState {
                 .iter()
                 .filter(|(other, other_info)| {
                     (other.inventory_type, other.page_num, other.pos_in_inv.1) == column
-                        && other_info.icons().any(|other| info.icons().any(|own| own == other))
+                        && other_info
+                            .icons()
+                            .any(|other| info.icons().any(|own| own == other))
                         && !self.edits.contains_key(*other)
                 })
                 .count();

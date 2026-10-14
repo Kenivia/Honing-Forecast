@@ -23,7 +23,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 OUT = os.path.join(ROOT, ".tmp", "saddle_overnight")
 DRIVER = os.path.join(OUT, "driver.exe")
 DB = "test_cases/saddle_overnight.sqlite"
-THREADS = max(1, (os.cpu_count() or 4) - 2)
+THREADS = max(1, (os.cpu_count() or 4))
 
 VARIANTS = {
     "base": "",
