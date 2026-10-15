@@ -1,4 +1,5 @@
 use crate::buffer::Buffer;
+use crate::scanner_state::ScannerState;
 use crate::tooltip::common::{TITLE_WIDTH, distance, median};
 use ahash::AHashMap;
 
@@ -13,6 +14,13 @@ const SLACK: usize = 3;
 // cut off by the tooltip of its fifth column is 40 shorter, the nearest thing there is.
 const SHORT: f64 = 16.0;
 const HEADER_SLACK: f64 = 6.0;
+
+// Where a title bar is looked for. A tooltip sits against a slot's column, level with the slot or
+// pushed up, so its bar is within a title's width of a window and not below the last row of slots.
+const WINDOW_REACH: f64 = 440.0;
+const WINDOW_ROWS: f64 = 800.0;
+// the last hover's place is tried first, with this much around it
+const NEAR: f64 = 8.0;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TitleBar {
@@ -31,7 +39,7 @@ pub struct TitleBar {
 // of the name passes for a title bar.
 // Only bars whose right end and first rows are inside `region` (x0, y0, x1, y1) are found. A run
 // is still measured past the region's sides, or one cut off by them would pass for a bar.
-pub fn find_title(
+pub fn find_title_bar(
     buffer: &Buffer,
     s: f64,
     headers: &[(f64, f64, f64)],
@@ -58,7 +66,11 @@ pub fn find_title(
                 && near[2][row[x * 4 + 2] as usize]
         };
         // what of a run lies left of the region, as far as it matters
-        let mut run = (0..x0).rev().take(width + SLACK + 2).take_while(|x| is_near(*x)).count();
+        let mut run = (0..x0)
+            .rev()
+            .take(width + SLACK + 2)
+            .take_while(|x| is_near(*x))
+            .count();
         for x in x0..=x1 {
             if x < x1 && is_near(x) {
                 run += 1;
@@ -69,7 +81,9 @@ pub fn find_title(
                 break;
             }
             if run > window && run <= width + SLACK + 1 {
-                ends.entry(x - 1).or_default().push((y, run + short >= width));
+                ends.entry(x - 1)
+                    .or_default()
+                    .push((y, run + short >= width));
             }
             run = 0;
         }
@@ -82,7 +96,9 @@ pub fn find_title(
     for (_, right) in candidates {
         // compression smears the run's end over a few columns
         let near_right = || {
-            (right.saturating_sub(SLACK)..=right + SLACK).filter_map(|r| ends.get(&r)).flatten()
+            (right.saturating_sub(SLACK)..=right + SLACK)
+                .filter_map(|r| ends.get(&r))
+                .flatten()
         };
         let mut whole: Vec<usize> = near_right().filter(|x| x.1).map(|x| x.0).collect();
         whole.sort();
@@ -130,9 +146,7 @@ pub fn find_title(
         let column = |y: usize| buffer.rgb(right - 2, y);
         let step = (raw_title.into_iter().max().unwrap() / 4).max(2);
         let changed = |y: usize| distance(buffer.raw(right - 2, y), raw_title) >= step;
-        let Some(height) =
-            (top..buffer.height - 3).position(|y| (y..y + 3).all(changed))
-        else {
+        let Some(height) = (top..buffer.height - 3).position(|y| (y..y + 3).all(changed)) else {
             continue;
         };
         if (height as f64) < TITLE_HEIGHTS.0 * s || height as f64 > TITLE_HEIGHTS.1 * s {
@@ -145,7 +159,11 @@ pub fn find_title(
         }
         let body: Vec<[i32; 3]> = (body_top..body_top + body_rows).map(column).collect();
         let body_colour = median(body.clone());
-        let raw_body = median((body_top..body_top + body_rows).map(|y| buffer.raw(right - 2, y)).collect());
+        let raw_body = median(
+            (body_top..body_top + body_rows)
+                .map(|y| buffer.raw(right - 2, y))
+                .collect(),
+        );
         let steady = body
             .iter()
             .filter(|p| distance(**p, body_colour) <= 14)
@@ -169,4 +187,51 @@ pub fn find_title(
         }
     }
     None
+}
+
+impl ScannerState {
+    pub fn find_title_bar_wrapper(
+        &self,
+        headers: &[(f64, f64, f64)],
+        located: &[((f64, f64), f64)],
+        last: &Option<TitleBar>,
+    ) -> Option<TitleBar> {
+        // no window, no slot to hover
+        if headers.is_empty() {
+            return None;
+        }
+        let s = self.screen_info.scale_factor;
+        let (left, right, bottom) = located.iter().fold(
+            (f64::MAX, 0f64, 0f64),
+            |(left, right, bottom), ((x, y), edge)| {
+                (
+                    left.min(*x),
+                    right.max(*edge),
+                    bottom.max(y + WINDOW_ROWS * s),
+                )
+            },
+        );
+        let reach = WINDOW_REACH * s;
+        let windows = (
+            (left - reach).max(0.0) as usize,
+            0,
+            (right + reach) as usize,
+            bottom as usize,
+        );
+        let near = (NEAR * s).ceil() as usize;
+        let mut regions = vec![];
+        if let Some(bar) = last {
+            // all of the bar's rows: which column most of them end on is where it is put
+            regions.push((
+                bar.x.saturating_sub(near),
+                bar.y.saturating_sub(near),
+                bar.x + bar.width + near,
+                bar.y + bar.height + near,
+            ));
+        }
+        regions.push(windows);
+        regions
+            .into_iter()
+            .find_map(|region| find_title_bar(& self.buffer, s, &headers, region))
+    }
 }

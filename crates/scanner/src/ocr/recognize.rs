@@ -1,33 +1,10 @@
+use crate::{
+    dev_utils::timing::timed,
+    interface::setup::{OCR_ENGINE, OCR_NUMBER_ENGINE},
+};
 use image::GrayImage;
-use ocrs::{ImageSource, OcrEngine, OcrEngineParams};
-use parking_lot::RwLock;
-use rten::Model;
+use ocrs::ImageSource;
 use rten_imageproc::{PointF, RotatedRect, Vec2};
-use std::sync::LazyLock;
-
-use crate::dev_utils::timing::timed;
-
-pub const OCR_LINE_HEIGHT: u32 = 64; // what the recogniser works at
-
-pub static OCR_ENGINE: LazyLock<RwLock<Option<OcrEngine>>> = LazyLock::new(|| RwLock::new(None));
-// the same model, kept to what a slot's count can be
-pub static OCR_NUMBER_ENGINE: LazyLock<RwLock<Option<OcrEngine>>> =
-    LazyLock::new(|| RwLock::new(None));
-const NUMBER_CHARS: &str = "0123456789.+-";
-
-pub fn load_ocr_engine(model: Vec<u8>) {
-    // the alphabet is fixed per engine, so the model is loaded once for each
-    let engine = |allowed_chars: Option<String>| {
-        OcrEngine::new(OcrEngineParams {
-            recognition_model: Some(Model::load(model.clone()).expect("model load failed")),
-            allowed_chars,
-            ..Default::default()
-        })
-        .expect("model load failed")
-    };
-    *OCR_ENGINE.write() = Some(engine(None));
-    *OCR_NUMBER_ENGINE.write() = Some(engine(Some(NUMBER_CHARS.to_string())));
-}
 
 // the whole image is one line of text; `numbers` keeps it to what a slot's count can be
 pub fn recognize_line(image: &GrayImage, numbers: bool) -> String {

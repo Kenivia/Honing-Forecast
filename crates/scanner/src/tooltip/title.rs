@@ -1,12 +1,13 @@
 use crate::buffer::Buffer;
-use crate::ocr::{jobs::Line, text::text_line};
+use crate::ocr::jobs::OCRLine;
+use crate::ocr::text::text_line;
 use crate::tooltip::common::text_lines;
-use crate::tooltip::detect::TitleBar;
+use crate::tooltip::detect_title::TitleBar;
 
 // The title's lines, and whether every line is centred in the bar.
 // A line whose side gaps differ has the cursor over it: "Great Destiny Leapstone" with its
 // start covered reads as a different, valid item.
-pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64, margin: f64) -> (Vec<Line>, bool) {
+pub fn title_lines(buffer: &Buffer, bar: &TitleBar, s: f64, margin: f64) -> (Vec<OCRLine>, bool) {
     let is_text =
         |x: usize, y: usize| buffer.rgb(bar.x + x, bar.y + y).into_iter().max().unwrap() > 120;
     let is_coloured = |x: usize, y: usize| {
@@ -78,9 +79,9 @@ pub fn join_title(words: &[String]) -> String {
     let name = words.join(" ");
     // drop the "[X n]" stack count, whose bracket can come back as an unknown character, and the "(Bound)" marker
     // a name can have brackets of its own ("[Event] Metallurgy: Hellfire [11-14]")
-    let end = name
-        .find("(Bound")
-        .or(["[X", "[x", "?X", "?x"].into_iter().find_map(|count| name.rfind(count)));
+    let end = name.find("(Bound").or(["[X", "[x", "?X", "?x"]
+        .into_iter()
+        .find_map(|count| name.rfind(count)));
     let name = &name[..end.unwrap_or(name.len())];
     name.split_whitespace().collect::<Vec<_>>().join(" ")
 }

@@ -61,7 +61,7 @@ pub enum Kind {
 // One line of text cut out of a frame, as captured. Scanning only cuts it; whoever reads it
 // makes it into the strip the recogniser takes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Line {
+pub struct OCRLine {
     #[serde(with = "pixels")]
     pub crop: RgbaImage,
     pub kind: Kind,
@@ -69,7 +69,7 @@ pub struct Line {
     pub brightness: f64,
 }
 
-impl Line {
+impl OCRLine {
     // the 64px strip the recogniser takes
     pub fn strip(&self) -> GrayImage {
         match &self.kind {
@@ -101,13 +101,13 @@ pub struct OcrJob {
     pub priority: u8,
     // the read it is a line of, 0 for a slot's count; a read is of no use until all its lines are back
     pub group: u32,
-    pub line: Line,
+    pub line: OCRLine,
 }
 
 impl ScannerState {
     // The id its text will be stored under; a line seen before is not read again. The brightness
     // estimate is not part of what is compared: it moves a little on every scan.
-    pub fn request_ocr(&mut self, line: Line, priority: u8, group: u32) -> u32 {
+    pub fn request_ocr(&mut self, line: OCRLine, priority: u8, group: u32) -> u32 {
         let (icon, template) = match &line.kind {
             Kind::Number { icon, template } => (icon.as_raw().as_slice(), template.as_str()),
             _ => (&[][..], ""),

@@ -1,7 +1,7 @@
 use crate::{
     buffer::Buffer,
     interface::setup::BASE_ICONS,
-    tooltip::{detect::TitleBar, items::is_chest_icon},
+    tooltip::{detect_title::TitleBar, items::is_chest_icon},
 };
 use image::imageops::{FilterType, resize};
 

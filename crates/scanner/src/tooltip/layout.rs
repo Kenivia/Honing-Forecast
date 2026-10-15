@@ -2,7 +2,7 @@ use crate::buffer::Buffer;
 use crate::scanner_state::Tradability;
 use crate::tooltip::chest::{ChestKind, ChestLayout, ChestRowLayout};
 use crate::tooltip::common::{CURSOR_REACH, distance, median, text_lines};
-use crate::tooltip::detect::TitleBar;
+use crate::tooltip::detect_title::TitleBar;
 
 const ICON_BOTTOM: f64 = 108.0; // the item icon ends this far below the title bar
 const CHARACTER_BIND_WIDTH: f64 = 160.0; // "Bound to Character" ends 173px in, "Bound to Roster" 143px. English only
@@ -23,6 +23,16 @@ const WHITE: u8 = 8;
 const BRIGHT: u8 = 16;
 const BLACK: u8 = 32;
 const TAN: u8 = 64;
+
+#[derive(Debug, Clone)]
+struct Line {
+    top: usize,
+    bottom: usize,
+    left: usize,
+    right: usize,
+    yellow: Option<(usize, usize)>,
+    red: bool,
+}
 
 fn classify([r, g, b]: [i32; 3]) -> u8 {
     let (max, min) = (r.max(g).max(b), r.min(g).min(b));
@@ -54,15 +64,6 @@ fn classify([r, g, b]: [i32; 3]) -> u8 {
         class |= TAN;
     }
     class
-}
-
-struct Line {
-    top: usize,
-    bottom: usize,
-    left: usize,
-    right: usize,
-    yellow: Option<(usize, usize)>,
-    red: bool,
 }
 
 pub struct Layout {
@@ -255,7 +256,8 @@ pub fn parse_layout(buffer: &Buffer, bar: &TitleBar, s: f64) -> Layout {
         // short word, "There is a [chance that you can obtain one]" runs to the end of the line,
         // "You can [select and obtain 1] of the" has white after it. Only "all" fits on one line.
         let (top, bottom) = *lines.first()?;
-        let (first, last) = extent(top, bottom, text_left, YELLOW).filter(|x| (x.1 - x.0) as f64 >= PHRASE * s)?;
+        let (first, last) =
+            extent(top, bottom, text_left, YELLOW).filter(|x| (x.1 - x.0) as f64 >= PHRASE * s)?;
         let kind = if ((last - first) as f64) < SHORT_PHRASE * s {
             ChestKind::ObtainAll
         } else if last as f64 + 8.0 * s >= extent(top, bottom, text_left, TEXT)?.1 as f64 {
@@ -305,7 +307,8 @@ pub fn parse_layout(buffer: &Buffer, bar: &TitleBar, s: f64) -> Layout {
                             x + (PANEL_ICON_LEFT * s) as usize,
                             top,
                             x + width - pad,
-                            (title_bottom + count[0].1 + 2).max(top + (PANEL_ICON_SIZE * s) as usize),
+                            (title_bottom + count[0].1 + 2)
+                                .max(top + (PANEL_ICON_SIZE * s) as usize),
                         ),
                     }
                 })
@@ -320,11 +323,17 @@ pub fn parse_layout(buffer: &Buffer, bar: &TitleBar, s: f64) -> Layout {
     let (outside, inside) = ((2.0 * s) as usize, (20.0 * s).round() as usize);
     for y in body_bottom + 1..buffer.height {
         let level = |x: usize| buffer.rgb(x, y).into_iter().max().unwrap();
-        let sides = [(x + outside, x + inside), (x + width - outside, x + width - inside)];
+        let sides = [
+            (x + outside, x + inside),
+            (x + width - outside, x + width - inside),
+        ];
         if sides.iter().any(|(a, _)| level(*a) < 50) {
             continue;
         }
-        misses = if sides.iter().all(|(a, b)| level(*b) * 20 <= level(*a) * 7 + 200) {
+        misses = if sides
+            .iter()
+            .all(|(a, b)| level(*b) * 20 <= level(*a) * 7 + 200)
+        {
             bottom = y;
             0
         } else {

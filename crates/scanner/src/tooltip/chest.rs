@@ -1,10 +1,9 @@
-use crate::ocr::{jobs::Line, text::text_line};
+use crate::ocr::text::text_line;
+use crate::tooltip::ocr_interface::ChestRowStrips;
 use crate::{
     buffer::Buffer,
     scanner_state::{InventoryType, ScannerState, SlotAddress, Tradability},
-    tooltip::{
-        items::{VARIANTS, Variant, numerals, numerals_are, variant, without_numerals},
-    },
+    tooltip::items::{VARIANTS, Variant, numerals, numerals_are, variant, without_numerals},
 };
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
@@ -74,13 +73,6 @@ pub struct ChestLayout {
     pub rows: Vec<ChestRowLayout>,
 }
 
-// the text lines of one row of a chest
-#[derive(Debug, Clone)]
-pub struct ChestRowStrips {
-    pub names: Vec<Line>,
-    pub count: Line,
-}
-
 pub fn chest_strips(buffer: &Buffer, layout: &ChestLayout) -> Vec<ChestRowStrips> {
     let strip = |(x0, y0, x1, y1): Rect| text_line(buffer, x0, y0, x1, y1);
     layout
@@ -118,13 +110,23 @@ static TITLES: LazyLock<Titles> = LazyLock::new(|| {
         .map(|variant| {
             let mut index = |title: &String| {
                 let text = title.to_lowercase();
-                titles.iter().position(|x| x.text == text).unwrap_or_else(|| {
-                    let tier = text.rsplit_once(' ').filter(|x| x.1.chars().all(|c| "ivx".contains(c)));
-                    let stem = tier.map(|x| x.0.trim_end().to_string());
-                    let numerals = numerals(stem.as_ref().unwrap_or(&text), false);
-                    titles.push(Title { text, stem, numerals, rivals: vec![] });
-                    titles.len() - 1
-                })
+                titles
+                    .iter()
+                    .position(|x| x.text == text)
+                    .unwrap_or_else(|| {
+                        let tier = text
+                            .rsplit_once(' ')
+                            .filter(|x| x.1.chars().all(|c| "ivx".contains(c)));
+                        let stem = tier.map(|x| x.0.trim_end().to_string());
+                        let numerals = numerals(stem.as_ref().unwrap_or(&text), false);
+                        titles.push(Title {
+                            text,
+                            stem,
+                            numerals,
+                            rivals: vec![],
+                        });
+                        titles.len() - 1
+                    })
             };
             variant.contents.iter().map(|x| index(&x.0)).collect()
         })
@@ -132,12 +134,19 @@ static TITLES: LazyLock<Titles> = LazyLock::new(|| {
     let bare = |x: &Title| without_numerals(x.stem.as_ref().unwrap_or(&x.text), false);
     let mut alike: AHashMap<String, Vec<String>> = AHashMap::new();
     for title in &titles {
-        alike.entry(bare(title)).or_default().push(title.numerals.clone());
+        alike
+            .entry(bare(title))
+            .or_default()
+            .push(title.numerals.clone());
     }
     for title in &mut titles {
         title.rivals = alike[&bare(title)].clone();
     }
-    let tier = |x: &Title| x.stem.as_ref().map_or(0, |stem| x.text.len() - stem.len() - 1);
+    let tier = |x: &Title| {
+        x.stem
+            .as_ref()
+            .map_or(0, |stem| x.text.len() - stem.len() - 1)
+    };
     Titles {
         longest_tier: titles.iter().map(tier).max().unwrap(),
         titles,
@@ -157,7 +166,11 @@ fn tiered(read: &str, stem: &str, longest: usize) -> (usize, String) {
             let (head, tail) = chars.split_at(chars.len() - tail);
             let head = head.iter().collect::<String>().trim_end().to_string();
             let numeral = tail.iter().filter(|c| !c.is_whitespace()).count();
-            let missing = if numeral == 0 { 2 } else { numeral.saturating_sub(longest) };
+            let missing = if numeral == 0 {
+                2
+            } else {
+                numeral.saturating_sub(longest)
+            };
             (levenshtein(&head, stem) + missing, head)
         })
         .min()
@@ -175,7 +188,10 @@ fn row_is(read: &str, title: &Title, all: &Titles) -> Option<f64> {
         None => (normalized_levenshtein(read, &title.text), read.to_string()),
         Some(stem) => {
             let (apart, head) = tiered(read, stem, all.longest_tier);
-            (1.0 - apart as f64 / (stem.chars().count() + 2).max(read.chars().count()) as f64, head)
+            (
+                1.0 - apart as f64 / (stem.chars().count() + 2).max(read.chars().count()) as f64,
+                head,
+            )
         }
     };
     let digits = || numerals_are(&numerals(&numbered, false), &title.numerals, &title.rivals);
@@ -232,18 +248,30 @@ pub fn chests_listing(rows: &[(String, String)]) -> (Vec<(&'static Variant, f64)
             partly.push(fit);
         }
     }
-    if whole.is_empty() { (partly, false) } else { (whole, true) }
+    if whole.is_empty() {
+        (partly, false)
+    } else {
+        (whole, true)
+    }
 }
 
 impl Chest {
-    fn with(mut self, slot: Option<SlotAddress>, amount: Option<String>, tradability: Option<Tradability>) -> Chest {
+    fn with(
+        mut self,
+        slot: Option<SlotAddress>,
+        amount: Option<String>,
+        tradability: Option<Tradability>,
+    ) -> Chest {
         (self.slot, self.amount, self.tradability) = (slot, amount, tradability);
         self
     }
 
     pub fn new(variants: Vec<u32>) -> Chest {
         let first = variant(variants[0]);
-        let mut icons: Vec<String> = variants.iter().filter_map(|id| variant(*id).template()).collect();
+        let mut icons: Vec<String> = variants
+            .iter()
+            .filter_map(|id| variant(*id).template())
+            .collect();
         icons.sort();
         icons.dedup();
         // chests that list the same things go by several names
@@ -254,14 +282,22 @@ impl Chest {
                 titles.push(title);
             }
         }
-        let more = if titles.len() > 2 { format!(" and {} more", titles.len() - 2) } else { String::new() };
+        let more = if titles.len() > 2 {
+            format!(" and {} more", titles.len() - 2)
+        } else {
+            String::new()
+        };
         Chest {
             title: titles[..titles.len().min(2)].join(" / ") + &more,
             kind: first.kind,
             contents: first
                 .contents
                 .iter()
-                .map(|(item, amount, chest)| ChestContent { item: item.clone(), amount: *amount, chest: *chest })
+                .map(|(item, amount, chest)| ChestContent {
+                    item: item.clone(),
+                    amount: *amount,
+                    chest: *chest,
+                })
                 .collect(),
             icons,
             irrelevant: variants.iter().all(|id| variant(*id).irrelevant),
@@ -305,9 +341,17 @@ impl ScannerState {
                 let old = &self.chests[index];
                 if old.same_contents(&chest) {
                     // two reads of one chest: it is one of those both can be
-                    let both = chest.variants.iter().copied().filter(|x| old.variants.contains(x));
-                    chest = Chest { rows: chest.rows, column: chest.column, ..Chest::new(both.collect()) }
-                        .with(chest.slot, chest.amount, chest.tradability);
+                    let both = chest
+                        .variants
+                        .iter()
+                        .copied()
+                        .filter(|x| old.variants.contains(x));
+                    chest = Chest {
+                        rows: chest.rows,
+                        column: chest.column,
+                        ..Chest::new(both.collect())
+                    }
+                    .with(chest.slot, chest.amount, chest.tradability);
                     if !resolved {
                         chest.slot = old.slot.or(chest.slot);
                     }

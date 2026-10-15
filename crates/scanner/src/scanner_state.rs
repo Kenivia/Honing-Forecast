@@ -4,10 +4,7 @@ use crate::{
     dev_utils::capture::Recorder,
     interface::setup::OneIconConfig,
     ocr::jobs::OcrJob,
-    tooltip::{
-        chest::Chest,
-        hover::{Hover, PendingRead},
-    },
+    tooltip::{chest::Chest, hover::Hover, ocr_interface::PendingRead},
 };
 use ahash::{AHashMap, AHashSet};
 use fast_image_resize::Resizer;

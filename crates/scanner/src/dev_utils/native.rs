@@ -5,8 +5,7 @@ use std::{fs, sync::Once};
 
 use crate::{
     buffer::Buffer,
-    interface::setup::set_config,
-    ocr::recognize::load_ocr_engine,
+    interface::setup::{load_ocr_engine, set_config},
     scanner_state::ScannerState,
     tooltip::{chest::Chest, hover::Hover},
 };

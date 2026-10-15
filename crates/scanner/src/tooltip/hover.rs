@@ -1,6 +1,6 @@
 use super::{
-    chest::{Chest, ChestKind, ChestRow, ChestRowStrips, chest_strips, chests_listing},
-    detect::{TitleBar, find_title},
+    chest::{Chest, ChestKind, ChestRow, chest_strips, chests_listing},
+    detect_title::TitleBar,
     icon::tooltip_icon,
     items::{
         ITEMS, bars_titled, item_from_body, match_bar_title, match_title, shares_icon, variant,
@@ -16,19 +16,18 @@ use crate::{
     constants::QUIET_SCANS,
     dev_utils::timing::timed,
     image_utils::{
-        brightness::{brightness_lut, normalize_brightness},
-        close_enough::masked_confidence,
-        common::get_resizer,
+        brightness::normalize_brightness, close_enough::masked_confidence, common::get_resizer,
     },
     interface::setup::icon_lookup,
-    ocr::{
-        jobs::Line,
-        text::{text_line, yellow_line},
-    },
+    ocr::text::{text_line, yellow_line},
     scanner_state::{InventoryType, ScannerState, SlotAddress, Tradability},
+    tooltip::{
+        common::{highest_vote_count, winner},
+        ocr_interface::Strips,
+    },
 };
 use ahash::AHashMap;
-use std::{hash::Hash, mem::take};
+use std::mem::take;
 
 const SAME_HOVER: f64 = 6.0; // the tooltip is the same one while it stays within this many px
 const MAX_MISSED: usize = 4;
@@ -50,7 +49,7 @@ const LIT: f64 = 0.005;
 // A tooltip beside no slot we know that is lit up is held for this many scans, the highlight
 // fading in, and what is then read of it goes behind everything else by this much.
 const HOLD_SCANS: usize = 8;
-const LOW_PRIORITY: usize = 100;
+
 // rows this much like a chest's names settle it in one read
 const EXACT_ROWS: f64 = 0.995;
 const SLOT_RIGHT_OF_TITLE: f64 = 10.67; // tooltip on the slot's right: gap from the slot's right edge to the title
@@ -68,13 +67,6 @@ const WINDOW_WIDTHS: [(InventoryType, f64); 3] = [
     (InventoryType::CharInventory, 722.4),
 ];
 const HEADER_ROWS: (f64, f64) = (10.0, 60.0);
-// Where a title bar is looked for. A tooltip sits against a slot's column, level with the slot or
-// pushed up, so its bar is within a title's width of a window and not below the last row of slots.
-const WINDOW_REACH: f64 = 440.0;
-const WINDOW_ROWS: f64 = 800.0;
-// the last hover's place is tried first, with this much around it
-const NEAR: f64 = 8.0;
-
 // one tooltip staying in place over consecutive frames; what it says is voted on across them
 #[derive(Debug, Default, Clone)]
 pub struct Hover {
@@ -130,243 +122,21 @@ pub struct Hover {
     pub scans: usize,
 }
 
-// the text lines of one frame of a hover, not sent off yet
-#[derive(Debug, Default, Clone)]
-pub struct Strips {
-    // one per line, and whether every line was centred
-    pub title: Option<(Vec<Line>, bool)>,
-    pub amount: Option<[Line; 3]>,
-    pub chest: Option<Vec<ChestRowStrips>>,
-    // one per description line
-    pub body: Option<Vec<Line>>,
-}
-
-// The OCR jobs of one frame of a hover. Its votes are cast once every text is back.
-#[derive(Debug, Default)]
-pub struct PendingRead {
-    pub hover: u32,
-    pub group: u32,
-    // one job per line, and whether every line was centred
-    pub title: Option<(Vec<u32>, bool)>,
-    pub amount: Option<[u32; 3]>,
-    // per row: the name's lines, the count
-    pub chest: Option<Vec<(Vec<u32>, u32)>>,
-    pub body: Option<Vec<u32>>,
-}
-
-impl PendingRead {
-    fn jobs(&self) -> impl Iterator<Item = u32> + '_ {
-        let title = self.title.iter().flat_map(|x| x.0.iter().copied());
-        let amount = self.amount.iter().flatten().copied();
-        let chest = self.chest.iter().flatten();
-        let chest = chest.flat_map(|row| row.0.iter().copied().chain([row.1]));
-        title
-            .chain(amount)
-            .chain(chest)
-            .chain(self.body.iter().flatten().copied())
-    }
-}
-
-// a tie goes to the smaller value, not by map order, so that runs repeat
-fn winner<T: Clone + Ord + Hash>(votes: &AHashMap<T, usize>) -> Option<(T, usize)> {
-    votes
-        .iter()
-        .max_by(|a, b| a.1.cmp(b.1).then_with(|| b.0.cmp(a.0)))
-        .map(|(value, count)| (value.clone(), *count))
-}
-
-fn most<T: Clone + Ord + Hash>(votes: &AHashMap<T, usize>) -> usize {
-    winner(votes).map_or(0, |x| x.1)
-}
-
 impl ScannerState {
-    // A hover that is over stays around until its last texts are in. What it held goes off now:
-    // a short hover is over before its first read is back, and its last frame reads better than
-    // its first, which is often still fading in.
-    fn retire_hover(&mut self, mut hover: Hover) {
-        // Of a kind with a read still out, what was held waits for it, and only goes if that read
-        // did not settle the matter.
-        let mut held = take(&mut hover.held);
-        let mut now = Strips::default();
-        let waits = |kind: usize| hover.waiting[kind] > 0;
-        if !waits(0) {
-            now.title = held
-                .title
-                .take()
-                .filter(|_| most(&hover.title_votes) < SETTLED * CENTRED_VOTE);
-        }
-        if !waits(1) {
-            now.amount = held
-                .amount
-                .take()
-                .filter(|_| most(&hover.amount_votes) < SETTLED);
-        }
-        if !waits(2) {
-            now.chest = held
-                .chest
-                .take()
-                .filter(|_| most(&hover.chest_votes) < SETTLED);
-        }
-        if !waits(3) {
-            now.body = held
-                .body
-                .take()
-                .filter(|_| most(&hover.body_votes) < SETTLED);
-        }
-        hover.held = held;
-        self.send_read(&mut hover, now);
-        if hover.waiting != [0; 4] {
-            self.past_hovers.push(hover);
-        } else {
-            self.write_hover(&mut hover, true);
-            if let Some(log) = &mut self.hover_log {
-                log.push(hover);
-            }
-        }
-    }
-
-    // sends lines off to be read, as one read of this hover
-    fn send_read(&mut self, hover: &mut Hover, strips: Strips) {
-        // a hover's first read goes ahead of other hovers' later ones, and one beside nothing we
-        // know behind everything else
-        let low = if hover.interest { 0 } else { LOW_PRIORITY };
-        let priority = (hover.sent.into_iter().max().unwrap() + low).min(255) as u8;
-        // each kind is a read of its own, so the short ones are not kept back by a chest's rows
-        let id = hover.id;
-        let mut reads = vec![];
-        let next = |state: &mut ScannerState| {
-            state.read_count += 1;
-            PendingRead {
-                hover: id,
-                group: state.read_count,
-                ..Default::default()
-            }
-        };
-        if let Some((lines, centred)) = strips.title {
-            let mut read = next(self);
-            let jobs = lines
-                .into_iter()
-                .map(|line| self.request_ocr(line, priority, read.group))
-                .collect();
-            read.title = Some((jobs, centred));
-            reads.push((0, read));
-        }
-        if let Some(images) = strips.amount {
-            let mut read = next(self);
-            read.amount = Some(images.map(|image| self.request_ocr(image, priority, read.group)));
-            reads.push((1, read));
-        }
-        if let Some(rows) = strips.chest {
-            let mut read = next(self);
-            let mut jobs = vec![];
-            for row in rows {
-                let names = row
-                    .names
-                    .into_iter()
-                    .map(|x| self.request_ocr(x, priority, read.group))
-                    .collect();
-                jobs.push((names, self.request_ocr(row.count, priority, read.group)));
-            }
-            read.chest = Some(jobs);
-            reads.push((2, read));
-        }
-        if let Some(lines) = strips.body {
-            let mut read = next(self);
-            read.body = Some(
-                lines
-                    .into_iter()
-                    .map(|line| self.request_ocr(line, priority, read.group))
-                    .collect(),
-            );
-            reads.push((3, read));
-        }
-        for (kind, read) in reads {
-            hover.waiting[kind] += 1;
-            hover.sent[kind] += 1;
-            self.pending_reads.push(read);
-        }
-    }
-
-    // Finds the tooltip and sends its text lines off to be read. Nothing here waits for OCR:
-    // the votes are cast in resolve_reads, when the texts are back.
-    pub fn update_tooltip(&mut self) {
-        let Some(brightness) = self.screen_info.brightness else {
-            return;
-        };
+    fn retire_hover_wrapper(&mut self, bar: &TitleBar) -> (Hover, bool) {
         let s = self.screen_info.scale_factor;
-        self.buffer.lut = Some(brightness_lut(brightness));
-        self.buffer.brightness = brightness;
-        let buffer = self.buffer;
-        // each located window: its origin and its header's right edge
-        let located: Vec<((f64, f64), f64)> = WINDOW_WIDTHS
-            .iter()
-            .filter_map(|(inventory, width)| {
-                let root = self.inventory_root(*inventory)?;
-                Some((root, root.0 + width * s))
-            })
-            .collect();
-        // each header's right edge, and the rows a bar found in it starts on
-        let headers: Vec<(f64, f64, f64)> = located
-            .iter()
-            .map(|((_, y), edge)| (*edge, y - HEADER_ROWS.0 * s, y + HEADER_ROWS.1 * s))
-            .collect();
-        let last = self.hover.as_ref().map(|hover| hover.bar);
-        let Some(bar) = timed("tooltip/find_title", || {
-            // no window, no slot to hover
-            if headers.is_empty() {
-                return None;
-            }
-            let (left, right, bottom) = located.iter().fold(
-                (f64::MAX, 0f64, 0f64),
-                |(left, right, bottom), ((x, y), edge)| {
-                    (
-                        left.min(*x),
-                        right.max(*edge),
-                        bottom.max(y + WINDOW_ROWS * s),
-                    )
-                },
-            );
-            let reach = WINDOW_REACH * s;
-            let windows = (
-                (left - reach).max(0.0) as usize,
-                0,
-                (right + reach) as usize,
-                bottom as usize,
-            );
-            let near = (NEAR * s).ceil() as usize;
-            let mut regions = vec![];
-            if let Some(bar) = last {
-                // all of the bar's rows: which column most of them end on is where it is put
-                regions.push((
-                    bar.x.saturating_sub(near),
-                    bar.y.saturating_sub(near),
-                    bar.x + bar.width + near,
-                    bar.y + bar.height + near,
-                ));
-            }
-            regions.push(windows);
-            regions
-                .into_iter()
-                .find_map(|region| find_title(&buffer, s, &headers, region))
-        }) else {
-            // tooltips fade in and single frames get lost, so a hover survives a few misses
-            if let Some(mut hover) = self.hover.take() {
-                hover.missed += 1;
-                if hover.missed > MAX_MISSED {
-                    self.retire_hover(hover);
-                } else {
-                    self.hover = Some(hover);
-                }
-            }
-            return;
-        };
-
         // Tooltips pushed up by the screen bottom end up in the same place for every slot of a
         // column, so a tooltip that has not moved is only the same one while its title looks the same.
         let title_columns: Vec<bool> = (0..bar.width)
-            .map(|x| {
-                (0..bar.height)
-                    .any(|y| buffer.rgb(bar.x + x, bar.y + y).into_iter().max().unwrap() > 120)
+            .map(|x: usize| {
+                (0..bar.height).any(|y| {
+                    self.buffer
+                        .rgb(bar.x + x, bar.y + y)
+                        .into_iter()
+                        .max()
+                        .unwrap()
+                        > 120
+                })
             })
             .collect();
         let same = self.hover.as_ref().is_some_and(|hover| {
@@ -380,11 +150,11 @@ impl ScannerState {
                 && (hover.position.1.abs_diff(bar.y) as f64) <= SAME_HOVER * s
                 && (changed as f64) < TITLE_CHANGED * bar.width as f64
         });
-        let mut hover = match self.hover.take() {
+        let mut hover: Hover = match self.hover.take() {
             Some(hover) if same => hover,
             old => {
-                if let Some(old) = old {
-                    self.retire_hover(old);
+                if let Some(old2) = old {
+                    self.retire_hover(old2);
                 }
                 self.hover_count += 1;
                 Hover {
@@ -405,7 +175,7 @@ impl ScannerState {
         hover.position = (bar.x, bar.y);
         hover.title_columns = title_columns;
         hover.missed = 0;
-        hover.bar = bar;
+        hover.bar = *bar;
         hover.candidates = self.slots_beside(&bar, s);
         hover.scans += 1;
         let (unknown, lit) = self.looks_hovered(&hover.candidates, bar.y as f64, s);
@@ -415,30 +185,120 @@ impl ScannerState {
                 hover.lit.push(address);
             }
         }
+        (hover, look_changed)
+    }
+    // A hover that is over stays around until its last texts are in. What it held goes off now:
+    // a short hover is over before its first read is back, and its last frame reads better than
+    // its first, which is often still fading in.
+    fn retire_hover(&mut self, mut hover: Hover) {
+        // Of a kind with a read still out, what was held waits for it, and only goes if that read
+        // did not settle the matter.
+        let mut held = take(&mut hover.held);
+        let mut now = Strips::default();
+        let waits = |kind: usize| hover.waiting[kind] > 0;
+        if !waits(0) {
+            now.title = held
+                .title
+                .take()
+                .filter(|_| highest_vote_count(&hover.title_votes) < SETTLED * CENTRED_VOTE);
+        }
+        if !waits(1) {
+            now.amount = held
+                .amount
+                .take()
+                .filter(|_| highest_vote_count(&hover.amount_votes) < SETTLED);
+        }
+        if !waits(2) {
+            now.chest = held
+                .chest
+                .take()
+                .filter(|_| highest_vote_count(&hover.chest_votes) < SETTLED);
+        }
+        if !waits(3) {
+            now.body = held
+                .body
+                .take()
+                .filter(|_| highest_vote_count(&hover.body_votes) < SETTLED);
+        }
+        hover.held = held;
+        self.send_read(&mut hover, now);
+        if hover.waiting != [0; 4] {
+            self.past_hovers.push(hover);
+        } else {
+            self.write_hover(&mut hover, true);
+            if let Some(log) = &mut self.hover_log {
+                log.push(hover);
+            }
+        }
+    }
 
-        let layout = timed("tooltip/layout", || parse_layout(&buffer, &bar, s));
+    // Finds the tooltip and sends its text lines off to be read. Nothing here waits for OCR:
+    // the votes are cast in resolve_reads, when the texts are back.
+    pub fn update_tooltip(&mut self) {
+        if self.screen_info.brightness.is_some() {
+            return;
+        };
+        let s = self.screen_info.scale_factor;
+
+        // each located window: its origin and its header's right edge
+        let located: Vec<((f64, f64), f64)> = WINDOW_WIDTHS
+            .iter()
+            .filter_map(|(inventory, width)| {
+                let root = self.inventory_root(*inventory)?;
+                Some((root, root.0 + width * s))
+            })
+            .collect();
+        // each header's right edge, and the rows a bar found in it starts on
+        let headers: Vec<(f64, f64, f64)> = located
+            .iter()
+            .map(|((_, y), edge)| (*edge, y - HEADER_ROWS.0 * s, y + HEADER_ROWS.1 * s))
+            .collect();
+
+        let Some(bar) = timed("tooltip/find_title", || {
+            self.find_title_bar_wrapper(
+                &headers,
+                &located,
+                &self.hover.as_ref().map(|hover| hover.bar),
+            )
+        }) else {
+            // tooltips fade in and single frames get lost, so a hover survives a few misses
+            if let Some(mut hover) = self.hover.take() {
+                hover.missed += 1;
+                if hover.missed > MAX_MISSED {
+                    self.retire_hover(hover);
+                } else {
+                    self.hover = Some(hover);
+                }
+            }
+            return;
+        };
+        let (mut hover, look_changed) = self.retire_hover_wrapper(&bar);
+        let layout = timed("tooltip/layout", || parse_layout(&self.buffer, &bar, s));
         // Each of the three is read until enough reads agree, counting those still on their way.
         // What cannot go yet, because a read of its kind is still out, is held instead.
         let mut strips = Strips::default();
         // a chest with a panel is told by its rows
         if layout.chest.is_none()
-            && most(&hover.title_votes) + hover.waiting[0] * CENTRED_VOTE < SETTLED * CENTRED_VOTE
+            && highest_vote_count(&hover.title_votes) + hover.waiting[0] * CENTRED_VOTE
+                < SETTLED * CENTRED_VOTE
             && (hover.sent[0] < SETTLED || look_changed)
         {
             let margin = TITLE_MARGINS[hover.sent[0] % TITLE_MARGINS.len()];
             strips.title = Some(timed("tooltip/title", || {
-                title_lines(&buffer, &bar, s, margin)
+                title_lines(&self.buffer, &bar, s, margin)
             }));
         }
 
         // A chest's icon is no material's, and a book's never leads the other book's, so both
         // would be compared on every frame for nothing.
         if layout.chest.is_none()
-            && most(&hover.icon_votes) < SETTLED
+            && highest_vote_count(&hover.icon_votes) < SETTLED
             && hover.icon_tries < MAX_READS
         {
             hover.icon_tries += 1;
-            if let Some((icon, clear)) = timed("tooltip/icon", || tooltip_icon(&buffer, &bar, s)) {
+            if let Some((icon, clear)) =
+                timed("tooltip/icon", || tooltip_icon(&self.buffer, &bar, s))
+            {
                 hover.shared_icon |= shares_icon(&icon);
                 if clear {
                     *hover.icon_votes.entry(icon).or_default() += 1;
@@ -449,7 +309,7 @@ impl ScannerState {
             *hover.tradability_votes.entry(tradability).or_default() += 1;
         }
         if let Some((x0, y0, x1, y1)) = layout.amount
-            && most(&hover.amount_votes) + hover.waiting[1] < SETTLED
+            && highest_vote_count(&hover.amount_votes) + hover.waiting[1] < SETTLED
             && hover.sent[1] < MAX_READS
         {
             // The recogniser doubles or drops a digit when the crop is a pixel wider or narrower, and
@@ -461,29 +321,31 @@ impl ScannerState {
             };
             let (a, b, c) = (margin(4.0, 5.33), margin(4.0, 4.0), margin(2.67, 2.67));
             strips.amount = Some([
-                text_line(&buffer, a.0, a.1, a.2, a.3),
-                text_line(&buffer, b.0, b.1, b.2, b.3),
-                yellow_line(&buffer, c.0, c.1, c.2, c.3),
+                text_line(&self.buffer, a.0, a.1, a.2, a.3),
+                text_line(&self.buffer, b.0, b.1, b.2, b.3),
+                yellow_line(&self.buffer, c.0, c.1, c.2, c.3),
             ]);
         }
 
         if let Some(chest) = &layout.chest {
             *hover.chest_kind_votes.entry(chest.kind).or_default() += 1;
-            if most(&hover.chest_votes) + hover.waiting[2] < SETTLED && hover.sent[2] < MAX_READS {
-                strips.chest = Some(timed("tooltip/chest", || chest_strips(&buffer, chest)));
+            if highest_vote_count(&hover.chest_votes) + hover.waiting[2] < SETTLED
+                && hover.sent[2] < MAX_READS
+            {
+                strips.chest = Some(timed("tooltip/chest", || chest_strips(&self.buffer, chest)));
             }
         }
         // which book a book is: its description says so more often than its title, whose start
         // the cursor covers when the tooltip is level with the slot
         if hover.shared_icon
             && !layout.description.is_empty()
-            && most(&hover.body_votes) + hover.waiting[3] < SETTLED
+            && highest_vote_count(&hover.body_votes) + hover.waiting[3] < SETTLED
             && hover.sent[3] < MAX_READS
         {
             let lines = layout.description.iter();
             strips.body = Some(
                 lines
-                    .map(|x| text_line(&buffer, x.0, x.1, x.2, x.3))
+                    .map(|x| text_line(&self.buffer, x.0, x.1, x.2, x.3))
                     .collect(),
             );
         }
@@ -780,7 +642,7 @@ impl ScannerState {
     // drawn like the slot the tooltip is level with, else like any slot beside it, if some are.
     // With no rows read it is the bars of its title.
     fn hovered_chest(&self, hover: &Hover) -> Option<Chest> {
-        let top = most(&hover.chest_votes);
+        let top = highest_vote_count(&hover.chest_votes);
         let mut variants: Vec<u32> = hover
             .chest_votes
             .iter()

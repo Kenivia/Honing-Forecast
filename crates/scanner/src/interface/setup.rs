@@ -1,10 +1,14 @@
 use crate::{
     anchor_to_slot::{constants::COMBINED_NUMBER_HEIGHT, slots::constants::FROM_AFAR},
     image_utils::{common::Rect, resize::resize_one_config},
+    ocr::constants::NUMBER_CHARS,
 };
 use ahash::AHashMap;
 use fast_image_resize::Resizer;
+use image::RgbaImage;
+use ocrs::{OcrEngine, OcrEngineParams};
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use rten::Model;
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
 
@@ -14,7 +18,10 @@ pub static BASE_ICONS: LazyLock<RwLock<AHashMap<String, OneIconConfig>>> =
 pub static COMPUTED_ICONS: LazyLock<RwLock<AHashMap<(String, u32), OneIconConfig>>> =
     LazyLock::new(|| RwLock::new(AHashMap::new()));
 
-use image::RgbaImage;
+pub static OCR_ENGINE: LazyLock<RwLock<Option<OcrEngine>>> = LazyLock::new(|| RwLock::new(None));
+// the same model, kept to what a slot's count can be
+pub static OCR_NUMBER_ENGINE: LazyLock<RwLock<Option<OcrEngine>>> =
+    LazyLock::new(|| RwLock::new(None));
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(try_from = "OneIconConfigJs")]
@@ -177,4 +184,18 @@ pub fn set_config(config: Vec<OneIconConfig>) {
         .map(|icon| (icon.name.clone(), icon))
         .collect();
     FROM_AFAR.write().clear();
+}
+
+pub fn load_ocr_engine(model: Vec<u8>) {
+    // the alphabet is fixed per engine, so the model is loaded once for each
+    let engine = |allowed_chars: Option<String>| {
+        OcrEngine::new(OcrEngineParams {
+            recognition_model: Some(Model::load(model.clone()).expect("model load failed")),
+            allowed_chars,
+            ..Default::default()
+        })
+        .expect("model load failed")
+    };
+    *OCR_ENGINE.write() = Some(engine(None));
+    *OCR_NUMBER_ENGINE.write() = Some(engine(Some(NUMBER_CHARS.to_string())));
 }

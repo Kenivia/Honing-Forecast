@@ -16,7 +16,7 @@ use crate::{
         common::{Rect, get_resizer},
     },
     interface::setup::{BASE_ICONS, OneIconConfig, icon_lookup},
-    ocr::jobs::{Kind, Line},
+    ocr::jobs::{Kind, OCRLine},
     scanner_state::{OneSlotInfo, ScannerState, SlotAddress},
 };
 
@@ -173,7 +173,7 @@ impl ScannerState {
                 if icon_name_score.is_some() {
                     // only overwrite if it matches another
                     // the number as captured: the game's brightness setting does not touch it
-                    let number = Line {
+                    let number = OCRLine {
                         crop: observed_number.data.clone(),
                         kind: Kind::Number {
                             icon: observed_icon.data.clone(),

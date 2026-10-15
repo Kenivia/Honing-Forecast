@@ -3,6 +3,7 @@ use crate::{
         COMBINED_NUMBER_HEIGHT, ICON_HEIGHT, ICON_WIDTH, NUMBER_HEIGHT, NUMBER_TOP_MARGIN,
     },
     image_utils::brightness::brightness_lut,
+    ocr::constants::OCR_LINE_HEIGHT,
 };
 use image::{
     GrayImage, Luma, Rgba, RgbaImage,
@@ -10,8 +11,6 @@ use image::{
 };
 use imageproc::region_labelling::{Connectivity, connected_components};
 use std::collections::HashMap;
-
-use super::recognize::OCR_LINE_HEIGHT;
 
 type Rgb = [f64; 3];
 
