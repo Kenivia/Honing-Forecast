@@ -47,6 +47,8 @@ pub fn open(path: &Path) -> Connection {
     // and a solve's wall_s split into evaluating and the optimizer deciding
     conn.execute("ALTER TABLE run ADD COLUMN eval_s REAL", []).ok();
     conn.execute("ALTER TABLE run ADD COLUMN decide_s REAL", []).ok();
+    // and whether metric_ref is of `Tuning::reference`, not of the default of the time
+    conn.execute("ALTER TABLE run ADD COLUMN ref_reference INTEGER", []).ok();
     conn
 }
 
@@ -149,9 +151,9 @@ pub fn add_run(conn: &Connection, key: &RunKey, out: &StepResult, (metric_ref, g
     conn.execute(
         "INSERT INTO run(session_id, snapshot_id, variant, step_id, kind, source, seed, chained,
             tuning, cpu_s, wall_s, metric, metric_ref, state, blob_bytes, counters, gross, flow,
-            eval_s, decide_s)
+            eval_s, decide_s, ref_reference)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18,
-            ?19, ?20)",
+            ?19, ?20, 1)",
         params![
             key.session_id,
             key.snapshot_id,

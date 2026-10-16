@@ -6,7 +6,6 @@
 
 use crate::probe::Probe;
 use crate::state_bundle::StateBundle;
-use std::f64::NAN;
 
 impl StateBundle {
     pub fn one_dimension_prob(
@@ -21,14 +20,7 @@ impl StateBundle {
             if special_prob == 0.0 {
                 continue;
             }
-            let this_prob: f64 = self.saddlepoint_approximation_wrapper(
-                support_index,
-                skip_count,
-                budget,
-                false,
-                NAN,
-                probe,
-            );
+            let this_prob: f64 = self.saddlepoint_approximation_wrapper(support_index, skip_count, budget, probe);
 
             out += special_prob * this_prob;
         }

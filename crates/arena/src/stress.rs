@@ -238,24 +238,15 @@ fn sweep(name: &str, state_bundle: &StateBundle, rng: &mut StdRng, summary: &mut
                 }
             };
             summary.note("materials swept");
-            let mean_log = state_bundle.simple_avg(material as i64, skip).ln();
             for (budget, region) in reference.budgets(rng) {
-                for kind in ["plain", "biased", "leftover"] {
-                    let biased = kind == "biased";
+                for kind in ["plain", "leftover"] {
                     let mut probe = Probe::default();
                     let start = Instant::now();
                     let result = catch_unwind(AssertUnwindSafe(|| {
                         if kind == "leftover" {
                             return state_bundle.expected_leftover(material as i64, skip, budget, &mut probe);
                         }
-                        state_bundle.saddlepoint_approximation_wrapper(
-                            material as i64,
-                            skip,
-                            budget,
-                            biased,
-                            if biased { mean_log } else { f64::NAN },
-                            &mut probe,
-                        )
+                        state_bundle.saddlepoint_approximation_wrapper(material as i64, skip, budget, &mut probe)
                     }));
                     let seconds = start.elapsed().as_secs_f64();
                     let count = |counter: Counter| probe.data.counts[counter as usize] as u64;
@@ -288,7 +279,7 @@ fn sweep(name: &str, state_bundle: &StateBundle, rng: &mut StdRng, summary: &mut
                     let truth = if kind == "leftover" {
                         budget * reference.at(budget, false) - reference.mean * reference.at(budget, true)
                     } else {
-                        reference.at(budget, biased)
+                        reference.at(budget, false)
                     };
                     let signed = if kind == "leftover" { (got - truth) / reference.sd } else { got - truth };
                     let error = signed.abs();

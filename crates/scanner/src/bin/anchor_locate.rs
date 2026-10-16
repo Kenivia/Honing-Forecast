@@ -5,26 +5,28 @@
 // to inventory map are.
 //   cargo run --release --bin anchor_locate -- <image>...
 use hf_scanner::{
-    constants::ANCHORS,
+    anchor_to_slot::anchor_defs::ANCHORS,
+    dev_utils::native,
     image_utils::{
         brightness::normalize_brightness,
         common::{Rect, get_resizer},
     },
-    native,
+    interface::setup::icon_lookup,
     scanner_state::ScannerState,
-    setup::icon_lookup,
 };
 use std::env;
 
-
 fn main() {
-    println!("file\tscale\tanchor\tvariant\treported_x\treported_y\tdx\tdy\tscore_reported\tscore_best");
+    println!(
+        "file\tscale\tanchor\tvariant\treported_x\treported_y\tdx\tdy\tscore_reported\tscore_best"
+    );
     for path in env::args().skip(1) {
         let image = image::open(&path).unwrap().to_rgba8();
         let (width, height) = (image.width() as usize, image.height() as usize);
         // a still is the whole game window, so the capture size is the game resolution
         let game = (width as u32, height as u32);
-        let (mut state, mut pixels) = native::new_state(width, height, game, path.contains("21 by 9"));
+        let (mut state, mut pixels) =
+            native::new_state(width, height, game, path.contains("21 by 9"));
         pixels.copy_from_slice(image.as_raw());
         state.cropper();
 
@@ -39,7 +41,11 @@ fn main() {
                     .iter()
                     .zip(positions)
                     .filter_map(|(variant, position)| {
-                        Some((format!("{:?}", spec.anchor_type), variant.name, position?.position))
+                        Some((
+                            format!("{:?}", spec.anchor_type),
+                            variant.name,
+                            position?.position,
+                        ))
                     })
                     .collect::<Vec<_>>()
             })
@@ -89,12 +95,7 @@ fn main() {
             }
             println!(
                 "{name}\t{scale}\t{anchor}\t{variant}\t{}\t{}\t{}\t{}\t{:.3}\t{:.3}",
-                reported.top_left.0,
-                reported.top_left.1,
-                best.1,
-                best.2,
-                at_reported,
-                best.0
+                reported.top_left.0, reported.top_left.1, best.1, best.2, at_reported, best.0
             );
         }
     }

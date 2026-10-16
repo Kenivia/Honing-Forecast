@@ -1,6 +1,6 @@
 // Dumps every recognised slot's number strip from stills, for the number OCR experiments.
 //   cargo run --release --bin number_dump -- <out dir> <image>...
-use hf_scanner::native;
+use hf_scanner::dev_utils::native;
 use std::{env, fs};
 
 

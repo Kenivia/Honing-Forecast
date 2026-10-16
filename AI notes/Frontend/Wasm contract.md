@@ -47,6 +47,8 @@ Messages: the page sends an operation and payload; the worker replies with a res
 1. An input callback starts both workers (the optimizer only if auto-start is on).
 2. The histogram runs immediately against the current state so the graphs update.
 3. Each optimizer message, intermediate or final, stores the new state and triggers another histogram run.
-4. When the user overrides part of the plan ("compare with simple strategies"), only the histogram reruns, and the instructions display the histogram's state instead of the optimizer's.
+4. When the user overrides part of the plan ("compare with simple strategies"), only the histogram reruns, and the instructions display the histogram's state instead of the optimizer's. Whether anything is overridden is read off the override controls alone (`get_any_overwritten`).
+
+**Every gold number shown is the histogram's** (`metric_per_plan`), scored with `Tuning::reference()`, not the optimizer's `metric`, which is of a cheaper evaluator and never displayed (`Calculator core/Evaluation pipeline.md`). The two differ by about 1e-5 of the metric, so they cannot be compared to tell anything.
 
 Leaving the calculator page or switching character cancels both workers.

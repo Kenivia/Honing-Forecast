@@ -4,13 +4,13 @@
 //   python scripts/tooltips/number_stages.py <out dir>     (one picture per read)
 // Page, row and column count from 0. Files are f<frame>_<stage>.png.
 use hf_scanner::{
-    native,
+    dev_utils::native,
     ocr::{
         number::{NumberParams, number_background, number_layers, number_mask, number_strip},
         recognize::recognize_line,
     },
     scanner_state::{InventoryType, ScannerState, SlotAddress},
-    setup::BASE_ICONS,
+    interface::setup::BASE_ICONS,
 };
 use image::{GrayImage, Luma, Rgba, RgbaImage};
 use std::{env, fs, io::Read};

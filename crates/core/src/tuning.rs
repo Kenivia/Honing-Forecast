@@ -23,8 +23,6 @@ pub struct Tuning {
     /// a last step of the root finder shorter than this, in standard deviations, is taken
     /// on the taylor series instead of another evaluation; 0 for never
     pub taylor_skip: f64,
-    /// start the biased root from the plain one
-    pub seed_biased: bool,
     /// entries the memo of per material results may hold; 0 for no memo
     pub max_memo_size: usize,
     /// grid points a standard deviation of a coarse lattice, which answers where the exact one is
@@ -32,8 +30,6 @@ pub struct Tuning {
     pub coarse_cells: f64,
     /// multiplications a coarse lattice may take before the saddlepoint formula answers instead
     pub max_coarse_work: usize,
-    /// the expected leftover from one saddlepoint, in place of the pair of probabilities
-    pub direct_put: bool,
 
     // optimizer
     pub max_iters: i64,
@@ -117,11 +113,9 @@ impl Default for Tuning {
             max_brute_size: 50000,
             max_lattice_work: 200000,
             taylor_skip: 1e-3,
-            seed_biased: true,
             max_memo_size: 1 << 16,
             coarse_cells: 0.0,
             max_coarse_work: 20_000_000,
-            direct_put: false,
 
             max_iters: 48000,
             max_best_size: 10,
@@ -164,13 +158,18 @@ impl Default for Tuning {
 }
 
 impl Tuning {
+    /// What reported metrics are scored with: the coarse lattice at 64 points, which the optimizer never sees
+    pub fn reference() -> Tuning {
+        Tuning { coarse_cells: 64.0, ..Tuning::default() }
+    }
+
     /// every knob a probability depends on, for keys of kept results
     pub fn evaluator_key(&self) -> u64 {
         let mut hasher = std::hash::DefaultHasher::new();
-        (self.root_finder as u8, self.max_root_find_iter, self.max_brute_size, self.max_lattice_work, self.seed_biased)
+        (self.root_finder as u8, self.max_root_find_iter, self.max_brute_size, self.max_lattice_work)
             .hash(&mut hasher);
         (self.y_value_tol.to_bits(), self.taylor_skip.to_bits(), self.coarse_cells.to_bits()).hash(&mut hasher);
-        (self.max_coarse_work, self.direct_put).hash(&mut hasher);
+        self.max_coarse_work.hash(&mut hasher);
         hasher.finish()
     }
 }

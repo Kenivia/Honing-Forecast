@@ -5,7 +5,7 @@ use super::cumulants::KsTuple;
 use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 use crate::{constants::FLOAT_TOL, my_dbg};
-use std::f64::{INFINITY, NAN, NEG_INFINITY};
+use std::f64::{INFINITY, NEG_INFINITY};
 // there's definitely some fishy business going on with advanced honing
 
 impl StateBundle {
@@ -16,8 +16,6 @@ impl StateBundle {
     /// and we know the curve is centered at 0 (mean achieved at 0), and this is the heuristic that appears to work
     pub fn householder(
         &self,
-        compute_biased: bool,
-        simple_mean_log: f64,
         support_index: i64,
         skip_count: usize,
         budget: f64,
@@ -27,23 +25,18 @@ impl StateBundle {
         min_delta: f64,
         mut seed: Option<KsTuple>,
         probe: &mut Probe,
-    ) -> Option<(f64, f64, usize, KsTuple, KsTuple)> {
+    ) -> Option<(f64, KsTuple)> {
         let mut lower = NEG_INFINITY;
         let mut upper = INFINITY;
         let mut y_lower = NEG_INFINITY;
         let mut y_upper = INFINITY;
         let mut theta = guess;
-        let mut init_y: f64 = NAN;
 
         for iter in 0..self.tuning.max_root_find_iter {
             // the cumulants at the guess may be known already
             let evaluated = seed.is_none();
-            let raw = seed.take().unwrap_or_else(|| self.raw_ks(theta, support_index, skip_count, probe));
-            let this = if compute_biased { raw.biased(simple_mean_log) } else { raw };
+            let this = seed.take().unwrap_or_else(|| self.raw_ks(theta, support_index, skip_count, probe));
             let (_, mut y, dy, dy2, dy3) = this.access();
-            if iter == 0 {
-                init_y = y;
-            }
 
             y -= budget;
 
@@ -56,15 +49,13 @@ impl StateBundle {
             }
 
             if y.abs() < self.tuning.y_value_tol {
-                return Some((theta, init_y, iter, this, raw));
+                return Some((theta, this));
             }
 
             let near_edge = (min_value - budget - y).abs() < min_delta
                 || (max_value - budget - y).abs() < min_delta;
             let delta = if near_edge {
                 theta * 0.1 - theta
-            } else if compute_biased {
-                (-2.0 * y * dy) / (-y * dy2 + 2.0 * dy.powi(2))
             } else {
                 let dy_sq = dy.powi(2);
                 let y_sq = y.powi(2);
@@ -91,11 +82,10 @@ impl StateBundle {
                         if !(step.abs() * sd < self.tuning.taylor_skip) {
                             break;
                         }
-                        let moved = raw.moved(step);
-                        let there = if compute_biased { moved.biased(simple_mean_log) } else { moved };
+                        let there = this.moved(step);
                         if (there.1 - budget).abs() < self.tuning.y_value_tol {
                             probe.count(Counter::TaylorSkip);
-                            return Some((theta + step, init_y, iter + 1, there, moved));
+                            return Some((theta + step, there));
                         }
                         step -= (there.1 - budget) / there.2;
                     }
@@ -129,15 +119,15 @@ impl StateBundle {
                     }
                 } else {
                     panic!(
-                        "theta {:?} lower {:?} upper {:?} y {:?} guess {:?} compute_biased {:?} budget {:?} iter {:?}",
-                        theta, lower, upper, y, guess, compute_biased, budget, iter
+                        "theta {:?} lower {:?} upper {:?} y {:?} guess {:?} budget {:?} iter {:?}",
+                        theta, lower, upper, y, guess, budget, iter
                     );
                 }
             }
             // last_y = y;
         }
 
-        my_dbg!(theta, lower, upper, guess, compute_biased, budget,);
+        my_dbg!(theta, lower, upper, guess, budget,);
         None
     }
 }

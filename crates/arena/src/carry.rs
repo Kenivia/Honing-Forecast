@@ -9,6 +9,7 @@ use hf_core::parser::OneUpgradeInput;
 use hf_core::payload::Payload;
 use hf_core::probe::Probe;
 use hf_core::state_bundle::StateBundle;
+use hf_core::tuning::Tuning;
 use rusqlite::Connection;
 use std::collections::{BTreeMap, HashMap};
 
@@ -100,8 +101,13 @@ pub fn report(conn: &Connection, scenarios: &[Scenario], rows: bool, eps: f64) {
                 continue;
             };
             let payload = &scenario.steps[step];
-            let default = StateBundle::init_from_payload(payload.clone()).metric_router(&mut Probe::default());
-            let kept = carried(&scenario.steps[step - 1], &before.2, payload).metric_router(&mut Probe::default());
+            // as metric_ref is
+            let reference = |mut state_bundle: StateBundle| {
+                state_bundle.tuning = Tuning::reference();
+                state_bundle.metric_router(&mut Probe::default())
+            };
+            let default = reference(StateBundle::init_from_payload(payload.clone()));
+            let kept = reference(carried(&scenario.steps[step - 1], &before.2, payload));
             let scale = scale(best.0, best.1);
             let headroom = best.0 - default;
             let recovered = if headroom > eps * scale { (kept - default) / headroom } else { f64::NAN };

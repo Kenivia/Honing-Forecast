@@ -6,11 +6,11 @@
 // (_i), the same with MARGIN px around it (_m) and the whole slot as captured (_r), and the
 // templates in <folder>/../templates-<ui height>.
 use hf_scanner::{
-    capture::{Record, read_records},
-    constants::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
+    dev_utils::capture::{Record, read_records},
+    anchor_to_slot::anchor_defs::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
     image_utils::{brightness::normalize_brightness, common::{Rect, get_resizer}},
-    native,
-    setup::{BASE_ICONS, icon_lookup},
+    dev_utils::native,
+    interface::setup::{BASE_ICONS, icon_lookup},
 };
 use std::{collections::HashMap, env, fs};
 

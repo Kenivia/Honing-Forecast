@@ -8,6 +8,7 @@ use crate::one_adv_sim::one_sim;
 use hf_core::materials::NUM_BASE_MATS;
 use hf_core::probe::Probe;
 use hf_core::state_bundle::StateBundle;
+use hf_core::tuning::Tuning;
 use hf_core::upgrade::Upgrade;
 use itertools::izip;
 use rand::Rng;
@@ -175,9 +176,12 @@ pub fn gold(used: f64, bands: &[(f64, f64)]) -> f64 {
     out
 }
 
-/// One row per material and one for the total, under the optimizer's plan.
+/// One row per material and one for the total, under the optimizer's plan, against the reference
+/// evaluator, not the one the state was optimized with.
 pub fn check<R: Rng>(state_bundle: &mut StateBundle, spec: &McSpec, rng: &mut R) -> Vec<McRow> {
+    let tuning = std::mem::replace(&mut state_bundle.tuning, Tuning::reference());
     let (metric_per_plan, _, breakdown) = state_bundle.ui_average_gold_metric(&mut Probe::default());
+    state_bundle.tuning = tuning;
     let prep = &state_bundle.prep_output;
     let bands = &prep.bands[prep.optimizer_plan];
     let num_mats = prep.table.len();

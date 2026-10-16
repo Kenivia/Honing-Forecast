@@ -7,9 +7,9 @@ use hf_scanner::{
         brightness::normalize_brightness,
         common::get_resizer,
     },
-    native,
+    dev_utils::native,
     scanner_state::ScannerState,
-    setup::icon_lookup,
+    interface::setup::icon_lookup,
 };
 use std::env;
 

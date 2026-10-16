@@ -1,7 +1,6 @@
 use crate::constants::{FLOAT_TOL, SPECIAL_TOL};
 use ahash::AHashMap;
 use smallvec::SmallVec;
-use crate::core::saddlepoint_approximation::Shape;
 use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 
@@ -267,20 +266,9 @@ impl StateBundle {
                 continue;
             }
 
-            out += (prev_price - price) * self.saddlepoint_leftover(support_index, skip_count, &shape, thresh, probe);
+            out += (prev_price - price) * self.leftover(support_index, skip_count, &shape, thresh, probe);
         }
         return out;
-    }
-
-    /// E[(t - S)+] where no lattice answers
-    fn saddlepoint_leftover(&self, support_index: i64, skip_count: usize, shape: &Shape, thresh: f64, probe: &mut Probe) -> f64 {
-        if self.tuning.direct_put {
-            if let Some(out) = self.leftover(support_index, skip_count, shape, thresh, probe) {
-                return out;
-            }
-        }
-        let (prob, biased_prob) = self.probability_pair(support_index, skip_count, shape, thresh, shape.mean.ln(), probe);
-        thresh * prob - biased_prob * shape.mean
     }
 
     /// E[(t - S)+] of one material under one free tap outcome, by whatever the metric would use
@@ -290,6 +278,6 @@ impl StateBundle {
             probe.count(Counter::Lattice);
             return thresh * table[0].0 - table[0].1 * shape.mean;
         }
-        self.saddlepoint_leftover(support_index, skip_count, &shape, thresh, probe)
+        self.leftover(support_index, skip_count, &shape, thresh, probe)
     }
 }

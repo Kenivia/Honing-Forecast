@@ -5,13 +5,13 @@ use hf_scanner::{
         brightness::normalize_brightness,
         common::Rect,
     },
-    native,
+    dev_utils::native,
     ocr::{
         number::{NumberParams, number_background, number_mask, number_strip},
         recognize::recognize_line,
     },
     scanner_state::ScannerState,
-    setup::{BASE_ICONS, OneIconConfig},
+    interface::setup::{BASE_ICONS, OneIconConfig},
 };
 use image::{
     GrayImage, Luma, Rgba, RgbaImage,

@@ -2,8 +2,8 @@
 //!
 //! The saddlepoint formula needs many comparable upgrades, and is far off without any
 //! sign of it where one upgrade outweighs the rest. That is mostly juices and books,
-//! whose totals are small numbers, so few lattice points. Where it is too big, a coarse one
-//! of a set number of points a standard deviation can stand in (`Coarse`).
+//! whose totals are small numbers, so few lattice points. Where it is too big, a coarse lattice
+//! of a set number of points a standard deviation (`Coarse`) can stand in.
 
 use crate::constants::float_tol;
 use crate::probe::{Counter, Probe};
@@ -27,12 +27,111 @@ impl Lattice {
                 let index = (index as usize).min(cdf.len() - 1);
                 if biased { biased_cdf[index] } else { cdf[index] }
             }
-            Lattice::Coarse(coarse) => {
-                let pair = coarse.pair(budget);
+            _ => {
+                let pair = self.pair(budget);
                 if biased { pair.1 } else { pair.0 }
             }
         }
     }
+
+    /// the plain probability and the biased one
+    pub fn pair(&self, budget: f64) -> (f64, f64) {
+        match self {
+            Lattice::Exact { .. } => (self.within(budget, false), self.within(budget, true)),
+            Lattice::Coarse(coarse) => coarse.pair(budget),
+        }
+    }
+
+    pub fn counter(&self) -> Counter {
+        match self {
+            Lattice::Exact { .. } => Counter::Lattice,
+            Lattice::Coarse(_) => Counter::Coarse,
+        }
+    }
+}
+
+/// A sum on a grid: `pmf[i]` is the mass at grid point `start + i`, counted from the sum's
+/// minimum, and `added` the variance the grid added.
+struct Grid {
+    start: usize,
+    pmf: Vec<f64>,
+    added: f64,
+}
+
+/// Each outcome's mass is split between the two grid points around it in proportion, which
+/// keeps every mean and adds a known variance. Grid points from `keep` on are dropped, and
+/// mass under 1e-16 at either end. None where it would take more than `max_work`
+/// multiplications or nothing is left.
+fn grid<'a>(
+    sets: impl Iterator<Item = &'a Vec<(f64, f64)>>,
+    step: f64,
+    keep: usize,
+    max_work: usize,
+    probe: &mut Probe,
+) -> Option<Grid> {
+    let (mut pmf, mut start, mut added, mut work) = (vec![1.0], 0usize, 0.0, 0usize);
+    let mut cells: Vec<f64> = Vec::new();
+    for pairs in sets {
+        if pairs.len() < 2 {
+            continue;
+        }
+        let low = pairs[0].0;
+        cells.clear();
+        for &(value, p) in pairs.iter() {
+            let at = (value - low) / step;
+            let mut below = at.floor();
+            let mut share = at - below;
+            if share > 1.0 - 1e-9 {
+                (below, share) = (below + 1.0, 0.0);
+            } else if share < 1e-9 {
+                share = 0.0;
+            }
+            let below = below as usize;
+            if cells.len() < below + 2 {
+                cells.resize(below + 2, 0.0);
+            }
+            cells[below] += p * (1.0 - share);
+            cells[below + 1] += p * share;
+            added += p * share * (1.0 - share) * step * step;
+        }
+        let end = (start + pmf.len() + cells.len() - 1).min(keep);
+        if end <= start {
+            return None;
+        }
+        let mut next = vec![0.0; end - start];
+        for (offset, &weight) in cells.iter().enumerate() {
+            if offset >= next.len() {
+                break;
+            }
+            if weight == 0.0 {
+                continue;
+            }
+            let len = (next.len() - offset).min(pmf.len());
+            for (target, mass) in next[offset..offset + len].iter_mut().zip(&pmf[..len]) {
+                *target += mass * weight;
+            }
+            work += len;
+        }
+        if work > max_work {
+            probe.count(Counter::CoarseTooBig);
+            return None;
+        }
+        let (mut front, mut tail) = (0, 0.0);
+        while front + 1 < next.len() && tail + next[front] < COARSE_TAIL {
+            tail += next[front];
+            front += 1;
+        }
+        let (mut back, mut tail) = (next.len(), 0.0);
+        while back > front + 1 && tail + next[back - 1] < COARSE_TAIL {
+            tail += next[back - 1];
+            back -= 1;
+        }
+        next.truncate(back);
+        next.drain(..front);
+        start += front;
+        pmf = next;
+    }
+    Some(Grid { start, pmf, added })
 }
 
 /// A sum the exact lattice is too big for, on a grid of about `Tuning::coarse_cells` points a
@@ -98,7 +197,7 @@ impl StateBundle {
             return None;
         }
         if min_delta < 1.0 {
-            return self.coarse(support_index, skip_count, f64::INFINITY, &mut Probe::default()).map(Lattice::Coarse);
+            return self.fallback(support_index, skip_count, f64::INFINITY, &mut Probe::default());
         }
         let outcomes: usize = self
             .extract_collapsed_pair(support_index, skip_count)
@@ -106,7 +205,7 @@ impl StateBundle {
             .map(|pairs| pairs.len())
             .sum();
         if (max_value - min_value) / span * outcomes as f64 > self.tuning.max_lattice_work as f64 {
-            return self.coarse(support_index, skip_count, f64::INFINITY, &mut Probe::default()).map(Lattice::Coarse);
+            return self.fallback(support_index, skip_count, f64::INFINITY, &mut Probe::default());
         }
 
         let mut pmf: Vec<f64> = vec![1.0];
@@ -184,7 +283,7 @@ impl StateBundle {
             }
         }
         let Some(&(first, _)) = wanted.iter().min() else {
-            self.coarse_table(support_index, skips, thresholds, &mut out, probe);
+            self.fallback_table(support_index, skips, thresholds, &mut out, probe);
             return out;
         };
         // by index, as far down as the pass went
@@ -261,12 +360,12 @@ impl StateBundle {
             }
             out[wanted[at].1] = Some(answers);
         }
-        self.coarse_table(support_index, skips, thresholds, &mut out, probe);
+        self.fallback_table(support_index, skips, thresholds, &mut out, probe);
         out
     }
 
     /// The outcomes the exact lattice was too big for, each on a coarse lattice of its own
-    fn coarse_table(
+    fn fallback_table(
         &self,
         support_index: i64,
         skips: &[usize],
@@ -286,15 +385,20 @@ impl StateBundle {
             if reach < 0.0 {
                 continue;
             }
-            if let Some(coarse) = self.coarse(support_index, skip, reach, probe) {
-                out[slot] = Some(thresholds.iter().map(|&t| coarse.pair(t)).collect());
+            if let Some(lattice) = self.fallback(support_index, skip, reach, probe) {
+                out[slot] = Some(thresholds.iter().map(|&t| lattice.pair(t)).collect());
             }
         }
     }
 
+    /// Where the exact lattice is too big: the coarse lattice, else None for the saddlepoint formula
+    fn fallback(&self, support_index: i64, skip_count: usize, reach: f64, probe: &mut Probe) -> Option<Lattice> {
+        self.coarse(support_index, skip_count, reach, self.tuning.coarse_cells, probe).map(Lattice::Coarse)
+    }
+
     /// None where it is off, the sum has one outcome, or it would take more than `max_coarse_work`
-    pub fn coarse(&self, support_index: i64, skip_count: usize, reach: f64, probe: &mut Probe) -> Option<Coarse> {
-        if self.tuning.coarse_cells <= 0.0 {
+    pub fn coarse(&self, support_index: i64, skip_count: usize, reach: f64, cells: f64, probe: &mut Probe) -> Option<Coarse> {
+        if cells <= 0.0 {
             return None;
         }
         let shape = self.shape(support_index, skip_count);
@@ -303,74 +407,19 @@ impl StateBundle {
             return None;
         }
         // a whole number of spans where there is a lattice, so outcomes on it stay put
-        let mut step = sd / self.tuning.coarse_cells;
+        let mut step = sd / cells;
         if shape.min_delta >= 1.0 {
             step = shape.span * (step / shape.span).floor().max(1.0);
         }
         // grid points past this are not needed
         let keep = if reach.is_finite() { (reach / step) as usize + 4 } else { usize::MAX };
-        let (mut pmf, mut start, mut added, mut work) = (vec![1.0], 0usize, 0.0, 0usize);
-        let mut cells: Vec<f64> = Vec::new();
-        for pairs in self.extract_collapsed_pair(support_index, skip_count) {
-            if pairs.len() < 2 {
-                continue;
-            }
-            let low = pairs[0].0;
-            cells.clear();
-            for &(value, p) in pairs.iter() {
-                let at = (value - low) / step;
-                let mut below = at.floor();
-                let mut share = at - below;
-                if share > 1.0 - 1e-9 {
-                    (below, share) = (below + 1.0, 0.0);
-                } else if share < 1e-9 {
-                    share = 0.0;
-                }
-                let below = below as usize;
-                if cells.len() < below + 2 {
-                    cells.resize(below + 2, 0.0);
-                }
-                cells[below] += p * (1.0 - share);
-                cells[below + 1] += p * share;
-                added += p * share * (1.0 - share) * step * step;
-            }
-            let end = (start + pmf.len() + cells.len() - 1).min(keep);
-            if end <= start {
-                return None;
-            }
-            let mut next = vec![0.0; end - start];
-            for (offset, &weight) in cells.iter().enumerate() {
-                if offset >= next.len() {
-                    break;
-                }
-                if weight == 0.0 {
-                    continue;
-                }
-                let len = (next.len() - offset).min(pmf.len());
-                for (target, mass) in next[offset..offset + len].iter_mut().zip(&pmf[..len]) {
-                    *target += mass * weight;
-                }
-                work += len;
-            }
-            if work > self.tuning.max_coarse_work {
-                probe.count(Counter::CoarseTooBig);
-                return None;
-            }
-            let (mut front, mut tail) = (0, 0.0);
-            while front + 1 < next.len() && tail + next[front] < COARSE_TAIL {
-                tail += next[front];
-                front += 1;
-            }
-            let (mut back, mut tail) = (next.len(), 0.0);
-            while back > front + 1 && tail + next[back - 1] < COARSE_TAIL {
-                tail += next[back - 1];
-                back -= 1;
-            }
-            next.truncate(back);
-            next.drain(..front);
-            start += front;
-            pmf = next;
-        }
+        let Grid { start, pmf, added } = grid(
+            self.extract_collapsed_pair(support_index, skip_count),
+            step,
+            keep,
+            self.tuning.max_coarse_work,
+            probe,
+        )?;
         probe.count(Counter::Coarse);
         let (mut below, mut moment) = (0.0, 0.0);
         let mut cdf = Vec::with_capacity(pmf.len());

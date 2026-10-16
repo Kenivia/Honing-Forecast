@@ -1,6 +1,5 @@
 use crate::constants::{FLOAT_TOL, float_tol};
 use crate::core::cumulants::KsTuple;
-use crate::core::lattice::Lattice;
 use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 use crate::support::Support;
@@ -8,7 +7,7 @@ use crate::tuning::RootFinder;
 use ahash::AHashMap;
 use num::Integer;
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
-use std::f64::{INFINITY, NAN};
+use std::f64::INFINITY;
 
 pub const MIN_LATTICE_SPAN: f64 = 1.0;
 /// how many upgrades deep a probability may be split on outcomes before it is clamped
@@ -45,19 +44,14 @@ fn variance(pairs: &[(f64, f64)]) -> f64 {
 }
 
 /// Edgeworth series, with the cumulants at zero. Only any good near the mean.
-fn edgeworth(at_zero: KsTuple, budget: f64, compute_biased: bool, normal_dist: &Normal) -> f64 {
+fn edgeworth(at_zero: KsTuple, budget: f64, normal_dist: &Normal) -> f64 {
     let std = at_zero.2.sqrt();
     let z = (budget - at_zero.1) / std;
-    let gamma3 = at_zero.3 / std.powi(3);
+    let (gamma3, gamma4) = (at_zero.3 / std.powi(3), at_zero.4 / std.powi(4));
     let cdf_correction = normal_dist.pdf(z)
         * ((gamma3 / 6.0) * (z.powi(2) - 1.0)
-            + if compute_biased {
-                0.0
-            } else {
-                let gamma4 = at_zero.4 / std.powi(4);
-                (gamma4 / 24.0) * (z.powi(3) - 3.0 * z)
-                    + (gamma3 * gamma3 / 72.0) * (z.powi(5) - 10.0 * z.powi(3) + 15.0 * z)
-            });
+            + (gamma4 / 24.0) * (z.powi(3) - 3.0 * z)
+            + (gamma3 * gamma3 / 72.0) * (z.powi(5) - 10.0 * z.powi(3) + 15.0 * z));
     normal_dist.cdf(z) - cdf_correction
 }
 
@@ -77,6 +71,8 @@ fn edgeworth_leftover(at_zero: KsTuple, x: f64, span: f64, normal_dist: &Normal)
 /// Closer to the mean than this many standard deviations, the one saddlepoint formula for the
 /// leftover is a difference of terms in 1/w^3 and the series stands in.
 const LEFTOVER_EDGEWORTH_Z: f64 = 0.01;
+/// grid points a standard deviation of the coarse lattice that answers where the one saddlepoint fails
+const FALLBACK_CELLS: f64 = 16.0;
 
 /// What every threshold of one material shares, under one free tap outcome
 pub struct Shape {
@@ -142,60 +138,10 @@ impl StateBundle {
         }
     }
 
-    pub fn saddlepoint_approximation_wrapper(
-        &self,
-        support_index: i64,
-        skip_count: usize,
-        inp_budget: f64,
-        compute_biased: bool,
-        simple_mean_log: f64,
-        probe: &mut Probe,
-    ) -> f64 {
+    /// The plain probability of being within the budget
+    pub fn saddlepoint_approximation_wrapper(&self, support_index: i64, skip_count: usize, inp_budget: f64, probe: &mut Probe) -> f64 {
         let shape = self.shape(support_index, skip_count);
-        self.probability_within(
-            support_index,
-            skip_count,
-            &shape,
-            inp_budget,
-            compute_biased,
-            simple_mean_log,
-            probe,
-            0,
-            &mut None,
-            true,
-        )
-    }
-
-    /// The plain probability and the biased one, of a sum the lattice is too big for. The
-    /// biased root starts from the plain one.
-    pub fn probability_pair(
-        &self,
-        support_index: i64,
-        skip_count: usize,
-        shape: &Shape,
-        inp_budget: f64,
-        simple_mean_log: f64,
-        probe: &mut Probe,
-    ) -> (f64, f64) {
-        let mut root: Option<(f64, KsTuple)> = None;
-        let plain =
-            self.probability_within(support_index, skip_count, shape, inp_budget, false, NAN, probe, 0, &mut root, false);
-        if !self.tuning.seed_biased {
-            root = None;
-        }
-        let biased = self.probability_within(
-            support_index,
-            skip_count,
-            shape,
-            inp_budget,
-            true,
-            simple_mean_log,
-            probe,
-            0,
-            &mut root,
-            false,
-        );
-        (plain, biased)
+        self.probability_within(support_index, skip_count, &shape, inp_budget, probe, 0)
     }
 
     fn probability_within(
@@ -204,12 +150,8 @@ impl StateBundle {
         skip_count: usize,
         shape: &Shape,
         inp_budget: f64,
-        compute_biased: bool,
-        simple_mean_log: f64,
         probe: &mut Probe,
         depth: usize,
-        root: &mut Option<(f64, KsTuple)>,
-        try_lattice: bool,
     ) -> f64 {
         let &Shape { min_value, max_value, span, min_delta, .. } = shape;
         if inp_budget > max_value - float_tol(max_value) {
@@ -221,9 +163,9 @@ impl StateBundle {
             probe.count(Counter::Trivial);
             return 0.0;
         };
-        if try_lattice && let Some(lattice) = self.lattice(support_index, skip_count) {
-            probe.count(if matches!(lattice, Lattice::Coarse(_)) { Counter::Coarse } else { Counter::Lattice });
-            return lattice.within(inp_budget, compute_biased);
+        if let Some(lattice) = self.lattice(support_index, skip_count) {
+            probe.count(lattice.counter());
+            return lattice.within(inp_budget, false);
         }
         if shape.too_big {
             // the lattice starts at the minimum, not at zero
@@ -236,42 +178,36 @@ impl StateBundle {
                 && min_value + min_delta + 1.0 < budget // brute should only have to handle like n = number of upgrades cases or so. In general any higher (e.g. 2* min_delta) and this explodes insanely quickly
                 && budget < max_value - min_delta - 1.0
             {
-                return self.saddlepoint_approximation(
-                    support_index,
-                    skip_count,
-                    shape,
-                    inp_budget,
-                    budget,
-                    compute_biased,
-                    simple_mean_log,
-                    probe,
-                    depth,
-                    root,
-                );
+                return self.saddlepoint_approximation(support_index, skip_count, shape, inp_budget, budget, probe, depth);
             }
         }
         probe.count(Counter::Brute);
 
-        self.brute_success_prob(support_index, skip_count, inp_budget, shape.mean, compute_biased)
+        self.brute_success_prob(support_index, skip_count, inp_budget, shape.mean, false)
     }
 
-    /// E[(t - S)+] from one saddlepoint: the inversion of 1/((2/span) sinh(span s/2))^2, which is
-    /// 1/s^2 on the lattice, at the lattice points either side of t, joined by a straight line,
-    /// which is exact between them. None where the pair of probabilities should answer: outside
-    /// the region the saddlepoint takes, no root, or an answer no distribution on the range has.
-    pub fn leftover(&self, support_index: i64, skip_count: usize, shape: &Shape, thresh: f64, probe: &mut Probe) -> Option<f64> {
-        let &Shape { min_value, max_value, span, min_delta, mean, .. } = shape;
+    /// E[(t - S)+] where no lattice answers, from one saddlepoint: the inversion of
+    /// 1/((2/span) sinh(span s/2))^2, which is 1/s^2 on the lattice, at the lattice points either
+    /// side of t, joined by a straight line, which is exact between them. Brute force where the
+    /// saddlepoint would be weak (few outcomes or near either end), and a coarse lattice where it
+    /// finds no root or gives what no distribution on the range has.
+    pub fn leftover(&self, support_index: i64, skip_count: usize, shape: &Shape, thresh: f64, probe: &mut Probe) -> f64 {
+        let &Shape { min_value, max_value, span, min_delta, mean, zero, .. } = shape;
         if thresh > max_value - float_tol(max_value) {
-            return Some(thresh - mean);
+            probe.count(Counter::Trivial);
+            return thresh - mean;
         }
         if thresh < min_value - float_tol(min_value) {
-            return Some(0.0);
+            probe.count(Counter::Trivial);
+            return 0.0;
         }
         let low = min_value + ((thresh - min_value) / span + FLOAT_TOL).floor() * span;
         let inside = |x: f64| min_value + min_delta + 1.0 < x && x < max_value - min_delta - 1.0;
         if !shape.too_big || max_value - min_value <= min_delta || !inside(low) || !inside(low + span) {
-            probe.count(Counter::DirectFallback);
-            return None;
+            probe.count(Counter::Brute);
+            let plain = self.brute_success_prob(support_index, skip_count, thresh, mean, false);
+            let biased = self.brute_success_prob(support_index, skip_count, thresh, mean, true);
+            return thresh * plain - biased * mean;
         }
         probe.count(Counter::Direct);
         let mut root: Option<(f64, KsTuple)> = None;
@@ -283,10 +219,18 @@ impl StateBundle {
             let at_high = self.leftover_at(support_index, skip_count, shape, low + span, &mut root, probe)?;
             Some(at_low + share * (at_high - at_low))
         });
-        if out.is_none() {
-            probe.count(Counter::DirectFallback);
+        if let Some(out) = out {
+            return out;
         }
-        out
+        probe.count(Counter::DirectFallback);
+        let reach = thresh + float_tol(thresh) - min_value;
+        match self.coarse(support_index, skip_count, reach, FALLBACK_CELLS, probe) {
+            Some(coarse) => {
+                let (plain, biased) = coarse.pair(thresh);
+                thresh * plain - biased * mean
+            }
+            None => edgeworth_leftover(zero, thresh, span, &Normal::new(0.0, 1.0).unwrap()).max((thresh - mean).max(0.0)),
+        }
     }
 
     /// At a lattice point. The root after the first starts from the one before.
@@ -307,14 +251,13 @@ impl StateBundle {
         } else {
             probe.count(Counter::Lugannani);
             let own_guess = self.min_guess_max_triplet(x, min_value, max_value, (zero.1, zero.2, zero.3)).1;
-            let mut find = |guess: f64, seed: Option<KsTuple>| {
-                self.householder(false, NAN, support_index, skip_count, x, guess, min_value, max_value, min_delta, seed, probe)
-            };
-            let (theta, _, _, ks, raw) = match root.take() {
-                Some((theta, raw)) => find(theta, Some(raw)).or_else(|| find(own_guess, None)),
+            let mut find =
+                |guess: f64, seed: Option<KsTuple>| self.find_root(support_index, skip_count, x, guess, min_value, max_value, min_delta, seed, probe);
+            let (theta, ks) = match root.take() {
+                Some((theta, ks)) => find(theta, Some(ks)).or_else(|| find(own_guess, None)),
                 None => find(own_guess, None),
             }?;
-            *root = Some((theta, raw));
+            *root = Some((theta, ks));
             // all of it at the point the root is of, then along the slope to x
             let at = ks.1;
             let d = at - mean;
@@ -330,80 +273,60 @@ impl StateBundle {
         (out.is_finite() && out >= (x - mean).max(0.0) - slack && out <= ceiling + slack).then_some(out)
     }
 
-    /// Lugganani-Rice formula
-    pub fn saddlepoint_approximation(
+    fn find_root(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+        budget: f64,
+        guess: f64,
+        min_value: f64,
+        max_value: f64,
+        min_delta: f64,
+        seed: Option<KsTuple>,
+        probe: &mut Probe,
+    ) -> Option<(f64, KsTuple)> {
+        match self.tuning.root_finder {
+            RootFinder::Householder => {
+                self.householder(support_index, skip_count, budget, guess, min_value, max_value, min_delta, seed, probe)
+            }
+        }
+    }
+
+    /// Lugannani-Rice formula, for the plain probability
+    fn saddlepoint_approximation(
         &self,
         support_index: i64,
         skip_count: usize,
         shape: &Shape,
         inp_budget: f64,
         budget: f64,
-        compute_biased: bool,
-        simple_mean_log: f64,
         probe: &mut Probe,
         depth: usize,
-        root: &mut Option<(f64, KsTuple)>,
     ) -> f64 {
         probe.count(Counter::Saddlepoint);
-        let &Shape { min_value, max_value, span, min_delta, .. } = shape;
-        let at_zero: KsTuple = if compute_biased { shape.zero.biased(simple_mean_log) } else { shape.zero };
-        let k1_zero = at_zero.1;
+        let &Shape { min_value, max_value, span, min_delta, zero, .. } = shape;
         let normal_dist: Normal = Normal::new(0.0, 1.0).unwrap();
 
         // the main formula is singular at the mean. the threshold is complete trial-and-error heuristic
-        let (out, trusted) = if (k1_zero - budget).abs() / (k1_zero.max(budget).max(1.0)) < 1e-4 {
+        let (out, trusted) = if (zero.1 - budget).abs() / (zero.1.max(budget).max(1.0)) < 1e-4 {
             probe.count(Counter::Edgeworth);
-            (edgeworth(at_zero, budget, compute_biased, &normal_dist), true)
+            (edgeworth(zero, budget, &normal_dist), true)
         } else {
-            'root: {
             probe.count(Counter::Lugannani);
-            let mut find = |guess: f64, seed: Option<KsTuple>| match self.tuning.root_finder {
-                RootFinder::Householder => self.householder(
-                    compute_biased,
-                    simple_mean_log,
-                    support_index,
-                    skip_count,
-                    budget,
-                    guess,
-                    min_value,
-                    max_value,
-                    min_delta,
-                    seed,
-                    probe,
-                ),
-            };
-            let own_guess =
-                || self.min_guess_max_triplet(budget, min_value, max_value, (at_zero.1, at_zero.2, at_zero.3)).1;
-            // The biased search starts from the plain root of the same threshold and the
-            // cumulants there. Where those are a hair off it can be bracketed away from its
-            // root, and starts again on its own.
-            let result_opt = match root.take().filter(|_| compute_biased) {
-                Some((theta, raw)) => find(theta, Some(raw)).or_else(|| find(own_guess(), None)),
-                None => find(own_guess(), None),
-            };
+            let guess = self.min_guess_max_triplet(budget, min_value, max_value, (zero.1, zero.2, zero.3)).1;
+            match self.find_root(support_index, skip_count, budget, guess, min_value, max_value, min_delta, None, probe) {
+                // No root, which a threshold at the very end of the range can do. The series at
+                // zero stands in, not trusted, so that the sum is split and tried again.
+                None => (edgeworth(zero, budget, &normal_dist), false),
+                Some((theta_hat, ks_tuple)) => {
+                    let w_hat = theta_hat.signum() * (2.0 * (theta_hat * budget - ks_tuple.0)).sqrt();
+                    let u_hat = 2.0 / span * (span * theta_hat / 2.0).sinh() * ks_tuple.2.sqrt(); // second continuity correction
 
-            // No root, which a threshold at the very end of the range can do. The series at
-            // zero stands in, not trusted, so that the sum is split and tried again.
-            let Some(result) = result_opt else {
-                break 'root (edgeworth(at_zero, budget, compute_biased, &normal_dist), false);
-            };
-            let theta_hat = result.0;
-            let ks_tuple: KsTuple = result.3;
-            if !compute_biased {
-                *root = Some((theta_hat, result.4));
-            }
-
-            let w_hat = theta_hat.signum() * (2.0 * (theta_hat * budget - ks_tuple.0)).sqrt();
-            let u_hat = 2.0 / span * (span * theta_hat / 2.0).sinh() * ks_tuple.2.sqrt(); // second continuity correction
-
-            // the approximation's slope is the density times this, so it is not a
-            // distribution function where this is negative. the biased one has no 4th cumulant
-            let slope = 1.0 + ks_tuple.4 / ks_tuple.2.powi(2) / 8.0
-                - 5.0 * ks_tuple.3.powi(2) / ks_tuple.2.powi(3) / 24.0;
-            (
-                normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat),
-                compute_biased || slope > 0.0,
-            )
+                    // the approximation's slope is the density times this, so it is not a
+                    // distribution function where this is negative
+                    let slope = 1.0 + ks_tuple.4 / ks_tuple.2.powi(2) / 8.0 - 5.0 * ks_tuple.3.powi(2) / ks_tuple.2.powi(3) / 24.0;
+                    (normal_dist.cdf(w_hat) + normal_dist.pdf(w_hat) * (1.0 / w_hat - 1.0 / u_hat), slope > 0.0)
+                }
             }
         };
 
@@ -415,28 +338,13 @@ impl StateBundle {
             return out.clamp(0.0, 1.0);
         }
         probe.count(Counter::Conditioned);
-        self.conditioned(
-            support_index,
-            skip_count,
-            inp_budget,
-            compute_biased,
-            probe,
-            depth,
-        )
+        self.conditioned(support_index, skip_count, inp_budget, probe, depth)
     }
 
     /// Where the sum is too far from normal for the formula above, which is one upgrade
     /// outweighing the rest: splits on that upgrade's outcomes, which is exact, and leaves
     /// a sum of the others for each.
-    fn conditioned(
-        &self,
-        support_index: i64,
-        skip_count: usize,
-        inp_budget: f64,
-        compute_biased: bool,
-        probe: &mut Probe,
-        depth: usize,
-    ) -> f64 {
+    fn conditioned(&self, support_index: i64, skip_count: usize, inp_budget: f64, probe: &mut Probe, depth: usize) -> f64 {
         let (index, pairs) = self
             .extract_collapsed_pair(support_index, skip_count)
             .enumerate()
@@ -444,8 +352,6 @@ impl StateBundle {
             .unwrap();
         let pairs = pairs.clone();
         let u_index = self.special_state[index];
-        let mean = self.simple_avg(support_index, skip_count);
-
         // the caches are not read on this path
         let mut pinned = StateBundle {
             upgrade_arr: self.upgrade_arr.clone(),
@@ -469,28 +375,7 @@ impl StateBundle {
         for (value, p) in pairs {
             pinned.upgrade_arr[u_index].cost_dist[support_index as usize].pin(value);
             let shape = pinned.shape(support_index, skip_count);
-            let this_mean = shape.mean;
-            if compute_biased && this_mean < FLOAT_TOL {
-                continue;
-            }
-            let weight = if compute_biased {
-                p * this_mean / mean
-            } else {
-                p
-            };
-            out += weight
-                * pinned.probability_within(
-                    support_index,
-                    skip_count,
-                    &shape,
-                    inp_budget,
-                    compute_biased,
-                    if compute_biased { this_mean.ln() } else { NAN },
-                    probe,
-                    depth + 1,
-                    &mut None,
-                    true,
-                );
+            out += p * pinned.probability_within(support_index, skip_count, &shape, inp_budget, probe, depth + 1);
         }
         out
     }

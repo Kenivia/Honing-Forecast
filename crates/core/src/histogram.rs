@@ -3,6 +3,7 @@ use crate::constants::*;
 use crate::js_interface::remove_adv_cache;
 use crate::probe::Probe;
 use crate::state_bundle::StateBundle;
+use crate::tuning::Tuning;
 use ahash::AHashMap;
 use serde::Serialize;
 
@@ -66,8 +67,11 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
         }
     }
 
+    // the metric shown is the reference's, not what the optimizer worked with
+    let tuning = std::mem::replace(&mut state_bundle.tuning, Tuning::reference());
     let (metric_per_plan, avg_used, gold_breakdown) =
         state_bundle.ui_average_gold_metric(&mut dummy_probe);
+    state_bundle.tuning = tuning;
 
     let table = &state_bundle.prep_output.table;
     HistogramOutputs {

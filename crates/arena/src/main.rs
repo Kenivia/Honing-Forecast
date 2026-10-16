@@ -21,6 +21,7 @@ mod worker;
 use clap::{Parser, Subcommand, ValueEnum};
 use hf_core::probe::Probe;
 use hf_core::state_bundle::StateBundle;
+use hf_core::tuning::Tuning;
 use monte_carlo::McSpec;
 use report::Selection;
 use rusqlite::Connection;
@@ -217,7 +218,7 @@ enum Cmd {
         #[command(flatten)]
         args: replan::Args,
     },
-    /// fill in `gross` and `flow` for the runs recorded before there were any
+    /// score the runs recorded before there was `Tuning::reference` with it, and fill in `gross` and `flow`
     Rescore,
     /// time the evaluator alone
     Bench {
@@ -312,10 +313,11 @@ fn parse_variant(conn: &Connection, spec: &str) -> Variant {
     }
 }
 
-/// What the driver's own evaluator, at default tuning, makes of a worker's state: the metric,
+/// What the reference evaluator (`Tuning::reference`) makes of a worker's state: the metric,
 /// the gold spent, and the market value of what it uses.
 fn score(reference: &StateBundle, essence: &Essence) -> (f64, f64, f64) {
     let mut state_bundle = reference.clone();
+    state_bundle.tuning = Tuning::reference();
     essence.apply(&mut state_bundle);
     let metric = state_bundle.metric_router(&mut Probe::default());
     (metric, carry::gross(&state_bundle), carry::flow(&state_bundle))
@@ -690,7 +692,7 @@ fn main() {
         Cmd::Rescore => {
             let conn = db::open(&cli.db);
             let todo: Vec<(i64, i64, String)> = conn
-                .prepare("SELECT id, step_id, state FROM run WHERE flow IS NULL AND state IS NOT NULL ORDER BY step_id")
+                .prepare("SELECT id, step_id, state FROM run WHERE ref_reference IS NULL AND state IS NOT NULL ORDER BY step_id")
                 .unwrap()
                 .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
                 .unwrap()
@@ -710,9 +712,12 @@ fn main() {
                 }
                 let Some(state_bundle) = &reference.1 else { continue };
                 let essence: Essence = serde_json::from_str(&state).unwrap();
-                let (_, gross, flow) = score(state_bundle, &essence);
+                let (metric_ref, gross, flow) = score(state_bundle, &essence);
                 transaction
-                    .execute("UPDATE run SET gross = ?1, flow = ?2 WHERE id = ?3", rusqlite::params![gross, flow, id])
+                    .execute(
+                        "UPDATE run SET metric_ref = ?1, gross = ?2, flow = ?3, ref_reference = 1 WHERE id = ?4",
+                        rusqlite::params![metric_ref, gross, flow, id],
+                    )
                     .unwrap();
             }
             transaction.commit().unwrap();

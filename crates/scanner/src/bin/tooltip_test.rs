@@ -2,8 +2,8 @@
 //   cargo run --release --bin tooltip_test -- <image>...
 //   python scripts/tooltips/dump_frames.py <mp4> | cargo run --release --bin tooltip_test -- --stdin <width> <height>
 use hf_scanner::{
-    constants::ANCHORS,
-    native::{self, describe, describe_chest, print_statuses},
+    anchor_to_slot::anchor_defs::ANCHORS,
+    dev_utils::native::{self, describe, describe_chest, print_statuses},
     scanner_state::ScannerState,
     tooltip::hover::Hover,
 };
@@ -139,7 +139,7 @@ fn main() {
     println!("{skipped} frames not scanned");
     eprintln!(
         "stage timings (name, ms, calls): {:?}",
-        hf_scanner::timing::take()
+        hf_scanner::dev_utils::timing::take()
     );
     println!(
         "{index} frames, tooltip on {seen}, {hovers} hovers, {:.1} ms per frame in the tooltip step and OCR, brightness {:?}",

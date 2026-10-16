@@ -15,8 +15,10 @@
 //   --no-edits              leaves out what the user set by hand, to see what the scanner makes
 //                           of those slots
 use hf_scanner::{
-    capture::{Record, read_records},
-    native::{self, describe, describe_chest, print_statuses},
+    dev_utils::{
+        capture::{Record, read_records},
+        native::{self, describe, describe_chest, print_statuses},
+    },
     scanner_state::{ScannerState, SlotAddress},
     tooltip::hover::Hover,
 };

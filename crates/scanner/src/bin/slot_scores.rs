@@ -1,6 +1,6 @@
 // Debug: for every slot of a still that looks like something, the icons it is closest to.
 //   cargo run --release --bin slot_scores -- <image>...
-use hf_scanner::{constants::ALL_SLOT_ADDRESSS, native};
+use hf_scanner::{anchor_to_slot::anchor_defs::ALL_SLOT_ADDRESSS, dev_utils::native};
 use std::env;
 
 

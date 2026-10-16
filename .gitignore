@@ -60,3 +60,5 @@ cambridge-core_saddlepoint-approximations-with-applications_12Oct2026
 
 
 *.sqlite
+# archive of evaluator experiments
+core experiments/

@@ -6,7 +6,6 @@ use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 use crate::support::Support;
 use serde::{Deserialize, Serialize};
-use std::f64::NAN;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct KsTuple(pub f64, pub f64, pub f64, pub f64, pub f64);
@@ -22,20 +21,6 @@ impl KsTuple {
     }
     pub fn access(&self) -> (f64, f64, f64, f64, f64) {
         (self.0, self.1, self.2, self.3, self.4)
-    }
-
-    /// The cumulants of the size-biased sum, for E(X'). See one_dimension_average_gold
-    pub fn biased(&self, simple_mean_log: f64) -> KsTuple {
-        let ksx = self;
-        KsTuple(
-            ksx.0 + ksx.1.ln() - simple_mean_log,
-            ksx.1 + ksx.2 / ksx.1,
-            ksx.2 + (ksx.3 * ksx.1 - ksx.2.powi(2)) / (ksx.1.powi(2)),
-            ksx.3
-                + (2.0 * ksx.2.powi(3) + ksx.4 * ksx.1.powi(2) - 3.0 * ksx.3 * ksx.1 * ksx.2)
-                    / ksx.1.powi(3),
-            NAN,
-        )
     }
 
     /// The taylor series about here, a short way off
@@ -55,20 +40,7 @@ impl Default for KsTuple {
     }
 }
 impl StateBundle {
-    pub fn ks(
-        &self,
-        theta: f64,
-        compute_biased: bool,
-        simple_mean_log: f64,
-        support_index: i64,
-        skip_count: usize,
-        probe: &mut Probe,
-    ) -> KsTuple {
-        let raw = self.raw_ks(theta, support_index, skip_count, probe);
-        if compute_biased { raw.biased(simple_mean_log) } else { raw }
-    }
-
-    /// The cumulants of the sum itself, which the biased ones are made from
+    /// The cumulants of the sum
     pub fn raw_ks(&self, theta: f64, support_index: i64, skip_count: usize, probe: &mut Probe) -> KsTuple {
         probe.count(Counter::Ks);
         self.cumulant_01234(support_index, skip_count, theta)
