@@ -1,7 +1,9 @@
-use crate::{
-    constants::{QUIET_SCANS, SAMPLE_DIFFERS, SAMPLE_GAP, WORTH_SCAN_THRESH},
-    scanner_state::ScannerState,
-};
+use crate::scanner_state::ScannerState;
+
+const SAMPLE_GAP: usize = 8; // one pixel in this many, each way, is compared
+const SAMPLE_DIFFERS: u8 = 16; // above what a still screen does in a compressed recording
+const WORTH_SCAN_THRESH: f64 = 0.005;
+const QUIET_SCANS: usize = 6; // scans after the last change, for the slots' turn and a lost tooltip
 
 impl ScannerState {
     // A frame is scanned when enough of it differs from the last scanned one, and for a few

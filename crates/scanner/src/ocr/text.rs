@@ -1,6 +1,6 @@
 use super::jobs::{Kind, OCRLine};
 use crate::{
-    buffer::Buffer, image_utils::brightness::brightness_lut, ocr::constants::OCR_LINE_HEIGHT,
+    buffer::Buffer, image_utils::brightness::brightness_lut, interface::setup::OCR_LINE_HEIGHT,
 };
 use image::{
     GrayImage, Luma, RgbaImage,

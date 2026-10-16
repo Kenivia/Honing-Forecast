@@ -1,6 +1,6 @@
 use crate::{
     anchor_to_slot::{
-        constants::{ALL_SLOT_ADDRESSS, COMBINED_NUMBER_HEIGHT, NUMBER_OFFSET, SLOT_ORDER},
+        anchor_defs::{ALL_SLOT_ADDRESSS, COMBINED_NUMBER_HEIGHT, NUMBER_OFFSET, SLOT_ORDER},
         slots::{
             constants::{
                 AFAR_ROWS, ALTERNATIVE, OVERLAY_REACH, OVERLAYS, SLOT_BUDGET, SLOT_CONFIDENCE,
@@ -8,16 +8,9 @@ use crate::{
             },
             utils::{from_afar, overlaid, overlay_areas},
         },
-    },
-    dev_utils::timing::{now, timed},
-    image_utils::{
-        brightness::normalize_brightness,
-        close_enough::{DEFAULT_CONFIDENCE, close_enough, confidence, masked_confidence},
-        common::{Rect, get_resizer},
-    },
-    interface::setup::{BASE_ICONS, OneIconConfig, icon_lookup},
-    ocr::jobs::{Kind, OCRLine},
-    scanner_state::{OneSlotInfo, ScannerState, SlotAddress},
+    }, dev_utils::timing::{now, timed}, image_utils::{
+        brightness::normalize_brightness, close_enough::{DEFAULT_CLOSE_ENOUGH_CONFIDENCE, close_enough, confidence, masked_confidence}, common::{Rect, get_resizer},
+    }, interface::setup::{BASE_ICONS, OneIconConfig, icon_lookup}, ocr::jobs::{Kind, OCRLine}, scanner_state::{OneSlotInfo, ScannerState, SlotAddress},
 };
 
 impl ScannerState {
@@ -78,7 +71,7 @@ impl ScannerState {
         let old_limit = |name: &String| {
             BASE_ICONS.read()[name]
                 .required_confidence
-                .unwrap_or(DEFAULT_CONFIDENCE)
+                .unwrap_or(DEFAULT_CLOSE_ENOUGH_CONFIDENCE)
         };
         let mut first = true;
         passed.retain(|x: &(String, f64, u8)| {

@@ -2,7 +2,7 @@ use image::RgbaImage;
 
 use crate::interface::setup::OneIconConfig;
 
-pub const DEFAULT_CONFIDENCE: f64 = 0.95;
+pub const DEFAULT_CLOSE_ENOUGH_CONFIDENCE: f64 = 0.95;
 
 // part of a template, in its pixels: x0, y0, x1, y1
 pub type Area = (usize, usize, usize, usize);
@@ -67,6 +67,9 @@ pub fn masked_confidence(template: &OneIconConfig, observed: &OneIconConfig, ski
 }
 
 pub fn close_enough(template: &OneIconConfig, observed: &OneIconConfig) -> Option<f64> {
-    Some(confidence(template, observed))
-        .filter(|x| *x > template.required_confidence.unwrap_or(DEFAULT_CONFIDENCE))
+    Some(confidence(template, observed)).filter(|x| {
+        *x > template
+            .required_confidence
+            .unwrap_or(DEFAULT_CLOSE_ENOUGH_CONFIDENCE)
+    })
 }

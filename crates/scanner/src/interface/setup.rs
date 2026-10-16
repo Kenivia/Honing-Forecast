@@ -1,7 +1,6 @@
 use crate::{
-    anchor_to_slot::{constants::COMBINED_NUMBER_HEIGHT, slots::constants::FROM_AFAR},
+    anchor_to_slot::{anchor_defs::COMBINED_NUMBER_HEIGHT, slots::constants::FROM_AFAR},
     image_utils::{common::Rect, resize::resize_one_config},
-    ocr::constants::NUMBER_CHARS,
 };
 use ahash::AHashMap;
 use fast_image_resize::Resizer;
@@ -11,6 +10,9 @@ use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard, RwLockWriteGua
 use rten::Model;
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
+
+pub const OCR_LINE_HEIGHT: u32 = 64; // what the recogniser works at
+const NUMBER_CHARS: &str = "0123456789.+-";
 
 pub static BASE_ICONS: LazyLock<RwLock<AHashMap<String, OneIconConfig>>> =
     LazyLock::new(|| RwLock::new(AHashMap::new()));

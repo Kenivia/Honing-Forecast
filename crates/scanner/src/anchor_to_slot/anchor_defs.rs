@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 use ahash::AHashMap;
 
 use crate::{
-    constants::{STORAGE_ANCHOR_SLACK, WINDOW_ANCHOR_SLACK},
+    anchor_to_slot::anchors::{STORAGE_ANCHOR_SLACK, WINDOW_ANCHOR_SLACK},
     image_utils::common::Rect,
     scanner_state::{
         AnchorType,
@@ -41,13 +41,23 @@ pub static ANCHORS: LazyLock<Vec<AnchorSpec>> = LazyLock::new(|| {
             variants: vec![
                 AnchorVariant {
                     name: "Storage anchor pet",
-                    bound: Bound::Ui(with_slack((655.0, 1280.0), 120.0, 50.0, STORAGE_ANCHOR_SLACK)),
+                    bound: Bound::Ui(with_slack(
+                        (655.0, 1280.0),
+                        120.0,
+                        50.0,
+                        STORAGE_ANCHOR_SLACK,
+                    )),
                     // no captures of the pet menu across settings, so this one is from the model
                     brightness: Some([5.7877893407e-03, 0.5554276781, -36.8317787]),
                 },
                 AnchorVariant {
                     name: "Storage anchor npc",
-                    bound: Bound::Ui(with_slack((1215.0, 1100.0), 120.0, 50.0, STORAGE_ANCHOR_SLACK)),
+                    bound: Bound::Ui(with_slack(
+                        (1215.0, 1100.0),
+                        120.0,
+                        50.0,
+                        STORAGE_ANCHOR_SLACK,
+                    )),
                     brightness: Some([5.4345973311e-03, 0.5303418622, -30.5668870]),
                 },
             ],

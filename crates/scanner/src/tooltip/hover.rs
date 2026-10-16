@@ -1,17 +1,16 @@
 use super::{
     chest::{Chest, ChestKind, ChestRow, chest_strips},
     detect_title::TitleBar,
-    tooltip_icon::tooltip_icon,
     items::{ITEMS, bars_titled, match_title, shares_icon, variant},
     layout::parse_layout,
     title::title_lines,
+    tooltip_icon::tooltip_icon,
 };
 use crate::{
     anchor_to_slot::{
-        constants::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
+        anchor_defs::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
         slots::utils::overlay_areas,
     },
-    constants::QUIET_SCANS,
     dev_utils::timing::timed,
     image_utils::{
         brightness::normalize_brightness, close_enough::masked_confidence, common::get_resizer,
@@ -62,6 +61,8 @@ const WINDOW_WIDTHS: [(InventoryType, f64); 3] = [
     (InventoryType::CharInventory, 722.4),
 ];
 const HEADER_ROWS: (f64, f64) = (10.0, 60.0);
+
+const QUIET_SCANS: usize = 6;
 // one tooltip staying in place over consecutive frames; what it says is voted on across them
 #[derive(Debug, Default, Clone)]
 pub struct Hover {

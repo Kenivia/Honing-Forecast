@@ -1,16 +1,18 @@
 use ahash::AHashMap;
 
 use crate::{
-    anchor_to_slot::constants::ALL_PAGE_NUM,
-    constants::{DARK_SCANS, PAGE_NUM_LEAD},
+    anchor_to_slot::anchor_defs::ALL_PAGE_NUM,
     image_utils::{
         brightness::normalize_brightness,
-        close_enough::{DEFAULT_CONFIDENCE, confidence},
+        close_enough::{DEFAULT_CLOSE_ENOUGH_CONFIDENCE, confidence},
         common::get_resizer,
     },
     interface::setup::icon_lookup,
     scanner_state::{InventoryType, ScannerState},
 };
+
+const PAGE_NUM_LEAD: f64 = 0.1; // an active tab leads by 0.2, one under the cursor by 0.05
+const DARK_SCANS: usize = 3; // scans a tab has to look dark for before its page is given up
 
 impl ScannerState {
     pub fn initialize_page_num_infos(&mut self) {
@@ -41,7 +43,8 @@ impl ScannerState {
                     normalize_brightness(&mut seen, self.screen_info.brightness.unwrap());
                     (
                         confidence(&icon, &seen),
-                        icon.required_confidence.unwrap_or(DEFAULT_CONFIDENCE),
+                        icon.required_confidence
+                            .unwrap_or(DEFAULT_CLOSE_ENOUGH_CONFIDENCE),
                     )
                 };
                 // A tab under the cursor lights up and looks a little like both states (0.83 active,

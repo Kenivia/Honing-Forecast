@@ -1,10 +1,10 @@
 use image::{GrayImage, imageops::grayscale};
 use parking_lot::Mutex;
 
-use crate::{
-    image_utils::constants::{GAMMA_RATIO, TARGET_BRIGHTNESS},
-    interface::setup::OneIconConfig,
-};
+use crate::interface::setup::OneIconConfig;
+
+const GAMMA_RATIO: f64 = 62.6;
+const TARGET_BRIGHTNESS: f64 = 50.0;
 
 // does the same thing as what template matching does
 pub fn mean_intensity(icon: &OneIconConfig) -> f64 {

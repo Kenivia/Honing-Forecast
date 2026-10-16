@@ -1,9 +1,5 @@
 use crate::{
-    anchor_to_slot::constants::{ANCHORS, AnchorSpec, Bound, anchor_spec},
-    constants::{
-        CHAR_INV_FORCED_SEARCH_FREQ, CHAR_INV_SEARCH_THRESH, STORAGE_MIN, STORAGE_NPC_SHIFT,
-        WINDOW_ANCHOR_SLACK,
-    },
+    anchor_to_slot::anchor_defs::{ANCHORS, AnchorSpec, Bound, anchor_spec},
     dev_utils::timing::timed,
     image_utils::{
         brightness::{brightness_lut, est_ingame_brightness, mean_intensity, normalize_brightness},
@@ -16,6 +12,20 @@ use crate::{
     scanner_state::{AnchorType, InventoryType, ScannerState},
 };
 use ahash::AHashMap;
+
+// Share of the thinned frame that has to differ from the one last searched as a whole for the lone
+// inventory to be searched for again at once. Its window showing up is 13 to 15% of a 3440x1440
+// frame; the cursor and a tooltip are under 3%.
+const CHAR_INV_SEARCH_THRESH: f64 = 0.03;
+// otherwise one of its variants is searched for on every this many scans
+const CHAR_INV_FORCED_SEARCH_FREQ: u64 = 8;
+
+pub const STORAGE_ANCHOR_SLACK: f64 = 2.0;
+pub const WINDOW_ANCHOR_SLACK: f64 = 6.0;
+// The storage layout is three windows and the Storage button, always in the same place: one for
+// the pet menu, and shifted by this for the storage NPC.
+const STORAGE_NPC_SHIFT: [(f64, f64); 2] = [(0.0, 0.0), (-6.4, -142.45)];
+const STORAGE_MIN: usize = 3;
 
 // cut on whole pixels: at a fraction of one it would be resampled
 fn on_pixels(mut area: Rect) -> Rect {
