@@ -1,7 +1,19 @@
-use crate::{ocr::jobs::OCRLine, scanner_state::ScannerState, tooltip::hover::Hover};
+use std::mem::take;
+
+use super::{
+    chest::{ChestRow, chests_listing},
+    items::{item_from_body, match_bar_title, match_title},
+    title::join_title,
+};
+use crate::{ocr::jobs::OCRLine, tooltip::hover::Hover};
+use crate::{scanner_state::ScannerState, tooltip::common::winner};
 
 const LOW_PRIORITY: usize = 100;
+pub const CENTRED_VOTE: usize = 100; // a title read with nothing over it outvotes any number of covered ones
+pub const SETTLED: usize = 3; // agreeing reads after which the OCR stops for this hover
 
+// rows this much like a chest's names settle it in one read
+const EXACT_ROWS: f64 = 0.995;
 // the text lines of one row of a chest
 #[derive(Debug, Clone)]
 pub struct ChestRowStrips {
@@ -104,6 +116,134 @@ impl ScannerState {
             hover.waiting[kind] += 1;
             hover.sent[kind] += 1;
             self.pending_reads.push(read);
+        }
+    }
+
+    // Casts the votes of every read whose texts are all back, then writes what its hover now says
+    // onto the hovered slot and the chest list.
+    pub fn resolve_reads(&mut self) {
+        let mut hovers: Vec<Hover> = take(&mut self.past_hovers);
+        let current = self.hover.take().map(|hover| {
+            hovers.push(hover);
+            hovers.len() - 1
+        });
+        let mut touched = vec![false; hovers.len()];
+        if let Some(index) = current {
+            touched[index] = hovers[index].missed == 0;
+        }
+
+        for read in take(&mut self.pending_reads) {
+            let Some(index) = hovers.iter().position(|hover| hover.id == read.hover) else {
+                continue;
+            };
+            if !read.jobs().all(|id| self.ocr_texts.contains_key(&id)) {
+                self.pending_reads.push(read);
+                continue;
+            }
+            let hover = &mut hovers[index];
+            touched[index] = true;
+            let text = |id: &u32| self.ocr_texts[id].clone();
+
+            if let Some((lines, centred)) = &read.title {
+                let read = join_title(&lines.iter().map(text).collect::<Vec<_>>());
+                // a chest with a panel is told by its rows, a bar of gold only by its title
+                let bar = || {
+                    let bare = hover.chest_kind_votes.is_empty();
+                    bare.then(|| match_bar_title(&read))
+                        .flatten()
+                        .map(str::to_string)
+                };
+                let title = match_title(&read)
+                    .and_then(|item| item.title.clone())
+                    .or_else(bar);
+                if let Some(title) = title {
+                    // a read with nothing over it that is a title to the letter settles it
+                    let exact = *centred && read.eq_ignore_ascii_case(&title);
+                    *hover.title_votes.entry(title).or_default() += if exact {
+                        SETTLED * CENTRED_VOTE
+                    } else if *centred {
+                        CENTRED_VOTE
+                    } else {
+                        1
+                    };
+                }
+                hover.last_read_title = read;
+                hover.waiting[0] -= 1;
+            }
+            if let Some(jobs) = &read.amount {
+                let [first, second, third] = jobs.each_ref().map(|id| {
+                    text(id)
+                        .chars()
+                        .filter(char::is_ascii_digit)
+                        .collect::<String>()
+                });
+                // the third is only there to break a tie
+                let amount = if first == second {
+                    first
+                } else {
+                    [first, second]
+                        .into_iter()
+                        .find(|x| *x == third)
+                        .unwrap_or_default()
+                };
+                if !amount.is_empty() {
+                    *hover.amount_votes.entry(amount).or_default() += 1;
+                }
+                hover.waiting[1] -= 1;
+            }
+            if let Some(rows) = read.chest {
+                let mut texts = vec![];
+                hover.chest_rows = rows
+                    .into_iter()
+                    .map(|(names, count)| {
+                        let name_read = names.iter().map(text).collect::<Vec<_>>().join(" ");
+                        texts.push((name_read.clone(), text(&count)));
+                        ChestRow {
+                            name_read,
+                            count_read: text(&count),
+                        }
+                    })
+                    .collect();
+                // The chests that list these rows best get the vote. Several do when they list the
+                // same things, or when a numeral that tells them apart did not read. Those that
+                // open the way the header says go first: the header's wording varies ("Obtain one
+                // of the following items at random" reads as obtain all), so it only breaks ties.
+                let (mut listing, whole) = chests_listing(&texts);
+                let kind = winner(&hover.chest_kind_votes).map(|x| x.0);
+                if listing.iter().any(|x| Some(x.0.kind) == kind) {
+                    listing.retain(|x| Some(x.0.kind) == kind);
+                }
+                let best = listing.iter().map(|x| x.1).fold(0.0, f64::max);
+                // rows that read as a chest's to the letter, and are all of them, settle it
+                let weight = if whole && best >= EXACT_ROWS {
+                    SETTLED
+                } else {
+                    1
+                };
+                for (variant, _) in listing.iter().filter(|x| x.1 >= best - 1e-6) {
+                    *hover.chest_votes.entry(variant.id).or_default() += weight;
+                }
+                hover.waiting[2] -= 1;
+            }
+            if let Some(lines) = &read.body {
+                let lines: Vec<String> = lines.iter().map(text).collect();
+                if let Some(label) = item_from_body(&lines).and_then(|item| item.label.clone()) {
+                    // every level's line and the gear's read, or it would name no book
+                    *hover.body_votes.entry(label).or_default() += SETTLED;
+                }
+                hover.waiting[3] -= 1;
+            }
+        }
+
+        for (index, mut hover) in hovers.into_iter().enumerate() {
+            if touched[index] {
+                self.write_hover(&mut hover, Some(index) != current);
+            }
+            if Some(index) == current {
+                self.hover = Some(hover);
+            } else {
+                self.retire_hover(hover);
+            }
         }
     }
 }

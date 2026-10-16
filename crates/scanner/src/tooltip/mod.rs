@@ -2,7 +2,7 @@ pub mod chest;
 pub mod common;
 pub mod detect_title;
 pub mod hover;
-pub mod icon;
+pub mod tooltip_icon;
 pub mod items;
 pub mod layout;
 pub mod title;
