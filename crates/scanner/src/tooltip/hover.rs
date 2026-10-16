@@ -13,7 +13,9 @@ use crate::{
     },
     dev_utils::timing::timed,
     image_utils::{
-        brightness::normalize_brightness, close_enough::masked_confidence, common::get_resizer,
+        brightness::{brightness_lut, normalize_brightness},
+        close_enough::masked_confidence,
+        common::get_resizer,
     },
     interface::setup::icon_lookup,
     ocr::text::{text_line, yellow_line},
@@ -340,9 +342,11 @@ impl ScannerState {
     // Finds the tooltip and sends its text lines off to be read. Nothing here waits for OCR:
     // the votes are cast in resolve_reads, when the texts are back.
     pub fn update_tooltip(&mut self) {
-        if self.screen_info.brightness.is_some() {
+        let Some(brightness) = self.screen_info.brightness else {
             return;
         };
+        self.buffer.lut = Some(brightness_lut(brightness));
+        self.buffer.brightness = brightness;
         let s = self.screen_info.scale_factor;
 
         // each located window: its origin and its header's right edge

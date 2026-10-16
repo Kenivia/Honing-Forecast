@@ -2,7 +2,7 @@ use crate::{
     anchor_to_slot::anchor_defs::{ANCHORS, AnchorSpec, Bound, anchor_spec},
     dev_utils::timing::timed,
     image_utils::{
-        brightness::{brightness_lut, est_ingame_brightness, mean_intensity, normalize_brightness},
+        brightness::{est_ingame_brightness, mean_intensity, normalize_brightness},
         close_enough::close_enough,
         common::{Rect, get_resizer},
         sample::diff_samples,
@@ -239,10 +239,6 @@ impl ScannerState {
             self.screen_info.brightness = Some(found.iter().sum::<f64>() / found.len() as f64);
             self.screen_info.brightness_anchors = found.len();
         }
-        if let Some(brightness) = self.screen_info.brightness {
-            self.buffer.lut = Some(brightness_lut(brightness));
-            self.buffer.brightness = brightness;
-        };
     }
 
     fn storage_found(&self) -> usize {
