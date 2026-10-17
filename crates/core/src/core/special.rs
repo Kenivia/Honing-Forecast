@@ -59,7 +59,12 @@ impl StateBundle {
     pub fn compute_special_probs(&mut self, preserve_tail: bool) -> Option<Vec<f64>> {
         // the order last computed for is clean and in the cache
         let budget = self.prep_output.special_budget;
-        if !preserve_tail && self.special_done.as_ref().is_some_and(|done| done.0 == budget && done.1 == self.special_state) {
+        if !preserve_tail
+            && self
+                .special_done
+                .as_ref()
+                .is_some_and(|done| done.0 == budget && done.1 == self.special_state)
+        {
             return None;
         }
         self.clean_special_state();
@@ -176,7 +181,11 @@ impl StateBundle {
             let start_idx = top - cost;
             for b in (0..=start_idx).rev() {
                 let source_idx = b + cost;
-                let flow_from_above = if cost == 0 || source_idx > start_idx { 0.0 } else { next_active[source_idx] };
+                let flow_from_above = if cost == 0 || source_idx > start_idx {
+                    0.0
+                } else {
+                    next_active[source_idx]
+                };
                 next_active[b] = (p * active[source_idx]) + (one_minus_p * flow_from_above);
             }
 

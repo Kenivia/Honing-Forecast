@@ -60,12 +60,17 @@ const MAX_TINT_SHIFT: f64 = 0.15;
 const BAR: Rect = Rect::ui((0.0, 0.0), 1900.0, 40.0);
 
 static PLACES: LazyLock<Vec<PlaceSpec>> = LazyLock::new(|| {
-    let at = |x: f64, y: f64, width: f64, height: f64| with_slack((x, y), width, height, ICON_SLACK);
+    let at =
+        |x: f64, y: f64, width: f64, height: f64| with_slack((x, y), width, height, ICON_SLACK);
     vec![
         PlaceSpec {
             place: Place::Inventory,
             icons: vec![
-                (Currency::Silver, "Silver coin", at(461.0, 815.0, 24.0, 24.0)),
+                (
+                    Currency::Silver,
+                    "Silver coin",
+                    at(461.0, 815.0, 24.0, 24.0),
+                ),
                 (Currency::Gold, "Gold coin", at(684.0, 815.0, 24.0, 24.0)),
             ],
             tooltip: vec![(44.0, 9.0), (-544.0, 9.0)],
@@ -74,9 +79,17 @@ static PLACES: LazyLock<Vec<PlaceSpec>> = LazyLock::new(|| {
         PlaceSpec {
             place: Place::Window,
             icons: vec![
-                (Currency::Silver, "Silver coin", at(415.0, 271.0, 24.0, 24.0)),
+                (
+                    Currency::Silver,
+                    "Silver coin",
+                    at(415.0, 271.0, 24.0, 24.0),
+                ),
                 (Currency::Gold, "Gold coin", at(416.0, 322.0, 24.0, 24.0)),
-                (Currency::Shards, "Destiny shard", at(419.0, 680.0, 16.0, 24.0)),
+                (
+                    Currency::Shards,
+                    "Destiny shard",
+                    at(419.0, 680.0, 16.0, 24.0),
+                ),
             ],
             tooltip: vec![(56.0, 9.0)],
         },
@@ -183,7 +196,9 @@ fn lit(buffer: &Buffer, x: usize, y: usize) -> i32 {
 
 // what text in a rectangle is brighter than: mostly it is background
 fn ink_level(buffer: &Buffer, (x0, y0, x1, y1): (usize, usize, usize, usize)) -> i32 {
-    let mut levels: Vec<i32> = (y0..y1).flat_map(|y| (x0..x1).map(move |x| lit(buffer, x, y))).collect();
+    let mut levels: Vec<i32> = (y0..y1)
+        .flat_map(|y| (x0..x1).map(move |x| lit(buffer, x, y)))
+        .collect();
     let middle = levels.len() / 2;
     *levels.select_nth_unstable(middle).1 + INK_ABOVE
 }
@@ -240,7 +255,11 @@ fn is_yellow(buffer: &Buffer, area: Rect) -> bool {
 }
 
 fn parse(field: Field, text: &str) -> Option<u64> {
-    let digits = |text: &str| text.chars().filter(char::is_ascii_digit).collect::<String>();
+    let digits = |text: &str| {
+        text.chars()
+            .filter(char::is_ascii_digit)
+            .collect::<String>()
+    };
     let number = match field {
         Field::Owned | Field::Roster | Field::Char => match text.split_once('/') {
             Some((amount, _)) => digits(amount),
@@ -303,7 +322,11 @@ impl ScannerState {
     // looked for where it last was first, the bar being wide
     fn find_icon(&mut self, key: (Place, Currency), name: &str, bound: Rect) -> Option<Rect> {
         let s = self.screen_info.scale_factor;
-        let near = self.currency.last_at.get(&key).map(|at| grown(*at, 3.0 * s));
+        let near = self
+            .currency
+            .last_at
+            .get(&key)
+            .map(|at| grown(*at, 3.0 * s));
         let found = [near, Some(bound)].into_iter().flatten().find_map(|area| {
             let (found, ..) = self.find_template(name, area)?;
             self.icon_shown(name, found).then_some(found)
@@ -318,11 +341,17 @@ impl ScannerState {
         let seen = self.crop_buffer(found);
         let ui_height = self.screen_info.effective_height;
         let own = icon_lookup(name, ui_height, get_resizer(&mut self.resizer));
-        contrast(&seen) > MIN_CONTRAST * contrast(&own) && (tint(&seen) - tint(&own)).abs() < MAX_TINT_SHIFT
+        contrast(&seen) > MIN_CONTRAST * contrast(&own)
+            && (tint(&seen) - tint(&own)).abs() < MAX_TINT_SHIFT
     }
 
     // Enough to settle at once, each cut with the next margin: a tooltip may be up only briefly.
-    fn send_currency_read(&mut self, field: Field, (x0, y0, x1, y1): (usize, usize, usize, usize), kind: Kind) {
+    fn send_currency_read(
+        &mut self,
+        field: Field,
+        (x0, y0, x1, y1): (usize, usize, usize, usize),
+        kind: Kind,
+    ) {
         let sent = self.currency.fields.entry(field).or_default().sent;
         for margin in &MARGINS[sent..(sent + SETTLED).min(MAX_READS)] {
             let margin = (margin * self.screen_info.scale_factor).round() as usize;
@@ -358,7 +387,8 @@ impl ScannerState {
                     (gold.top_left.1 + dy * s).min(lowest),
                 );
                 let at = Rect::screen(top_left, width as f64, height as f64, ui_height);
-                if let Some((found, ..)) = self.find_template(TOOLTIP_TITLE, grown(at, TOOLTIP_SLACK * s))
+                if let Some((found, ..)) =
+                    self.find_template(TOOLTIP_TITLE, grown(at, TOOLTIP_SLACK * s))
                     && is_yellow(&self.buffer, found.whole_pixels())
                 {
                     return Some(found);
@@ -375,7 +405,9 @@ impl ScannerState {
         // lines are cut as captured, and read at what the brightness is thought to be
         self.buffer.brightness = self.screen_info.brightness.unwrap_or(50.0);
         self.currency.busy = false;
-        let parts_wanted = PARTS.iter().any(|x| !matches!(self.field_read(*x), Read::Settled(_)));
+        let parts_wanted = PARTS
+            .iter()
+            .any(|x| !matches!(self.field_read(*x), Read::Settled(_)));
         let mut golds = vec![];
         for spec in PLACES.iter() {
             let Some(origin) = self.place_origin(spec.place) else {

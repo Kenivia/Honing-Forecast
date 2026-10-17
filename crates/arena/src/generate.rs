@@ -24,8 +24,24 @@ use serde_json::{Map, Value, json};
 use std::collections::BTreeMap;
 
 pub const AXES: [&str; 18] = [
-    "tier", "size", "level", "pieces", "jitter", "adv", "progress", "wealth", "imbalance", "split",
-    "juice_owned", "juice_price", "free_taps", "plan", "chests", "price_noise", "chest_base", "chest_optional",
+    "tier",
+    "size",
+    "level",
+    "pieces",
+    "jitter",
+    "adv",
+    "progress",
+    "wealth",
+    "imbalance",
+    "split",
+    "juice_owned",
+    "juice_price",
+    "free_taps",
+    "plan",
+    "chests",
+    "price_noise",
+    "chest_base",
+    "chest_optional",
 ];
 
 pub fn axis(name: &str) -> usize {
@@ -116,7 +132,11 @@ fn after_failed(upgrade: &Upgrade, state_bundle: &StateBundle, taps: usize) -> (
             .get(count)
             .into_iter()
             .flatten()
-            .map(|&id| juice_info.access(id, upgrade.piece_type_usize, upgrade.upgrade_index).normal_chance)
+            .map(|&id| {
+                juice_info
+                    .access(id, upgrade.piece_type_usize, upgrade.upgrade_index)
+                    .normal_chance
+            })
             .sum();
         let ramp = (count + upgrade.starting_num_taps).min(10) as f64 * upgrade.base_chance * 0.1;
         let chance = (upgrade.base_chance + upgrade.extra_chance + ramp + juiced).min(1.0);
@@ -126,8 +146,15 @@ fn after_failed(upgrade: &Upgrade, state_bundle: &StateBundle, taps: usize) -> (
 }
 
 fn mean_taps(upgrade: &Upgrade) -> f64 {
-    let dist = if upgrade.is_normal_honing { &upgrade.normal_dist } else { &upgrade.adv_dists[0] };
-    dist.iter().enumerate().map(|(taps, p)| taps as f64 * p).sum()
+    let dist = if upgrade.is_normal_honing {
+        &upgrade.normal_dist
+    } else {
+        &upgrade.adv_dists[0]
+    };
+    dist.iter()
+        .enumerate()
+        .map(|(taps, p)| taps as f64 * p)
+        .sum()
 }
 
 /// the amount this much of the time is enough, under the given state
@@ -165,14 +192,19 @@ fn max_used(payload: &Payload) -> Vec<f64> {
         let mut state_bundle = StateBundle::init_from_payload(payload.clone());
         let juice_info = state_bundle.prep_output.juice_info.clone();
         for this in state_bundle.upgrade_arr.iter_mut() {
-            let (piece_type, upgrade_index, len) = (this.piece_type_usize, this.upgrade_index, this.state.len());
+            let (piece_type, upgrade_index, len) =
+                (this.piece_type_usize, this.upgrade_index, this.state.len());
             if this.is_normal_honing {
                 let pools = get_pool_ids(piece_type, upgrade_index, &juice_info);
                 let info = StreakInfo {
-                    front: pools.iter().map(|ids| (ids.get(choice.min(ids.len().max(1) - 1)).copied(), len)).collect(),
+                    front: pools
+                        .iter()
+                        .map(|ids| (ids.get(choice.min(ids.len().max(1) - 1)).copied(), len))
+                        .collect(),
                     back: vec![(None, 0); pools.len()],
                 };
-                this.state.apply_new_streak_info(&info, piece_type, upgrade_index, &juice_info);
+                this.state
+                    .apply_new_streak_info(&info, piece_type, upgrade_index, &juice_info);
             } else {
                 for val in this.state.iter_mut() {
                     val[0] = MAX_ADV_STATE;
@@ -190,22 +222,43 @@ fn max_used(payload: &Payload) -> Vec<f64> {
 
 /// The options of one stack, each the labels it gives. After the game's chests: a pick between
 /// stones, between free taps and base materials, between juices and books, and obtain-alls.
-fn chest_family<'a, R: Rng>(rng: &mut R, labels: &'a [String], special: &'a str) -> Vec<Vec<&'a str>> {
+fn chest_family<'a, R: Rng>(
+    rng: &mut R,
+    labels: &'a [String],
+    special: &'a str,
+) -> Vec<Vec<&'a str>> {
     let l = |row: usize| labels[row].as_str();
     let (red, blue, leaps, shards, fusion) = (l(0), l(1), l(2), l(3), l(4));
-    let optional: Vec<&str> = labels[NUM_BASE_MATS..].iter().map(|label| label.as_str()).collect();
+    let optional: Vec<&str> = labels[NUM_BASE_MATS..]
+        .iter()
+        .map(|label| label.as_str())
+        .collect();
     let (glacier, lava) = (optional[0], optional[1]);
     let books = &optional[2..];
     let some = |rng: &mut R, from: &[&'a str], least: usize, most: usize| -> Vec<&'a str> {
         let count = rng.random_range(least.min(from.len())..=most.min(from.len()));
         from.choose_multiple(rng, count).copied().collect()
     };
-    let alone = |labels: Vec<&'a str>| -> Vec<Vec<&'a str>> { labels.into_iter().map(|label| vec![label]).collect() };
+    let alone = |labels: Vec<&'a str>| -> Vec<Vec<&'a str>> {
+        labels.into_iter().map(|label| vec![label]).collect()
+    };
     let family = pick(
         rng.random(),
         &[
-            (0.1, 0), (0.08, 1), (0.06, 2), (0.05, 3), (0.04, 4), (0.12, 5), (0.12, 6), (0.07, 7),
-            (0.05, 8), (0.05, 9), (0.04, 10), (0.1, 11), (0.07, 12), (0.05, 13),
+            (0.1, 0),
+            (0.08, 1),
+            (0.06, 2),
+            (0.05, 3),
+            (0.04, 4),
+            (0.12, 5),
+            (0.12, 6),
+            (0.07, 7),
+            (0.05, 8),
+            (0.05, 9),
+            (0.04, 10),
+            (0.1, 11),
+            (0.07, 12),
+            (0.05, 13),
         ],
     );
     match family {
@@ -221,18 +274,30 @@ fn chest_family<'a, R: Rng>(rng: &mut R, labels: &'a [String], special: &'a str)
         8 => vec![vec![red, blue], vec![leaps], vec![shards, fusion]],
         9 => alone(vec![fusion, lava, special]),
         10 => alone(vec![l(GOLD), lava, glacier]),
-        11 => vec![[some(rng, &[red, blue, leaps, shards, fusion], 1, 5), some(rng, &[l(GOLD)], 0, 1)].concat()],
+        11 => vec![
+            [
+                some(rng, &[red, blue, leaps, shards, fusion], 1, 5),
+                some(rng, &[l(GOLD)], 0, 1),
+            ]
+            .concat(),
+        ],
         12 => vec![some(rng, &optional, 1, 2)],
         _ => vec![vec![special]],
     }
 }
 
-fn chest_stack<R: Rng>(rng: &mut R, labels: &[String], special_label: &str, refs: &Refs) -> (String, Chest) {
+fn chest_stack<R: Rng>(
+    rng: &mut R,
+    labels: &[String],
+    special_label: &str,
+    refs: &Refs,
+) -> (String, Chest) {
     let options = chest_family(rng, labels, special_label);
     // a serca stack of t4 materials: a fifth of a unit each, roster bound at best
     let converted = special_label == SPECIAL_LABELS[1] && rng.random_bool(0.4);
     let has_gold = options.iter().flatten().any(|&label| label == labels[GOLD]);
-    let band = pick(rng.random(), &[(0.45, 0), (0.35, 1), (0.2, 2)]).min(if converted || has_gold { 1 } else { 2 });
+    let band = pick(rng.random(), &[(0.45, 0), (0.35, 1), (0.2, 2)])
+        .min(if converted || has_gold { 1 } else { 2 });
     let noise = (0.6 * normal(rng)).exp();
     // what the whole stack gives of a label when every chest goes to its option
     let total = |label: &str| -> f64 {
@@ -244,7 +309,11 @@ fn chest_stack<R: Rng>(rng: &mut R, labels: &[String], special_label: &str, refs
         };
         (if reference > 0.0 { reference } else { fallback }) * refs.shares[!base as usize] * noise
     };
-    let most = options.iter().flatten().map(|&label| total(label)).fold(1.0, f64::max);
+    let most = options
+        .iter()
+        .flatten()
+        .map(|&label| total(label))
+        .fold(1.0, f64::max);
     let count = (log_uniform(rng.random(), 1.0, 300.0) as i64).min(most.round() as i64);
     let options: Vec<BTreeMap<String, f64>> = options
         .iter()
@@ -253,7 +322,11 @@ fn chest_stack<R: Rng>(rng: &mut R, labels: &[String], special_label: &str, refs
                 .iter()
                 .map(|&label| {
                     let each = total(label) / count as f64;
-                    let each = if converted { (each * 5.0).round().max(1.0) / 5.0 } else { each.round().max(1.0) };
+                    let each = if converted {
+                        (each * 5.0).round().max(1.0) / 5.0
+                    } else {
+                        each.round().max(1.0)
+                    };
                     (label.to_string(), each)
                 })
                 .collect()
@@ -261,10 +334,21 @@ fn chest_stack<R: Rng>(rng: &mut R, labels: &[String], special_label: &str, refs
         .collect();
     let key = format!(
         "{band}:{}:{}",
-        options.iter().map(|option| option.keys().cloned().collect::<Vec<_>>().join("+")).collect::<Vec<_>>().join("|"),
+        options
+            .iter()
+            .map(|option| option.keys().cloned().collect::<Vec<_>>().join("+"))
+            .collect::<Vec<_>>()
+            .join("|"),
         rng.random_range(0..1000)
     );
-    (key, Chest { count, band, options })
+    (
+        key,
+        Chest {
+            count,
+            band,
+            options,
+        },
+    )
 }
 
 pub struct Built {
@@ -280,9 +364,15 @@ pub fn build(a: &[f64], seed: u64, full: bool) -> Built {
 /// `given` is the upgrades of the case, in place of the ones the axes would pick
 pub fn build_with(a: &[f64], seed: u64, full: bool, given: Option<Vec<OneUpgradeInput>>) -> Built {
     let mut rng = StdRng::seed_from_u64(seed);
-    let (tier, express) = pick(a[axis("tier")], &[(0.45, (0, false)), (0.2, (0, true)), (0.35, (1, false))]);
-    let labels: Vec<String> =
-        MATS.iter().filter(|mat| mat.1.contains(&tier)).map(|mat| mat.0.to_string()).collect();
+    let (tier, express) = pick(
+        a[axis("tier")],
+        &[(0.45, (0, false)), (0.2, (0, true)), (0.35, (1, false))],
+    );
+    let labels: Vec<String> = MATS
+        .iter()
+        .filter(|mat| mat.1.contains(&tier))
+        .map(|mat| mat.0.to_string())
+        .collect();
     let special_label = SPECIAL_LABELS[tier];
 
     // which upgrades
@@ -300,30 +390,52 @@ pub fn build_with(a: &[f64], seed: u64, full: bool, given: Option<Vec<OneUpgrade
             out
         }
     };
-    let adv_pieces: Vec<usize> = pieces.iter().copied().filter(|piece| tier == 0 && *piece < 6).collect();
+    let adv_pieces: Vec<usize> = pieces
+        .iter()
+        .copied()
+        .filter(|piece| tier == 0 && *piece < 6)
+        .collect();
     let (per_piece, adv_per_piece): (Vec<usize>, Vec<usize>) = if full {
         (vec![25; pieces.len()], vec![4; adv_pieces.len()])
     } else {
         let n = log_uniform(a[axis("size")], 1.0, 41.0) as usize;
-        let adv_share = pick(a[axis("adv")], &[(0.5, 0.0), (0.2, 0.25), (0.2, 0.6), (0.1, 1.0)]);
+        let adv_share = pick(
+            a[axis("adv")],
+            &[(0.5, 0.0), (0.2, 0.25), (0.2, 0.6), (0.1, 1.0)],
+        );
         let n_adv = ((n as f64 * adv_share).round() as usize).min(4 * adv_pieces.len());
         let n_normal = (n - n_adv).max((n_adv == 0) as usize);
         let spread = |total: usize, over: usize, cap: usize| -> Vec<usize> {
-            (0..over).map(|slot| (total / over + (slot < total % over) as usize).min(cap)).collect()
+            (0..over)
+                .map(|slot| (total / over + (slot < total % over) as usize).min(cap))
+                .collect()
         };
-        (spread(n_normal, pieces.len(), 25), spread(n_adv, adv_pieces.len().max(1), 4))
+        (
+            spread(n_normal, pieces.len(), 25),
+            spread(n_adv, adv_pieces.len().max(1), 4),
+        )
     };
     let jitter = 4.0 * a[axis("jitter")].powi(2);
     let mut upgrade_info = Vec::new();
     // the lowest upgrade of each piece, the only one that can have been started
     let mut firsts: Vec<usize> = Vec::new();
-    for (&piece, &count) in pieces.iter().zip(&per_piece).filter(|(_, count)| **count > 0) {
+    for (&piece, &count) in pieces
+        .iter()
+        .zip(&per_piece)
+        .filter(|(_, count)| **count > 0)
+    {
         let room = (25 - count) as f64;
-        let start = (a[axis("level")] * room + jitter * normal(&mut rng)).round().clamp(0.0, room) as usize;
+        let start = (a[axis("level")] * room + jitter * normal(&mut rng))
+            .round()
+            .clamp(0.0, room) as usize;
         firsts.push(upgrade_info.len());
         upgrade_info.extend((start..start + count).map(|level| upgrade(piece, level, false)));
     }
-    for (&piece, &count) in adv_pieces.iter().zip(&adv_per_piece).filter(|(_, count)| **count > 0) {
+    for (&piece, &count) in adv_pieces
+        .iter()
+        .zip(&adv_per_piece)
+        .filter(|(_, count)| **count > 0)
+    {
         let start = (a[axis("level")] * (4 - count) as f64).round() as usize;
         firsts.push(upgrade_info.len());
         upgrade_info.extend((start..start + count).map(|block| {
@@ -341,7 +453,16 @@ pub fn build_with(a: &[f64], seed: u64, full: bool, given: Option<Vec<OneUpgrade
         materials: labels
             .iter()
             .map(|label| {
-                (label.clone(), OneMaterial { bound: 0.0, roster: 0.0, tradable: 0.0, taxed_price: 0.0, market_price: 0.0 })
+                (
+                    label.clone(),
+                    OneMaterial {
+                        bound: 0.0,
+                        roster: 0.0,
+                        tradable: 0.0,
+                        taxed_price: 0.0,
+                        market_price: 0.0,
+                    },
+                )
             })
             .collect(),
         material_labels: labels.clone(),
@@ -390,7 +511,12 @@ pub fn build_with(a: &[f64], seed: u64, full: bool, given: Option<Vec<OneUpgrade
         let info = &mut payload.upgrade_info[index];
         info.unlocked = true;
         if !this.is_normal_honing {
-            info.adv_progress = Some((rng.random_range(1..90), rng.random_range(0..6), false, false));
+            info.adv_progress = Some((
+                rng.random_range(1..90),
+                rng.random_range(0..6),
+                false,
+                false,
+            ));
             continue;
         }
         let pity = this.normal_dist.len() - 1;
@@ -413,7 +539,8 @@ pub fn build_with(a: &[f64], seed: u64, full: bool, given: Option<Vec<OneUpgrade
         .sum();
     let free = a[axis("free_taps")];
     if free >= 0.25 {
-        payload.special_budget = (special_scale * log_uniform((free - 0.25) / 0.75, 0.01, 1.5)).round() as i64;
+        payload.special_budget =
+            (special_scale * log_uniform((free - 0.25) / 0.75, 0.01, 1.5)).round() as i64;
     }
 
     // what is owned: a quantile of what the default state uses
@@ -424,12 +551,20 @@ pub fn build_with(a: &[f64], seed: u64, full: bool, given: Option<Vec<OneUpgrade
     for this in &state_bundle.upgrade_arr {
         let juice_info = &state_bundle.prep_output.juice_info;
         let (ids, taps) = (
-            if this.is_normal_honing { &juice_info.normal_uindex_to_id } else { &juice_info.adv_uindex_to_id },
+            if this.is_normal_honing {
+                &juice_info.normal_uindex_to_id
+            } else {
+                &juice_info.adv_uindex_to_id
+            },
             mean_taps(this),
         );
         for &id in &ids[this.piece_type_usize][this.upgrade_index] {
             let one = juice_info.access(id, this.piece_type_usize, this.upgrade_index);
-            let amount = if this.is_normal_honing { one.normal_amt_used } else { one.adv_amt_used };
+            let amount = if this.is_normal_honing {
+                one.normal_amt_used
+            } else {
+                one.adv_amt_used
+            };
             typical[NUM_BASE_MATS + id] += amount as f64 * taps;
         }
     }
@@ -455,7 +590,11 @@ pub fn build_with(a: &[f64], seed: u64, full: bool, given: Option<Vec<OneUpgrade
         let (low, high) = (lowest[row] as f64, highest[row] as f64);
         let total = if row >= NUM_BASE_MATS {
             let noise = (0.5 * normal(&mut rng)).exp();
-            if juice_owned < 0.3 { 0.0 } else { typical[row] * noise * log_uniform((juice_owned - 0.3) / 0.7, 0.05, 3.0) }
+            if juice_owned < 0.3 {
+                0.0
+            } else {
+                typical[row] * noise * log_uniform((juice_owned - 0.3) / 0.7, 0.05, 3.0)
+            }
         } else if wealth < 0.08 || high == 0.0 {
             0.0
         } else if wealth > 0.92 {
@@ -486,7 +625,16 @@ pub fn build_with(a: &[f64], seed: u64, full: bool, given: Option<Vec<OneUpgrade
         if row == GOLD {
             set_price(mat, 1.0);
         } else if base > 0.0 {
-            set_price(mat, base * market * noise * if row >= NUM_BASE_MATS { juice_market } else { 1.0 });
+            set_price(
+                mat,
+                base * market
+                    * noise
+                    * if row >= NUM_BASE_MATS {
+                        juice_market
+                    } else {
+                        1.0
+                    },
+            );
         }
     }
 
@@ -502,7 +650,10 @@ pub fn build_with(a: &[f64], seed: u64, full: bool, given: Option<Vec<OneUpgrade
         special: special_scale * 0.3,
         max_used: labels.iter().cloned().zip(max_used(&payload)).collect(),
         special_scale,
-        shares: [base_share, log_uniform(a[axis("chest_optional")], 0.02, 3.0)],
+        shares: [
+            base_share,
+            log_uniform(a[axis("chest_optional")], 0.02, 3.0),
+        ],
     };
     let stacks = a[axis("chests")];
     if stacks >= 0.12 {
@@ -549,8 +700,10 @@ pub fn normal_used(best: &StateBundle, index: usize, taps: usize) -> Vec<f64> {
     // the pity tap takes no juice
     for count in (0..taps).filter(|count| count + 2 < this.normal_dist.len()) {
         for &id in this.state.get(count).into_iter().flatten() {
-            used[prep.table.juice_row(id)] +=
-                prep.juice_info.access(id, this.piece_type_usize, this.upgrade_index).normal_amt_used as f64;
+            used[prep.table.juice_row(id)] += prep
+                .juice_info
+                .access(id, this.piece_type_usize, this.upgrade_index)
+                .normal_amt_used as f64;
         }
     }
     used
@@ -570,7 +723,9 @@ fn adv_used<R: Rng>(best: &StateBundle, index: usize, rng: &mut R) -> Vec<f64> {
         used[row] += this.costs[row] * taps as f64;
     }
     for &id in &juice_info.adv_uindex_to_id[this.piece_type_usize][this.upgrade_index] {
-        let amount = juice_info.access(id, this.piece_type_usize, this.upgrade_index).adv_amt_used;
+        let amount = juice_info
+            .access(id, this.piece_type_usize, this.upgrade_index)
+            .adv_amt_used;
         let times = if id <= 1 { juice } else { scroll };
         used[prep.table.juice_row(id)] += (amount * times as i64) as f64;
     }
@@ -610,7 +765,9 @@ pub fn play<R: Rng>(
             kind = "free";
             normal_used(best, index, 0)
         } else {
-            let succeeds_on = WeightedIndex::new(this.normal_dist.iter()).unwrap().sample(rng);
+            let succeeds_on = WeightedIndex::new(this.normal_dist.iter())
+                .unwrap()
+                .sample(rng);
             let taps = if partials && succeeds_on > 1 && rng.random_bool(0.25) {
                 kind = "partial";
                 rng.random_range(1..succeeds_on)
@@ -656,15 +813,26 @@ fn tap<R: Rng>(payload: &mut Payload, rng: &mut R) -> &'static str {
 
 /// whether what is owned covers these amounts of the base materials; a juice short is bought
 fn covers(payload: &Payload, best: &StateBundle, used: &[f64]) -> bool {
-    best.prep_output.table.labels.iter().zip(used).take(NUM_BASE_MATS).all(|(label, amount)| {
-        let mat = &payload.materials[label];
-        mat.market_price <= 0.0 || mat.bound + mat.roster + mat.tradable >= *amount
-    })
+    best.prep_output
+        .table
+        .labels
+        .iter()
+        .zip(used)
+        .take(NUM_BASE_MATS)
+        .all(|(label, amount)| {
+            let mat = &payload.materials[label];
+            mat.market_price <= 0.0 || mat.bound + mat.roster + mat.tradable >= *amount
+        })
 }
 
 /// The player does this upgrade for as long as what is owned covers the next tap. False where
 /// it stopped short, with the taps that were paid for kept as progress.
-fn hone_owned<R: Rng>(payload: &mut Payload, best: &StateBundle, index: usize, rng: &mut R) -> bool {
+fn hone_owned<R: Rng>(
+    payload: &mut Payload,
+    best: &StateBundle,
+    index: usize,
+    rng: &mut R,
+) -> bool {
     let this = &best.upgrade_arr[index];
     if !covers(payload, best, &normal_used(best, index, 0)) {
         return false;
@@ -679,8 +847,12 @@ fn hone_owned<R: Rng>(payload: &mut Payload, best: &StateBundle, index: usize, r
             return true;
         }
     }
-    let succeeds_on = WeightedIndex::new(this.normal_dist.iter()).unwrap().sample(rng);
-    let taps = (1..=succeeds_on).take_while(|&taps| covers(payload, best, &normal_used(best, index, taps))).count();
+    let succeeds_on = WeightedIndex::new(this.normal_dist.iter())
+        .unwrap()
+        .sample(rng);
+    let taps = (1..=succeeds_on)
+        .take_while(|&taps| covers(payload, best, &normal_used(best, index, taps)))
+        .count();
     pay(payload, best, &normal_used(best, index, taps));
     if taps == succeeds_on {
         payload.upgrade_info.remove(index);
@@ -701,14 +873,25 @@ pub fn weekly(built: Built, steps: usize, seed: u64, hone: bool) -> (Vec<Payload
     let mut rng = StdRng::seed_from_u64(seed);
     // about thirty weeks of it cover what the default state uses
     let cover = log_uniform(rng.random(), 0.7, 1.6) / 30.0;
-    let optional = if rng.random_bool(0.3) { 0.0 } else { log_uniform(rng.random(), 0.05, 1.0) };
-    let free = if rng.random_bool(0.4) { 0.0 } else { log_uniform(rng.random(), 0.02, 0.5) };
+    let optional = if rng.random_bool(0.3) {
+        0.0
+    } else {
+        log_uniform(rng.random(), 0.05, 1.0)
+    };
+    let free = if rng.random_bool(0.4) {
+        0.0
+    } else {
+        log_uniform(rng.random(), 0.02, 0.5)
+    };
     let labels = built.payload.material_labels.clone();
     let income: Vec<f64> = labels
         .iter()
         .enumerate()
         .map(|(row, label)| {
-            built.refs.used[label] * cover * (0.4 * normal(&mut rng)).exp() * if row >= NUM_BASE_MATS { optional } else { 1.0 }
+            built.refs.used[label]
+                * cover
+                * (0.4 * normal(&mut rng)).exp()
+                * if row >= NUM_BASE_MATS { optional } else { 1.0 }
         })
         .collect();
     let special = built.refs.special_scale * cover * free;
@@ -730,7 +913,8 @@ pub fn weekly(built: Built, steps: usize, seed: u64, hone: bool) -> (Vec<Payload
         }
         let week = out.len() as f64;
         for (label, each) in labels.iter().zip(&income) {
-            next.materials.get_mut(label).unwrap().bound += (week * each).floor() - ((week - 1.0) * each).floor();
+            next.materials.get_mut(label).unwrap().bound +=
+                (week * each).floor() - ((week - 1.0) * each).floor();
         }
         next.special_budget += ((week * special).floor() - ((week - 1.0) * special).floor()) as i64;
         out.push(next);
@@ -768,10 +952,16 @@ fn other_change<R: Rng>(payload: &mut Payload, refs: &Refs, kind: &str, rng: &mu
             let piece = normals.choose(rng).map_or(5, |x| x.0);
             let top = normals.iter().filter(|x| x.0 == piece).map(|x| x.1).max();
             match top {
-                Some(top) if top < 24 && rng.random_bool(0.6) => payload.upgrade_info.push(upgrade(piece, top + 1, false)),
-                Some(top) if payload.upgrade_info.len() > 1 => payload
-                    .upgrade_info
-                    .retain(|info| !(info.is_normal_honing && info.piece_index == piece && info.upgrade_index == top)),
+                Some(top) if top < 24 && rng.random_bool(0.6) => {
+                    payload.upgrade_info.push(upgrade(piece, top + 1, false))
+                }
+                Some(top) if payload.upgrade_info.len() > 1 => {
+                    payload.upgrade_info.retain(|info| {
+                        !(info.is_normal_honing
+                            && info.piece_index == piece
+                            && info.upgrade_index == top)
+                    })
+                }
                 _ => payload.upgrade_info.push(upgrade(piece, 10, false)),
             }
         }
@@ -779,9 +969,13 @@ fn other_change<R: Rng>(payload: &mut Payload, refs: &Refs, kind: &str, rng: &mu
             let keys: Vec<String> = payload.chests.keys().cloned().collect();
             if let Some(key) = keys.choose(rng).filter(|_| rng.random_bool(0.7)) {
                 let chest = payload.chests.get_mut(key).unwrap();
-                chest.count = (chest.count + rng.random_range(-chest.count / 2..=chest.count / 2 + 5)).max(1);
+                chest.count =
+                    (chest.count + rng.random_range(-chest.count / 2..=chest.count / 2 + 5)).max(1);
             } else {
-                let (labels, special_label) = (payload.material_labels.clone(), payload.special_label.clone());
+                let (labels, special_label) = (
+                    payload.material_labels.clone(),
+                    payload.special_label.clone(),
+                );
                 let (key, chest) = chest_stack(rng, &labels, &special_label, refs);
                 payload.chests.insert(key, chest);
             }
@@ -798,10 +992,20 @@ pub fn chain(built: Built, steps: usize, seed: u64, chests: bool) -> (Vec<Payloa
         let mut next = out.last().unwrap().clone();
         let kind = pick(
             rng.random(),
-            &[(0.7, "tap"), (0.1, "income"), (0.08, "price"), (0.06, "goal"), (0.06, "chest")],
+            &[
+                (0.7, "tap"),
+                (0.1, "income"),
+                (0.08, "price"),
+                (0.06, "goal"),
+                (0.06, "chest"),
+            ],
         );
         // only for a set generated with chests
-        let kind = if kind == "chest" && !chests { "income" } else { kind };
+        let kind = if kind == "chest" && !chests {
+            "income"
+        } else {
+            kind
+        };
         let kind = if kind == "tap" {
             tap(&mut next, &mut rng)
         } else {
@@ -815,11 +1019,17 @@ pub fn chain(built: Built, steps: usize, seed: u64, chests: bool) -> (Vec<Payloa
 }
 
 pub fn sobol(index: u32, seed: u32) -> Vec<f64> {
-    (0..AXES.len() as u32).map(|dimension| sobol_burley::sample(index, dimension, seed) as f64).collect()
+    (0..AXES.len() as u32)
+        .map(|dimension| sobol_burley::sample(index, dimension, seed) as f64)
+        .collect()
 }
 
 pub fn meta(a: &[f64], kinds: &[String]) -> Map<String, Value> {
-    let axes: Map<String, Value> = AXES.iter().zip(a).map(|(name, value)| (name.to_string(), json!(value))).collect();
+    let axes: Map<String, Value> = AXES
+        .iter()
+        .zip(a)
+        .map(|(name, value)| (name.to_string(), json!(value)))
+        .collect();
     let mut out = Map::new();
     out.insert("axes".to_string(), Value::Object(axes));
     out.insert("kinds".to_string(), json!(kinds));
@@ -860,7 +1070,10 @@ fn sweeps(chests: bool) -> Vec<(String, Vec<f64>, u64)> {
         ("juice_owned", &[0.0, 0.4, 0.7, 1.0]),
         ("juice_price", &[0.0, 0.25, 0.5, 0.75, 1.0]),
         ("free_taps", &[0.0, 0.3, 0.55, 0.8, 1.0]),
-        ("plan", &[0.1, 0.35, 0.55, 0.65, 0.75, 0.82, 0.87, 0.92, 0.97]),
+        (
+            "plan",
+            &[0.1, 0.35, 0.55, 0.65, 0.75, 0.82, 0.87, 0.92, 0.97],
+        ),
         ("chests", &[0.2, 0.5, 0.7, 0.9]),
         ("chest_base", &[0.0, 0.4, 0.79, 0.9, 0.999]),
         ("chest_optional", &[0.0, 0.25, 0.5, 0.75, 0.999]),
@@ -873,14 +1086,21 @@ fn sweeps(chests: bool) -> Vec<(String, Vec<f64>, u64)> {
         base[axis("adv")] = 0.6;
         base[axis("progress")] = 0.0;
         base[axis("chests")] = 0.0;
-        for (name, levels) in LEVELS.into_iter().filter(|(name, _)| chests || !name.starts_with("chest")) {
+        for (name, levels) in LEVELS
+            .into_iter()
+            .filter(|(name, _)| chests || !name.starts_with("chest"))
+        {
             for (level, value) in levels.iter().enumerate() {
                 let mut a = base.clone();
                 if name.starts_with("chest_") {
                     a[axis("chests")] = 0.6;
                 }
                 a[axis(name)] = *value;
-                out.push((format!("sweep_{anchor}_{name}_{level}"), a, 1000 + anchor as u64));
+                out.push((
+                    format!("sweep_{anchor}_{name}_{level}"),
+                    a,
+                    1000 + anchor as u64,
+                ));
             }
         }
     }
@@ -916,13 +1136,24 @@ pub fn generate(spec: &Spec) -> Vec<Scenario> {
                     let start = (sobol_burley::sample(index, 40, 3) as f64 - 0.4).max(0.0);
                     for label in built.payload.material_labels.iter().take(NUM_BASE_MATS) {
                         let mat = built.payload.materials.get_mut(label).unwrap();
-                        (mat.bound, mat.roster, mat.tradable) =
-                            ((mat.bound * start).floor(), (mat.roster * start).floor(), (mat.tradable * start).floor());
+                        (mat.bound, mat.roster, mat.tradable) = (
+                            (mat.bound * start).floor(),
+                            (mat.roster * start).floor(),
+                            (mat.tradable * start).floor(),
+                        );
                     }
                 }
-                let name = format!("week_{}_{index:04}_{}", if hone { "hone" } else { "inc" }, tag(&built.payload));
+                let name = format!(
+                    "week_{}_{index:04}_{}",
+                    if hone { "hone" } else { "inc" },
+                    tag(&built.payload)
+                );
                 let (steps, kinds) = weekly(built, steps, index as u64, hone);
-                Scenario { name, steps, meta: meta(&a, &kinds) }
+                Scenario {
+                    name,
+                    steps,
+                    meta: meta(&a, &kinds),
+                }
             }));
         }
     }
@@ -930,7 +1161,11 @@ pub fn generate(spec: &Spec) -> Vec<Scenario> {
         todo.push(Box::new(move || {
             let a = sobol(index, 1);
             let payload = build(&a, index as u64, false).payload;
-            Scenario { name: format!("single_{index:04}_{}", tag(&payload)), steps: vec![payload], meta: meta(&a, &[]) }
+            Scenario {
+                name: format!("single_{index:04}_{}", tag(&payload)),
+                steps: vec![payload],
+                meta: meta(&a, &[]),
+            }
         }));
     }
     let steps = spec.steps;
@@ -942,14 +1177,22 @@ pub fn generate(spec: &Spec) -> Vec<Scenario> {
             let built = build(&a, 1_000_000 + index as u64, false);
             let name = format!("chain_{index:04}_{}", tag(&built.payload));
             let (steps, kinds) = chain(built, steps, index as u64, chests);
-            Scenario { name, steps, meta: meta(&a, &kinds) }
+            Scenario {
+                name,
+                steps,
+                meta: meta(&a, &kinds),
+            }
         }));
     }
     if spec.sweeps {
         for (name, a, seed) in sweeps(spec.chests) {
             todo.push(Box::new(move || {
                 let payload = build(&a, seed, false).payload;
-                Scenario { name: format!("{name}_{}", tag(&payload)), steps: vec![payload], meta: meta(&a, &[]) }
+                Scenario {
+                    name: format!("{name}_{}", tag(&payload)),
+                    steps: vec![payload],
+                    meta: meta(&a, &[]),
+                }
             }));
         }
     }
@@ -962,7 +1205,10 @@ pub fn generate(spec: &Spec) -> Vec<Scenario> {
                     a[axis("wealth")] = wealth;
                     let payload = build(&a, 7, true).payload;
                     Scenario {
-                        name: format!("stress_{tier_name}_{wealth_name}_n{}", payload.upgrade_info.len()),
+                        name: format!(
+                            "stress_{tier_name}_{wealth_name}_n{}",
+                            payload.upgrade_info.len()
+                        ),
                         steps: vec![payload],
                         meta: meta(&a, &[]),
                     }

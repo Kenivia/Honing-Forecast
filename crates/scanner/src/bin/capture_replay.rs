@@ -34,7 +34,10 @@ fn option(args: &[String], name: &str) -> Option<String> {
 
 fn key(address: &SlotAddress) -> String {
     let (row, column) = address.pos_in_inv;
-    format!("{:?} {} {row},{column}", address.inventory_type, address.page_num)
+    format!(
+        "{:?} {} {row},{column}",
+        address.inventory_type, address.page_num
+    )
 }
 
 // in the same order on every run
@@ -100,7 +103,9 @@ fn main() {
 
     let file = fs::read(path).unwrap();
     let mut records = read_records(&file);
-    let Some(Record::Start(start)) = records.next() else { panic!("no start record") };
+    let Some(Record::Start(start)) = records.next() else {
+        panic!("no start record")
+    };
     println!("{start:?}");
     let game = (start.game_width, start.game_height);
     let forced = forced || start.forced_21_9;
@@ -140,7 +145,10 @@ fn main() {
         }
         if ocr && covered {
             for (id, text) in &scan.ocr_results {
-                println!("scan {index}: line {id} back as {text:?}  ({})", lines.get(id).map_or("", |x| x));
+                println!(
+                    "scan {index}: line {id} back as {text:?}  ({})",
+                    lines.get(id).map_or("", |x| x)
+                );
             }
         }
         state.replay_scan(scan);
@@ -149,7 +157,11 @@ fn main() {
             seen.entry(hover.id).or_insert((index, index)).1 = index;
             let beside = hover.candidates.iter().any(|x| Some(key(&x.0)) == slot);
             if beside && seen[&hover.id].0 == index {
-                println!("scan {index}: hover {} comes up beside {}", hover.id, slot.as_ref().unwrap());
+                println!(
+                    "scan {index}: hover {} comes up beside {}",
+                    hover.id,
+                    slot.as_ref().unwrap()
+                );
             }
         }
         // the reads sent off in this scan are the last ones of the list
@@ -169,7 +181,9 @@ fn main() {
             ];
             for (kind, jobs) in kinds {
                 for (line, id) in jobs.into_iter().flatten().enumerate() {
-                    lines.entry(id).or_insert(format!("hover {} {kind} line {line}", read.hover));
+                    lines
+                        .entry(id)
+                        .or_insert(format!("hover {} {kind} line {line}", read.hover));
                 }
             }
         }
@@ -177,10 +191,18 @@ fn main() {
         for job in &state.ocr_queue {
             let what = lines.entry(job.id).or_insert("a slot's number".to_string());
             if ocr && covered {
-                println!("scan {index}: line {} sent, {what}, {}x{}", job.id, job.line.crop.width(), job.line.crop.height());
+                println!(
+                    "scan {index}: line {} sent, {what}, {}x{}",
+                    job.id,
+                    job.line.crop.width(),
+                    job.line.crop.height()
+                );
             }
             if let Some(folder) = dump.as_ref().filter(|_| covered) {
-                job.line.crop.save(format!("{folder}/line-{:05}.png", job.id)).unwrap();
+                job.line
+                    .crop
+                    .save(format!("{folder}/line-{:05}.png", job.id))
+                    .unwrap();
             }
         }
         if let Some(folder) = dump.as_ref().filter(|_| covered && scanned) {
@@ -190,12 +212,26 @@ fn main() {
         if reread {
             sim.step(&mut state, index);
         }
-        let ended: Vec<Hover> = sim.ended.drain(..).chain(std::mem::take(state.hover_log.as_mut().unwrap())).collect();
+        let ended: Vec<Hover> = sim
+            .ended
+            .drain(..)
+            .chain(std::mem::take(state.hover_log.as_mut().unwrap()))
+            .collect();
         for hover in ended {
             let (first, last) = seen[&hover.id];
-            println!("hover {} on scans {first}-{last}, done at {index}\n      {}\n{}", hover.id, describe(&state, &hover), votes(&hover));
+            println!(
+                "hover {} on scans {first}-{last}, done at {index}\n      {}\n{}",
+                hover.id,
+                describe(&state, &hover),
+                votes(&hover)
+            );
         }
-        if let Some(address) = state.slot_infos.keys().find(|x| Some(key(x)) == slot).copied() {
+        if let Some(address) = state
+            .slot_infos
+            .keys()
+            .find(|x| Some(key(x)) == slot)
+            .copied()
+        {
             let now = slot_line(&state, &address);
             if now != slot_was {
                 println!("scan {index}: slot {now}");
@@ -210,7 +246,10 @@ fn main() {
         sim.finish(&mut state, end);
         eprintln!("{}", sim.summary());
     }
-    println!("{} scans, {skipped} of them skipped as still", state.replayed);
+    println!(
+        "{} scans, {skipped} of them skipped as still",
+        state.replayed
+    );
     match state.replay_mismatch {
         Some(scan) => println!("DIFFERS from the recording, first at scan {scan}"),
         None => println!("every scan ended as recorded"),
@@ -218,7 +257,12 @@ fn main() {
     // still on screen, or still waiting for texts, when the recording stopped
     for hover in state.hover.iter().chain(&state.past_hovers) {
         let (first, last) = seen[&hover.id];
-        println!("hover {} on scans {first}-{last}, not done\n      {}\n{}", hover.id, describe(&state, hover), votes(hover));
+        println!(
+            "hover {} on scans {first}-{last}, not done\n      {}\n{}",
+            hover.id,
+            describe(&state, hover),
+            votes(hover)
+        );
     }
     println!("{} chests", state.chests.len());
     for chest in &state.chests {

@@ -41,5 +41,9 @@ pub fn timed<T>(name: &'static str, f: impl FnOnce() -> T) -> T {
 }
 
 pub fn take() -> Vec<(&'static str, f64, u32)> {
-    TIMINGS.lock().drain().map(|(name, (total, calls))| (name, total, calls)).collect()
+    TIMINGS
+        .lock()
+        .drain()
+        .map(|(name, (total, calls))| (name, total, calls))
+        .collect()
 }

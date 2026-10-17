@@ -6,8 +6,8 @@ use crate::state_bundle::StateEssence;
 use crate::upgrade::PieceType::Armor;
 use ordered_float::OrderedFloat;
 use priority_queue::DoublePriorityQueue;
-use rand::SeedableRng;
 use rand::Rng;
+use rand::SeedableRng;
 use rand::rngs::SmallRng;
 
 pub struct SolverStateBundle {

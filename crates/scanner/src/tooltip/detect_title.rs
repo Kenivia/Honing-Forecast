@@ -232,6 +232,6 @@ impl ScannerState {
         regions.push(windows);
         regions
             .into_iter()
-            .find_map(|region| find_title_bar(& self.buffer, s, &headers, region))
+            .find_map(|region| find_title_bar(&self.buffer, s, &headers, region))
     }
 }

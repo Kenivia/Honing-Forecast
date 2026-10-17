@@ -72,8 +72,15 @@ pub struct Outline {
 
 impl Outline {
     pub fn of(prob_dist: &ProbDist) -> Outline {
-        let front = prob_dist.iter().take_while(|p| p.abs() < IGNORE_PROB_TOL).count();
-        let back = prob_dist.iter().rev().take_while(|p| p.abs() < IGNORE_PROB_TOL).count();
+        let front = prob_dist
+            .iter()
+            .take_while(|p| p.abs() < IGNORE_PROB_TOL)
+            .count();
+        let back = prob_dist
+            .iter()
+            .rev()
+            .take_while(|p| p.abs() < IGNORE_PROB_TOL)
+            .count();
         assert!(front != prob_dist.len());
         let live = &prob_dist[front..prob_dist.len() - back];
         let (mut sum, mut first, mut second, mut third, mut fourth) = (0.0, 0.0, 0.0, 0.0, 0.0);
@@ -88,7 +95,8 @@ impl Outline {
         let (mean, second, third, fourth) = (first / sum, second / sum, third / sum, fourth / sum);
         let mu2 = (second - mean * mean).max(0.0);
         let mu3 = third - 3.0 * second * mean + 2.0 * mean * mean * mean;
-        let mu4 = fourth - 4.0 * third * mean + 6.0 * second * mean * mean - 3.0 * mean * mean * mean * mean;
+        let mu4 = fourth - 4.0 * third * mean + 6.0 * second * mean * mean
+            - 3.0 * mean * mean * mean * mean;
         Outline {
             front,
             len: live.len(),
@@ -103,7 +111,14 @@ impl Support {
     /// The support that starts here and rises by the gap an outcome, which is every base
     /// material's. Nothing to collapse where the gap is real and no probability is missing,
     /// and what is kept of it comes from the outline.
-    pub fn update_even(&mut self, start: f64, gap: f64, state_hash: u64, prob_dist: &ProbDist, outline: &Outline) {
+    pub fn update_even(
+        &mut self,
+        start: f64,
+        gap: f64,
+        state_hash: u64,
+        prob_dist: &ProbDist,
+        outline: &Outline,
+    ) {
         self.support.clear();
         let mut value = start;
         for index in 0..prob_dist.len() {
@@ -121,8 +136,12 @@ impl Support {
         }
         let live = outline.front..outline.front + outline.len;
         self.collapsed_pair.clear();
-        self.collapsed_pair
-            .extend(self.support[live.clone()].iter().copied().zip(prob_dist[live.clone()].iter().copied()));
+        self.collapsed_pair.extend(
+            self.support[live.clone()]
+                .iter()
+                .copied()
+                .zip(prob_dist[live.clone()].iter().copied()),
+        );
         self.min_value = self.support[live.start];
         self.max_value = self.support[live.end - 1];
         self.skipped_pair[0].0 = self.support[0];
@@ -174,11 +193,15 @@ impl Support {
     }
 
     fn summarise(&mut self) {
-        self.mean = self.collapsed_pair.iter().fold(0.0, |prev, (s, p)| prev + s * p);
+        self.mean = self
+            .collapsed_pair
+            .iter()
+            .fold(0.0, |prev, (s, p)| prev + s * p);
         let low = self.collapsed_pair[0].0;
         self.arithmetic = self.collapsed_pair.len() > 1
             && self.collapsed_pair.iter().enumerate().all(|(index, pair)| {
-                (pair.0 - (low + index as f64 * self.gap_size)).abs() <= 1e-9 * pair.0.abs().max(1.0)
+                (pair.0 - (low + index as f64 * self.gap_size)).abs()
+                    <= 1e-9 * pair.0.abs().max(1.0)
             });
         self.zero = self.one_cumulant(0.0, false);
     }

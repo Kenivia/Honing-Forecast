@@ -62,12 +62,20 @@ impl Essence {
     }
 
     pub fn apply(&self, state_bundle: &mut StateBundle) {
-        for (state, upgrade) in self.state_arr.iter().zip(state_bundle.upgrade_arr.iter_mut()) {
+        for (state, upgrade) in self
+            .state_arr
+            .iter()
+            .zip(state_bundle.upgrade_arr.iter_mut())
+        {
             upgrade.state.update_payload(state.clone());
         }
         state_bundle.special_state = self.special_state.clone();
         // a snapshot from before chests sends none
-        if self.chest_states.keys().eq(state_bundle.chest_states.keys()) {
+        if self
+            .chest_states
+            .keys()
+            .eq(state_bundle.chest_states.keys())
+        {
             state_bundle.set_chest_state(&self.chest_states);
         }
     }
@@ -103,7 +111,13 @@ pub fn tuning_with(overrides: &Map<String, Value>) -> Tuning {
     serde_json::from_value(value).unwrap()
 }
 
-fn result(step: usize, source: String, tuning: &Tuning, state_bundle: &StateBundle, probe: Probe) -> StepResult {
+fn result(
+    step: usize,
+    source: String,
+    tuning: &Tuning,
+    state_bundle: &StateBundle,
+    probe: Probe,
+) -> StepResult {
     StepResult {
         step,
         source,
@@ -119,8 +133,18 @@ fn result(step: usize, source: String, tuning: &Tuning, state_bundle: &StateBund
             .zip(probe.data.counts)
             .map(|(name, count)| (name.to_string(), count))
             .collect(),
-        rows: probe.data.rows.into_iter().map(|(iter, key, v)| (iter, key.to_string(), v)).collect(),
-        texts: probe.data.texts.into_iter().map(|(iter, key, v)| (iter, key.to_string(), v)).collect(),
+        rows: probe
+            .data
+            .rows
+            .into_iter()
+            .map(|(iter, key, v)| (iter, key.to_string(), v))
+            .collect(),
+        texts: probe
+            .data
+            .texts
+            .into_iter()
+            .map(|(iter, key, v)| (iter, key.to_string(), v))
+            .collect(),
         mc: Vec::new(),
     }
 }
@@ -132,7 +156,11 @@ fn emit(out: &StepResult) {
 }
 
 fn new_probe(detail: bool) -> Probe {
-    if detail { Probe::detailed() } else { Probe::default() }
+    if detail {
+        Probe::detailed()
+    } else {
+        Probe::default()
+    }
 }
 
 /// CPU seconds of one evaluation, repeated for long enough to measure
@@ -153,7 +181,8 @@ pub fn run_job(job: &Job) {
 
     for (step, payload) in job.scenario.steps.iter().enumerate() {
         // a step gets the same seed whether or not it is run as part of a chain
-        let mut rng = StdRng::seed_from_u64(job.seed.wrapping_mul(1_000_003).wrapping_add(step as u64));
+        let mut rng =
+            StdRng::seed_from_u64(job.seed.wrapping_mul(1_000_003).wrapping_add(step as u64));
         let mut filled = payload.clone();
         adv_table::fill(&mut filled);
         let mut state_bundle = StateBundle::init_from_payload(filled);
@@ -181,7 +210,10 @@ pub fn run_job(job: &Job) {
                 out.wall_s = wall_s;
                 out.eval_s = Some(eval_s);
                 // distributions the table did not have, which should be none
-                out.counters.insert("AdvMiss".to_string(), (best.adv_cache.len() - adv_known) as i64);
+                out.counters.insert(
+                    "AdvMiss".to_string(),
+                    (best.adv_cache.len() - adv_known) as i64,
+                );
                 out.blob_bytes = solved.blob.len();
                 if let Some(spec) = &job.mc {
                     out.mc = check(&mut best, spec, &mut rng);
@@ -198,7 +230,10 @@ pub fn run_job(job: &Job) {
                     let (source, mut this) = if index == 0 {
                         ("given".to_string(), state_bundle.clone())
                     } else {
-                        (format!("scramble {index}"), scramble(&mut rng, state_bundle.clone(), 20))
+                        (
+                            format!("scramble {index}"),
+                            scramble(&mut rng, state_bundle.clone(), 20),
+                        )
                     };
                     let mut probe = new_probe(job.detail);
                     this.metric = this.metric_router(&mut probe);
@@ -228,7 +263,10 @@ mod tests {
         state_bundle.tuning.max_iters = 300;
         let mut rng = StdRng::seed_from_u64(seed);
         let best = solve(&mut rng, state_bundle, None, &mut Probe::default()).best;
-        (best.metric, serde_json::to_string(&Essence::of(&best)).unwrap())
+        (
+            best.metric,
+            serde_json::to_string(&Essence::of(&best)).unwrap(),
+        )
     }
 
     /// comparing variants depends on a seed giving the same run every time
@@ -250,7 +288,11 @@ mod tests {
             let mut rng = StdRng::seed_from_u64(1);
             let mut scrambled = scramble(&mut rng, state_bundle, 20);
             for row in check(&mut scrambled, &spec, &mut rng) {
-                assert!(row.pass, "{} {} {} {}", row.material, row.analytic, row.mean, row.se);
+                assert!(
+                    row.pass,
+                    "{} {} {} {}",
+                    row.material, row.analytic, row.mean, row.se
+                );
             }
         }
     }

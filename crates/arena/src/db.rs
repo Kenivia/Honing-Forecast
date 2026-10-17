@@ -41,14 +41,19 @@ pub fn open(path: &Path) -> Connection {
     let conn = Connection::open(path).unwrap();
     conn.execute_batch(SCHEMA).unwrap();
     // added later: metric_ref with every leftover worthless. Fails where it is already there.
-    conn.execute("ALTER TABLE run ADD COLUMN gross REAL", []).ok();
+    conn.execute("ALTER TABLE run ADD COLUMN gross REAL", [])
+        .ok();
     // and what the state uses on average, at market price
-    conn.execute("ALTER TABLE run ADD COLUMN flow REAL", []).ok();
+    conn.execute("ALTER TABLE run ADD COLUMN flow REAL", [])
+        .ok();
     // and a solve's wall_s split into evaluating and the optimizer deciding
-    conn.execute("ALTER TABLE run ADD COLUMN eval_s REAL", []).ok();
-    conn.execute("ALTER TABLE run ADD COLUMN decide_s REAL", []).ok();
+    conn.execute("ALTER TABLE run ADD COLUMN eval_s REAL", [])
+        .ok();
+    conn.execute("ALTER TABLE run ADD COLUMN decide_s REAL", [])
+        .ok();
     // and whether metric_ref is of `Tuning::reference`, not of the default of the time
-    conn.execute("ALTER TABLE run ADD COLUMN ref_reference INTEGER", []).ok();
+    conn.execute("ALTER TABLE run ADD COLUMN ref_reference INTEGER", [])
+        .ok();
     conn
 }
 
@@ -93,7 +98,12 @@ pub fn add_session(conn: &Connection, git_sha: &str, args: &str) -> i64 {
 
 /// the latest session started by exactly these arguments
 pub fn session_with_args(conn: &Connection, args: &str) -> Option<i64> {
-    conn.query_row("SELECT MAX(id) FROM session WHERE args = ?1", [args], |row| row.get(0)).unwrap()
+    conn.query_row(
+        "SELECT MAX(id) FROM session WHERE args = ?1",
+        [args],
+        |row| row.get(0),
+    )
+    .unwrap()
 }
 
 /// (variant, step, seed, chained) of every row of a session. A job with a row for its first
@@ -101,7 +111,14 @@ pub fn session_with_args(conn: &Connection, args: &str) -> Option<i64> {
 pub fn finished_jobs(conn: &Connection, session_id: i64) -> HashSet<(String, i64, u64, bool)> {
     conn.prepare("SELECT DISTINCT variant, step_id, seed, chained FROM run WHERE session_id = ?1")
         .unwrap()
-        .query_map([session_id], |row| Ok((row.get(0)?, row.get(1)?, row.get::<_, i64>(2)? as u64, row.get(3)?)))
+        .query_map([session_id], |row| {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get::<_, i64>(2)? as u64,
+                row.get(3)?,
+            ))
+        })
         .unwrap()
         .map(|row| row.unwrap())
         .collect()
@@ -147,7 +164,13 @@ pub struct RunKey<'a> {
     pub chained: bool,
 }
 
-pub fn add_run(conn: &Connection, key: &RunKey, out: &StepResult, (metric_ref, gross, flow): (f64, f64, f64), samples: usize) {
+pub fn add_run(
+    conn: &Connection,
+    key: &RunKey,
+    out: &StepResult,
+    (metric_ref, gross, flow): (f64, f64, f64),
+    samples: usize,
+) {
     conn.execute(
         "INSERT INTO run(session_id, snapshot_id, variant, step_id, kind, source, seed, chained,
             tuning, cpu_s, wall_s, metric, metric_ref, state, blob_bytes, counters, gross, flow,

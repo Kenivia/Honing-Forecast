@@ -20,7 +20,10 @@ impl Selection {
             values.push(session.to_string());
         }
         if !self.variants.is_empty() {
-            clause += &format!(" AND r.variant IN ({})", vec!["?"; self.variants.len()].join(","));
+            clause += &format!(
+                " AND r.variant IN ({})",
+                vec!["?"; self.variants.len()].join(",")
+            );
             values.extend(self.variants.iter().cloned());
         }
         (clause, values)
@@ -38,7 +41,8 @@ fn median(values: &[f64]) -> f64 {
 
 pub fn table(header: &[&str]) -> Table {
     let mut out = Table::new();
-    out.load_style(UTF8_BORDERS_ONLY).set_header(header.to_vec());
+    out.load_style(UTF8_BORDERS_ONLY)
+        .set_header(header.to_vec());
     out
 }
 
@@ -60,7 +64,10 @@ pub fn optimize(conn: &Connection, selection: &Selection, eps: f64) {
     let mut statement = conn
         .prepare("SELECT step_id, MAX(metric_ref) FROM run WHERE kind = 'optimize' AND error IS NULL GROUP BY step_id")
         .unwrap();
-    for row in statement.query_map([], |row| Ok((row.get(0)?, row.get(1)?))).unwrap() {
+    for row in statement
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+        .unwrap()
+    {
         let (step_id, best): (i64, f64) = row.unwrap();
         best_known.insert(step_id, best);
     }
@@ -83,7 +90,8 @@ pub fn optimize(conn: &Connection, selection: &Selection, eps: f64) {
             let step_id: i64 = row.get(4)?;
             let metric_ref: Option<f64> = row.get(6)?;
             let counters: Value =
-                serde_json::from_str(&row.get::<_, Option<String>>(7)?.unwrap_or("{}".to_string())).unwrap();
+                serde_json::from_str(&row.get::<_, Option<String>>(7)?.unwrap_or("{}".to_string()))
+                    .unwrap();
             let best = best_known.get(&step_id).copied().unwrap_or(f64::NAN);
             let run = Run {
                 gap: (best - metric_ref.unwrap_or(f64::NAN)) / best.abs().max(1.0),
@@ -95,20 +103,42 @@ pub fn optimize(conn: &Connection, selection: &Selection, eps: f64) {
                 failed: row.get::<_, Option<String>>(8)?.is_some(),
                 mc_fails: row.get(10)?,
             };
-            Ok(((row.get(0)?, row.get(1)?, row.get(2)?), row.get::<_, String>(3)?, run))
+            Ok((
+                (row.get(0)?, row.get(1)?, row.get(2)?),
+                row.get::<_, String>(3)?,
+                run,
+            ))
         })
         .unwrap();
     for row in rows {
         let (group, variant, run) = row.unwrap();
-        groups.entry(group).or_default().entry(variant).or_default().push(run);
+        groups
+            .entry(group)
+            .or_default()
+            .entry(variant)
+            .or_default()
+            .push(run);
     }
     if groups.is_empty() {
         return;
     }
 
     let mut out = table(&[
-        "scenario", "step", "mode", "variant", "runs", "died", "median gap %", "worst gap %",
-        "hit %", "cpu s", "decide s", "states", "ks", "found at", "mc fails",
+        "scenario",
+        "step",
+        "mode",
+        "variant",
+        "runs",
+        "died",
+        "median gap %",
+        "worst gap %",
+        "hit %",
+        "cpu s",
+        "decide s",
+        "states",
+        "ks",
+        "found at",
+        "mc fails",
     ]);
     // per variant: median gaps, hit rates, cpu
     let mut overall: BTreeMap<String, (Vec<f64>, Vec<f64>, f64, usize, i64)> = BTreeMap::new();
@@ -118,7 +148,11 @@ pub fn optimize(conn: &Connection, selection: &Selection, eps: f64) {
             let gaps = pick(|run| run.gap);
             let finished = gaps.iter().filter(|gap| gap.is_finite()).count().max(1);
             let hit = gaps.iter().filter(|gap| **gap <= eps).count() as f64 / finished as f64;
-            let worst = gaps.iter().copied().filter(|x| x.is_finite()).fold(f64::NAN, f64::max);
+            let worst = gaps
+                .iter()
+                .copied()
+                .filter(|x| x.is_finite())
+                .fold(f64::NAN, f64::max);
             let died = runs.iter().filter(|run| run.failed).count();
             let mc_fails: i64 = runs.iter().map(|run| run.mc_fails).sum();
             let cpu = median(&pick(|run| run.cpu_s));
@@ -149,7 +183,14 @@ pub fn optimize(conn: &Connection, selection: &Selection, eps: f64) {
     }
     println!("{out}");
 
-    let mut out = table(&["variant", "mean median gap %", "mean hit %", "sum cpu s", "died", "mc fails"]);
+    let mut out = table(&[
+        "variant",
+        "mean median gap %",
+        "mean hit %",
+        "sum cpu s",
+        "died",
+        "mc fails",
+    ]);
     for (variant, (gaps, hits, cpu, died, mc_fails)) in overall {
         let mean = |values: &[f64]| values.iter().sum::<f64>() / values.len() as f64;
         out.add_row(vec![
@@ -177,11 +218,13 @@ pub fn verify(conn: &Connection, selection: &Selection) {
         ))
         .unwrap();
     // per variant: cpu, ks, failing rows, |z|, relative error, died
-    let mut variants: BTreeMap<String, (Vec<f64>, Vec<f64>, i64, Vec<f64>, Vec<f64>, usize)> = BTreeMap::new();
+    let mut variants: BTreeMap<String, (Vec<f64>, Vec<f64>, i64, Vec<f64>, Vec<f64>, usize)> =
+        BTreeMap::new();
     let rows = statement
         .query_map(params_from_iter(values.clone()), |row| {
             let counters: Value =
-                serde_json::from_str(&row.get::<_, Option<String>>(2)?.unwrap_or("{}".to_string())).unwrap();
+                serde_json::from_str(&row.get::<_, Option<String>>(2)?.unwrap_or("{}".to_string()))
+                    .unwrap();
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, Option<f64>>(1)?,
@@ -208,8 +251,14 @@ pub fn verify(conn: &Connection, selection: &Selection) {
     }
 
     let mut out = table(&[
-        "variant", "states", "died", "failing rows", "worst |z| total", "worst rel err total",
-        "eval ms", "ks per eval",
+        "variant",
+        "states",
+        "died",
+        "failing rows",
+        "worst |z| total",
+        "worst rel err total",
+        "eval ms",
+        "ks per eval",
     ]);
     for (variant, (cpu, ks, fails, z, rel, died)) in variants {
         let worst = |values: &[f64]| values.iter().copied().fold(0.0, f64::max);
@@ -233,7 +282,18 @@ pub fn verify(conn: &Connection, selection: &Selection) {
              WHERE mc.pass = 0{clause} ORDER BY ABS(mc.z) DESC LIMIT 30"
         ))
         .unwrap();
-    let mut out = table(&["run", "variant", "scenario", "step", "state", "material", "analytic", "monte carlo", "se", "z"]);
+    let mut out = table(&[
+        "run",
+        "variant",
+        "scenario",
+        "step",
+        "state",
+        "material",
+        "analytic",
+        "monte carlo",
+        "se",
+        "z",
+    ]);
     let mut any = false;
     let rows = statement
         .query_map(params_from_iter(values), |row| {
@@ -263,10 +323,14 @@ pub fn verify(conn: &Connection, selection: &Selection) {
 pub fn errors(conn: &Connection, selection: &Selection) {
     let (clause, values) = selection.clause();
     let mut statement = conn
-        .prepare(&format!("SELECT r.variant, r.error FROM run r WHERE r.error IS NOT NULL{clause} LIMIT 5"))
+        .prepare(&format!(
+            "SELECT r.variant, r.error FROM run r WHERE r.error IS NOT NULL{clause} LIMIT 5"
+        ))
         .unwrap();
     let rows = statement
-        .query_map(params_from_iter(values), |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))
+        .query_map(params_from_iter(values), |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })
         .unwrap();
     for row in rows {
         let (variant, error) = row.unwrap();
@@ -280,7 +344,11 @@ pub fn trace(conn: &Connection, run_id: i64, key: Option<String>) {
         .unwrap();
     let rows = statement
         .query_map((run_id, key), |row| {
-            Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?, row.get::<_, f64>(2)?))
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, f64>(2)?,
+            ))
         })
         .unwrap();
     println!("iter,key,value");

@@ -90,15 +90,28 @@ fn exact(pairs: &[Vec<(f64, f64)>]) -> Result<Exact, &'static str> {
     }
 
     let end = |pick: fn(f64, f64) -> f64, start: f64| -> f64 {
-        pairs.iter().map(|arr| arr.iter().map(|x| x.0).fold(start, pick)).sum()
+        pairs
+            .iter()
+            .map(|arr| arr.iter().map(|x| x.0).fold(start, pick))
+            .sum()
     };
     let min = end(f64::min, f64::INFINITY);
     let max = end(f64::max, f64::NEG_INFINITY);
     let gap = gap as f64 / UNIT;
     let total: f64 = pmf.iter().sum();
     let value = |i: usize| min + i as f64 * gap;
-    let mean: f64 = pmf.iter().enumerate().map(|(i, p)| value(i) * p).sum::<f64>() / total;
-    let var: f64 = pmf.iter().enumerate().map(|(i, p)| (value(i) - mean).powi(2) * p).sum::<f64>() / total;
+    let mean: f64 = pmf
+        .iter()
+        .enumerate()
+        .map(|(i, p)| value(i) * p)
+        .sum::<f64>()
+        / total;
+    let var: f64 = pmf
+        .iter()
+        .enumerate()
+        .map(|(i, p)| (value(i) - mean).powi(2) * p)
+        .sum::<f64>()
+        / total;
     let (mut below, mut biased_below) = (0.0, 0.0);
     let mut cdf = Vec::with_capacity(pmf.len());
     let mut biased_cdf = Vec::with_capacity(pmf.len());
@@ -108,7 +121,15 @@ fn exact(pairs: &[Vec<(f64, f64)>]) -> Result<Exact, &'static str> {
         cdf.push(below);
         biased_cdf.push(biased_below);
     }
-    Ok(Exact { min, max, gap, cdf, biased_cdf, mean, sd: var.sqrt() })
+    Ok(Exact {
+        min,
+        max,
+        gap,
+        cdf,
+        biased_cdf,
+        mean,
+        sd: var.sqrt(),
+    })
 }
 
 impl Exact {
@@ -118,17 +139,26 @@ impl Exact {
             return 0.0;
         }
         let index = (index as usize).min(self.cdf.len() - 1);
-        if biased { self.biased_cdf[index] } else { self.cdf[index] }
+        if biased {
+            self.biased_cdf[index]
+        } else {
+            self.cdf[index]
+        }
     }
 
     fn quantile(&self, q: f64) -> f64 {
-        let index = self.cdf.partition_point(|&below| below < q).min(self.cdf.len() - 1);
+        let index = self
+            .cdf
+            .partition_point(|&below| below < q)
+            .min(self.cdf.len() - 1);
         self.min + index as f64 * self.gap
     }
 
     fn budgets(&self, rng: &mut StdRng) -> Vec<(f64, &'static str)> {
         let mut out: Vec<(f64, &'static str)> = Vec::new();
-        for eps in [0.0, 1e-12, 1e-9, 1e-7, 1e-6, 1e-5, 5e-5, 9e-5, 1.1e-4, 2e-4, 1e-3, 1e-2] {
+        for eps in [
+            0.0, 1e-12, 1e-9, 1e-7, 1e-6, 1e-5, 5e-5, 9e-5, 1.1e-4, 2e-4, 1e-3, 1e-2,
+        ] {
             out.push((self.mean * (1.0 + eps), "mean"));
             out.push((self.mean * (1.0 - eps), "mean"));
         }
@@ -140,7 +170,22 @@ impl Exact {
             out.push((self.mean + z * self.sd, "near"));
             out.push((self.mean - z * self.sd, "near"));
         }
-        for q in [1e-6, 1e-4, 1e-3, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 0.999, 1.0 - 1e-6] {
+        for q in [
+            1e-6,
+            1e-4,
+            1e-3,
+            0.01,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            0.75,
+            0.9,
+            0.95,
+            0.99,
+            0.999,
+            1.0 - 1e-6,
+        ] {
             out.push((self.quantile(q), "quantile"));
         }
         for step in 0..5 {
@@ -148,7 +193,10 @@ impl Exact {
             out.push((self.max - step as f64 * self.gap, "edge"));
         }
         for _ in 0..10 {
-            out.push((self.min + rng.random::<f64>() * (self.max - self.min), "uniform"));
+            out.push((
+                self.min + rng.random::<f64>() * (self.max - self.min),
+                "uniform",
+            ));
         }
         out
     }
@@ -216,20 +264,28 @@ impl Summary {
     /// the largest error of a method that is meant to be exact
     #[cfg(test)]
     pub fn max_error_of(&self, method: &str) -> f64 {
-        self.buckets.iter().filter(|(key, _)| key.0 == method).map(|(_, b)| b.max_error).fold(0.0, f64::max)
+        self.buckets
+            .iter()
+            .filter(|(key, _)| key.0 == method)
+            .map(|(_, b)| b.max_error)
+            .fold(0.0, f64::max)
     }
 }
 
 fn sweep(name: &str, state_bundle: &StateBundle, rng: &mut StdRng, summary: &mut Summary) {
     let special_probs = state_bundle.special_probs().clone();
-    let mut skips: Vec<usize> = (0..special_probs.len()).filter(|&i| special_probs[i] >= 1e-7).collect();
+    let mut skips: Vec<usize> = (0..special_probs.len())
+        .filter(|&i| special_probs[i] >= 1e-7)
+        .collect();
     if skips.len() > 3 {
         skips = vec![skips[0], skips[skips.len() / 2], skips[skips.len() - 1]];
     }
     for &skip in &skips {
         for material in 0..state_bundle.upgrade_arr[0].cost_dist.len() {
-            let pairs: Vec<Vec<(f64, f64)>> =
-                state_bundle.extract_collapsed_pair(material as i64, skip).cloned().collect();
+            let pairs: Vec<Vec<(f64, f64)>> = state_bundle
+                .extract_collapsed_pair(material as i64, skip)
+                .cloned()
+                .collect();
             let reference = match exact(&pairs) {
                 Ok(reference) => reference,
                 Err(why) => {
@@ -244,9 +300,19 @@ fn sweep(name: &str, state_bundle: &StateBundle, rng: &mut StdRng, summary: &mut
                     let start = Instant::now();
                     let result = catch_unwind(AssertUnwindSafe(|| {
                         if kind == "leftover" {
-                            return state_bundle.expected_leftover(material as i64, skip, budget, &mut probe);
+                            return state_bundle.expected_leftover(
+                                material as i64,
+                                skip,
+                                budget,
+                                &mut probe,
+                            );
                         }
-                        state_bundle.saddlepoint_approximation_wrapper(material as i64, skip, budget, &mut probe)
+                        state_bundle.saddlepoint_approximation_wrapper(
+                            material as i64,
+                            skip,
+                            budget,
+                            &mut probe,
+                        )
                     }));
                     let seconds = start.elapsed().as_secs_f64();
                     let count = |counter: Counter| probe.data.counts[counter as usize] as u64;
@@ -277,17 +343,26 @@ fn sweep(name: &str, state_bundle: &StateBundle, rng: &mut StdRng, summary: &mut
                         continue;
                     };
                     let truth = if kind == "leftover" {
-                        budget * reference.at(budget, false) - reference.mean * reference.at(budget, true)
+                        budget * reference.at(budget, false)
+                            - reference.mean * reference.at(budget, true)
                     } else {
                         reference.at(budget, false)
                     };
-                    let signed = if kind == "leftover" { (got - truth) / reference.sd } else { got - truth };
+                    let signed = if kind == "leftover" {
+                        (got - truth) / reference.sd
+                    } else {
+                        got - truth
+                    };
                     let error = signed.abs();
-                    bucket.histogram[ERROR_EDGES.iter().position(|&edge| error < edge).unwrap_or(4)] += 1;
+                    bucket.histogram[ERROR_EDGES
+                        .iter()
+                        .position(|&edge| error < edge)
+                        .unwrap_or(4)] += 1;
                     bucket.max_error = bucket.max_error.max(error);
                     bucket.sum_error += error;
                     bucket.sum_signed += signed;
-                    if summary.worst.len() < 15 || error > summary.worst[summary.worst.len() - 1].0 {
+                    if summary.worst.len() < 15 || error > summary.worst[summary.worst.len() - 1].0
+                    {
                         let upgrades = pairs.iter().filter(|arr| arr.len() > 1).count();
                         summary.worst.push((
                             error,
@@ -310,11 +385,16 @@ fn one_step(name: &str, base: StateBundle, scrambles: usize) -> Summary {
     if base.upgrade_arr.is_empty() {
         return summary;
     }
-    let mut rng =
-        StdRng::seed_from_u64(name.bytes().fold(7u64, |seed, byte| seed.wrapping_mul(131).wrapping_add(byte as u64)));
+    let mut rng = StdRng::seed_from_u64(name.bytes().fold(7u64, |seed, byte| {
+        seed.wrapping_mul(131).wrapping_add(byte as u64)
+    }));
     for moves in std::iter::once(0).chain(SCRAMBLE_MOVES.into_iter().take(scrambles)) {
         let made = catch_unwind(AssertUnwindSafe(|| {
-            let mut this = if moves == 0 { base.clone() } else { scramble(&mut rng, base.clone(), moves) };
+            let mut this = if moves == 0 {
+                base.clone()
+            } else {
+                scramble(&mut rng, base.clone(), moves)
+            };
             this.update_prob_dist();
             this.update_cost_dist();
             this.compute_special_probs(false);
@@ -325,7 +405,11 @@ fn one_step(name: &str, base: StateBundle, scrambles: usize) -> Summary {
             continue;
         };
         summary.note("states");
-        if catch_unwind(AssertUnwindSafe(|| state_bundle.metric_router(&mut Probe::default()))).is_err() {
+        if catch_unwind(AssertUnwindSafe(|| {
+            state_bundle.metric_router(&mut Probe::default())
+        }))
+        .is_err()
+        {
             summary.panicked("the metric");
         }
         sweep(name, &state_bundle, &mut rng, &mut summary);
@@ -336,13 +420,19 @@ fn one_step(name: &str, base: StateBundle, scrambles: usize) -> Summary {
 pub fn run(scenarios: &[Scenario], scrambles: usize, tuning: &Tuning) -> Summary {
     // a panic is counted by where it was, not printed
     std::panic::set_hook(Box::new(|info| {
-        let at = info.location().map_or(String::new(), |at| format!("{}:{}", at.file(), at.line()));
+        let at = info
+            .location()
+            .map_or(String::new(), |at| format!("{}:{}", at.file(), at.line()));
         LAST_PANIC.with(|last| *last.borrow_mut() = at);
     }));
     let steps: Vec<(String, &hf_core::payload::Payload)> = scenarios
         .iter()
         .flat_map(|scenario| {
-            scenario.steps.iter().enumerate().map(|(step, payload)| (format!("{}:{step}", scenario.name), payload))
+            scenario
+                .steps
+                .iter()
+                .enumerate()
+                .map(|(step, payload)| (format!("{}:{step}", scenario.name), payload))
         })
         .collect();
     let summary = steps
@@ -362,11 +452,29 @@ pub fn report(summary: &Summary) {
         println!("{note}: {count}");
     }
     let mut out = table(&[
-        "method", "region", "kind", "calls", "<1e-6", "<1e-4", "<1e-2", "<1e-1", ">=1e-1", "max error",
-        "mean error", "mean signed", "us/call", "root iters", "max iters",
+        "method",
+        "region",
+        "kind",
+        "calls",
+        "<1e-6",
+        "<1e-4",
+        "<1e-2",
+        "<1e-1",
+        ">=1e-1",
+        "max error",
+        "mean error",
+        "mean signed",
+        "us/call",
+        "root iters",
+        "max iters",
     ]);
     for ((method, region, kind), bucket) in &summary.buckets {
-        let mut row = vec![method.to_string(), region.to_string(), kind.to_string(), bucket.calls.to_string()];
+        let mut row = vec![
+            method.to_string(),
+            region.to_string(),
+            kind.to_string(),
+            bucket.calls.to_string(),
+        ];
         row.extend(bucket.histogram.iter().map(|count| count.to_string()));
         row.extend([
             format!("{:.1e}", bucket.max_error),
@@ -379,7 +487,9 @@ pub fn report(summary: &Summary) {
         out.add_row(row);
     }
     println!("{out}");
-    println!("leftover errors are in standard deviations of the sum; a negative mean signed leftover is optimistic");
+    println!(
+        "leftover errors are in standard deviations of the sum; a negative mean signed leftover is optimistic"
+    );
     println!("worst:");
     for (error, what) in &summary.worst {
         println!("  {error:.4}  {what}");

@@ -45,10 +45,17 @@ pub fn run(scenarios: &[Scenario], args: &Args, tuning: &Tuning) {
     let steps: Vec<(String, &hf_core::payload::Payload)> = scenarios
         .iter()
         .flat_map(|scenario| {
-            scenario.steps.iter().enumerate().map(|(step, payload)| (format!("{}:{step}", scenario.name), payload))
+            scenario
+                .steps
+                .iter()
+                .enumerate()
+                .map(|(step, payload)| (format!("{}:{step}", scenario.name), payload))
         })
         .collect();
-    let pool = rayon::ThreadPoolBuilder::new().num_threads(args.jobs).build().unwrap();
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(args.jobs)
+        .build()
+        .unwrap();
     let rows: Vec<(String, f64, f64, Vec<i64>, f64)> = pool.install(|| {
         steps
             .par_iter()
@@ -60,19 +67,29 @@ pub fn run(scenarios: &[Scenario], args: &Args, tuning: &Tuning) {
                 if base.upgrade_arr.is_empty() {
                     return Vec::new();
                 }
-                let mut rng = StdRng::seed_from_u64(
-                    name.bytes().fold(7u64, |seed, byte| seed.wrapping_mul(131).wrapping_add(byte as u64)),
-                );
+                let mut rng = StdRng::seed_from_u64(name.bytes().fold(7u64, |seed, byte| {
+                    seed.wrapping_mul(131).wrapping_add(byte as u64)
+                }));
                 if let Some(seed) = args.solve {
                     let mut probe = Probe::default();
                     let mut rng = StdRng::seed_from_u64(seed);
                     let start = Instant::now();
                     let solved = hf_core::optimizer::solve(&mut rng, base, None, &mut probe);
-                    return vec![(name.clone(), solved.best.metric, start.elapsed().as_secs_f64(), probe.data.counts.to_vec(), f64::NAN)];
+                    return vec![(
+                        name.clone(),
+                        solved.best.metric,
+                        start.elapsed().as_secs_f64(),
+                        probe.data.counts.to_vec(),
+                        f64::NAN,
+                    )];
                 }
-                let mut states: Vec<(String, StateBundle)> = vec![(format!("{name} given"), base.clone())];
+                let mut states: Vec<(String, StateBundle)> =
+                    vec![(format!("{name} given"), base.clone())];
                 for moves in [20, 200] {
-                    states.push((format!("{name} scramble{moves}"), scramble(&mut rng, base.clone(), moves)));
+                    states.push((
+                        format!("{name} scramble{moves}"),
+                        scramble(&mut rng, base.clone(), moves),
+                    ));
                 }
                 for (index, essence) in given.get(name).into_iter().flatten().enumerate() {
                     let mut this = base.clone();
@@ -94,7 +111,13 @@ pub fn run(scenarios: &[Scenario], args: &Args, tuning: &Tuning) {
                         let mut plain = state.clone();
                         plain.tuning = Tuning::default();
                         let flow = crate::carry::flow(&plain);
-                        (label, metric, start.elapsed().as_secs_f64() / reps as f64, probe.data.counts.to_vec(), flow)
+                        (
+                            label,
+                            metric,
+                            start.elapsed().as_secs_f64() / reps as f64,
+                            probe.data.counts.to_vec(),
+                            flow,
+                        )
                     })
                     .collect()
             })
@@ -114,8 +137,16 @@ pub fn run(scenarios: &[Scenario], args: &Args, tuning: &Tuning) {
             writeln!(file, "{label}\t{metric:e}\t{seconds:e}\t{flow:e}").unwrap();
         }
     }
-    println!("{} states, {:.3} ms for one evaluation of each, {:.1} us mean", rows.len(), total * 1e3, total / rows.len() as f64 * 1e6);
+    println!(
+        "{} states, {:.3} ms for one evaluation of each, {:.1} us mean",
+        rows.len(),
+        total * 1e3,
+        total / rows.len() as f64 * 1e6
+    );
     for (name, count) in COUNTER_NAMES.iter().zip(&counts) {
-        println!("{name:16} {count:10} {:8.2} per state", *count as f64 / rows.len() as f64);
+        println!(
+            "{name:16} {count:10} {:8.2} per state",
+            *count as f64 / rows.len() as f64
+        );
     }
 }

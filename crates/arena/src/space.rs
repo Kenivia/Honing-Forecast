@@ -30,7 +30,15 @@ type Plan = Vec<OneState>;
 
 /// What the arena asks of a `Model` and the optimizer does not.
 trait Explore {
-    fn walk(&self, count: usize, artisan: f64, plan: &mut Vec<usize>, out: &mut Option<Vec<Vec<usize>>>, total: &mut f64, cap: f64);
+    fn walk(
+        &self,
+        count: usize,
+        artisan: f64,
+        plan: &mut Vec<usize>,
+        out: &mut Option<Vec<Vec<usize>>>,
+        total: &mut f64,
+        cap: f64,
+    );
     fn plans(&self) -> Vec<Vec<usize>>;
     fn count(&self, cap: f64) -> f64;
     fn after(&self, taps: usize) -> Model;
@@ -40,7 +48,15 @@ trait Explore {
 }
 
 impl Explore for Model {
-    fn walk(&self, count: usize, artisan: f64, plan: &mut Vec<usize>, out: &mut Option<Vec<Vec<usize>>>, total: &mut f64, cap: f64) {
+    fn walk(
+        &self,
+        count: usize,
+        artisan: f64,
+        plan: &mut Vec<usize>,
+        out: &mut Option<Vec<Vec<usize>>>,
+        total: &mut f64,
+        cap: f64,
+    ) {
         if artisan >= 1.0 || count + 1 >= self.len || *total > cap {
             *total += 1.0;
             if let Some(out) = out {
@@ -49,7 +65,11 @@ impl Explore for Model {
             return;
         }
         // inside a block a tap takes what the tap before it took
-        let options = if count % self.block == 0 { 0..self.options.len() } else { plan[count - 1]..plan[count - 1] + 1 };
+        let options = if count % self.block == 0 {
+            0..self.options.len()
+        } else {
+            plan[count - 1]..plan[count - 1] + 1
+        };
         for option in options {
             let chance = self.chance(count, self.extra[option]);
             plan[count] = option;
@@ -68,14 +88,28 @@ impl Explore for Model {
     /// every distinct plan
     fn plans(&self) -> Vec<Vec<usize>> {
         let mut out = Some(Vec::new());
-        self.walk(0, self.artisan, &mut vec![0; self.len], &mut out, &mut 0.0, f64::INFINITY);
+        self.walk(
+            0,
+            self.artisan,
+            &mut vec![0; self.len],
+            &mut out,
+            &mut 0.0,
+            f64::INFINITY,
+        );
         out.unwrap()
     }
 
     /// how many distinct plans, as far as the cap
     fn count(&self, cap: f64) -> f64 {
         let mut total = 0.0;
-        self.walk(0, self.artisan, &mut vec![0; self.len], &mut None, &mut total, cap);
+        self.walk(
+            0,
+            self.artisan,
+            &mut vec![0; self.len],
+            &mut None,
+            &mut total,
+            cap,
+        );
         total
     }
 
@@ -95,26 +129,37 @@ impl Explore for Model {
     /// an id up to the last. Each is what every tap adds to its option's index.
     fn streaks_of(&self, pool: usize) -> Vec<Vec<usize>> {
         let ids = self.pools[pool].len();
-        let ends = |len: usize| -> Vec<usize> { if len == 0 || ids == 0 { vec![0] } else { (1..=ids).collect() } };
+        let ends = |len: usize| -> Vec<usize> {
+            if len == 0 || ids == 0 {
+                vec![0]
+            } else {
+                (1..=ids).collect()
+            }
+        };
         (0..=self.len)
             .flat_map(|front| (0..=self.len - front).map(move |back| (front, back)))
             // a streak starts and ends where a block does, but for the end of the state
-            .filter(|(front, back)| front % self.block == 0 && (*back == 0 || (self.len - back) % self.block == 0))
+            .filter(|(front, back)| {
+                front % self.block == 0 && (*back == 0 || (self.len - back) % self.block == 0)
+            })
             .flat_map(|(front, back)| {
-                ends(front).into_iter().cartesian_product(ends(back)).map(move |(first, last)| {
-                    (0..self.len)
-                        .map(|tap| {
-                            self.strides[pool]
-                                * if tap < front {
-                                    first
-                                } else if tap >= self.len - back {
-                                    last
-                                } else {
-                                    0
-                                }
-                        })
-                        .collect::<Vec<usize>>()
-                })
+                ends(front)
+                    .into_iter()
+                    .cartesian_product(ends(back))
+                    .map(move |(first, last)| {
+                        (0..self.len)
+                            .map(|tap| {
+                                self.strides[pool]
+                                    * if tap < front {
+                                        first
+                                    } else if tap >= self.len - back {
+                                        last
+                                    } else {
+                                        0
+                                    }
+                            })
+                            .collect::<Vec<usize>>()
+                    })
             })
             .unique()
             .collect()
@@ -122,12 +167,18 @@ impl Explore for Model {
 
     /// every plan the streaks can make, with the taps never charged emptied
     fn streaks(&self) -> AHashSet<Vec<usize>> {
-        let per_pool: Vec<Vec<Vec<usize>>> = (0..self.pools.len()).map(|pool| self.streaks_of(pool)).collect();
+        let per_pool: Vec<Vec<Vec<usize>>> = (0..self.pools.len())
+            .map(|pool| self.streaks_of(pool))
+            .collect();
         per_pool
             .iter()
             .multi_cartesian_product()
             .map(|choice| {
-                self.canonical(&(0..self.len).map(|tap| choice.iter().map(|row| row[tap]).sum()).collect::<Vec<usize>>())
+                self.canonical(
+                    &(0..self.len)
+                        .map(|tap| choice.iter().map(|row| row[tap]).sum())
+                        .collect::<Vec<usize>>(),
+                )
             })
             .collect()
     }
@@ -159,7 +210,9 @@ fn response_of(state_bundle: &StateBundle, index: usize) -> Response {
 /// the best of the plans the streaks can make
 fn best_streak(response: &Response) -> (f64, Vec<usize>) {
     let model = &response.model;
-    let per_pool: Vec<Vec<Vec<usize>>> = (0..model.pools.len()).map(|pool| model.streaks_of(pool)).collect();
+    let per_pool: Vec<Vec<Vec<usize>>> = (0..model.pools.len())
+        .map(|pool| model.streaks_of(pool))
+        .collect();
     per_pool[0]
         .par_iter()
         .map(|first| {
@@ -176,20 +229,42 @@ fn best_streak(response: &Response) -> (f64, Vec<usize>) {
             }
             best
         })
-        .reduce(|| (f64::NEG_INFINITY, Vec::new()), |a, b| if b.0 > a.0 { b } else { a })
+        .reduce(
+            || (f64::NEG_INFINITY, Vec::new()),
+            |a, b| if b.0 > a.0 { b } else { a },
+        )
 }
 
 /// the tuning that sums every probability
 fn exact_tuning() -> Tuning {
-    Tuning { max_brute_size: usize::MAX, response_points: usize::MAX, ..Default::default() }
+    Tuning {
+        max_brute_size: usize::MAX,
+        response_points: usize::MAX,
+        ..Default::default()
+    }
 }
 
 fn models(state_bundle: &StateBundle) -> Vec<Model> {
-    state_bundle.upgrade_arr.iter().map(|this| Model::of(this, &state_bundle.prep_output.juice_info, state_bundle.block())).collect()
+    state_bundle
+        .upgrade_arr
+        .iter()
+        .map(|this| {
+            Model::of(
+                this,
+                &state_bundle.prep_output.juice_info,
+                state_bundle.block(),
+            )
+        })
+        .collect()
 }
 
 /// the state with these plans and this free tap order, evaluated under a tuning
-fn with_plans(state_bundle: &StateBundle, plans: &[Vec<usize>], order: &[usize], tuning: &Tuning) -> StateBundle {
+fn with_plans(
+    state_bundle: &StateBundle,
+    plans: &[Vec<usize>],
+    order: &[usize],
+    tuning: &Tuning,
+) -> StateBundle {
     let mut state_bundle = state_bundle.clone();
     state_bundle.tuning = tuning.clone();
     state_bundle.gold_memo.clear();
@@ -245,19 +320,40 @@ fn descend(
     if depth == plans.len() {
         let metric = state_bundle.metric_router(&mut Probe::default());
         tops.states += 1.0;
-        let worst = |list: &Vec<(f64, usize, Vec<usize>)>| if list.len() == KEPT { list[KEPT - 1].0 } else { f64::NEG_INFINITY };
+        let worst = |list: &Vec<(f64, usize, Vec<usize>)>| {
+            if list.len() == KEPT {
+                list[KEPT - 1].0
+            } else {
+                f64::NEG_INFINITY
+            }
+        };
         if metric > worst(&tops.any) {
             keep(&mut tops.any, (metric, order, index.clone()));
         }
-        if metric > worst(&tops.streak) && index.iter().zip(is_streak).all(|(&plan, flags)| flags[plan]) {
+        if metric > worst(&tops.streak)
+            && index
+                .iter()
+                .zip(is_streak)
+                .all(|(&plan, flags)| flags[plan])
+        {
             keep(&mut tops.streak, (metric, order, index.clone()));
         }
         return;
     }
     for plan in 0..plans[depth].len() {
-        state_bundle.upgrade_arr[depth].state.update_payload(plans[depth][plan].clone());
+        state_bundle.upgrade_arr[depth]
+            .state
+            .update_payload(plans[depth][plan].clone());
         index[depth] = plan;
-        descend(state_bundle, plans, is_streak, depth + 1, index, order, tops);
+        descend(
+            state_bundle,
+            plans,
+            is_streak,
+            depth + 1,
+            index,
+            order,
+            tops,
+        );
     }
 }
 
@@ -286,36 +382,64 @@ fn solved(payload: &Payload, seeds: u64, tuning: &Tuning) -> Vec<StateBundle> {
         .map(|seed| {
             let mut state_bundle = StateBundle::init_from_payload(payload.clone());
             state_bundle.tuning = tuning.clone();
-            solve(&mut StdRng::seed_from_u64(seed), state_bundle, None, &mut Probe::default()).best
+            solve(
+                &mut StdRng::seed_from_u64(seed),
+                state_bundle,
+                None,
+                &mut Probe::default(),
+            )
+            .best
         })
         .collect()
 }
 
 fn exhaust_one(scenario: &Scenario, args: &ExhaustArgs) -> Option<Value> {
     let payload = &scenario.steps[0];
-    let exact = Tuning { streak_length: args.block, ..exact_tuning() };
+    let exact = Tuning {
+        streak_length: args.block,
+        ..exact_tuning()
+    };
     let base = retuned(&StateBundle::init_from_payload(payload.clone()), &exact);
     let n = base.upgrade_arr.len();
     if n == 0
         || base.upgrade_arr.iter().any(|this| !this.is_normal_honing)
-        || base.prep_output.chests.values().any(|chest| chest.options.len() > 1)
+        || base
+            .prep_output
+            .chests
+            .values()
+            .any(|chest| chest.options.len() > 1)
     {
         return None;
     }
     let models = models(&base);
-    let orders: Vec<Vec<usize>> =
-        if base.prep_output.special_budget > 0 && n > 1 { (0..n).permutations(n).collect() } else { vec![(0..n).collect()] };
-    let states: f64 = models.iter().map(|model| model.count(args.cap)).product::<f64>() * orders.len() as f64;
+    let orders: Vec<Vec<usize>> = if base.prep_output.special_budget > 0 && n > 1 {
+        (0..n).permutations(n).collect()
+    } else {
+        vec![(0..n).collect()]
+    };
+    let states: f64 = models
+        .iter()
+        .map(|model| model.count(args.cap))
+        .product::<f64>()
+        * orders.len() as f64;
     if n > 1 && states > args.cap {
         return None;
     }
     let at = |found: &(f64, Vec<usize>)| -> Found {
-        (with_plans(&base, &[found.1.clone()], &orders[0], &exact).metric, vec![found.1.clone()], orders[0].clone())
+        (
+            with_plans(&base, &[found.1.clone()], &orders[0], &exact).metric,
+            vec![found.1.clone()],
+            orders[0].clone(),
+        )
     };
 
     let (any, streak, counted): (Vec<Found>, Vec<Found>, f64) = if n == 1 && states > args.cap {
         let response = response_of(&base, 0);
-        (vec![at(&response.best())], vec![at(&best_streak(&response))], states)
+        (
+            vec![at(&response.best())],
+            vec![at(&best_streak(&response))],
+            states,
+        )
     } else {
         let plans: Vec<Vec<Vec<usize>>> = models.iter().map(|model| model.plans()).collect();
         let is_streak: Vec<Vec<bool>> = plans
@@ -326,18 +450,33 @@ fn exhaust_one(scenario: &Scenario, args: &ExhaustArgs) -> Option<Value> {
                 plans.iter().map(|plan| set.contains(plan)).collect()
             })
             .collect();
-        let payloads: Vec<Vec<Plan>> =
-            plans.iter().zip(&models).map(|(plans, model)| plans.iter().map(|plan| model.plan(plan)).collect()).collect();
-        let firsts: Vec<(usize, usize)> = (0..orders.len()).cartesian_product(0..plans[0].len()).collect();
+        let payloads: Vec<Vec<Plan>> = plans
+            .iter()
+            .zip(&models)
+            .map(|(plans, model)| plans.iter().map(|plan| model.plan(plan)).collect())
+            .collect();
+        let firsts: Vec<(usize, usize)> = (0..orders.len())
+            .cartesian_product(0..plans[0].len())
+            .collect();
         let tops = firsts
             .par_iter()
             .map(|&(order, first)| {
                 let mut state_bundle = base.clone();
                 state_bundle.special_state = orders[order].clone();
-                state_bundle.upgrade_arr[0].state.update_payload(payloads[0][first].clone());
+                state_bundle.upgrade_arr[0]
+                    .state
+                    .update_payload(payloads[0][first].clone());
                 let mut tops = Tops::default();
                 let mut index = vec![first; n];
-                descend(&mut state_bundle, &payloads, &is_streak, 1, &mut index, order, &mut tops);
+                descend(
+                    &mut state_bundle,
+                    &payloads,
+                    &is_streak,
+                    1,
+                    &mut index,
+                    order,
+                    &mut tops,
+                );
                 tops
             })
             .reduce(Tops::default, |mut a, b| {
@@ -352,7 +491,18 @@ fn exhaust_one(scenario: &Scenario, args: &ExhaustArgs) -> Option<Value> {
             });
         let full = |list: &Vec<(f64, usize, Vec<usize>)>| -> Vec<Found> {
             list.iter()
-                .map(|found| (found.0, found.2.iter().zip(&plans).map(|(&plan, plans)| plans[plan].clone()).collect(), orders[found.1].clone()))
+                .map(|found| {
+                    (
+                        found.0,
+                        found
+                            .2
+                            .iter()
+                            .zip(&plans)
+                            .map(|(&plan, plans)| plans[plan].clone())
+                            .collect(),
+                        orders[found.1].clone(),
+                    )
+                })
                 .collect()
         };
         (full(&tops.any), full(&tops.streak), tops.states)
@@ -360,16 +510,31 @@ fn exhaust_one(scenario: &Scenario, args: &ExhaustArgs) -> Option<Value> {
 
     let (best, best_streak) = (&any[0], &streak[0]);
     let best_bundle = with_plans(&base, &best.1, &best.2, &exact);
-    let approx = Tuning { streak_length: args.block, ..Tuning::default() };
+    let approx = Tuning {
+        streak_length: args.block,
+        ..Tuning::default()
+    };
     // what the optimizer finds, on the exact metric and on its own
     let scored = |tuning: &Tuning| -> Vec<f64> {
-        solved(payload, args.seeds, tuning).iter().map(|found| retuned(found, &exact).metric).collect()
+        solved(payload, args.seeds, tuning)
+            .iter()
+            .map(|found| retuned(found, &exact).metric)
+            .collect()
     };
     // each upgrade in turn taking its best plan, from the best the streaks have and from nothing
     let climbed = |from: &StateBundle| ascend(from, false, 20).0.metric;
-    let patterns = |found: &Found| -> String { found.1.iter().zip(&models).map(|(plan, model)| model.pattern(plan)).join("  ") };
+    let patterns = |found: &Found| -> String {
+        found
+            .1
+            .iter()
+            .zip(&models)
+            .map(|(plan, model)| model.pattern(plan))
+            .join("  ")
+    };
     let listed = |list: &[Found]| -> Vec<Value> {
-        list.iter().map(|found| json!({"metric": found.0, "pattern": patterns(found), "order": found.2})).collect()
+        list.iter()
+            .map(|found| json!({"metric": found.0, "pattern": patterns(found), "order": found.2}))
+            .collect()
     };
     Some(json!({
         "name": scenario.name,
@@ -397,20 +562,30 @@ fn exhaust_one(scenario: &Scenario, args: &ExhaustArgs) -> Option<Value> {
 }
 
 pub fn exhaust(scenarios: &[Scenario], args: &ExhaustArgs) {
-    let mut file = args.out.as_ref().map(|path| std::fs::File::create(path).unwrap());
+    let mut file = args
+        .out
+        .as_ref()
+        .map(|path| std::fs::File::create(path).unwrap());
     println!(
         "{:28} {:>2} {:>10} {:>14} {:>10} {:>10} {:>10} {:>10}  best",
         "scenario", "n", "states", "best", "streak %", "solve %", "climb %", "default %"
     );
-    for scenario in scenarios.iter().filter(|scenario| scenario.name.contains(&args.filter)) {
+    for scenario in scenarios
+        .iter()
+        .filter(|scenario| scenario.name.contains(&args.filter))
+    {
         let Some(row) = exhaust_one(scenario, args) else {
             println!("{:28} left out", scenario.name);
             continue;
         };
         let number = |key: &str| row[key].as_f64().unwrap();
         let share = |value: f64| 100.0 * (number("best") - value) / number("flow").max(1.0);
-        let solve_best =
-            row["solved_exact"].as_array().unwrap().iter().map(|x| x.as_f64().unwrap()).fold(f64::NEG_INFINITY, f64::max);
+        let solve_best = row["solved_exact"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|x| x.as_f64().unwrap())
+            .fold(f64::NEG_INFINITY, f64::max);
         println!(
             "{:28} {:>2} {:>10.0} {:>14.1} {:>10.5} {:>10.5} {:>10.5} {:>10.3}  {}",
             scenario.name,
@@ -446,13 +621,19 @@ pub fn ascend(start: &StateBundle, streaks_only: bool, sweeps: usize) -> (StateB
             responses += 1;
             let model = &response.model;
             let now = model.indices(&state_bundle.upgrade_arr[index].state.payload);
-            let (score, plan) = if streaks_only { best_streak(&response) } else { response.best() };
+            let (score, plan) = if streaks_only {
+                best_streak(&response)
+            } else {
+                response.best()
+            };
             if score <= response.score(&now) + 1e-9 * score.abs().max(1.0) {
                 continue;
             }
             // the response is exact where the evaluator is; where it is not, the metric decides
             let before = state_bundle.upgrade_arr[index].state.payload.clone();
-            state_bundle.upgrade_arr[index].state.update_payload(model.plan(&plan));
+            state_bundle.upgrade_arr[index]
+                .state
+                .update_payload(model.plan(&plan));
             let metric = state_bundle.metric_router(&mut Probe::default());
             if metric > state_bundle.metric {
                 state_bundle.metric = metric;
@@ -478,7 +659,10 @@ pub struct AscendArgs {
     #[arg(long, default_value_t = 10)]
     pub sweeps: usize,
     /// the tuning the responses and the metric are taken under, `key=value,key=value`
-    #[arg(long, default_value = "max_brute_size=2000000,max_lattice_work=20000000,response_points=100000")]
+    #[arg(
+        long,
+        default_value = "max_brute_size=2000000,max_lattice_work=20000000,response_points=100000"
+    )]
     pub tuning: String,
     /// one json line a step
     #[arg(long)]
@@ -488,12 +672,18 @@ pub struct AscendArgs {
 /// From each step's best known state, and from nothing: what taking best responses reaches,
 /// over every plan and over the streaks only.
 pub fn ascend_all(conn: &Connection, scenarios: &[Scenario], args: &AscendArgs, tuning: &Tuning) {
-    let mut file = args.out.as_ref().map(|path| std::fs::File::create(path).unwrap());
+    let mut file = args
+        .out
+        .as_ref()
+        .map(|path| std::fs::File::create(path).unwrap());
     println!(
         "{:32} {:>3} {:>12} {:>10} {:>10} {:>10} {:>10} {:>6}",
         "step", "n", "flow", "streak %", "any %", "cold s %", "cold a %", "s"
     );
-    for scenario in scenarios.iter().filter(|scenario| scenario.name.contains(&args.filter)) {
+    for scenario in scenarios
+        .iter()
+        .filter(|scenario| scenario.name.contains(&args.filter))
+    {
         for step in 0..scenario.steps.len() {
             let known = retuned(&best_known(conn, scenario, step), tuning);
             if !known.upgrade_arr.iter().any(|this| this.is_normal_honing) {
@@ -501,15 +691,25 @@ pub fn ascend_all(conn: &Connection, scenarios: &[Scenario], args: &AscendArgs, 
             }
             // nothing on any normal upgrade, the rest as known
             let mut cold = known.clone();
-            for this in cold.upgrade_arr.iter_mut().filter(|this| this.is_normal_honing) {
-                this.state.update_payload(vec![OneState::new(); this.state.len()]);
+            for this in cold
+                .upgrade_arr
+                .iter_mut()
+                .filter(|this| this.is_normal_honing)
+            {
+                this.state
+                    .update_payload(vec![OneState::new(); this.state.len()]);
             }
             let cold = retuned(&cold, tuning);
             let clock = Instant::now();
-            let runs: Vec<(StateBundle, usize)> = [(&known, true), (&known, false), (&cold, true), (&cold, false)]
-                .into_par_iter()
-                .map(|(from, streaks_only)| ascend(from, streaks_only, args.sweeps))
-                .collect();
+            let runs: Vec<(StateBundle, usize)> = [
+                (&known, true),
+                (&known, false),
+                (&cold, true),
+                (&cold, false),
+            ]
+            .into_par_iter()
+            .map(|(from, streaks_only)| ascend(from, streaks_only, args.sweeps))
+            .collect();
             let seconds = clock.elapsed().as_secs_f64();
             let models = models(&known);
             let flow = flow(&known).max(1.0);
@@ -572,31 +772,54 @@ pub fn tiny(count: u32, lone: u32, lone_taps: usize, cap: f64) -> Vec<Scenario> 
         if lone || index % 2 == 0 {
             a[axis("free_taps")] = 0.0;
         }
-        let n = if lone { 1 } else { *[1, 2, 2, 3, 3].choose(&mut rng).unwrap() };
+        let n = if lone {
+            1
+        } else {
+            *[1, 2, 2, 3, 3].choose(&mut rng).unwrap()
+        };
         let mut infos: Vec<OneUpgradeInput> = Vec::new();
         while infos.len() < n {
-            let piece = if rng.random_bool(0.3) { 5 } else { rng.random_range(0..5) };
+            let piece = if rng.random_bool(0.3) {
+                5
+            } else {
+                rng.random_range(0..5)
+            };
             let level = rng.random_range(if lone { 10 } else { 5 }..25);
-            if !infos.iter().any(|info| info.piece_index == piece && info.upgrade_index == level) {
+            if !infos
+                .iter()
+                .any(|info| info.piece_index == piece && info.upgrade_index == level)
+            {
                 infos.push(upgrade(piece, level, false));
             }
         }
         infos.sort_by_key(|info| (info.piece_index, info.upgrade_index));
 
         // fail taps, on the upgrade with the most plans left, until every plan can be tried
-        let fresh = StateBundle::init_from_payload(generate::build_with(&a, index as u64, false, Some(infos.clone())).payload);
+        let fresh = StateBundle::init_from_payload(
+            generate::build_with(&a, index as u64, false, Some(infos.clone())).payload,
+        );
         let models = models(&fresh);
         let mut failed: Vec<usize> = vec![0; n];
         if lone {
             failed[0] = (models[0].len - 1).saturating_sub(lone_taps);
         } else {
-            let orders: f64 = if a[axis("free_taps")] >= 0.25 { (1..=n).product::<usize>() as f64 } else { 1.0 };
+            let orders: f64 = if a[axis("free_taps")] >= 0.25 {
+                (1..=n).product::<usize>() as f64
+            } else {
+                1.0
+            };
             loop {
-                let counts: Vec<f64> = models.iter().zip(&failed).map(|(model, &taps)| model.after(taps).count(cap)).collect();
+                let counts: Vec<f64> = models
+                    .iter()
+                    .zip(&failed)
+                    .map(|(model, &taps)| model.after(taps).count(cap))
+                    .collect();
                 if counts.iter().product::<f64>() * orders <= cap {
                     break;
                 }
-                let most = (0..n).max_by(|&x, &y| counts[x].total_cmp(&counts[y])).unwrap();
+                let most = (0..n)
+                    .max_by(|&x, &y| counts[x].total_cmp(&counts[y]))
+                    .unwrap();
                 failed[most] += 1;
             }
         }
@@ -610,14 +833,23 @@ pub fn tiny(count: u32, lone: u32, lone_taps: usize, cap: f64) -> Vec<Scenario> 
         }
         let payload = generate::build_with(&a, index as u64, false, Some(infos)).payload;
         Scenario {
-            name: format!("{}_{index:03}_{}", if lone { "lone" } else { "tiny" }, generate::tag(&payload)),
+            name: format!(
+                "{}_{index:03}_{}",
+                if lone { "lone" } else { "tiny" },
+                generate::tag(&payload)
+            ),
             steps: vec![payload],
             meta: generate::meta(&a, &[]),
         }
     };
-    let todo: Vec<(u32, bool)> = (0..count).map(|index| (index, false)).chain((0..lone).map(|index| (index, true))).collect();
+    let todo: Vec<(u32, bool)> = (0..count)
+        .map(|index| (index, false))
+        .chain((0..lone).map(|index| (index, true)))
+        .collect();
     todo.par_iter()
-        .filter_map(|&(index, lone)| std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| made(index, lone))).ok())
+        .filter_map(|&(index, lone)| {
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| made(index, lone))).ok()
+        })
         .collect()
 }
 
@@ -637,7 +869,10 @@ pub struct LandscapeArgs {
     #[arg(long, default_value = "1f")]
     pub y: String,
     /// the tuning of the second metric, `key=value,key=value`
-    #[arg(long, default_value = "max_brute_size=2000000,max_lattice_work=20000000,response_points=100000")]
+    #[arg(
+        long,
+        default_value = "max_brute_size=2000000,max_lattice_work=20000000,response_points=100000"
+    )]
     pub tuning: String,
     #[arg(long)]
     pub out: PathBuf,
@@ -649,11 +884,17 @@ pub fn best_known(conn: &Connection, scenario: &Scenario, step: usize) -> StateB
     let mut filled = payload.clone();
     crate::adv_table::fill(&mut filled);
     let mut state_bundle = StateBundle::init_from_payload(filled);
-    match db::best_run(conn, db::step_id(conn, &scenario.name, step, &step_key(payload))) {
+    match db::best_run(
+        conn,
+        db::step_id(conn, &scenario.name, step, &step_key(payload)),
+    ) {
         Some((_, _, essence)) => essence.apply(&mut state_bundle),
         None => {
             let found = solved(payload, 4, &Tuning::default());
-            let best = found.iter().max_by(|a, b| a.metric.total_cmp(&b.metric)).unwrap();
+            let best = found
+                .iter()
+                .max_by(|a, b| a.metric.total_cmp(&b.metric))
+                .unwrap();
             Essence::of(best).apply(&mut state_bundle);
         }
     }
@@ -664,27 +905,45 @@ pub fn best_known(conn: &Connection, scenario: &Scenario, step: usize) -> StateB
 /// state as best known. `second` is the same under another tuning, and `response` what the
 /// upgrade's response says, which is exact where the second tuning is.
 pub fn landscape(conn: &Connection, scenarios: &[Scenario], args: &LandscapeArgs, second: &Tuning) {
-    let axis_of = |text: &str| -> (usize, bool) { (text[..1].parse().unwrap(), text.ends_with('f')) };
+    let axis_of =
+        |text: &str| -> (usize, bool) { (text[..1].parse().unwrap(), text.ends_with('f')) };
     let (x_axis, y_axis) = (axis_of(&args.x), axis_of(&args.y));
     let mut file = std::fs::File::create(&args.out).unwrap();
-    writeln!(file, "scenario\tupgrade\tname\tlen\tx\ty\tpity\tmetric\tsecond\tresponse").unwrap();
-    for scenario in scenarios.iter().filter(|scenario| scenario.name.contains(&args.filter)) {
+    writeln!(
+        file,
+        "scenario\tupgrade\tname\tlen\tx\ty\tpity\tmetric\tsecond\tresponse"
+    )
+    .unwrap();
+    for scenario in scenarios
+        .iter()
+        .filter(|scenario| scenario.name.contains(&args.filter))
+    {
         let base = retuned(&best_known(conn, scenario, args.step), &Tuning::default());
         let other = retuned(&base, second);
         let juice_info = base.prep_output.juice_info.clone();
         let chosen: Vec<usize> = (0..base.upgrade_arr.len())
-            .filter(|&index| base.upgrade_arr[index].is_normal_honing && args.upgrade.is_none_or(|only| only == index))
+            .filter(|&index| {
+                base.upgrade_arr[index].is_normal_honing
+                    && args.upgrade.is_none_or(|only| only == index)
+            })
             .collect();
         for index in chosen {
             let this = &base.upgrade_arr[index];
             let model = Model::of(this, &juice_info, base.block());
             let (piece_type, upgrade_index) = (this.piece_type_usize, this.upgrade_index);
-            if [x_axis, y_axis].iter().any(|axis| model.pools.get(axis.0).is_none_or(|ids| ids.is_empty())) {
+            if [x_axis, y_axis]
+                .iter()
+                .any(|axis| model.pools.get(axis.0).is_none_or(|ids| ids.is_empty()))
+            {
                 continue;
             }
             let response = response_of(&other, index);
-            let start = this.state.clone().compute_streak_info(piece_type, upgrade_index, &juice_info);
-            let cells: Vec<(usize, usize)> = (0..model.len).cartesian_product(0..model.len).collect();
+            let start =
+                this.state
+                    .clone()
+                    .compute_streak_info(piece_type, upgrade_index, &juice_info);
+            let cells: Vec<(usize, usize)> =
+                (0..model.len).cartesian_product(0..model.len).collect();
             let rows: Vec<(usize, usize, usize, [f64; 3])> = cells
                 .par_chunks(64)
                 .flat_map_iter(|chunk| {
@@ -693,10 +952,19 @@ pub fn landscape(conn: &Connection, scenarios: &[Scenario], args: &LandscapeArgs
                     for &(x, y) in chunk {
                         let mut info = start.clone();
                         for ((pool, front), len) in [(x_axis, x), (y_axis, y)] {
-                            let entry = if front { &mut info.front[pool] } else { &mut info.back[pool] };
-                            *entry = ((len > 0).then(|| entry.0.unwrap_or(model.pools[pool][0])), len);
+                            let entry = if front {
+                                &mut info.front[pool]
+                            } else {
+                                &mut info.back[pool]
+                            };
+                            *entry = (
+                                (len > 0).then(|| entry.0.unwrap_or(model.pools[pool][0])),
+                                len,
+                            );
                         }
-                        if (0..model.pools.len()).any(|pool| info.front[pool].1 + info.back[pool].1 > model.len) {
+                        if (0..model.pools.len())
+                            .any(|pool| info.front[pool].1 + info.back[pool].1 > model.len)
+                        {
                             continue;
                         }
                         let mut state = State::new_empty(model.len);
@@ -704,7 +972,9 @@ pub fn landscape(conn: &Connection, scenarios: &[Scenario], args: &LandscapeArgs
                         let indices = model.indices(&state.payload);
                         let mut metrics = [0.0, 0.0, response.score(&indices)];
                         for (metric, bundle) in metrics.iter_mut().zip(bundles.iter_mut()) {
-                            bundle.upgrade_arr[index].state.update_payload(state.payload.clone());
+                            bundle.upgrade_arr[index]
+                                .state
+                                .update_payload(state.payload.clone());
                             *metric = bundle.metric_router(&mut Probe::default());
                         }
                         out.push((x, y, model.pity(&indices).0, metrics));

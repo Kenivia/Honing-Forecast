@@ -160,15 +160,28 @@ impl Default for Tuning {
 impl Tuning {
     /// What reported metrics are scored with: the coarse lattice at 64 points, which the optimizer never sees
     pub fn reference() -> Tuning {
-        Tuning { coarse_cells: 64.0, ..Tuning::default() }
+        Tuning {
+            coarse_cells: 64.0,
+            ..Tuning::default()
+        }
     }
 
     /// every knob a probability depends on, for keys of kept results
     pub fn evaluator_key(&self) -> u64 {
         let mut hasher = std::hash::DefaultHasher::new();
-        (self.root_finder as u8, self.max_root_find_iter, self.max_brute_size, self.max_lattice_work)
+        (
+            self.root_finder as u8,
+            self.max_root_find_iter,
+            self.max_brute_size,
+            self.max_lattice_work,
+        )
             .hash(&mut hasher);
-        (self.y_value_tol.to_bits(), self.taylor_skip.to_bits(), self.coarse_cells.to_bits()).hash(&mut hasher);
+        (
+            self.y_value_tol.to_bits(),
+            self.taylor_skip.to_bits(),
+            self.coarse_cells.to_bits(),
+        )
+            .hash(&mut hasher);
         self.max_coarse_work.hash(&mut hasher);
         hasher.finish()
     }

@@ -19,11 +19,21 @@ pub struct Rect {
 
 impl Rect {
     pub const fn ui(top_left: (f64, f64), width: f64, height: f64) -> Rect {
-        Rect { top_left, width, height, space: Space::Ui }
+        Rect {
+            top_left,
+            width,
+            height,
+            space: Space::Ui,
+        }
     }
 
     pub const fn screen(top_left: (f64, f64), width: f64, height: f64, ui_height: u32) -> Rect {
-        Rect { top_left, width, height, space: Space::Screen(ui_height) }
+        Rect {
+            top_left,
+            width,
+            height,
+            space: Space::Screen(ui_height),
+        }
     }
 
     pub fn scaled(&self, ui_height: u32) -> Rect {
@@ -48,7 +58,10 @@ impl Rect {
 
     pub fn get_offset(&self, other: &Rect) -> (f64, f64) {
         assert_eq!(self.space, other.space);
-        (self.top_left.0 - other.top_left.0, self.top_left.1 - other.top_left.1)
+        (
+            self.top_left.0 - other.top_left.0,
+            self.top_left.1 - other.top_left.1,
+        )
     }
 
     // the only place a size is rounded
@@ -59,7 +72,11 @@ impl Rect {
     // the same place, at exactly its pixel size
     pub fn whole_pixels(&self) -> Rect {
         let (width, height) = self.pixel_size();
-        Rect { width: width as f64, height: height as f64, ..*self }
+        Rect {
+            width: width as f64,
+            height: height as f64,
+            ..*self
+        }
     }
 }
 

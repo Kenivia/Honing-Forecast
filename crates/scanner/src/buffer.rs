@@ -73,7 +73,8 @@ impl Buffer {
     // copy of a rectangle as captured
     pub fn raw_crop(&self, x0: usize, y0: usize, x1: usize, y1: usize) -> RgbaImage {
         let data = self.data();
-        let rows = (y0..y1).flat_map(|y| &data[(y * self.width + x0) * 4..(y * self.width + x1) * 4]);
+        let rows =
+            (y0..y1).flat_map(|y| &data[(y * self.width + x0) * 4..(y * self.width + x1) * 4]);
         RgbaImage::from_raw((x1 - x0) as u32, (y1 - y0) as u32, rows.copied().collect()).unwrap()
     }
 

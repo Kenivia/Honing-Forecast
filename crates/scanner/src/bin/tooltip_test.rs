@@ -87,7 +87,10 @@ fn main() {
                             .zip(found)
                             .filter_map(|(variant, found)| {
                                 found.map(|x| {
-                                    format!("{:?} {} {:.1?}", spec.anchor_type, variant.name, x.brightness)
+                                    format!(
+                                        "{:?} {} {:.1?}",
+                                        spec.anchor_type, variant.name, x.brightness
+                                    )
                                 })
                             })
                     })

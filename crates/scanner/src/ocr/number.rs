@@ -1,8 +1,9 @@
 use crate::{
     anchor_to_slot::anchor_defs::{
         COMBINED_NUMBER_HEIGHT, ICON_HEIGHT, ICON_WIDTH, NUMBER_HEIGHT, NUMBER_TOP_MARGIN,
-    }, image_utils::brightness::brightness_lut, interface::setup::OCR_LINE_HEIGHT,
-
+    },
+    image_utils::brightness::brightness_lut,
+    interface::setup::OCR_LINE_HEIGHT,
 };
 use image::{
     GrayImage, Luma, Rgba, RgbaImage,

@@ -22,4 +22,3 @@ pub mod histogram;
 
 #[cfg(feature = "wasm")] // and this module is not in wasm because it is needed in the engine
 pub mod js_interface;
-

@@ -205,7 +205,11 @@ mod tests {
             tradable: 0.0,
             ..MAT
         };
-        for values in [[Worthless; 3], [Market; 3], [Worthless, Worthless, TaxedSell]] {
+        for values in [
+            [Worthless; 3],
+            [Market; 3],
+            [Worthless, Worthless, TaxedSell],
+        ] {
             assert_eq!(
                 ValuationPlan(values).bands(&mat),
                 vec![(0.0, 100.0)],
@@ -273,10 +277,7 @@ mod tests {
             taxed_price: 0.0,
             market_price: 0.0,
         };
-        assert_eq!(
-            ValuationPlan([Worthless; 3]).bands(&mat),
-            vec![(0.0, 0.0)]
-        );
+        assert_eq!(ValuationPlan([Worthless; 3]).bands(&mat), vec![(0.0, 0.0)]);
     }
 
     /// one_dimension_average_gold costs two saddlepoint evaluations per entry past the

@@ -1,17 +1,14 @@
 // Scores slot-number pre-processing variants with the real recogniser, on crops from number_dump.
 //   cargo run --release --bin number_test -- <dump dir> [variant...]
 use hf_scanner::{
-    image_utils::{
-        brightness::normalize_brightness,
-        common::Rect,
-    },
     dev_utils::native,
+    image_utils::{brightness::normalize_brightness, common::Rect},
+    interface::setup::{BASE_ICONS, OneIconConfig},
     ocr::{
         number::{NumberParams, number_background, number_mask, number_strip},
         recognize::recognize_line,
     },
     scanner_state::ScannerState,
-    interface::setup::{BASE_ICONS, OneIconConfig},
 };
 use image::{
     GrayImage, Luma, Rgba, RgbaImage,
@@ -19,7 +16,6 @@ use image::{
 };
 use imageproc::region_labelling::{Connectivity, connected_components};
 use std::{collections::HashMap, env, fs};
-
 
 fn luma(p: &Rgba<u8>) -> i32 {
     (p[0] as i32 * 299 + p[1] as i32 * 587 + p[2] as i32 * 114) / 1000

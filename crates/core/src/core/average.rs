@@ -1,8 +1,8 @@
 use crate::constants::{FLOAT_TOL, SPECIAL_TOL};
-use ahash::AHashMap;
-use smallvec::SmallVec;
 use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
+use ahash::AHashMap;
+use smallvec::SmallVec;
 
 pub const DEBUG_AVERAGE: bool = false;
 pub const DEBUG_AVG_INDEX: i64 = 7;
@@ -20,7 +20,11 @@ impl StateBundle {
         let mut mean: f64 = 0.0;
         for (index, &u_index) in self.special_state.iter().enumerate() {
             let support = self.support_from_index(u_index, support_index);
-            mean += if index < skip_count { support.access_min(true) } else { support.mean };
+            mean += if index < skip_count {
+                support.access_min(true)
+            } else {
+                support.mean
+            };
         }
         mean
     }
@@ -36,7 +40,11 @@ impl StateBundle {
 
         let skips = self.live_skips();
         let mut memo = std::mem::take(&mut self.gold_memo);
-        let sums = if self.tuning.max_memo_size > 0 && !skips.is_empty() { self.memo_sums(&skips) } else { Vec::new() };
+        let sums = if self.tuning.max_memo_size > 0 && !skips.is_empty() {
+            self.memo_sums(&skips)
+        } else {
+            Vec::new()
+        };
         let tuning_key = self.tuning.evaluator_key();
         let mut total_gold: f64 = 0.0;
         let plan_bands = &self.prep_output.bands[self.prep_output.optimizer_plan];
@@ -75,7 +83,11 @@ impl StateBundle {
         let mut metric_per_plan: Vec<f64> = vec![0.0; num_plans];
         let skips = self.live_skips();
         let mut memo = std::mem::take(&mut self.gold_memo);
-        let sums = if self.tuning.max_memo_size > 0 && !skips.is_empty() { self.memo_sums(&skips) } else { Vec::new() };
+        let sums = if self.tuning.max_memo_size > 0 && !skips.is_empty() {
+            self.memo_sums(&skips)
+        } else {
+            Vec::new()
+        };
         let tuning_key = self.tuning.evaluator_key();
         for plan_index in 0..num_plans {
             for support_index in 0..num_mats {
@@ -93,7 +105,8 @@ impl StateBundle {
                 metric_per_plan[plan_index] += this;
                 if plan_index == 0 {
                     for &(skip_count, special_prob) in &skips {
-                        avg_used[support_index] += special_prob * self.simple_avg(support_index as i64, skip_count)
+                        avg_used[support_index] +=
+                            special_prob * self.simple_avg(support_index as i64, skip_count)
                     }
                 }
             }
@@ -145,9 +158,12 @@ impl StateBundle {
         if missing.is_empty() {
             return total;
         }
-        let needs_probability = thresh_price_pairs.windows(2).any(|pair| (pair[0].1 - pair[1].1).abs() >= FLOAT_TOL);
+        let needs_probability = thresh_price_pairs
+            .windows(2)
+            .any(|pair| (pair[0].1 - pair[1].1).abs() >= FLOAT_TOL);
         let table = if needs_probability {
-            let thresholds: SmallVec<[f64; 4]> = thresh_price_pairs.iter().map(|pair| pair.0).collect();
+            let thresholds: SmallVec<[f64; 4]> =
+                thresh_price_pairs.iter().map(|pair| pair.0).collect();
             self.lattice_table(support_index, &missing, &thresholds, probe)
         } else {
             vec![None; missing.len()]
@@ -161,8 +177,13 @@ impl StateBundle {
                 continue;
             }
             let lattice = lattices.next().unwrap().as_deref();
-            let this_avg =
-                self.one_dimension_average_gold(support_index, skip_count, thresh_price_pairs, lattice, probe);
+            let this_avg = self.one_dimension_average_gold(
+                support_index,
+                skip_count,
+                thresh_price_pairs,
+                lattice,
+                probe,
+            );
             total += weight * this_avg;
             if let Some(sums) = sums {
                 memo.insert(mix(base, sums[slot]), this_avg);
@@ -204,7 +225,11 @@ impl StateBundle {
                 let u_index = self.special_state[index];
                 let upgrade = &self.upgrade_arr[u_index];
                 for (sum, support) in run.iter_mut().zip(&upgrade.cost_dist) {
-                    let made_of = if support.ignore { 0f64.to_bits() } else { upgrade.state.hash };
+                    let made_of = if support.ignore {
+                        0f64.to_bits()
+                    } else {
+                        upgrade.state.hash
+                    };
                     *sum = sum.wrapping_add(mix(u_index as u64, made_of));
                 }
             }
@@ -244,7 +269,8 @@ impl StateBundle {
                     continue;
                 }
                 probe.count(Counter::Lattice);
-                out += (prev_price - price) * (thresh * lattice[index].0 - lattice[index].1 * simple_mean);
+                out += (prev_price - price)
+                    * (thresh * lattice[index].0 - lattice[index].1 * simple_mean);
             }
             return out;
         }
@@ -266,15 +292,26 @@ impl StateBundle {
                 continue;
             }
 
-            out += (prev_price - price) * self.leftover(support_index, skip_count, &shape, thresh, probe);
+            out += (prev_price - price)
+                * self.leftover(support_index, skip_count, &shape, thresh, probe);
         }
         return out;
     }
 
     /// E[(t - S)+] of one material under one free tap outcome, by whatever the metric would use
-    pub fn expected_leftover(&self, support_index: i64, skip_count: usize, thresh: f64, probe: &mut Probe) -> f64 {
+    pub fn expected_leftover(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+        thresh: f64,
+        probe: &mut Probe,
+    ) -> f64 {
         let shape = self.shape(support_index, skip_count);
-        if let Some(table) = self.lattice_table(support_index, &[skip_count], &[thresh], probe).pop().flatten() {
+        if let Some(table) = self
+            .lattice_table(support_index, &[skip_count], &[thresh], probe)
+            .pop()
+            .flatten()
+        {
             probe.count(Counter::Lattice);
             return thresh * table[0].0 - table[0].1 * shape.mean;
         }

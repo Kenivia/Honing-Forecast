@@ -40,13 +40,17 @@ impl SolverStateBundle {
         }
         let key = movable[self.rng.random_range(0..movable.len())];
         let state = self.state_bundle.chest_states.get_mut(key).unwrap();
-        let filled: Vec<usize> = (0..state.len()).filter(|&option| state[option] > 0).collect();
+        let filled: Vec<usize> = (0..state.len())
+            .filter(|&option| state[option] > 0)
+            .collect();
         let from = filled[self.rng.random_range(0..filled.len())];
         let mut to = self.rng.random_range(0..state.len() - 1);
         if to >= from {
             to += 1;
         }
-        let most = ((1.0 - progress).powi(2) * state[from] as f64).ceil().max(1.0) as i64;
+        let most = ((1.0 - progress).powi(2) * state[from] as f64)
+            .ceil()
+            .max(1.0) as i64;
         let moved = self.rng.random_range(1..=most);
         state[from] -= moved;
         state[to] += moved;
@@ -57,13 +61,20 @@ impl SolverStateBundle {
     /// what the rest of the state is to each upgrade: everything a response depends on
     fn rest_of(&self) -> Vec<u64> {
         let hasher = ahash::RandomState::with_seeds(1, 2, 3, 4);
-        let part = |index: usize| hasher.hash_one((index, self.state_bundle.upgrade_arr[index].state.hash));
+        let part = |index: usize| {
+            hasher.hash_one((index, self.state_bundle.upgrade_arr[index].state.hash))
+        };
         let count = self.state_bundle.upgrade_arr.len();
         let all = (0..count).fold(
-            hasher.hash_one((&self.state_bundle.special_state, &self.state_bundle.chest_states)),
+            hasher.hash_one((
+                &self.state_bundle.special_state,
+                &self.state_bundle.chest_states,
+            )),
             |sum, index| sum.wrapping_add(part(index)),
         );
-        (0..count).map(|index| all.wrapping_sub(part(index))).collect()
+        (0..count)
+            .map(|index| all.wrapping_sub(part(index)))
+            .collect()
     }
 
     /// A normal upgrade that does not have its best plan against the rest takes it. False
@@ -81,20 +92,32 @@ impl SolverStateBundle {
             if open.is_empty() {
                 return false;
             }
-            let index = open[WeightedIndex::new(open.iter().map(|&index| self.upgrade_impact[index])).unwrap().sample(&mut self.rng)];
-            let kicked = tuning.response_kick > 0.0 && self.settled.len() > 1 && self.rng.random_bool(tuning.response_kick);
+            let index =
+                open[WeightedIndex::new(open.iter().map(|&index| self.upgrade_impact[index]))
+                    .unwrap()
+                    .sample(&mut self.rng)];
+            let kicked = tuning.response_kick > 0.0
+                && self.settled.len() > 1
+                && self.rng.random_bool(tuning.response_kick);
             if kicked {
                 let mut other = self.rng.random_range(0..self.settled.len() - 1);
                 if other >= index {
                     other += 1;
                 }
                 let block = self.state_bundle.block();
-                self.state_bundle.upgrade_arr[other].perturb(progress, block, &self.state_bundle.prep_output.juice_info, &mut self.rng);
+                self.state_bundle.upgrade_arr[other].perturb(
+                    progress,
+                    block,
+                    &self.state_bundle.prep_output.juice_info,
+                    &mut self.rng,
+                );
                 rest = self.rest_of();
             }
             let response = Response::of(&mut self.state_bundle, index, &mut Probe::default());
             let this = &mut self.state_bundle.upgrade_arr[index];
-            let now = response.model.canonical(&response.model.indices(&this.state.payload));
+            let now = response
+                .model
+                .canonical(&response.model.indices(&this.state.payload));
             let plan = response.better(&now, tuning.response_joint).1;
             self.extra_cost += response.work(tuning.response_steps).ceil() as i64;
             let changed = now != plan;
@@ -116,12 +139,23 @@ impl SolverStateBundle {
         let (special_floor, order_reach) = (tuning.special_floor, tuning.order_reach);
         let reached = 1.0 - self.state_bundle.special_probs()[0];
         // a first upgrade that is out of reach says nothing of the others
-        let floor = if self.state_bundle.affords_a_free_tap() { special_floor } else { 0.0 };
-        let mutate_special = self.rng.random_bool(reached.max(floor) * self.special_affinity);
+        let floor = if self.state_bundle.affords_a_free_tap() {
+            special_floor
+        } else {
+            0.0
+        };
+        let mutate_special = self
+            .rng
+            .random_bool(reached.max(floor) * self.special_affinity);
         if mutate_special && order_reach {
             // any upgrade, to a place a free tap can get to
             let u_len = self.state_bundle.special_state.len();
-            let reach = self.state_bundle.special_probs().iter().rposition(|&chance| chance >= SPECIAL_TOL).unwrap_or(0);
+            let reach = self
+                .state_bundle
+                .special_probs()
+                .iter()
+                .rposition(|&chance| chance >= SPECIAL_TOL)
+                .unwrap_or(0);
             let idx1: usize = self.rng.random_range(0..u_len);
             let idx2: usize = self.rng.random_range(0..=reach.min(u_len - 1));
             let elem = self.state_bundle.special_state.remove(idx1);
@@ -148,7 +182,8 @@ impl SolverStateBundle {
         } else {
             let progress = self.progress();
             let response_rate = self.state_bundle.tuning.response_rate;
-            if response_rate > 0.0 && self.rng.random_bool(response_rate) && self.respond(progress) {
+            if response_rate > 0.0 && self.rng.random_bool(response_rate) && self.respond(progress)
+            {
                 return false;
             }
             let non_impact_weight = self.state_bundle.tuning.non_impact_weight;
@@ -197,13 +232,22 @@ impl Upgrade {
             self.state.update_hash();
         }
     }
-    fn perturb_normal(&mut self, progress: f64, block: usize, juice_info: &JuiceInfo, rng: &mut SmallRng) {
+    fn perturb_normal(
+        &mut self,
+        progress: f64,
+        block: usize,
+        juice_info: &JuiceInfo,
+        rng: &mut SmallRng,
+    ) {
         let piece_type = self.piece_type_usize;
         let upgrade_index = self.upgrade_index;
         let len = self.state.len();
 
         // a change shorter than a block would mostly be rounded away
-        let max_change_len = ((1.0 - progress).powi(2) * len as f64).ceil().max(3.0).max(2.0 * block as f64) as i64;
+        let max_change_len = ((1.0 - progress).powi(2) * len as f64)
+            .ceil()
+            .max(3.0)
+            .max(2.0 * block as f64) as i64;
 
         let mut streak_info = self.state.streak_cache.take().unwrap_or_else(|| {
             self.state

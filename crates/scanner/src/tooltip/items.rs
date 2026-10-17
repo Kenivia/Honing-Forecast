@@ -22,8 +22,9 @@ pub struct Item {
 }
 
 // the materials: templates/items.json
-pub static ITEMS: LazyLock<Vec<Item>> =
-    LazyLock::new(|| serde_json::from_str(include_str!("../../../../templates/items.json")).unwrap());
+pub static ITEMS: LazyLock<Vec<Item>> = LazyLock::new(|| {
+    serde_json::from_str(include_str!("../../../../templates/items.json")).unwrap()
+});
 
 // One chest of templates/chests.json, which scripts/game_files/chests.py writes from the game's
 // own tables: everything that opens to a material, to gold or to silver, and whatever else is
@@ -100,7 +101,9 @@ pub fn is_chest_icon(icon: &str) -> bool {
 // Some chest with this icon has its item level written across the slot. Only those that count:
 // with the others in, plain chests of another art passed as this one with the level's rows left out.
 pub fn has_level(icon: &str) -> bool {
-    variants_of(icon).iter().any(|x| x.level.is_some() && !x.irrelevant)
+    variants_of(icon)
+        .iter()
+        .any(|x| x.level.is_some() && !x.irrelevant)
 }
 
 // Whether every one of these chests opens to the same things, so that it does not matter which
@@ -108,7 +111,8 @@ pub fn has_level(icon: &str) -> bool {
 pub fn open_alike(variants: &[&Variant]) -> bool {
     variants.windows(2).all(|pair| {
         pair[0].irrelevant == pair[1].irrelevant
-            && (pair[0].irrelevant || (pair[0].kind == pair[1].kind && pair[0].sorted == pair[1].sorted))
+            && (pair[0].irrelevant
+                || (pair[0].kind == pair[1].kind && pair[0].sorted == pair[1].sorted))
     })
 }
 
@@ -132,7 +136,9 @@ pub fn shares_icon(icon: &str) -> bool {
         .iter()
         .filter(|item| item.icon.as_deref() == Some(icon))
         .filter_map(|item| item.label.as_ref());
-    labels.next().is_some_and(|first| labels.any(|label| label != first))
+    labels
+        .next()
+        .is_some_and(|first| labels.any(|label| label != first))
 }
 
 // The book a tooltip's description lines are of: "Honing Lv. 11 (1,645): +10%" for each level,
@@ -144,7 +150,12 @@ pub fn item_from_body(lines: &[String]) -> Option<&'static Item> {
         .iter()
         .filter_map(|line| {
             let level = line.split_once("Honing Lv")?.1.split('(').next()?;
-            level.chars().filter(char::is_ascii_digit).collect::<String>().parse().ok()
+            level
+                .chars()
+                .filter(char::is_ascii_digit)
+                .collect::<String>()
+                .parse()
+                .ok()
         })
         .collect();
     let mut gear = ["Weapon", "Armor"]
@@ -165,7 +176,9 @@ fn is_numeral(word: &str, roman: bool) -> bool {
 // of "[15-18]" come back as any of "[(I", and a space before a digit gets lost. A roman numeral
 // with a character the recogniser did not know in it is kept as it is.
 pub fn numerals(text: &str, roman: bool) -> String {
-    let words = text.split_whitespace().filter(|word| is_numeral(word, roman));
+    let words = text
+        .split_whitespace()
+        .filter(|word| is_numeral(word, roman));
     words
         .flat_map(|word| {
             let digits = word.chars().any(|c| c.is_ascii_digit());
@@ -176,7 +189,10 @@ pub fn numerals(text: &str, roman: bool) -> String {
 
 // a name without its numerals: names with the same one differ by numerals alone
 pub fn without_numerals(text: &str, roman: bool) -> String {
-    text.split_whitespace().filter(|word| !is_numeral(word, roman)).collect::<Vec<_>>().join(" ")
+    text.split_whitespace()
+        .filter(|word| !is_numeral(word, roman))
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 // Whether a read's numerals are a name's, where `rivals` are the numerals of the names that
@@ -185,7 +201,10 @@ pub fn without_numerals(text: &str, roman: bool) -> String {
 // while a lone digit or a short roman numeral has to read right, a wrong one being another name.
 pub fn numerals_are(read: &str, own: &str, rivals: &[String]) -> bool {
     let apart = levenshtein(read, own);
-    apart * 3 <= own.chars().count() && rivals.iter().all(|x| x == own || levenshtein(read, x) > apart)
+    apart * 3 <= own.chars().count()
+        && rivals
+            .iter()
+            .all(|x| x == own || levenshtein(read, x) > apart)
 }
 
 // an OCR'd title to the one of these it clearly is
@@ -195,14 +214,25 @@ fn closest<T: Copy>(read: &str, titles: impl Iterator<Item = (&'static str, T)>)
     // each title with what it is without its numerals, and its numerals
     let titles: Vec<(String, String, String, T)> = titles
         .map(|(title, value)| (title.to_lowercase(), value))
-        .map(|(title, value)| (without_numerals(&title, true), numerals(&title, true), title, value))
+        .map(|(title, value)| {
+            (
+                without_numerals(&title, true),
+                numerals(&title, true),
+                title,
+                value,
+            )
+        })
         .collect();
     // one wrong numeral barely changes the similarity ("Level 3" / "Level 4", "Pouch II" / "Pouch
     // III"), so the read's numerals have to be the title's
     let mut scores: Vec<(f64, T)> = titles
         .iter()
         .filter(|(bare, own, _, _)| {
-            let rivals: Vec<String> = titles.iter().filter(|x| x.0 == *bare).map(|x| x.1.clone()).collect();
+            let rivals: Vec<String> = titles
+                .iter()
+                .filter(|x| x.0 == *bare)
+                .map(|x| x.1.clone())
+                .collect();
             numerals_are(&seen, own, &rivals)
         })
         .map(|(_, _, title, value)| (normalized_levenshtein(&read, title), *value))
@@ -216,7 +246,12 @@ fn closest<T: Copy>(read: &str, titles: impl Iterator<Item = (&'static str, T)>)
 
 // an OCR'd title to the known title it is, if it is clearly one of them
 pub fn match_title(read: &str) -> Option<&'static Item> {
-    closest(read, ITEMS.iter().filter_map(|item| Some((item.title.as_deref()?, item))))
+    closest(
+        read,
+        ITEMS
+            .iter()
+            .filter_map(|item| Some((item.title.as_deref()?, item))),
+    )
 }
 
 // Bars of gold and silver by title, each with the chests of that title. A bar's tooltip has no
@@ -241,5 +276,8 @@ pub fn match_bar_title(read: &str) -> Option<&'static str> {
 }
 
 pub fn bars_titled(title: &str) -> Vec<u32> {
-    BAR_TITLES.iter().find(|x| x.0 == title).map_or(vec![], |x| x.1.clone())
+    BAR_TITLES
+        .iter()
+        .find(|x| x.0 == title)
+        .map_or(vec![], |x| x.1.clone())
 }

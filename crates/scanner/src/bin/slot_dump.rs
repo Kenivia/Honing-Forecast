@@ -6,10 +6,13 @@
 // (_i), the same with MARGIN px around it (_m) and the whole slot as captured (_r), and the
 // templates in <folder>/../templates-<ui height>.
 use hf_scanner::{
-    dev_utils::capture::{Record, read_records},
     anchor_to_slot::anchor_defs::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
-    image_utils::{brightness::normalize_brightness, common::{Rect, get_resizer}},
+    dev_utils::capture::{Record, read_records},
     dev_utils::native,
+    image_utils::{
+        brightness::normalize_brightness,
+        common::{Rect, get_resizer},
+    },
     interface::setup::{BASE_ICONS, icon_lookup},
 };
 use std::{collections::HashMap, env, fs};
@@ -32,9 +35,12 @@ fn main() {
     fs::create_dir_all(out).unwrap();
     let file = fs::read(path).unwrap();
     let mut records = read_records(&file);
-    let Some(Record::Start(start)) = records.next() else { panic!("no start record") };
+    let Some(Record::Start(start)) = records.next() else {
+        panic!("no start record")
+    };
     let game = (start.game_width, start.game_height);
-    let (mut state, _pixels) = native::new_state(start.width, start.height, game, start.forced_21_9);
+    let (mut state, _pixels) =
+        native::new_state(start.width, start.height, game, start.forced_21_9);
 
     let mut looks: HashMap<String, HashMap<u64, Look>> = HashMap::new();
     for record in records {
@@ -50,20 +56,33 @@ fn main() {
         let scanned = scan.frame.is_some();
         state.replay_scan(scan);
         state.clear_changed();
-        let Some(brightness) = state.screen_info.brightness.filter(|_| scanned) else { continue };
+        let Some(brightness) = state.screen_info.brightness.filter(|_| scanned) else {
+            continue;
+        };
         let s = state.screen_info.scale_factor;
         // under the tooltip, which may run to the bottom of the screen, or in the column it is of
-        let hover = state.hover.as_ref().map(|x| (x.bar, x.candidates.iter().map(|x| x.0).collect::<Vec<_>>()));
+        let hover = state
+            .hover
+            .as_ref()
+            .map(|x| (x.bar, x.candidates.iter().map(|x| x.0).collect::<Vec<_>>()));
         let pages = state.active_page_num();
         for address in SLOT_ORDER.iter() {
             if pages[&address.inventory_type] != Some(address.page_num) {
                 continue;
             }
-            let Some(position) = state.anchored_slot_address_position(address) else { continue };
+            let Some(position) = state.anchored_slot_address_position(address) else {
+                continue;
+            };
             let (left, top) = position.top_left;
             let number = COMBINED_NUMBER_HEIGHT * s;
-            let (x0, y0) = (left.floor() as usize - 4, (top - number).floor() as usize - 4);
-            let (x1, y1) = ((left + position.width).ceil() as usize + 4, (top + position.height).ceil() as usize + 4);
+            let (x0, y0) = (
+                left.floor() as usize - 4,
+                (top - number).floor() as usize - 4,
+            );
+            let (x1, y1) = (
+                (left + position.width).ceil() as usize + 4,
+                (top + position.height).ceil() as usize + 4,
+            );
             if x1 > start.width || y1 > start.height {
                 continue;
             }
@@ -76,18 +95,32 @@ fn main() {
                 (top + position.height).ceil() as usize,
             );
             let hovered = hover.as_ref().is_some_and(|(bar, beside)| {
-                beside.contains(address) || (x1 + 8 > bar.x && x0 < bar.x + bar.width + 8 && y1 > bar.y)
+                beside.contains(address)
+                    || (x1 + 8 > bar.x && x0 < bar.x + bar.width + 8 && y1 > bar.y)
             });
             let (row, column) = address.pos_in_inv;
-            let key = format!("{:?} {} {row},{column}", address.inventory_type, address.page_num);
+            let key = format!(
+                "{:?} {} {row},{column}",
+                address.inventory_type, address.page_num
+            );
             let slot = looks.entry(key.clone()).or_default();
             let saved = slot.values().filter(|x| !x.file.is_empty()).count();
-            let look = slot.entry(hash).or_insert(Look { first: index, scans: 0, hovered: 0, file: String::new(), brightness });
+            let look = slot.entry(hash).or_insert(Look {
+                first: index,
+                scans: 0,
+                hovered: 0,
+                file: String::new(),
+                brightness,
+            });
             look.scans += 1;
             look.hovered += hovered as usize;
             // With a tooltip about, only a look that stays. A clean one may be seen once: a still
             // screen is not scanned.
-            let due = if hovered { look.scans == STAYS } else { look.file.is_empty() };
+            let due = if hovered {
+                look.scans == STAYS
+            } else {
+                look.file.is_empty()
+            };
             if !due || !look.file.is_empty() || saved >= MAX_LOOKS {
                 continue;
             }
@@ -103,7 +136,11 @@ fn main() {
             });
             normalize_brightness(&mut wide, brightness);
             wide.data.save(format!("{out}/{name}_m.png")).unwrap();
-            state.buffer.raw_crop(x0, y0, x1, y1).save(format!("{out}/{name}_r.png")).unwrap();
+            state
+                .buffer
+                .raw_crop(x0, y0, x1, y1)
+                .save(format!("{out}/{name}_r.png"))
+                .unwrap();
             let look = looks.get_mut(&key).unwrap().get_mut(&hash).unwrap();
             look.file = name;
             look.brightness = brightness;
@@ -113,8 +150,12 @@ fn main() {
     let height = state.screen_info.effective_height;
     let templates = format!("{out}/../templates-{height}");
     fs::create_dir_all(&templates).unwrap();
-    let names: Vec<String> =
-        BASE_ICONS.read().iter().filter(|x| x.1.is_slot_icon()).map(|x| x.0.clone()).collect();
+    let names: Vec<String> = BASE_ICONS
+        .read()
+        .iter()
+        .filter(|x| x.1.is_slot_icon())
+        .map(|x| x.0.clone())
+        .collect();
     for name in names {
         let icon = icon_lookup(&name, height, get_resizer(&mut state.resizer));
         icon.data.save(format!("{templates}/{name}.png")).unwrap();

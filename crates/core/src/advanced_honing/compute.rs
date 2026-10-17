@@ -63,7 +63,11 @@ fn compute_adv_dist(state: SmallAdvState, config: &AdvConfig, dists: &mut Dists)
     let (t1, t2) = ROLL_THRESH[(should_juice as usize) | ((should_scroll as usize) << 1)];
 
     // what this tap adds to the cost, the juice and the scroll
-    let incs = [(!state.next_free) as usize, should_juice as usize, should_scroll as usize];
+    let incs = [
+        (!state.next_free) as usize,
+        should_juice as usize,
+        should_scroll as usize,
+    ];
 
     let base_rolls = [(t1, 1), (t2 - t1, 2), (1.0 - t2, 4)];
     let mut children: SmallVec<[(f64, usize); 18]> = SmallVec::new();

@@ -24,7 +24,14 @@ pub fn fill(payload: &mut Payload) {
         .filter(|upgrade| !upgrade.is_normal_honing)
         .map(|upgrade| {
             let at = upgrade.adv_config;
-            AdvConfig::new(at.start_xp, at.start_balls, at.next_free, at.next_big, at.double_balls, at.is_30_40)
+            AdvConfig::new(
+                at.start_xp,
+                at.start_balls,
+                at.next_free,
+                at.next_big,
+                at.double_balls,
+                at.is_30_40,
+            )
         })
         .collect();
     if starts.is_empty() {
@@ -34,20 +41,33 @@ pub fn fill(payload: &mut Payload) {
     // many workers share the file
     let conn = Connection::open(Path::new(ROOT).join(PATH)).unwrap();
     conn.busy_timeout(Duration::from_secs(120)).unwrap();
-    conn.execute("CREATE TABLE IF NOT EXISTS block(start TEXT PRIMARY KEY, dists BLOB)", []).unwrap();
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS block(start TEXT PRIMARY KEY, dists BLOB)",
+        [],
+    )
+    .unwrap();
 
     let cache = payload.adv_cache.get_or_insert_default();
     for start in starts {
         let key = serde_json::to_string(&start).unwrap();
         let configs = start.strategies();
-        let stored: Option<Vec<u8>> =
-            conn.query_row("SELECT dists FROM block WHERE start = ?1", [&key], |row| row.get(0)).optional().unwrap();
+        let stored: Option<Vec<u8>> = conn
+            .query_row("SELECT dists FROM block WHERE start = ?1", [&key], |row| {
+                row.get(0)
+            })
+            .optional()
+            .unwrap();
         let dists: Vec<AdvDistTriplet> = match stored {
             Some(bytes) => postcard::from_bytes(&bytes).unwrap(),
             None => {
-                let dists: Vec<AdvDistTriplet> = configs.iter().map(compute_adv_dist_wrapper).collect();
+                let dists: Vec<AdvDistTriplet> =
+                    configs.iter().map(compute_adv_dist_wrapper).collect();
                 let bytes = postcard::to_allocvec(&dists).unwrap();
-                conn.execute("INSERT OR IGNORE INTO block VALUES (?1, ?2)", params![key, bytes]).unwrap();
+                conn.execute(
+                    "INSERT OR IGNORE INTO block VALUES (?1, ?2)",
+                    params![key, bytes],
+                )
+                .unwrap();
                 dists
             }
         };
@@ -68,11 +88,20 @@ mod tests {
         fill(&mut payload);
         let cache = payload.adv_cache.clone().unwrap();
         assert!(!cache.is_empty() && cache.len() % AdvConfig::default().strategies().len() == 0);
-        assert_eq!(StateBundle::init_from_payload(payload).adv_cache.len(), cache.len());
+        assert_eq!(
+            StateBundle::init_from_payload(payload).adv_cache.len(),
+            cache.len()
+        );
         for (config, kept) in cache.iter().take(40) {
             let fresh = compute_adv_dist_wrapper(config);
-            for (a, b) in [(&kept.cost, &fresh.cost), (&kept.juice, &fresh.juice), (&kept.scroll, &fresh.scroll)] {
-                assert!(a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.to_bits() == y.to_bits()));
+            for (a, b) in [
+                (&kept.cost, &fresh.cost),
+                (&kept.juice, &fresh.juice),
+                (&kept.scroll, &fresh.scroll),
+            ] {
+                assert!(
+                    a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.to_bits() == y.to_bits())
+                );
             }
         }
     }

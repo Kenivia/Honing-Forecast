@@ -7,28 +7,42 @@
 // TRUTH source slot icon amount, for slots a tooltip was tied to.
 use hf_scanner::{
     dev_utils::native,
+    interface::setup::BASE_ICONS,
     ocr::{
         number::{NumberParams, number_strip},
         recognize::recognize_line,
     },
     scanner_state::{ScannerState, SlotAddress},
-    interface::setup::BASE_ICONS,
 };
 use std::{env, io::Read};
-
 
 // the first is what the scanner does; add what is being tried
 fn variants() -> Vec<(&'static str, NumberParams)> {
     let now = NumberParams::default;
     vec![
         ("now", now()),
-        ("no neighbour pass", NumberParams { low_alpha: now().min_alpha, ..now() }),
-        ("no colour test", NumberParams { min_chroma: f64::INFINITY, ..now() }),
+        (
+            "no neighbour pass",
+            NumberParams {
+                low_alpha: now().min_alpha,
+                ..now()
+            },
+        ),
+        (
+            "no colour test",
+            NumberParams {
+                min_chroma: f64::INFINITY,
+                ..now()
+            },
+        ),
     ]
 }
 
 fn place(address: &SlotAddress) -> String {
-    format!("{:?} p{} {:?}", address.inventory_type, address.page_num, address.pos_in_inv)
+    format!(
+        "{:?} p{} {:?}",
+        address.inventory_type, address.page_num, address.pos_in_inv
+    )
 }
 
 fn report(state: &ScannerState, address: &SlotAddress, source: &str, frame: usize) {
@@ -46,7 +60,8 @@ fn report(state: &ScannerState, address: &SlotAddress, source: &str, frame: usiz
         );
         // SAVE=<folder> keeps every strip
         if let Ok(folder) = env::var("SAVE") {
-            let id = format!("{frame}_{}_{variant}", place(address)).replace([' ', ',', '(', ')'], "_");
+            let id =
+                format!("{frame}_{}_{variant}", place(address)).replace([' ', ',', '(', ')'], "_");
             strip.save(format!("{folder}/{id}.png")).unwrap();
         }
         for numbers in [false, true] {
@@ -58,16 +73,28 @@ fn report(state: &ScannerState, address: &SlotAddress, source: &str, frame: usiz
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
-    println!("VARIANTS\t{}", variants().iter().map(|x| x.0).collect::<Vec<_>>().join("\t"));
+    println!(
+        "VARIANTS\t{}",
+        variants()
+            .iter()
+            .map(|x| x.0)
+            .collect::<Vec<_>>()
+            .join("\t")
+    );
     let from_stdin = args[0] == "--stdin";
-    let sources: Vec<String> = if from_stdin { vec!["stdin".to_string()] } else { args.clone() };
+    let sources: Vec<String> = if from_stdin {
+        vec!["stdin".to_string()]
+    } else {
+        args.clone()
+    };
     for source in &sources {
         let still = (!from_stdin).then(|| image::open(source).unwrap().to_rgba8());
         let (width, height): (usize, usize) = match &still {
             Some(image) => (image.width() as usize, image.height() as usize),
             None => (args[1].parse().unwrap(), args[2].parse().unwrap()),
         };
-        let (mut state, mut pixels) = native::new_state(width, height, native::guess_game(width, height), false);
+        let (mut state, mut pixels) =
+            native::new_state(width, height, native::guess_game(width, height), false);
 
         let mut stdin = std::io::stdin().lock();
         for frame in 0.. {

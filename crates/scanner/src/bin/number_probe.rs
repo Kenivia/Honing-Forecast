@@ -5,19 +5,20 @@
 // Page, row and column count from 0. Files are f<frame>_<stage>.png.
 use hf_scanner::{
     dev_utils::native,
+    interface::setup::BASE_ICONS,
     ocr::{
         number::{NumberParams, number_background, number_layers, number_mask, number_strip},
         recognize::recognize_line,
     },
     scanner_state::{InventoryType, ScannerState, SlotAddress},
-    interface::setup::BASE_ICONS,
 };
 use image::{GrayImage, Luma, Rgba, RgbaImage};
 use std::{env, fs, io::Read};
 
-
 fn grey(w: u32, h: u32, value: impl Fn(usize) -> f64) -> GrayImage {
-    GrayImage::from_fn(w, h, |x, y| Luma([(value((y * w + x) as usize) * 255.0).clamp(0.0, 255.0) as u8]))
+    GrayImage::from_fn(w, h, |x, y| {
+        Luma([(value((y * w + x) as usize) * 255.0).clamp(0.0, 255.0) as u8])
+    })
 }
 
 fn dump(state: &ScannerState, address: &SlotAddress, out: &str, frame: usize) {
@@ -41,11 +42,20 @@ fn dump(state: &ScannerState, address: &SlotAddress, out: &str, frame: usize) {
     .save(path("2_background"))
     .unwrap();
     grey(w, h, |i| alpha[i]).save(path("3_alpha_fit")).unwrap();
-    grey(w, h, |i| by_colour[i]).save(path("4_alpha_colour")).unwrap();
-    grey(w, h, |i| shadow[i] as u8 as f64).save(path("5_shadow")).unwrap();
-    number_mask(number, &background, &params).save(path("6_mask")).unwrap();
+    grey(w, h, |i| by_colour[i])
+        .save(path("4_alpha_colour"))
+        .unwrap();
+    grey(w, h, |i| shadow[i] as u8 as f64)
+        .save(path("5_shadow"))
+        .unwrap();
+    number_mask(number, &background, &params)
+        .save(path("6_mask"))
+        .unwrap();
     strip.save(path("7_sent")).unwrap();
-    println!("f{frame:04}\t{name}\tbrightness {brightness:.2}\treads {:?}", recognize_line(&strip, true));
+    println!(
+        "f{frame:04}\t{name}\tbrightness {brightness:.2}\treads {:?}",
+        recognize_line(&strip, true)
+    );
 }
 
 fn main() {
@@ -66,7 +76,8 @@ fn main() {
         Some(image) => (image.width() as usize, image.height() as usize),
         None => (args[6].parse().unwrap(), args[7].parse().unwrap()),
     };
-    let (mut state, mut pixels) = native::new_state(width, height, native::guess_game(width, height), false);
+    let (mut state, mut pixels) =
+        native::new_state(width, height, native::guess_game(width, height), false);
 
     let mut stdin = std::io::stdin().lock();
     for frame in 0.. {
@@ -81,10 +92,17 @@ fn main() {
         }
         state.cropper();
         // a job still waiting was asked for on this frame
-        if state.slot_infos.get(&address).is_some_and(|x| x.amount_job.is_some()) {
+        if state
+            .slot_infos
+            .get(&address)
+            .is_some_and(|x| x.amount_job.is_some())
+        {
             dump(&state, &address, out, frame);
         }
         state.run_ocr_inline();
     }
-    println!("ends as {:?}", state.slot_infos.get(&address).map(|x| &x.amount));
+    println!(
+        "ends as {:?}",
+        state.slot_infos.get(&address).map(|x| &x.amount)
+    );
 }

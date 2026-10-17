@@ -132,8 +132,9 @@ fn simulate<R: Rng>(data_size: usize, state_bundle: &StateBundle, rng: &mut R) -
                 for row in 0..NUM_BASE_MATS {
                     this_cost[row] += upgrade.costs[row] * rolled_tap as f64;
                 }
-                for &id in
-                    juice_info.normal_uindex_to_id[upgrade.piece_type_usize][upgrade.upgrade_index].iter()
+                for &id in juice_info.normal_uindex_to_id[upgrade.piece_type_usize]
+                    [upgrade.upgrade_index]
+                    .iter()
                 {
                     this_cost[prep.table.juice_row(id)] += juice_before[rolled_tap][id];
                 }
@@ -151,8 +152,9 @@ fn simulate<R: Rng>(data_size: usize, state_bundle: &StateBundle, rng: &mut R) -
                 for row in 0..NUM_BASE_MATS {
                     this_cost[row] += upgrade.costs[row] * taps as f64;
                 }
-                for &id in
-                    juice_info.adv_uindex_to_id[upgrade.piece_type_usize][upgrade.upgrade_index].iter()
+                for &id in juice_info.adv_uindex_to_id[upgrade.piece_type_usize]
+                    [upgrade.upgrade_index]
+                    .iter()
                 {
                     let used = if id <= 1 { juice } else { scroll } as f64;
                     let amt = juice_info
@@ -180,7 +182,8 @@ pub fn gold(used: f64, bands: &[(f64, f64)]) -> f64 {
 /// evaluator, not the one the state was optimized with.
 pub fn check<R: Rng>(state_bundle: &mut StateBundle, spec: &McSpec, rng: &mut R) -> Vec<McRow> {
     let tuning = std::mem::replace(&mut state_bundle.tuning, Tuning::reference());
-    let (metric_per_plan, _, breakdown) = state_bundle.ui_average_gold_metric(&mut Probe::default());
+    let (metric_per_plan, _, breakdown) =
+        state_bundle.ui_average_gold_metric(&mut Probe::default());
     state_bundle.tuning = tuning;
     let prep = &state_bundle.prep_output;
     let bands = &prep.bands[prep.optimizer_plan];

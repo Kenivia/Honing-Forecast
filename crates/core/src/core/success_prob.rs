@@ -8,24 +8,19 @@ use crate::probe::Probe;
 use crate::state_bundle::StateBundle;
 
 impl StateBundle {
-    pub fn one_dimension_prob(
-        &self,
-        support_index: i64,
-        budget: f64,
-        probe: &mut Probe,
-    ) -> f64 {
+    pub fn one_dimension_prob(&self, support_index: i64, budget: f64, probe: &mut Probe) -> f64 {
         let mut out: f64 = 0.0;
         let special_probs = self.special_probs().clone();
         for (skip_count, &special_prob) in special_probs.iter().enumerate() {
             if special_prob == 0.0 {
                 continue;
             }
-            let this_prob: f64 = self.saddlepoint_approximation_wrapper(support_index, skip_count, budget, probe);
+            let this_prob: f64 =
+                self.saddlepoint_approximation_wrapper(support_index, skip_count, budget, probe);
 
             out += special_prob * this_prob;
         }
 
         out
     }
-
 }

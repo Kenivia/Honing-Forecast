@@ -139,7 +139,10 @@ mod tests {
     use super::*;
 
     fn bag(pairs: &[(&str, f64)]) -> BTreeMap<String, f64> {
-        pairs.iter().map(|(label, amount)| (label.to_string(), *amount)).collect()
+        pairs
+            .iter()
+            .map(|(label, amount)| (label.to_string(), *amount))
+            .collect()
     }
 
     #[test]
@@ -159,8 +162,11 @@ mod tests {
             band: 0,
             options: vec![bag(&[("Gold", 100.0), ("Special", 5.0)])],
         };
-        let states: ChestStates =
-            [("choice".to_string(), vec![3, 7]), ("all".to_string(), all.default_state())].into();
+        let states: ChestStates = [
+            ("choice".to_string(), vec![3, 7]),
+            ("all".to_string(), all.default_state()),
+        ]
+        .into();
         let chests: Chests = [("choice".to_string(), choice), ("all".to_string(), all)].into();
         let (gained, special) = resolve_chests(&chests, &states, &table, "Special");
         assert_eq!(gained[0], [0.0, 1.5, 0.0]);

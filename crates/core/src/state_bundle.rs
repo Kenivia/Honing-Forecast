@@ -2,8 +2,8 @@ use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use crate::chest::ChestStates;
 use crate::parser::PreparationOutput;
 use crate::probe::Probe;
-use crate::tuning::Tuning;
 use crate::state::{OneState, State};
+use crate::tuning::Tuning;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
 use ordered_float::OrderedFloat;
@@ -68,13 +68,19 @@ impl StateBundle {
     /// The taps that go together: from an upgrade's next tap on, each run of this many takes
     /// the same, so that every streak but the last before the pity is a multiple of it.
     pub fn block(&self) -> usize {
-        if self.tuning.streak_length > 0 { self.tuning.streak_length } else { self.min_resolution.max(1) }
+        if self.tuning.streak_length > 0 {
+            self.tuning.streak_length
+        } else {
+            self.min_resolution.max(1)
+        }
     }
 
     /// whether the budget pays for one free tap of any upgrade; where not, the order is nothing
     pub fn affords_a_free_tap(&self) -> bool {
         let budget = self.prep_output.special_budget;
-        self.upgrade_arr.iter().any(|upgrade| upgrade.is_normal_honing && upgrade.special_cost <= budget)
+        self.upgrade_arr
+            .iter()
+            .any(|upgrade| upgrade.is_normal_honing && upgrade.special_cost <= budget)
     }
 
     pub fn metric_router(&mut self, probe: &mut Probe) -> f64 {

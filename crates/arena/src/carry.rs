@@ -29,14 +29,22 @@ pub fn gross(state_bundle: &StateBundle) -> f64 {
 
 /// what the state uses on average, at market price, whoever owns it
 pub fn flow(state_bundle: &StateBundle) -> f64 {
-    let (_, avg_used, _) = state_bundle.clone().ui_average_gold_metric(&mut Probe::default());
-    avg_used.iter().zip(&state_bundle.prep_output.base_materials).map(|(used, mat)| used * mat.market_price).sum()
+    let (_, avg_used, _) = state_bundle
+        .clone()
+        .ui_average_gold_metric(&mut Probe::default());
+    avg_used
+        .iter()
+        .zip(&state_bundle.prep_output.base_materials)
+        .map(|(used, mat)| used * mat.market_price)
+        .sum()
 }
 
 /// What a gap is a share of: the gold spent plus what the leftovers are credited, of the
 /// best known state. Unlike the metric, which is their difference, it is never near zero.
 pub fn scale(metric: f64, gross: Option<f64>) -> f64 {
-    gross.map_or(metric.abs(), |gross| metric - 2.0 * gross).max(1.0)
+    gross
+        .map_or(metric.abs(), |gross| metric - 2.0 * gross)
+        .max(1.0)
 }
 
 fn key(info: &OneUpgradeInput) -> (usize, usize, bool) {
@@ -47,13 +55,23 @@ fn key(info: &OneUpgradeInput) -> (usize, usize, bool) {
 /// taps done since, and its place in the free tap order; a new upgrade goes last.
 pub fn carried(before: &Payload, plan: &Essence, payload: &Payload) -> StateBundle {
     let mut state_bundle = StateBundle::init_from_payload(payload.clone());
-    let was: HashMap<(usize, usize, bool), usize> =
-        before.upgrade_info.iter().enumerate().map(|(index, info)| (key(info), index)).collect();
-    let now: HashMap<(usize, usize, bool), usize> =
-        payload.upgrade_info.iter().enumerate().map(|(index, info)| (key(info), index)).collect();
+    let was: HashMap<(usize, usize, bool), usize> = before
+        .upgrade_info
+        .iter()
+        .enumerate()
+        .map(|(index, info)| (key(info), index))
+        .collect();
+    let now: HashMap<(usize, usize, bool), usize> = payload
+        .upgrade_info
+        .iter()
+        .enumerate()
+        .map(|(index, info)| (key(info), index))
+        .collect();
 
     for (index, info) in payload.upgrade_info.iter().enumerate() {
-        let Some(&old) = was.get(&key(info)) else { continue };
+        let Some(&old) = was.get(&key(info)) else {
+            continue;
+        };
         let mut state = plan.state_arr[old].clone();
         let len = state_bundle.upgrade_arr[index].state.len();
         if info.is_normal_honing && state.len() > len {
@@ -68,7 +86,9 @@ pub fn carried(before: &Payload, plan: &Essence, payload: &Payload) -> StateBund
         .iter()
         .filter_map(|&old| now.get(&key(&before.upgrade_info[old])).copied())
         .collect();
-    let new: Vec<usize> = (0..payload.upgrade_info.len()).filter(|index| !order.contains(index)).collect();
+    let new: Vec<usize> = (0..payload.upgrade_info.len())
+        .filter(|index| !order.contains(index))
+        .collect();
     order.extend(new);
     state_bundle.special_state = order;
     state_bundle
@@ -85,7 +105,15 @@ fn median(values: &[f64]) -> f64 {
 pub fn report(conn: &Connection, scenarios: &[Scenario], rows: bool, eps: f64) {
     let mut each = Table::new();
     each.load_style(UTF8_BORDERS_ONLY).set_header(vec![
-        "scenario", "step", "after", "default", "carried", "best", "recovered %", "carried gap %", "default gap %",
+        "scenario",
+        "step",
+        "after",
+        "default",
+        "carried",
+        "best",
+        "recovered %",
+        "carried gap %",
+        "default gap %",
     ]);
     // per kind: recovered, carried gap, default gap
     let mut by_kind: BTreeMap<String, (Vec<f64>, Vec<f64>, Vec<f64>)> = BTreeMap::new();
@@ -97,7 +125,10 @@ pub fn report(conn: &Connection, scenarios: &[Scenario], rows: bool, eps: f64) {
             .map(|(step, payload)| db::step_id(conn, &scenario.name, step, &step_key(payload)))
             .collect();
         for step in 1..scenario.steps.len() {
-            let (Some(before), Some(best)) = (db::best_run(conn, ids[step - 1]), db::best_run(conn, ids[step])) else {
+            let (Some(before), Some(best)) = (
+                db::best_run(conn, ids[step - 1]),
+                db::best_run(conn, ids[step]),
+            ) else {
                 continue;
             };
             let payload = &scenario.steps[step];
@@ -110,9 +141,18 @@ pub fn report(conn: &Connection, scenarios: &[Scenario], rows: bool, eps: f64) {
             let kept = reference(carried(&scenario.steps[step - 1], &before.2, payload));
             let scale = scale(best.0, best.1);
             let headroom = best.0 - default;
-            let recovered = if headroom > eps * scale { (kept - default) / headroom } else { f64::NAN };
+            let recovered = if headroom > eps * scale {
+                (kept - default) / headroom
+            } else {
+                f64::NAN
+            };
             let (kept_gap, default_gap) = ((best.0 - kept) / scale, headroom / scale);
-            let kind = scenario.meta.get("kinds").and_then(|kinds| kinds[step].as_str()).unwrap_or("?").to_string();
+            let kind = scenario
+                .meta
+                .get("kinds")
+                .and_then(|kinds| kinds[step].as_str())
+                .unwrap_or("?")
+                .to_string();
             each.add_row(vec![
                 scenario.name.clone(),
                 step.to_string(),
@@ -138,8 +178,14 @@ pub fn report(conn: &Connection, scenarios: &[Scenario], rows: bool, eps: f64) {
 
     let mut out = Table::new();
     out.load_style(UTF8_BORDERS_ONLY).set_header(vec![
-        "after", "steps", "median recovered %", "carried hit %", "default hit %", "median carried gap %",
-        "median default gap %", "carried beats best %",
+        "after",
+        "steps",
+        "median recovered %",
+        "carried hit %",
+        "default hit %",
+        "median carried gap %",
+        "median default gap %",
+        "carried beats best %",
     ]);
     for (kind, (recovered, kept, default)) in &by_kind {
         let share = |values: &[f64], test: fn(f64, f64) -> bool| {

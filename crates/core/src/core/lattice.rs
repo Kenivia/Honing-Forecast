@@ -12,20 +12,34 @@ use num::Integer;
 use smallvec::SmallVec;
 
 pub enum Lattice {
-    Exact { min_value: f64, span: f64, cdf: Vec<f64>, biased_cdf: Vec<f64> },
+    Exact {
+        min_value: f64,
+        span: f64,
+        cdf: Vec<f64>,
+        biased_cdf: Vec<f64>,
+    },
     Coarse(Coarse),
 }
 
 impl Lattice {
     pub fn within(&self, budget: f64, biased: bool) -> f64 {
         match self {
-            Lattice::Exact { min_value, span, cdf, biased_cdf } => {
+            Lattice::Exact {
+                min_value,
+                span,
+                cdf,
+                biased_cdf,
+            } => {
                 let index = ((budget + float_tol(budget) - min_value) / span).floor();
                 if index < 0.0 {
                     return 0.0;
                 }
                 let index = (index as usize).min(cdf.len() - 1);
-                if biased { biased_cdf[index] } else { cdf[index] }
+                if biased {
+                    biased_cdf[index]
+                } else {
+                    cdf[index]
+                }
             }
             _ => {
                 let pair = self.pair(budget);
@@ -177,13 +191,15 @@ impl Coarse {
             return (0.0, 0.0);
         }
         let half = self.step / 2.0;
-        let plain = ((self.leftover(t + half) - self.leftover(t - half)) / self.step).clamp(0.0, 1.0);
+        let plain =
+            ((self.leftover(t + half) - self.leftover(t - half)) / self.step).clamp(0.0, 1.0);
         let near = ((t - self.min_value) / self.step).round() as i64 - self.start as i64;
         let density: f64 = (near - 2..=near + 2)
             .filter_map(|i| usize::try_from(i).ok().and_then(|i| self.pmf.get(i)))
             .sum::<f64>()
             / (5.0 * self.step);
-        let leftover = (self.leftover(t) - 0.5 * self.added * density).max((t - self.mean).max(0.0));
+        let leftover =
+            (self.leftover(t) - 0.5 * self.added * density).max((t - self.mean).max(0.0));
         (plain, (t * plain - leftover) / self.mean)
     }
 }
@@ -197,7 +213,12 @@ impl StateBundle {
             return None;
         }
         if min_delta < 1.0 {
-            return self.fallback(support_index, skip_count, f64::INFINITY, &mut Probe::default());
+            return self.fallback(
+                support_index,
+                skip_count,
+                f64::INFINITY,
+                &mut Probe::default(),
+            );
         }
         let outcomes: usize = self
             .extract_collapsed_pair(support_index, skip_count)
@@ -205,7 +226,12 @@ impl StateBundle {
             .map(|pairs| pairs.len())
             .sum();
         if (max_value - min_value) / span * outcomes as f64 > self.tuning.max_lattice_work as f64 {
-            return self.fallback(support_index, skip_count, f64::INFINITY, &mut Probe::default());
+            return self.fallback(
+                support_index,
+                skip_count,
+                f64::INFINITY,
+                &mut Probe::default(),
+            );
         }
 
         let mut pmf: Vec<f64> = vec![1.0];
@@ -234,7 +260,12 @@ impl StateBundle {
             cdf.push(below);
             biased_cdf.push(biased_below);
         }
-        Some(Lattice::Exact { min_value, span, cdf, biased_cdf })
+        Some(Lattice::Exact {
+            min_value,
+            span,
+            cdf,
+            biased_cdf,
+        })
     }
 
     /// The lattice's answers at every threshold, plain and biased, for each of these free
@@ -249,7 +280,8 @@ impl StateBundle {
         probe: &mut Probe,
     ) -> Vec<Option<Vec<(f64, f64)>>> {
         let n = self.special_state.len();
-        let support = |index: usize| self.support_from_index(self.special_state[index], support_index);
+        let support =
+            |index: usize| self.support_from_index(self.special_state[index], support_index);
         let top = thresholds.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
         let mut out: Vec<Option<Vec<(f64, f64)>>> = vec![None; skips.len()];
 
@@ -270,7 +302,10 @@ impl StateBundle {
                     outcomes += pairs.len();
                     range += this.access_max(false) - this.access_min(false);
                 }
-                if min_delta < 1.0 || range / (span.max(1) as f64) * outcomes as f64 > self.tuning.max_lattice_work as f64 {
+                if min_delta < 1.0
+                    || range / (span.max(1) as f64) * outcomes as f64
+                        > self.tuning.max_lattice_work as f64
+                {
                     break;
                 }
             }
@@ -288,7 +323,10 @@ impl StateBundle {
         };
         // by index, as far down as the pass went
         let span = |index: usize| spans[n - index];
-        let minimums: Vec<f64> = wanted.iter().map(|&(skip, _)| self.find_min_max(support_index, skip).0).collect();
+        let minimums: Vec<f64> = wanted
+            .iter()
+            .map(|&(skip, _)| self.find_min_max(support_index, skip).0)
+            .collect();
 
         let mut pmf: Vec<f64> = vec![1.0];
         let mut this_span: i64 = 0;
@@ -318,7 +356,11 @@ impl StateBundle {
                 let low = pairs[0].0;
                 let steps = |value: f64| ((value - low) / unit).round() as usize;
                 let full = pmf.len() + steps(pairs[pairs.len() - 1].0);
-                let kept = if reaches[index] < 0.0 { 1 } else { full.min((reaches[index] / unit) as usize + 2) };
+                let kept = if reaches[index] < 0.0 {
+                    1
+                } else {
+                    full.min((reaches[index] / unit) as usize + 2)
+                };
                 let mut next: Vec<f64> = vec![0.0; kept];
                 for &(value, p) in pairs.iter() {
                     let from = steps(value);
@@ -338,7 +380,8 @@ impl StateBundle {
             let min_value = minimums[at];
             let inv_mean = self.simple_avg(support_index, index).recip();
             // the sum in full has this many points, of which the far ones may not be kept
-            let last = ((self.find_min_max(support_index, index).1 - min_value) / unit).round() as usize;
+            let last =
+                ((self.find_min_max(support_index, index).1 - min_value) / unit).round() as usize;
             let mut answers = vec![(0.0, 0.0); thresholds.len()];
             let mut order: Vec<(usize, usize)> = Vec::with_capacity(thresholds.len());
             for (which, &budget) in thresholds.iter().enumerate() {
@@ -353,7 +396,8 @@ impl StateBundle {
             for &(point, which) in &order {
                 while next_point <= point && next_point < pmf.len() {
                     below += pmf[next_point];
-                    biased_below += (min_value + next_point as f64 * unit) * pmf[next_point] * inv_mean;
+                    biased_below +=
+                        (min_value + next_point as f64 * unit) * pmf[next_point] * inv_mean;
                     next_point += 1;
                 }
                 answers[which] = (below, biased_below);
@@ -392,12 +436,32 @@ impl StateBundle {
     }
 
     /// Where the exact lattice is too big: the coarse lattice, else None for the saddlepoint formula
-    fn fallback(&self, support_index: i64, skip_count: usize, reach: f64, probe: &mut Probe) -> Option<Lattice> {
-        self.coarse(support_index, skip_count, reach, self.tuning.coarse_cells, probe).map(Lattice::Coarse)
+    fn fallback(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+        reach: f64,
+        probe: &mut Probe,
+    ) -> Option<Lattice> {
+        self.coarse(
+            support_index,
+            skip_count,
+            reach,
+            self.tuning.coarse_cells,
+            probe,
+        )
+        .map(Lattice::Coarse)
     }
 
     /// None where it is off, the sum has one outcome, or it would take more than `max_coarse_work`
-    pub fn coarse(&self, support_index: i64, skip_count: usize, reach: f64, cells: f64, probe: &mut Probe) -> Option<Coarse> {
+    pub fn coarse(
+        &self,
+        support_index: i64,
+        skip_count: usize,
+        reach: f64,
+        cells: f64,
+        probe: &mut Probe,
+    ) -> Option<Coarse> {
         if cells <= 0.0 {
             return None;
         }
@@ -412,7 +476,11 @@ impl StateBundle {
             step = shape.span * (step / shape.span).floor().max(1.0);
         }
         // grid points past this are not needed
-        let keep = if reach.is_finite() { (reach / step) as usize + 4 } else { usize::MAX };
+        let keep = if reach.is_finite() {
+            (reach / step) as usize + 4
+        } else {
+            usize::MAX
+        };
         let Grid { start, pmf, added } = grid(
             self.extract_collapsed_pair(support_index, skip_count),
             step,

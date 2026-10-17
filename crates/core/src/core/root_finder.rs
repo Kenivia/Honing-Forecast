@@ -35,7 +35,9 @@ impl StateBundle {
         for iter in 0..self.tuning.max_root_find_iter {
             // the cumulants at the guess may be known already
             let evaluated = seed.is_none();
-            let this = seed.take().unwrap_or_else(|| self.raw_ks(theta, support_index, skip_count, probe));
+            let this = seed
+                .take()
+                .unwrap_or_else(|| self.raw_ks(theta, support_index, skip_count, probe));
             let (_, mut y, dy, dy2, dy3) = this.access();
 
             y -= budget;

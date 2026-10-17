@@ -13,7 +13,12 @@ pub fn get_extra_arr(state: &State, juice_info: &JuiceInfo, upgrade: &Upgrade) -
             let mut chance: f64 = 0.0;
 
             // an id twice on a tap is paid for once, so it counts once
-            for id in ids.iter().enumerate().filter(|(at, id)| !ids[..*at].contains(id)).map(|(_, id)| id) {
+            for id in ids
+                .iter()
+                .enumerate()
+                .filter(|(at, id)| !ids[..*at].contains(id))
+                .map(|(_, id)| id)
+            {
                 if !juice_info.normal_uindex_to_id[upgrade.piece_type_usize][upgrade.upgrade_index]
                     .contains(id)
                 {
@@ -108,13 +113,26 @@ impl Upgrade {
 
         let outline = Outline::of(&self.normal_dist);
         for t_index in 0..NUM_BASE_MATS {
-            let start = if self.unlocked { 0.0 } else { self.unlock_costs[t_index] };
-            self.cost_dist[t_index].update_even(start, self.costs[t_index], self.state.hash, &self.normal_dist, &outline);
+            let start = if self.unlocked {
+                0.0
+            } else {
+                self.unlock_costs[t_index]
+            };
+            self.cost_dist[t_index].update_even(
+                start,
+                self.costs[t_index],
+                self.state.hash,
+                &self.normal_dist,
+                &outline,
+            );
         }
 
         // a juice is only counted on the taps the state uses it on
-        for &id in juice_info.normal_uindex_to_id[self.piece_type_usize][self.upgrade_index].iter() {
-            let amount = juice_info.access(id, self.piece_type_usize, self.upgrade_index).normal_amt_used as f64;
+        for &id in juice_info.normal_uindex_to_id[self.piece_type_usize][self.upgrade_index].iter()
+        {
+            let amount = juice_info
+                .access(id, self.piece_type_usize, self.upgrade_index)
+                .normal_amt_used as f64;
             let mut so_far: f64 = 0.0;
             let mut support: Vec<f64> = Vec::with_capacity(l_len);
             for index in 0..l_len {

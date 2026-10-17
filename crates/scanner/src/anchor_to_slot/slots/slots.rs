@@ -8,9 +8,18 @@ use crate::{
             },
             utils::{from_afar, overlaid, overlay_areas},
         },
-    }, dev_utils::timing::{now, timed}, image_utils::{
-        brightness::normalize_brightness, close_enough::{DEFAULT_CLOSE_ENOUGH_CONFIDENCE, close_enough, confidence, masked_confidence}, common::{Rect, get_resizer},
-    }, interface::setup::{BASE_ICONS, OneIconConfig, icon_lookup}, ocr::jobs::{Kind, OCRLine}, scanner_state::{OneSlotInfo, ScannerState, SlotAddress},
+    },
+    dev_utils::timing::{now, timed},
+    image_utils::{
+        brightness::normalize_brightness,
+        close_enough::{
+            DEFAULT_CLOSE_ENOUGH_CONFIDENCE, close_enough, confidence, masked_confidence,
+        },
+        common::{Rect, get_resizer},
+    },
+    interface::setup::{BASE_ICONS, OneIconConfig, icon_lookup},
+    ocr::jobs::{Kind, OCRLine},
+    scanner_state::{OneSlotInfo, ScannerState, SlotAddress},
 };
 
 impl ScannerState {

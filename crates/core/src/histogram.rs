@@ -59,11 +59,8 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
         let mut cumulative: f64 = 0.0;
         for (band, owned) in [mat.bound, mat.roster, mat.tradable].iter().enumerate() {
             cumulative += owned;
-            chance_within[support_index][band] = state_bundle.one_dimension_prob(
-                support_index as i64,
-                cumulative,
-                &mut dummy_probe,
-            );
+            chance_within[support_index][band] =
+                state_bundle.one_dimension_prob(support_index as i64, cumulative, &mut dummy_probe);
         }
     }
 

@@ -260,7 +260,11 @@ enum Cmd {
 }
 
 fn git(args: &[&str]) -> String {
-    let out = Command::new("git").args(args).current_dir(ROOT).output().unwrap();
+    let out = Command::new("git")
+        .args(args)
+        .current_dir(ROOT)
+        .output()
+        .unwrap();
     String::from_utf8_lossy(&out.stdout).to_string()
 }
 
@@ -268,14 +272,22 @@ fn git(args: &[&str]) -> String {
 fn working_tree_diff() -> String {
     const PATHS: [&str; 3] = ["crates", "Cargo.toml", "Cargo.lock"];
     let mut diff = git(&[&["diff", "HEAD", "--"][..], &PATHS[..]].concat());
-    for file in git(&[&["ls-files", "--others", "--exclude-standard", "--"][..], &PATHS[..]].concat()).lines() {
+    for file in git(&[
+        &["ls-files", "--others", "--exclude-standard", "--"][..],
+        &PATHS[..],
+    ]
+    .concat())
+    .lines()
+    {
         diff += &git(&["diff", "--no-index", "--", "/dev/null", file]);
     }
     diff
 }
 
 fn snapshot_exe(label: &str) -> PathBuf {
-    Path::new(ROOT).join("target/arena/bin").join(format!("{label}.exe"))
+    Path::new(ROOT)
+        .join("target/arena/bin")
+        .join(format!("{label}.exe"))
 }
 
 struct Variant {
@@ -320,7 +332,11 @@ fn score(reference: &StateBundle, essence: &Essence) -> (f64, f64, f64) {
     state_bundle.tuning = Tuning::reference();
     essence.apply(&mut state_bundle);
     let metric = state_bundle.metric_router(&mut Probe::default());
-    (metric, carry::gross(&state_bundle), carry::flow(&state_bundle))
+    (
+        metric,
+        carry::gross(&state_bundle),
+        carry::flow(&state_bundle),
+    )
 }
 
 fn run_jobs(
@@ -340,7 +356,10 @@ fn run_jobs(
     } else {
         common.variants.clone()
     };
-    let variants: Vec<Variant> = specs.iter().map(|spec| parse_variant(&conn, spec)).collect();
+    let variants: Vec<Variant> = specs
+        .iter()
+        .map(|spec| parse_variant(&conn, spec))
+        .collect();
     let args: Vec<String> = std::env::args().skip(1).collect();
     let args = args.join(" ");
     let session_id = resume
@@ -364,7 +383,11 @@ fn run_jobs(
     let references: Vec<Vec<StateBundle>> = scenarios
         .iter()
         .map(|scenario| {
-            scenario.steps.iter().map(|payload| StateBundle::init_from_payload(payload.clone())).collect()
+            scenario
+                .steps
+                .iter()
+                .map(|payload| StateBundle::init_from_payload(payload.clone()))
+                .collect()
         })
         .collect();
 
@@ -376,10 +399,16 @@ fn run_jobs(
         for (scenario_index, scenario) in scenarios.iter().enumerate() {
             for &chained in modes {
                 for (variant_index, variant) in variants.iter().enumerate() {
-                    if finished.contains(&(variant.spec.clone(), step_ids[scenario_index][0], seed, chained)) {
+                    if finished.contains(&(
+                        variant.spec.clone(),
+                        step_ids[scenario_index][0],
+                        seed,
+                        chained,
+                    )) {
                         continue;
                     }
-                    let wants_mc = matches!(kind, Kind::Verify { .. }) || (mc_first_seed && seed == 0);
+                    let wants_mc =
+                        matches!(kind, Kind::Verify { .. }) || (mc_first_seed && seed == 0);
                     jobs.push((
                         scenario_index,
                         variant_index,
@@ -398,10 +427,13 @@ fn run_jobs(
         }
     }
 
-    let threads = common.jobs.unwrap_or_else(|| {
-        (std::thread::available_parallelism().unwrap().get() / 2).max(1)
-    });
-    println!("session {session_id}: {} jobs on {threads} threads", jobs.len());
+    let threads = common
+        .jobs
+        .unwrap_or_else(|| (std::thread::available_parallelism().unwrap().get() / 2).max(1));
+    println!(
+        "session {session_id}: {} jobs on {threads} threads",
+        jobs.len()
+    );
     let conn = Mutex::new(conn);
     let done = AtomicUsize::new(0);
     let kind_name = match kind {
@@ -409,14 +441,19 @@ fn run_jobs(
         Kind::Verify { .. } => "verify",
     };
 
-    let pool = rayon::ThreadPoolBuilder::new().num_threads(threads).build().unwrap();
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(threads)
+        .build()
+        .unwrap();
     // ctrl-c reaches the workers too, and what they were doing must not be recorded as dead
     static STOPPED: AtomicBool = AtomicBool::new(false);
     ctrlc::set_handler(|| STOPPED.store(true, Ordering::Relaxed)).unwrap();
     // in order, which a parallel iterator would not keep
     let next = AtomicUsize::new(0);
     pool.broadcast(|_| {
-        while let Some((scenario_index, variant_index, job)) = jobs.get(next.fetch_add(1, Ordering::Relaxed)) {
+        while let Some((scenario_index, variant_index, job)) =
+            jobs.get(next.fetch_add(1, Ordering::Relaxed))
+        {
             if STOPPED.load(Ordering::Relaxed) {
                 return;
             }
@@ -429,7 +466,12 @@ fn run_jobs(
                 .spawn()
                 .unwrap_or_else(|_| panic!("could not start {:?}", variant.exe));
             let input = serde_json::to_string(job).unwrap();
-            child.stdin.take().unwrap().write_all(input.as_bytes()).unwrap();
+            child
+                .stdin
+                .take()
+                .unwrap()
+                .write_all(input.as_bytes())
+                .unwrap();
             let output = child.wait_with_output().unwrap();
             if !output.status.success() {
                 std::thread::sleep(std::time::Duration::from_millis(500));
@@ -497,7 +539,10 @@ fn overrides(text: &str) -> Map<String, Value> {
         .filter(|pair| !pair.is_empty())
         .map(|pair| {
             let (key, value) = pair.split_once('=').unwrap();
-            (key.to_string(), serde_json::from_str(value).unwrap_or(Value::String(value.to_string())))
+            (
+                key.to_string(),
+                serde_json::from_str(value).unwrap_or(Value::String(value.to_string())),
+            )
         })
         .collect()
 }
@@ -512,7 +557,11 @@ fn main() {
         Cmd::Dummy => {
             std::fs::create_dir_all(&cli.scenarios).unwrap();
             let path = cli.scenarios.join("dummy.json");
-            std::fs::write(&path, serde_json::to_string_pretty(&scenario::dummy()).unwrap()).unwrap();
+            std::fs::write(
+                &path,
+                serde_json::to_string_pretty(&scenario::dummy()).unwrap(),
+            )
+            .unwrap();
             println!("wrote {path:?}");
         }
         Cmd::Snap { label } => {
@@ -521,10 +570,26 @@ fn main() {
             std::fs::create_dir_all(exe.parent().unwrap()).unwrap();
             std::fs::copy(std::env::current_exe().unwrap(), &exe).unwrap();
             let conn = db::open(&cli.db);
-            db::add_snapshot(&conn, label, git(&["rev-parse", "HEAD"]).trim(), &working_tree_diff());
+            db::add_snapshot(
+                &conn,
+                label,
+                git(&["rev-parse", "HEAD"]).trim(),
+                &working_tree_diff(),
+            );
             println!("snapshot {label} at {exe:?}");
         }
-        Cmd::Gen { set, singles, chains, steps, sweeps, stress, offset, chests, no_adv, weekly } => {
+        Cmd::Gen {
+            set,
+            singles,
+            chains,
+            steps,
+            sweeps,
+            stress,
+            offset,
+            chests,
+            no_adv,
+            weekly,
+        } => {
             let dir = cli.scenarios.join(set);
             std::fs::create_dir_all(&dir).unwrap();
             let spec = generate::Spec {
@@ -545,7 +610,14 @@ fn main() {
             }
             println!("wrote {} scenarios to {dir:?}", scenarios.len());
         }
-        Cmd::Run { common, seeds, mode, mc, eps, resume } => {
+        Cmd::Run {
+            common,
+            seeds,
+            mode,
+            mc,
+            eps,
+            resume,
+        } => {
             let modes: &[bool] = match mode {
                 Mode::Cold => &[false],
                 Mode::Chained => &[true],
@@ -553,19 +625,31 @@ fn main() {
             };
             let session = run_jobs(&cli, common, Kind::Optimize, *seeds, modes, *mc, *resume);
             let conn = db::open(&cli.db);
-            let selection = Selection { session: Some(session), variants: Vec::new() };
+            let selection = Selection {
+                session: Some(session),
+                variants: Vec::new(),
+            };
             report::optimize(&conn, &selection, *eps);
             report::errors(&conn, &selection);
         }
         Cmd::Verify { common, scrambles } => {
-            let kind = Kind::Verify { scrambles: *scrambles };
+            let kind = Kind::Verify {
+                scrambles: *scrambles,
+            };
             let session = run_jobs(&cli, common, kind, 1, &[false], false, false);
             let conn = db::open(&cli.db);
-            let selection = Selection { session: Some(session), variants: Vec::new() };
+            let selection = Selection {
+                session: Some(session),
+                variants: Vec::new(),
+            };
             report::verify(&conn, &selection);
             report::errors(&conn, &selection);
         }
-        Cmd::Stress { filter, scrambles, tuning } => {
+        Cmd::Stress {
+            filter,
+            scrambles,
+            tuning,
+        } => {
             let overrides = tuning
                 .split(',')
                 .filter(|pair| !pair.is_empty())
@@ -576,12 +660,21 @@ fn main() {
                 .collect();
             let scenarios = scenarios(&cli, filter);
             assert!(!scenarios.is_empty(), "no scenarios in {:?}", cli.scenarios);
-            stress::report(&stress::run(&scenarios, *scrambles, &worker::tuning_with(&overrides)));
+            stress::report(&stress::run(
+                &scenarios,
+                *scrambles,
+                &worker::tuning_with(&overrides),
+            ));
         }
-        Cmd::Compare { variants, session, eps } => {
+        Cmd::Compare {
+            variants,
+            session,
+            eps,
+        } => {
             let conn = db::open(&cli.db);
-            let latest: Option<i64> =
-                conn.query_row("SELECT MAX(id) FROM session", [], |row| row.get(0)).unwrap();
+            let latest: Option<i64> = conn
+                .query_row("SELECT MAX(id) FROM session", [], |row| row.get(0))
+                .unwrap();
             let selection = Selection {
                 session: session.or(if variants.is_empty() { latest } else { None }),
                 variants: variants.clone(),
@@ -595,27 +688,55 @@ fn main() {
             let dir = Path::new(ROOT).join(SETS);
             let mut names: Vec<String> = std::fs::read_dir(&dir)
                 .unwrap()
-                .map(|entry| entry.unwrap().path().file_stem().unwrap().to_string_lossy().to_string())
+                .map(|entry| {
+                    entry
+                        .unwrap()
+                        .path()
+                        .file_stem()
+                        .unwrap()
+                        .to_string_lossy()
+                        .to_string()
+                })
                 .collect();
             names.sort();
             let known = scenario::all(&cli.scenarios);
             for name in names {
                 let text = std::fs::read_to_string(dir.join(format!("{name}.txt"))).unwrap();
-                let note = text.lines().next().unwrap_or("").trim_start_matches('#').trim();
-                let entries: Vec<&str> =
-                    text.lines().map(|line| line.trim()).filter(|line| !line.is_empty() && !line.starts_with('#')).collect();
+                let note = text
+                    .lines()
+                    .next()
+                    .unwrap_or("")
+                    .trim_start_matches('#')
+                    .trim();
+                let entries: Vec<&str> = text
+                    .lines()
+                    .map(|line| line.trim())
+                    .filter(|line| !line.is_empty() && !line.starts_with('#'))
+                    .collect();
                 let payloads: usize = entries
                     .iter()
                     .map(|line| {
                         let (scenario, steps) = line.split_once(':').unwrap_or((line, ""));
-                        let all = known.get(scenario).map_or(0, |scenario| scenario.steps.len());
+                        let all = known
+                            .get(scenario)
+                            .map_or(0, |scenario| scenario.steps.len());
                         steps.parse().map_or(all, |steps: usize| steps.min(all))
                     })
                     .sum();
-                println!("{name:16} {:4} scenarios {payloads:5} payloads  {note}", entries.len());
+                println!(
+                    "{name:16} {:4} scenarios {payloads:5} payloads  {note}",
+                    entries.len()
+                );
             }
         }
-        Cmd::Define { name, note, kind, wheres, steps, limit } => {
+        Cmd::Define {
+            name,
+            note,
+            kind,
+            wheres,
+            steps,
+            limit,
+        } => {
             let ranges: Vec<(&str, f64, f64)> = wheres
                 .iter()
                 .map(|range| {
@@ -626,17 +747,23 @@ fn main() {
                 .collect();
             let args: Vec<String> = std::env::args().skip(1).collect();
             let mut lines = vec![format!("# {note}"), format!("# {}", args.join(" "))];
-            let chosen = scenario::all(&cli.scenarios).into_iter().filter(|(name, scenario)| {
-                name.starts_with(kind.as_str())
-                    && ranges.iter().all(|&(key, low, high)| {
-                        let value = match key {
-                            "n" => scenario.steps[0].upgrade_info.len() as f64,
-                            "steps" => scenario.steps.len() as f64,
-                            _ => scenario.meta.get("axes").and_then(|axes| axes[key].as_f64()).unwrap_or(f64::NAN),
-                        };
-                        (low..=high).contains(&value)
-                    })
-            });
+            let chosen = scenario::all(&cli.scenarios)
+                .into_iter()
+                .filter(|(name, scenario)| {
+                    name.starts_with(kind.as_str())
+                        && ranges.iter().all(|&(key, low, high)| {
+                            let value = match key {
+                                "n" => scenario.steps[0].upgrade_info.len() as f64,
+                                "steps" => scenario.steps.len() as f64,
+                                _ => scenario
+                                    .meta
+                                    .get("axes")
+                                    .and_then(|axes| axes[key].as_f64())
+                                    .unwrap_or(f64::NAN),
+                            };
+                            (low..=high).contains(&value)
+                        })
+                });
             for (name, _) in chosen.take(limit.unwrap_or(usize::MAX)) {
                 lines.push(steps.map_or(name.clone(), |steps| format!("{name}:{steps}")));
             }
@@ -645,15 +772,27 @@ fn main() {
             std::fs::write(&path, lines.join("\n") + "\n").unwrap();
             println!("{} scenarios in {path:?}", lines.len() - 2);
         }
-        Cmd::Carry { rows, eps } => carry::report(&db::open(&cli.db), &scenarios(&cli, ""), *rows, *eps),
+        Cmd::Carry { rows, eps } => {
+            carry::report(&db::open(&cli.db), &scenarios(&cli, ""), *rows, *eps)
+        }
         Cmd::Replan { args } => {
             let conn = db::open(&cli.db);
             let session = args.session.unwrap_or_else(|| {
                 let line: Vec<String> = std::env::args().skip(1).collect();
                 let line = line.join(" ");
-                let old = args.resume.then(|| db::session_with_args(&conn, &line)).flatten();
-                let session = old.unwrap_or_else(|| db::add_session(&conn, git(&["rev-parse", "HEAD"]).trim(), &line));
-                replan::run(db::open(&cli.db), session, &scenarios(&cli, &args.filter), args);
+                let old = args
+                    .resume
+                    .then(|| db::session_with_args(&conn, &line))
+                    .flatten();
+                let session = old.unwrap_or_else(|| {
+                    db::add_session(&conn, git(&["rev-parse", "HEAD"]).trim(), &line)
+                });
+                replan::run(
+                    db::open(&cli.db),
+                    session,
+                    &scenarios(&cli, &args.filter),
+                    args,
+                );
                 session
             });
             replan::report(&conn, session);
@@ -665,18 +804,30 @@ fn main() {
                 .filter(|pair| !pair.is_empty())
                 .map(|pair| {
                     let (key, value) = pair.split_once('=').unwrap();
-                    (key.to_string(), serde_json::from_str(value).unwrap_or(Value::String(value.to_string())))
+                    (
+                        key.to_string(),
+                        serde_json::from_str(value).unwrap_or(Value::String(value.to_string())),
+                    )
                 })
                 .collect();
             let scenarios = scenarios(&cli, &args.filter);
             bench::run(&scenarios, args, &worker::tuning_with(&overrides));
         }
-        Cmd::Tiny { count, lone, lone_taps, cap } => {
+        Cmd::Tiny {
+            count,
+            lone,
+            lone_taps,
+            cap,
+        } => {
             let dir = cli.scenarios.join("tiny");
             std::fs::create_dir_all(&dir).unwrap();
             let scenarios = space::tiny(*count, *lone, *lone_taps, *cap);
             for scenario in &scenarios {
-                std::fs::write(dir.join(format!("{}.json", scenario.name)), serde_json::to_string(scenario).unwrap()).unwrap();
+                std::fs::write(
+                    dir.join(format!("{}.json", scenario.name)),
+                    serde_json::to_string(scenario).unwrap(),
+                )
+                .unwrap();
             }
             println!("wrote {} scenarios to {dir:?}", scenarios.len());
         }
@@ -705,12 +856,19 @@ fn main() {
             for (id, step_id, state) in todo {
                 if reference.0 != step_id {
                     let payload: String = conn
-                        .query_row("SELECT payload FROM scenario_step WHERE id = ?1", [step_id], |row| row.get(0))
+                        .query_row(
+                            "SELECT payload FROM scenario_step WHERE id = ?1",
+                            [step_id],
+                            |row| row.get(0),
+                        )
                         .unwrap();
-                    let payload: Option<hf_core::payload::Payload> = serde_json::from_str(&payload).ok();
+                    let payload: Option<hf_core::payload::Payload> =
+                        serde_json::from_str(&payload).ok();
                     reference = (step_id, payload.map(StateBundle::init_from_payload));
                 }
-                let Some(state_bundle) = &reference.1 else { continue };
+                let Some(state_bundle) = &reference.1 else {
+                    continue;
+                };
                 let essence: Essence = serde_json::from_str(&state).unwrap();
                 let (metric_ref, gross, flow) = score(state_bundle, &essence);
                 transaction

@@ -50,7 +50,11 @@ pub fn all(dir: &Path) -> BTreeMap<String, Scenario> {
             out.extend(all(&path));
         }
     }
-    out.extend(load(dir, "").into_iter().map(|scenario| (scenario.name.clone(), scenario)));
+    out.extend(
+        load(dir, "")
+            .into_iter()
+            .map(|scenario| (scenario.name.clone(), scenario)),
+    );
     out
 }
 
@@ -64,7 +68,10 @@ pub fn load_set(dir: &Path, sets: &Path, set: &str) -> Vec<Scenario> {
         .filter(|line| !line.is_empty() && !line.starts_with('#'))
         .map(|line| {
             let (name, steps) = line.split_once(':').unwrap_or((line, ""));
-            let mut scenario = known.get(name).unwrap_or_else(|| panic!("no scenario {name}")).clone();
+            let mut scenario = known
+                .get(name)
+                .unwrap_or_else(|| panic!("no scenario {name}"))
+                .clone();
             if let Ok(steps) = steps.parse() {
                 scenario.steps.truncate(steps);
             }
@@ -93,7 +100,12 @@ fn chest(count: i64, band: usize, options: &[&[(&str, f64)]]) -> Chest {
         band,
         options: options
             .iter()
-            .map(|option| option.iter().map(|(label, amount)| (label.to_string(), *amount)).collect())
+            .map(|option| {
+                option
+                    .iter()
+                    .map(|(label, amount)| (label.to_string(), *amount))
+                    .collect()
+            })
             .collect(),
     }
 }
@@ -129,7 +141,11 @@ pub fn dummy() -> Scenario {
         add(label.to_string(), price, owned);
     }
     for id in 0..BASE_JUICE_INFOS[0].num_juice_avail {
-        add(format!("Juice {id}"), 300.0, if id < 2 { 200.0 } else { 0.0 });
+        add(
+            format!("Juice {id}"),
+            300.0,
+            if id < 2 { 200.0 } else { 0.0 },
+        );
     }
 
     let mut upgrade_info: Vec<OneUpgradeInput> = Vec::new();
@@ -147,7 +163,11 @@ pub fn dummy() -> Scenario {
         materials,
         plans: vec![
             ValuationPlan([BandValue::Worthless; 3]),
-            ValuationPlan([BandValue::Worthless, BandValue::TaxedSell, BandValue::Market]),
+            ValuationPlan([
+                BandValue::Worthless,
+                BandValue::TaxedSell,
+                BandValue::Market,
+            ]),
         ],
         optimizer_plan: 1,
         upgrade_info,
@@ -155,7 +175,15 @@ pub fn dummy() -> Scenario {
         special_state: None,
         // a choice, an obtain-all, fractional amounts as a conversion leaves them, and free taps
         chests: [
-            chest(120, 1, &[&[("Red", 500.0)], &[("Blue", 1500.0)], &[("Leapstones", 20.0), ("Shards", 3000.0)]]),
+            chest(
+                120,
+                1,
+                &[
+                    &[("Red", 500.0)],
+                    &[("Blue", 1500.0)],
+                    &[("Leapstones", 20.0), ("Shards", 3000.0)],
+                ],
+            ),
             chest(7, 0, &[&[("Fusion", 30.0), ("Gold", 5000.0)]]),
             chest(33, 2, &[&[("Juice 0", 2.5)], &[("Juice 1", 2.5)]]),
             chest(40, 0, &[&[("Special Leap", 12.0)], &[("Leapstones", 6.4)]]),

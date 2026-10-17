@@ -44,13 +44,26 @@ impl Previous {
     /// the taps done since, and its place in the free tap order; a new one goes last. A chest
     /// stack that is as it was is opened as it was.
     pub fn carry(&self, state_bundle: &mut StateBundle) {
-        let key = |upgrade: &Upgrade| (upgrade.piece_index, upgrade.upgrade_index, upgrade.is_normal_honing);
-        let was: AHashMap<(usize, usize, bool), usize> =
-            self.best.upgrade_arr.iter().enumerate().map(|(index, upgrade)| (key(upgrade), index)).collect();
+        let key = |upgrade: &Upgrade| {
+            (
+                upgrade.piece_index,
+                upgrade.upgrade_index,
+                upgrade.is_normal_honing,
+            )
+        };
+        let was: AHashMap<(usize, usize, bool), usize> = self
+            .best
+            .upgrade_arr
+            .iter()
+            .enumerate()
+            .map(|(index, upgrade)| (key(upgrade), index))
+            .collect();
         let mut now: AHashMap<(usize, usize, bool), usize> = AHashMap::new();
         for (index, upgrade) in state_bundle.upgrade_arr.iter_mut().enumerate() {
             now.insert(key(upgrade), index);
-            let Some(&old) = was.get(&key(upgrade)) else { continue };
+            let Some(&old) = was.get(&key(upgrade)) else {
+                continue;
+            };
             let mut state = self.best.upgrade_arr[old].state.payload.clone();
             let len = upgrade.state.len();
             if upgrade.is_normal_honing {
@@ -61,14 +74,25 @@ impl Previous {
                 upgrade.state.update_payload(state);
             }
         }
-        let mut order: Vec<usize> =
-            self.best.special_state.iter().filter_map(|&old| now.get(&key(&self.best.upgrade_arr[old])).copied()).collect();
-        let new: Vec<usize> = (0..state_bundle.upgrade_arr.len()).filter(|index| !order.contains(index)).collect();
+        let mut order: Vec<usize> = self
+            .best
+            .special_state
+            .iter()
+            .filter_map(|&old| now.get(&key(&self.best.upgrade_arr[old])).copied())
+            .collect();
+        let new: Vec<usize> = (0..state_bundle.upgrade_arr.len())
+            .filter(|index| !order.contains(index))
+            .collect();
         order.extend(new);
         state_bundle.special_state = order;
         let mut chest_states = state_bundle.chest_states.clone();
         for (key, state) in &self.best.chest_states {
-            if state_bundle.prep_output.chests.get(key).is_some_and(|chest| chest.is_valid(state)) {
+            if state_bundle
+                .prep_output
+                .chests
+                .get(key)
+                .is_some_and(|chest| chest.is_valid(state))
+            {
                 chest_states.insert(key.clone(), state.clone());
             }
         }

@@ -3,7 +3,6 @@
 use hf_scanner::dev_utils::native;
 use std::{env, fs};
 
-
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
     let out = &args[0];
@@ -14,8 +13,13 @@ fn main() {
         let (width, height) = (image.width() as usize, image.height() as usize);
         let ui_height = (height as f64 / 360.0).round() as u32 * 360;
         let forced = path.contains("21 by 9");
-        let game_width = if forced { width as u32 } else { ui_height * 16 / 9 };
-        let (mut state, mut pixels) = native::new_state(width, height, (game_width, ui_height), forced);
+        let game_width = if forced {
+            width as u32
+        } else {
+            ui_height * 16 / 9
+        };
+        let (mut state, mut pixels) =
+            native::new_state(width, height, (game_width, ui_height), forced);
         pixels.copy_from_slice(image.as_raw());
         state.cropper();
         state.cropper();

@@ -3,16 +3,12 @@
 // and what the match score gains by moving there.
 //   cargo run --release --bin icon_locate -- <image>...
 use hf_scanner::{
-    image_utils::{
-        brightness::normalize_brightness,
-        common::get_resizer,
-    },
     dev_utils::native,
-    scanner_state::ScannerState,
+    image_utils::{brightness::normalize_brightness, common::get_resizer},
     interface::setup::icon_lookup,
+    scanner_state::ScannerState,
 };
 use std::env;
-
 
 fn main() {
     println!(
@@ -23,7 +19,8 @@ fn main() {
         let (width, height) = (image.width() as usize, image.height() as usize);
         // a still is the whole game window, so the capture size is the game resolution
         let game = (width as u32, height as u32);
-        let (mut state, mut pixels) = native::new_state(width, height, game, path.contains("21 by 9"));
+        let (mut state, mut pixels) =
+            native::new_state(width, height, game, path.contains("21 by 9"));
         pixels.copy_from_slice(image.as_raw());
         for _ in 0..40 {
             state.cropper();
@@ -46,9 +43,7 @@ fn main() {
             let Some(grid) = state.anchored_slot_address_position(&address) else {
                 continue;
             };
-            let root = state
-                .inventory_root(address.inventory_type)
-                .unwrap();
+            let root = state.inventory_root(address.inventory_type).unwrap();
             // mean absolute RGB difference of the crop at this offset against the template
             let score = |state: &mut ScannerState, dx: f64, dy: f64| {
                 let mut observed = state.crop_buffer(grid.shifted((dx, dy)));

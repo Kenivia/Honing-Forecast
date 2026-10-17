@@ -41,7 +41,13 @@ impl Default for KsTuple {
 }
 impl StateBundle {
     /// The cumulants of the sum
-    pub fn raw_ks(&self, theta: f64, support_index: i64, skip_count: usize, probe: &mut Probe) -> KsTuple {
+    pub fn raw_ks(
+        &self,
+        theta: f64,
+        support_index: i64,
+        skip_count: usize,
+        probe: &mut Probe,
+    ) -> KsTuple {
         probe.count(Counter::Ks);
         self.cumulant_01234(support_index, skip_count, theta)
     }
@@ -107,7 +113,15 @@ impl Support {
                 push(&mut sums, heavy(far) * weight);
                 weight *= decay;
             }
-            let (lost, out) = from_sums(sums, biggest_shift, if theta >= 0.0 { (bottom, gap) } else { (top, -gap) });
+            let (lost, out) = from_sums(
+                sums,
+                biggest_shift,
+                if theta >= 0.0 {
+                    (bottom, gap)
+                } else {
+                    (top, -gap)
+                },
+            );
             if !lost {
                 return out;
             }
@@ -119,8 +133,18 @@ impl Support {
             for far in (0..n).rev() {
                 push(&mut sums, heavy(far) * (-rate * far as f64).exp());
             }
-            return from_sums(sums, biggest_shift, if theta >= 0.0 { (top, -gap) } else { (bottom, gap) }).1;
-        }        for (s, p) in self.access_collapsed(skipped).iter() {
+            return from_sums(
+                sums,
+                biggest_shift,
+                if theta >= 0.0 {
+                    (top, -gap)
+                } else {
+                    (bottom, gap)
+                },
+            )
+            .1;
+        }
+        for (s, p) in self.access_collapsed(skipped).iter() {
             let u: f64 = p * (s * theta - biggest_shift).exp();
             mean += s * u;
             let x2: f64 = s * s;
@@ -164,11 +188,30 @@ fn push(sums: &mut [f64; 5], w: f64) {
 /// came out of a difference that kept fewer than 8 of its digits.
 fn from_sums(sums: [f64; 5], shift: f64, (origin, step): (f64, f64)) -> (bool, KsTuple) {
     let inv_sum = sums[0].recip();
-    let (f1, f2, f3, f4) = (sums[1] * inv_sum, 2.0 * sums[2] * inv_sum, 6.0 * sums[3] * inv_sum, 24.0 * sums[4] * inv_sum);
-    let (m1, m2, m3, m4) = (f1, f2 + f1, f3 + 3.0 * f2 + f1, f4 + 6.0 * f3 + 7.0 * f2 + f1);
+    let (f1, f2, f3, f4) = (
+        sums[1] * inv_sum,
+        2.0 * sums[2] * inv_sum,
+        6.0 * sums[3] * inv_sum,
+        24.0 * sums[4] * inv_sum,
+    );
+    let (m1, m2, m3, m4) = (
+        f1,
+        f2 + f1,
+        f3 + 3.0 * f2 + f1,
+        f4 + 6.0 * f3 + 7.0 * f2 + f1,
+    );
     let mu2 = (m2 - m1 * m1).max(0.0);
     let mu3 = m3 - 3.0 * m2 * m1 + 2.0 * m1 * m1 * m1;
     let mu4 = m4 - 4.0 * m3 * m1 + 6.0 * m2 * m1 * m1 - 3.0 * m1 * m1 * m1 * m1;
     let step2 = step * step;
-    (m2 - m1 * m1 < 1e-8 * m2, KsTuple(shift + sums[0].ln(), origin + step * m1, step2 * mu2, step2 * step * mu3, step2 * step2 * (mu4 - 3.0 * mu2 * mu2)))
+    (
+        m2 - m1 * m1 < 1e-8 * m2,
+        KsTuple(
+            shift + sums[0].ln(),
+            origin + step * m1,
+            step2 * mu2,
+            step2 * step * mu3,
+            step2 * step2 * (mu4 - 3.0 * mu2 * mu2),
+        ),
+    )
 }
