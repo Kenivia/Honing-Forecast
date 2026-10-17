@@ -23,6 +23,8 @@ pub struct ScreenInfo {
     pub ui_origin: (f64, f64),
     // top left of the area the game renders into, which the HUD and some windows hug
     pub corner: (f64, f64),
+    // in pixels
+    pub render_width: f64,
 
     pub brightness: Option<f64>,
     // how many anchors that estimate is the average of
@@ -76,6 +78,7 @@ impl ScannerState {
         } else {
             info.game_width as f64
         };
+        info.render_width = render_width;
         info.corner = (
             (self.buffer.width as f64 - render_width) / 2.0,
             info.ui_origin.1,

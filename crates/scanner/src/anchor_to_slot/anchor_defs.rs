@@ -48,6 +48,7 @@ pub static ANCHORS: LazyLock<Vec<AnchorSpec>> = LazyLock::new(|| {
                         STORAGE_ANCHOR_SLACK,
                     )),
                     // no captures of the pet menu across settings, so this one is from the model
+                    roam: None,
                     brightness: Some([5.7877893407e-03, 0.5554276781, -36.8317787]),
                 },
                 AnchorVariant {
@@ -58,6 +59,7 @@ pub static ANCHORS: LazyLock<Vec<AnchorSpec>> = LazyLock::new(|| {
                         50.0,
                         STORAGE_ANCHOR_SLACK,
                     )),
+                    roam: None,
                     brightness: Some([5.4345973311e-03, 0.5303418622, -30.5668870]),
                 },
             ],
@@ -87,19 +89,21 @@ pub static ANCHORS: LazyLock<Vec<AnchorSpec>> = LazyLock::new(|| {
             Rect::ui((662.0, 56.0), 48.0, 48.0),
             Some(SEARCH_BUTTON_CURVE),
         ),
+        // Where the game first puts it, then anywhere it can be dragged to. It is kept inside the
+        // area the game renders into, and first put a fixed distance from that area's right edge.
         AnchorSpec {
             anchor_type: AnchorType::CharInventory,
             variants: vec![
-                AnchorVariant {
-                    name: SORT_BUTTON,
-                    bound: Bound::Frame,
-                    brightness: Some(SORT_BUTTON_CURVE),
-                },
-                AnchorVariant {
-                    name: SEARCH_BUTTON,
-                    bound: Bound::Frame,
-                    brightness: Some(SEARCH_BUTTON_CURVE),
-                },
+                lone_variant(
+                    SORT_BUTTON,
+                    Rect::ui((20.0, 60.0), 38.0, 38.0),
+                    SORT_BUTTON_CURVE,
+                ),
+                lone_variant(
+                    SEARCH_BUTTON,
+                    Rect::ui((662.0, 56.0), 48.0, 48.0),
+                    SEARCH_BUTTON_CURVE,
+                ),
             ],
             inventories: vec![(InventoryType::CharInventory, (0.0, 0.0))],
         },
@@ -116,6 +120,7 @@ pub static ANCHORS: LazyLock<Vec<AnchorSpec>> = LazyLock::new(|| {
                         32.0,
                         CURRENCY_ANCHOR_SLACK,
                     )),
+                    roam: None,
                     brightness: None,
                 },
                 AnchorVariant {
@@ -126,6 +131,7 @@ pub static ANCHORS: LazyLock<Vec<AnchorSpec>> = LazyLock::new(|| {
                         32.0,
                         CURRENCY_ANCHOR_SLACK,
                     )),
+                    roam: None,
                     brightness: None,
                 },
             ],
@@ -261,18 +267,46 @@ fn page_names(prefix: &str, num_pages: usize) -> Vec<(String, String)> {
         .collect()
 }
 
+// UI units in from one side of the area the game renders into
+#[derive(Clone, Copy)]
+pub enum Edge {
+    Left(f64),
+    Right(f64),
+}
+
+impl Edge {
+    fn plus(self, by: f64) -> Edge {
+        match self {
+            Edge::Left(x) => Edge::Left(x + by),
+            Edge::Right(x) => Edge::Right(x + by),
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub enum Bound {
+    // kept in case something needs it, nothing searches it now
+    #[allow(dead_code)]
     Frame,
     Ui(Rect),
     Storage(Rect),
     // from the top left of the area the game renders into
     Corner(Rect),
+    // in the area the game renders into, top and bottom from its top
+    Render {
+        left: Edge,
+        right: Edge,
+        top: f64,
+        bottom: f64,
+    },
 }
 
 pub struct AnchorVariant {
     pub name: &'static str,
+    // searched on every scan
     pub bound: Bound,
+    // searched when the lone inventory is not at its bound, as rationed by search_lone
+    pub roam: Option<Bound>,
     // Setting from the matched patch's mean, fitted to the captures in scripts/brightness/inputs*
     pub brightness: Option<[f64; 3]>,
 }
@@ -291,6 +325,32 @@ pub fn with_slack(top_left: (f64, f64), width: f64, height: f64, slack: f64) -> 
         width + slack * 2.0,
         height + slack * 2.0,
     )
+}
+
+// Where a template at this offset from the window origin can be, while the origin ranges from
+// `from` to `to`. Measured on the 1440p stills in "char inv positions", 16:9 and forced 21:9.
+fn lone_bound(from: (Edge, f64), to: (Edge, f64), offset: Rect) -> Bound {
+    let (x, y) = offset.top_left;
+    Bound::Render {
+        left: from.0.plus(x - WINDOW_ANCHOR_SLACK),
+        right: to.0.plus(x + offset.width + WINDOW_ANCHOR_SLACK),
+        top: from.1 + y - WINDOW_ANCHOR_SLACK,
+        bottom: to.1 + y + offset.height + WINDOW_ANCHOR_SLACK,
+    }
+}
+
+fn lone_variant(name: &'static str, offset: Rect, curve: [f64; 3]) -> AnchorVariant {
+    let default = (Edge::Right(-796.0), 250.8);
+    AnchorVariant {
+        name,
+        bound: lone_bound(default, default, offset),
+        roam: Some(lone_bound(
+            (Edge::Left(0.0), 0.0),
+            (Edge::Right(-726.0), 595.0),
+            offset,
+        )),
+        brightness: Some(curve),
+    }
 }
 
 // one window of the storage layout: the sort button at its top left and the icons at its top right
@@ -316,6 +376,7 @@ fn storage_window(
             AnchorVariant {
                 name: SORT_BUTTON,
                 bound: relative((20.0, 60.0), 38.0, 38.0),
+                roam: None,
                 brightness: Some(SORT_BUTTON_CURVE),
             },
             AnchorVariant {
@@ -325,6 +386,7 @@ fn storage_window(
                     other_offset.width,
                     other_offset.height,
                 ),
+                roam: None,
                 brightness: other_brightness,
             },
         ],

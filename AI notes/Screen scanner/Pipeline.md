@@ -23,7 +23,8 @@ Full-frame search is the expensive step and uses FFT cross-correlation. Everythi
 An anchor is a piece of fixed UI that is template-matched to get a *root*: a position other things are placed from. The ordered anchor list (`ANCHORS` in `anchor_to_slot/anchor_defs.rs`) is the single place that describes them. Each entry has:
 
 - **Variants**: alternative templates for the same anchor, so that one can be covered (cursor, tooltip) while another still holds it. Each has a bound and brightness coefficients. The root comes from the first variant that is found, because variants place it a pixel apart.
-- **Bound**: where a variant is searched. One of: the whole frame; a rectangle in UI space; a rectangle in UI space that moves with the storage layout; a rectangle from the top left of the area the game renders into (`Bound::Corner`, for the HUD side: see `Currency.md`).
+- **Bound**: where a variant is searched on every scan. One of: the whole frame (no anchor uses it now, kept for later); a rectangle in UI space; a rectangle in UI space that moves with the storage layout; a rectangle from the top left of the area the game renders into (`Bound::Corner`, for the HUD side: see `Currency.md`); a rectangle in that area whose left and right sides are each measured from its left or its right edge (`Bound::Render`, for the lone inventory).
+- **Roam**: only the lone inventory has one: where it can be dragged to, searched as rationed by `search_lone` once it is not at its bound.
 - **Inventories**: which inventory windows the anchor locates and each window's origin relative to its root.
 
 A match always *locates*: the root is the matched position minus the template's stored offset, never the bound's own position. So a bound only needs to be roughly right, and its slack does not affect alignment.
@@ -38,7 +39,7 @@ Current anchors:
 
 - **Storage**: the highlighted Storage button, in a pet-menu and a storage-NPC variant that never show together, each at its own fixed UI-space spot. It locates no inventory.
 - **One anchor per storage window**, with two variants: the window's sort button at its top left (the char inventory anchor template, identical in all three windows) and something at its top right. For the two storages that is their group of move-to icons. For the inventory it is the search button; the icons next to it are filters and the chosen one lights up. Their roots are the window origins.
-- **Char inventory**: the free-floating window, searched across the whole frame, by the same sort button and search button. When that search runs is below.
+- **Char inventory**: the free-floating window, by the same sort button and search button. It is looked for on every scan where the game first puts it, the same way as the currency window, and otherwise over everywhere it can be dragged to. When that search runs is below.
 - **Currency**: the currency window, only where the game first puts it and only while the storage layout is closed. It locates no inventory and tells no brightness: the window is see-through. See `Currency.md`.
 
 `AnchorType::in_storage` says which anchors are the storage layout's. Template matching inside an area, with the pass limit, is `find_template`, shared by anchors and currencies.
@@ -57,7 +58,12 @@ This replaced a design where the Storage button was the parent of the window anc
 
 Why the storage windows are not placed from the Storage button: measured against the windows' sort buttons across every native still, its position wanders by 1.7 UI units, ten times any other anchor. Its template is a large soft highlight and matches at the worst score of the set, so this is probably its own localisation rather than the game moving it, but either way it is the wrong thing to hang a grid on.
 
-**The whole-frame search is rationed** (`search_lone`). It takes 180 ms at 1080p and 590 ms at 3440x1440 per variant, and used to run for both on every scanned frame with no window found. Now, while the storage layout is closed and the lone inventory is not found:
+**Where the lone inventory can be** (measured 2026-10-17 on the 1440p stills in `scripts/brightness/1440p raw/char inv positions`, 16:9 and forced 21:9, dragged to each corner and in its default place). The game keeps the window inside the area it renders into, not the 16:9 UI block, and native ultrawide behaves as forced 21:9 does. In UI units from that area's top left, its origin ranges from (0, 0) to (right edge − 726, 590 to 595). It first opens at 796 from the right edge and 250.8 down, at either aspect. Both are searched with `WINDOW_ANCHOR_SLACK` around them (`lone_variant`).
+
+- **The default place is looked for on every scan**, both variants, through `search_anchor` like the currency window. It costs 0.1 to 0.2 ms, and a window there is never searched for otherwise.
+- **Otherwise the rationed search below covers where it can be dragged to** (the variant's `roam`) instead of the whole frame: a third of a 16:9 frame, and 27% of the capture at forced 21:9 on a 16:9 screen. On the stills one variant over it took 27 ms (forced 21:9) and 39 to 45 ms (16:9) natively.
+
+**The roam search is rationed** (`search_lone`). Over the whole frame it took 180 ms at 1080p and 590 ms at 3440x1440 per variant, and used to run for both on every scanned frame with no window found. Now, while the storage layout is closed and the lone inventory is not found:
 
 - **Both variants are searched when the frame has changed enough**: more than 3% (`SEARCH_CHANGED`) of the thinned frame's samples (the ones `worth_scanning` takes) differ from the frame of the last such search. It is measured against that frame, not the previous one, so a window fading in adds up. The one lone inventory opening on the recordings (21-31-53, frame 170, no fade) is 13% in a single frame and 15% in all at 3440x1440; before it the cursor and a small menu make 1 to 3%.
 - **Both are searched on the scan the anchor was lost at its re-check.** A match on a dim frame of a fade fails the next re-check, and the frame after may be the last one sent.
@@ -207,7 +213,7 @@ Measured on 2026-10-10 after the scanner clean-up, all four recordings in one ba
 - **At 3440x1440 the frame copy is now as large as the scan**, 11 ms against 13 to 15, and the result's way back another 6. The loop takes 30 to 33 ms a turn against 43 to 47, so it keeps up with 30 frames a second most of the time (97 and 94% of drawn frames taken, 70 and 84% before).
 - **A frame with no tooltip is the slow kind at 3440x1440** (20 to 24 ms against 12 to 14): probably the frames where a page has just opened and its slots are matched; not checked.
 - **The slow tail is the slot step, now under its 60 ms budget at the 99th percentile**: 30 to 34 ms at 1080p and 45 to 46 at 3440x1440 on the looks where it runs, icon matching being nearly all of it.
-- **The whole-frame search runs on 6% of 17-28-55's scans** (51 of 802, 186 ms a variant) and on 6 scans of 21-31-53 (575 ms). It is what is left of that recording's 19 ms mean; see "The whole-frame search is rationed".
+- **The whole-frame search runs on 6% of 17-28-55's scans** (51 of 802, 186 ms a variant) and on 6 scans of 21-31-53 (575 ms). It is what is left of that recording's 19 ms mean; see "The roam search is rationed". Measured before the search was cut to the roam area.
 - **OCR is not short of workers.** 11 to 21 lines a second are asked for against the 31 to 49 three workers can read, and the queue is empty after 51 to 66% of batches. The long waits are bursts: 22-55-45 has backlogs of 110 and 154 lines that take 4 to 6 s to clear, 21-31-53 of 78 and 98.
 - **Not in these figures: what the OCR workers spend preparing a line.** Their stage timings (`ocr/preprocess`) are drained and dropped by the worker, so preprocessing only shows inside a batch's `took`. Natively it is 0.7 to 0.8 ms a line, of 9 to 11 in all.
 - Firefox was last measured on 2026-10-06: 26 ms a scan (frame copy 7 ms), 96% of drawn frames scanned.
@@ -298,7 +304,8 @@ Not done yet:
 - The two book icons pass at 0.93 instead of 0.95 (`Config and calibration.md`); nothing else has its own slot limit.
 - The roster page tabs for "page 1 inactive" and "page 2 active" were built from character-storage tab pixels, which look the same.
 - Tooltip reading works in the native harness and in the browser on an uploaded recording, where every frame is scanned. Its limits are listed in `Tooltips.md`.
-- With no inventory open over a game world that keeps changing by more than 3%, the whole-frame search still runs on most scans (180 to 590 ms a variant). Otherwise it runs on one scan in eight.
+- With no inventory open over a game world that keeps changing by more than 3%, the roam search still runs on most scans. Otherwise it runs on one scan in eight.
+- The lone inventory's default place and range are only measured at 1440p; other heights are assumed to scale like the rest of the UI.
 - The storage layout's fixed spots assume the game is centred in the capture, like all UI-space bounds. The window recordings are not: they are 1918 wide and 1078 or 1070 tall with the rows missing at the bottom, so the UI is 1 or 5 px off the assumed place. 1 px is inside the slack; at 5 px the storage layout is not found (the native runs pad that recording to 1080 rows).
 - A page takes about a second and a half to be read after it opens (slots are done a few at a time).
 - The slot pass limit was raised from 0.9 to 0.95 because unknown icons were being identified on a live screen share. On the two recordings that leaves far fewer slots recognised, and so fewer hovers resolved to a slot (4 and 11 slots with tooltip data, against 19 and 27 at 0.9). Chests do not depend on it.

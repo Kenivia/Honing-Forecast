@@ -1,5 +1,5 @@
 use crate::{
-    anchor_to_slot::anchor_defs::{ANCHORS, AnchorSpec, Bound, anchor_spec},
+    anchor_to_slot::anchor_defs::{ANCHORS, AnchorSpec, Bound, Edge, anchor_spec},
     dev_utils::timing::timed,
     image_utils::{
         brightness::{est_ingame_brightness, mean_intensity, normalize_brightness},
@@ -90,6 +90,24 @@ impl ScannerState {
                 .scaled(ui_height)
                 .shifted(self.screen_info.ui_origin),
             Bound::Corner(b) => b.scaled(ui_height).shifted(self.screen_info.corner),
+            Bound::Render {
+                left,
+                right,
+                top,
+                bottom,
+            } => {
+                let (s, corner) = (self.screen_info.scale_factor, self.screen_info.corner);
+                let x = |edge: &Edge| match edge {
+                    Edge::Left(x) => corner.0 + x * s,
+                    Edge::Right(x) => corner.0 + self.screen_info.render_width + x * s,
+                };
+                Rect::screen(
+                    (x(left), corner.1 + top * s),
+                    x(right) - x(left),
+                    (bottom - top) * s,
+                    ui_height,
+                )
+            }
         })
     }
 
@@ -304,8 +322,9 @@ impl ScannerState {
         }
     }
 
-    // a search takes 180 to 590 ms, so it's searched for when the frame differs enough from the one last searched, measured
-    // against that frame and not the previous one so that a window fading in adds up; when it
+    // Searched where it can be dragged to once it is not where the game first puts it. That is a
+    // large search, so it runs when the frame differs enough from the one last searched, measured
+    // against that frame and not the previous one so that a window fading in adds up
     fn search_lone(&mut self, lost: bool) {
         let spec = anchor_spec(AnchorType::CharInventory);
         if !self.anchors[&spec.anchor_type].is_found() {
@@ -325,11 +344,12 @@ impl ScannerState {
                 }
                 vec![turn as usize % spec.variants.len()]
             };
-            let frame: Rect = self.compute_search_area(&Bound::Frame);
             for variant_index in variants_to_search {
                 if !self.anchors[&spec.anchor_type].is_found() {
+                    let area =
+                        self.compute_search_area(&spec.variants[variant_index].roam.unwrap());
                     timed("anchors/search", || {
-                        self.search_variant(spec, variant_index, frame)
+                        self.search_variant(spec, variant_index, area)
                     });
                 }
             }
@@ -386,9 +406,11 @@ impl ScannerState {
             self.clear_anchor(AnchorType::Currency);
         } else {
             let lost = lone_was_found && !self.anchors[&lone.anchor_type].is_found();
-            self.search_lone(lost);
+            // both at the spot the game first puts them, which is cheap
+            timed("anchors/default", || self.search_anchor(lone));
             let currency = anchor_spec(AnchorType::Currency);
             timed("anchors/currency", || self.search_anchor(currency));
+            self.search_lone(lost);
         }
     }
 

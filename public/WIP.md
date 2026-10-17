@@ -14,11 +14,11 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - ~~sort out how page num works~~
 - ~~try brightness calibration with 2160p~~
-- test if close enough actually needs the 9 shifts
+- ~~test if close enough actually needs the 9 shifts~~
 
-- measure where the char inventory anchor can be
+- ~~measure where the char inventory anchor can be~~
 - ~~gold shard silver reading~~
-
+- non-streak optimality
 - constant extraction script
 - auto detect 21:9
 - manual overwrite brightness
