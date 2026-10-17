@@ -5,14 +5,14 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Core
 
-- test & decide wtf to do with the core
+- ~~test & decide wtf to do with the core~~
   - code review
 
 ## OCR
 
-- code review
+- ~~code review~~
 
-- sort out how page num works
+- ~~sort out how page num works~~
 - try brightness calibration with 2160p
 - test if close enough actually needs the 9 shifts
 
@@ -22,6 +22,11 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - constant extraction script
 
 - enhanced book distinguishing???
+
+- wipe current scan (just like starting a debug recording) changing characters
+- fix how tradability of gold chests are determined
+- add trivial chest amounts to manifest
+- roster wide shared chest inventory
 
 ## Forecast mode
 
