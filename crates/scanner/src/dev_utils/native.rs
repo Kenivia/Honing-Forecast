@@ -119,8 +119,22 @@ pub fn describe_chest(chest: &Chest) -> String {
     )
 }
 
-// what the page would colour each known slot
+// what the page would colour each known slot, and the currencies
 pub fn print_statuses(state: &ScannerState) {
+    for currency in state.currency_results() {
+        println!(
+            "  {:?}  {:?}  value {:?}  bands {:?}  {}",
+            currency.currency, currency.status, currency.value, currency.bands, currency.reason
+        );
+    }
+    let mut fields: Vec<String> = state
+        .currency
+        .fields
+        .iter()
+        .map(|(field, reads)| format!("    {field:?}: {:?} of {} sent", reads.votes, reads.sent))
+        .collect();
+    fields.sort();
+    println!("{}", fields.join("\n"));
     let mut slots = state.result(true).slots;
     slots.sort_by_key(|slot| {
         (
@@ -215,7 +229,7 @@ impl Sim {
         }
         let strip = job.line.strip();
         let px = strip.width().next_multiple_of(50) as f64;
-        let numbers = matches!(job.line.kind, crate::ocr::jobs::Kind::Number { .. });
+        let numbers = job.line.digits_only();
         let text = crate::ocr::recognize::recognize_line(&strip, numbers);
         let entry = self
             .sent
@@ -250,6 +264,9 @@ impl Sim {
                     self.kinds.entry(id).or_insert(kind);
                 }
             }
+        }
+        for &id in state.currency.fields.values().flat_map(|x| &x.waiting) {
+            self.kinds.entry(id).or_insert("currency");
         }
         if let Some(hover) = &state.hover {
             self.seen.entry(hover.id).or_insert((scan, scan)).1 = scan;

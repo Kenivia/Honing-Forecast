@@ -2,7 +2,7 @@
 import { computed, ref, watchPostEffect } from "vue";
 import { OneIconConfig, SlotResult } from "./LoadStorage";
 import { SlotEdit } from "./ScanStore";
-import { draw_icon } from "./ScannerUIutils";
+import { STATUS_COLORS, draw_icon } from "./ScannerUIutils";
 
 const props = defineProps<{
   info?: SlotResult;
@@ -11,14 +11,6 @@ const props = defineProps<{
   active: boolean;
 }>();
 
-const BORDERS = {
-  Pending: "var(--text-muted)",
-  Good: "var(--achieved)",
-  NeedHover: "var(--series-fusion)",
-  NeedTradability: "var(--series-fusion)",
-  Error: "var(--warning)",
-  Irrelevant: "var(--border-very-muted)",
-};
 const BORDER_WIDTHS = {
   Pending: "1px",
   Good: "1px",
@@ -29,7 +21,9 @@ const BORDER_WIDTHS = {
 };
 
 const border = computed(() =>
-  props.edit ? "var(--average)" : BORDERS[props.info?.status ?? "Pending"],
+  props.edit
+    ? "var(--average)"
+    : STATUS_COLORS[props.info?.status ?? "Pending"],
 );
 
 const border_width = computed(() =>

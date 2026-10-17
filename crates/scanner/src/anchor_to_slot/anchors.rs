@@ -22,18 +22,29 @@ const CHAR_INV_FORCED_SEARCH_FREQ: u64 = 8;
 
 pub const STORAGE_ANCHOR_SLACK: f64 = 2.0;
 pub const WINDOW_ANCHOR_SLACK: f64 = 6.0;
+pub const CURRENCY_ANCHOR_SLACK: f64 = 8.0;
 // The storage layout is three windows and the Storage button, always in the same place: one for
 // the pet menu, and shifted by this for the storage NPC.
 const STORAGE_NPC_SHIFT: [(f64, f64); 2] = [(0.0, 0.0), (-6.4, -142.45)];
 const STORAGE_MIN: usize = 3;
 
 // cut on whole pixels: at a fraction of one it would be resampled
-fn on_pixels(mut area: Rect) -> Rect {
+pub fn on_pixels(mut area: Rect) -> Rect {
     let (left, top) = (area.top_left.0.floor(), area.top_left.1.floor());
     area.width = (area.top_left.0 + area.width).ceil() - left;
     area.height = (area.top_left.1 + area.height).ceil() - top;
     area.top_left = (left, top);
     area
+}
+
+// with this much more on every side
+pub fn grown(area: Rect, by: f64) -> Rect {
+    Rect {
+        top_left: (area.top_left.0 - by, area.top_left.1 - by),
+        width: area.width + by * 2.0,
+        height: area.height + by * 2.0,
+        ..area
+    }
 }
 
 // one variant of an anchor, where it was matched
@@ -78,7 +89,43 @@ impl ScannerState {
                 .shifted(self.storage_shift)
                 .scaled(ui_height)
                 .shifted(self.screen_info.ui_origin),
+            Bound::Corner(b) => b.scaled(ui_height).shifted(self.screen_info.corner),
         })
+    }
+
+    // the part of an area inside the frame, on whole pixels
+    pub fn clipped(&self, area: Rect) -> Rect {
+        let area = on_pixels(area);
+        let (left, top) = (area.top_left.0.max(0.0), area.top_left.1.max(0.0));
+        let right = (area.top_left.0 + area.width).min(self.buffer.width as f64);
+        let bottom = (area.top_left.1 + area.height).min(self.buffer.height as f64);
+        Rect {
+            top_left: (left, top),
+            width: (right - left).max(0.0),
+            height: (bottom - top).max(0.0),
+            ..area
+        }
+    }
+
+    // Where a template matches best in an area of the frame, if it passes: its place in the
+    // frame, the score, and the matched patch's mean. Matched as captured, so the score does not
+    // go by brightness.
+    pub fn find_template(&mut self, name: &str, area: Rect) -> Option<(Rect, f64, f64)> {
+        let area = self.clipped(area);
+        let ui_height = self.screen_info.effective_height;
+        let template = icon_lookup(name, ui_height, get_resizer(&mut self.resizer));
+        let (width, height) = template.offset.pixel_size();
+        if area.width < width as f64 || area.height < height as f64 {
+            return None;
+        }
+        drop(template);
+        let searched = self.crop_buffer(area);
+        let template = icon_lookup(name, ui_height, get_resizer(&mut self.resizer));
+        let (found, confidence, mean_intensity) = template_match(&template, &searched)?;
+        let limit = template
+            .required_confidence
+            .unwrap_or(DEFAULT_TEMPLATE_MATCHING_CONFIDENCE);
+        (confidence > limit).then(|| (found.shifted(area.top_left), confidence, mean_intensity))
     }
 
     pub fn initialize_anchors(&mut self) {
@@ -110,10 +157,10 @@ impl ScannerState {
         })
     }
 
+    // Each found anchor is compared where it was. Until something tells the brightness, which
+    // the comparison needs, it is matched again just around that place instead.
     pub fn check_existing_anchors(&mut self) {
-        let Some(brightness) = self.screen_info.brightness else {
-            return;
-        };
+        let brightness = self.screen_info.brightness;
         let mut to_clear: Vec<(AnchorType, usize)> = Vec::new();
         let mut estimates: Vec<(AnchorType, usize, f64)> = Vec::new();
 
@@ -127,14 +174,22 @@ impl ScannerState {
             .collect();
         for (anchor_type, variant_index, position) in found {
             let variant = &anchor_spec(anchor_type).variants[variant_index];
-            let mut seen = self.crop_buffer(position);
-            normalize_brightness(&mut seen, brightness);
-            let template = icon_lookup(
-                variant.name,
-                self.screen_info.effective_height,
-                get_resizer(&mut self.resizer),
-            );
-            if close_enough(&template, &seen).is_none() {
+            let held = match brightness {
+                Some(brightness) => {
+                    let mut seen = self.crop_buffer(position);
+                    normalize_brightness(&mut seen, brightness);
+                    let template = icon_lookup(
+                        variant.name,
+                        self.screen_info.effective_height,
+                        get_resizer(&mut self.resizer),
+                    );
+                    close_enough(&template, &seen).is_some()
+                }
+                None => self
+                    .find_template(variant.name, grown(position, 2.0))
+                    .is_some(),
+            };
+            if !held {
                 to_clear.push((anchor_type, variant_index));
             } else if let Some(curve) = variant.brightness {
                 // Its estimate is of this frame, not of the one it was found on, which a
@@ -166,34 +221,22 @@ impl ScannerState {
 
     fn search_variant(&mut self, spec: &AnchorSpec, variant_index: usize, search_area: Rect) {
         let variant = &spec.variants[variant_index];
-        let template = icon_lookup(
+        let Some((found_position, confidence, mean_intensity)) =
+            self.find_template(variant.name, search_area)
+        else {
+            return;
+        };
+        let template_offset = icon_lookup(
             variant.name,
             self.screen_info.effective_height,
             get_resizer(&mut self.resizer),
-        );
-        let template_offset = template.offset;
-        let required_confidence = template
-            .required_confidence
-            .unwrap_or(DEFAULT_TEMPLATE_MATCHING_CONFIDENCE);
-        drop(template);
-        // matched as captured: the score does not go by brightness
-        let searched = self.crop_buffer(search_area);
-        let Some((found_in_area, confidence, mean_intensity)) = template_match(
-            &icon_lookup(
-                variant.name,
-                self.screen_info.effective_height,
-                get_resizer(&mut self.resizer),
-            ),
-            &searched,
-        ) else {
-            return;
-        };
-        let found_position = found_in_area.shifted(search_area.top_left);
+        )
+        .offset;
         let brightness = variant
             .brightness
             .map(|curve| est_ingame_brightness(mean_intensity, &curve));
 
-        if confidence > required_confidence {
+        {
             let anchor_info = self.anchors.get_mut(&spec.anchor_type).unwrap();
             anchor_info.positions[variant_index] = Some(FoundVariant {
                 position: found_position,
@@ -244,7 +287,7 @@ impl ScannerState {
     fn storage_found(&self) -> usize {
         self.anchors
             .iter()
-            .filter(|(anchor_type, _)| **anchor_type != AnchorType::CharInventory)
+            .filter(|(anchor_type, _)| anchor_type.in_storage())
             .map(|(_, anchor)| anchor.positions.iter().flatten().count())
             .sum()
     }
@@ -256,10 +299,7 @@ impl ScannerState {
     }
 
     fn search_storage(&mut self) {
-        for spec in ANCHORS
-            .iter()
-            .filter(|spec| spec.anchor_type != AnchorType::CharInventory)
-        {
+        for spec in ANCHORS.iter().filter(|spec| spec.anchor_type.in_storage()) {
             timed("anchors/storage", || self.search_anchor(spec));
         }
     }
@@ -308,12 +348,7 @@ impl ScannerState {
                 )
                 .offset
                 .shifted(root);
-                let near = on_pixels(Rect {
-                    top_left: (at.top_left.0 - slack, at.top_left.1 - slack),
-                    width: at.width + slack * 2.0,
-                    height: at.height + slack * 2.0,
-                    ..at
-                });
+                let near = on_pixels(grown(at, slack));
                 timed("anchors/near", || {
                     self.search_variant(spec, variant_index, near)
                 });
@@ -333,7 +368,7 @@ impl ScannerState {
             // closed, or only just opened: look where the pet and then the NPC would put it
             for shift in STORAGE_NPC_SHIFT {
                 for spec in ANCHORS.iter() {
-                    if spec.anchor_type != AnchorType::CharInventory {
+                    if spec.anchor_type.in_storage() {
                         self.clear_anchor(spec.anchor_type);
                     }
                 }
@@ -345,12 +380,19 @@ impl ScannerState {
             }
         }
 
-        // only template match for the char inventory anchor if we're not in storage
-        if self.storage_found() >= STORAGE_MIN {
+        // the lone inventory and the currency window are only looked for outside storage
+        if self.storage_open() {
             self.clear_anchor(lone.anchor_type);
+            self.clear_anchor(AnchorType::Currency);
         } else {
             let lost = lone_was_found && !self.anchors[&lone.anchor_type].is_found();
             self.search_lone(lost);
+            let currency = anchor_spec(AnchorType::Currency);
+            timed("anchors/currency", || self.search_anchor(currency));
         }
+    }
+
+    pub fn storage_open(&self) -> bool {
+        self.storage_found() >= STORAGE_MIN
     }
 }

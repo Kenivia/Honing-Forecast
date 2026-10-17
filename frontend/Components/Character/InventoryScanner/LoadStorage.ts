@@ -72,6 +72,18 @@ export type SlotStatus =
   | "Error"
   | "Irrelevant";
 
+export type Currency = "Silver" | "Gold" | "Shards";
+
+// read off the inventory, the currency window and the bar at the top of the screen
+export interface CurrencyResult {
+  currency: Currency;
+  status: SlotStatus;
+  reason: string;
+  value: number | null;
+  // char bound, roster bound, tradable
+  bands: [number, number, number] | null;
+}
+
 export interface SlotResult {
   address: SlotAddress;
   // null when the slot matches no icon
@@ -103,6 +115,7 @@ export interface ScanResult {
   // the page each located window shows in game
   pages: [string, number][];
   chests?: Chest[];
+  currencies: CurrencyResult[];
   ocr_jobs: OcrJob[];
   // this scan's record, while a debug capture is recorded
   capture?: Uint8Array;
@@ -124,7 +137,11 @@ export interface OcrJob {
   line: {
     crop: Pixels;
     // a slot's count comes with its icon crop and the name of the template it matched
-    kind: "Text" | "Yellow" | { Number: { icon: Pixels; template: string } };
+    kind:
+      | "Text"
+      | "Yellow"
+      | "Digits"
+      | { Number: { icon: Pixels; template: string } };
     brightness: number;
   };
 }

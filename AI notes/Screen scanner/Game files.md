@@ -38,7 +38,7 @@ Every table has `PrimaryKey` and `SecondaryKey`; text columns hold keys into `Ga
 - **`RandomBoxBase`**: one row per chest, keyed by the item id (a few keys are of no item). `Type` is how it opens: 3 select one, 2 random, 0 and 1 obtain all (a few dozen of those say otherwise in `ComponentDesc`). The contents are under `RandomBoxEntityId`, or else under `DropIndex`.
 - **`RandomBoxEntity`**: the choices, one row each: `NormalId` and `NormalMinCount`.
 - **`DropBase`, `DropEntity`**: `DropBase` by `DropIndex`, then `DropEntity` by its `EntityIndex`. **The amount is `NormalMinCount` times `DropBase.Repetition`**: Destiny Shard Pouch (S) is 200 shards five times over.
-- **`Money`**: a content with no `NormalId` is a currency, `NormalMoneyType` into here (18 is Destiny Shard, 14 Honor Shard, 2 gold, 1 silver).
+- **`Money`**: a content with no `NormalId` is a currency, `NormalMoneyType` into here (18 is Destiny Shard, 14 Honor Shard, 2 gold, 1 silver). Its `Icon` and `IconIndex` are the large item art (`etc_14` silver, `money_4` gold, `money_15` Destiny Shard). The small single coins the inventory, the currency window and the HUD draw are not among the icon atlases' 45,286 icons; they are probably in UI packages `extract.py` does not pull.
 
 Contents that differ by class sit in one column per class (64 of them, each ending in `Id`) with `NormalId` 0: a filled column is a class that gets the row, and its id is what that class gets. `game.box` returns them apart, each with every title it has. Rows carry `ClassifyType`/`ClassifyIndex`, which gate them on an event or a piece of content; nothing here reads them.
 

@@ -9,8 +9,9 @@ use hf_scanner::{
 };
 use std::{env, io::Read, time::Instant};
 
-fn new_state(width: usize, height: usize) -> (ScannerState, Vec<u8>) {
-    let (mut state, pixels) = native::new_state(width, height, native::guess_game(width, height), false);
+fn new_state(width: usize, height: usize, forced_21_9: bool) -> (ScannerState, Vec<u8>) {
+    let game = native::guess_game(width, height);
+    let (mut state, pixels) = native::new_state(width, height, game, forced_21_9);
     // SLOT_BUDGET=1 keeps the time budget, as in the browser; runs then differ with the machine's load
     state.no_slot_budget = env::var("SLOT_BUDGET").is_err();
     (state, pixels)
@@ -21,8 +22,10 @@ fn main() {
     if args[0] != "--stdin" {
         for path in &args {
             let image = image::open(path).unwrap().to_rgba8();
+            // a still says it is forced 21:9 in its name
+            let forced = path.contains("21 by 9");
             let (mut state, mut pixels) =
-                new_state(image.width() as usize, image.height() as usize);
+                new_state(image.width() as usize, image.height() as usize, forced);
             pixels.copy_from_slice(image.as_raw());
             // enough scans for every slot to be read, they are looked at a few at a time
             for _ in 0..30 {
@@ -51,7 +54,7 @@ fn main() {
     }
 
     let (width, height) = (args[1].parse().unwrap(), args[2].parse().unwrap());
-    let (mut state, mut pixels) = new_state(width, height);
+    let (mut state, mut pixels) = new_state(width, height, false);
     let mut stdin = std::io::stdin().lock();
     let (mut index, mut seen, mut hovers, mut start) = (0, 0, 0, 0);
     let mut previous: Option<Hover> = None;
@@ -152,7 +155,13 @@ fn main() {
         println!("  {}", describe_chest(chest));
     }
     let mut infos: Vec<_> = state.slot_infos.iter().collect();
-    infos.sort_by_key(|(address, _)| (address.inventory_type as u8, address.page_num, address.pos_in_inv));
+    infos.sort_by_key(|(address, _)| {
+        (
+            address.inventory_type as u8,
+            address.page_num,
+            address.pos_in_inv,
+        )
+    });
     for (address, info) in infos {
         if info.tradability.is_some() || info.tooltip_amount.is_some() {
             println!(

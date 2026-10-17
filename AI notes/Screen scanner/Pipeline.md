@@ -13,7 +13,8 @@ Code: `crates/scanner` (image processing), `frontend/Components/Character/Invent
 5. **Detect the page** (Rust). Page-tab templates at fixed offsets from each window origin say which page of that inventory is showing: the one tab that is lit. See "Page tabs" below.
 6. **Read slots** (Rust), on every third scan. Each slot of the active page sits at a fixed offset. A slot whose pixels have not changed is skipped; otherwise its crop is compared against every icon template, the closest one that passes wins, and the number strip is sent off to be read. See "Slots" below.
 7. **Find the tooltip** (Rust). If an item tooltip is on screen, its text lines are cut out and sent off to be read. When the texts are back, its title, stacked amount and tradability are written onto the slot that was hovered, and a chest's kind and contents go into a separate list of chests. See `Tooltips.md`.
-8. **Result and loop**. Rust returns a small result, not its state (see "State between frames"). On each result the main thread first reads and posts the next frame, then passes the result's text lines to the OCR workers and the rest to the page.
+8. **Read the currencies** (Rust). Silver, gold and shards beside their icons in the inventory, the currency window and the bar at the top of the screen, and gold's bands off its tooltip. Apart from the slots; see `Currency.md`.
+9. **Result and loop**. Rust returns a small result, not its state (see "State between frames"). On each result the main thread first reads and posts the next frame, then passes the result's text lines to the OCR workers and the rest to the page.
 
 Full-frame search is the expensive step and uses FFT cross-correlation. Everything after the anchor is a cheap fixed-position comparison.
 
@@ -22,7 +23,7 @@ Full-frame search is the expensive step and uses FFT cross-correlation. Everythi
 An anchor is a piece of fixed UI that is template-matched to get a *root*: a position other things are placed from. The ordered anchor list (`ANCHORS` in `anchor_to_slot/anchor_defs.rs`) is the single place that describes them. Each entry has:
 
 - **Variants**: alternative templates for the same anchor, so that one can be covered (cursor, tooltip) while another still holds it. Each has a bound and brightness coefficients. The root comes from the first variant that is found, because variants place it a pixel apart.
-- **Bound**: where a variant is searched. One of: the whole frame; a rectangle in UI space; a rectangle in UI space that moves with the storage layout.
+- **Bound**: where a variant is searched. One of: the whole frame; a rectangle in UI space; a rectangle in UI space that moves with the storage layout; a rectangle from the top left of the area the game renders into (`Bound::Corner`, for the HUD side: see `Currency.md`).
 - **Inventories**: which inventory windows the anchor locates and each window's origin relative to its root.
 
 A match always *locates*: the root is the matched position minus the template's stored offset, never the bound's own position. So a bound only needs to be roughly right, and its slack does not affect alignment.
@@ -38,6 +39,11 @@ Current anchors:
 - **Storage**: the highlighted Storage button, in a pet-menu and a storage-NPC variant that never show together, each at its own fixed UI-space spot. It locates no inventory.
 - **One anchor per storage window**, with two variants: the window's sort button at its top left (the char inventory anchor template, identical in all three windows) and something at its top right. For the two storages that is their group of move-to icons. For the inventory it is the search button; the icons next to it are filters and the chosen one lights up. Their roots are the window origins.
 - **Char inventory**: the free-floating window, searched across the whole frame, by the same sort button and search button. When that search runs is below.
+- **Currency**: the currency window, only where the game first puts it and only while the storage layout is closed. It locates no inventory and tells no brightness: the window is see-through. See `Currency.md`.
+
+`AnchorType::in_storage` says which anchors are the storage layout's. Template matching inside an area, with the pass limit, is `find_template`, shared by anchors and currencies.
+
+**Re-checking needs the brightness, and until there is one an anchor is matched again around its place instead** (`check_existing_anchors`). Before, nothing was re-checked without an estimate; only anchors without a curve can be found then (the storage icon groups, the currency window), and the currency window alone never gives one.
 
 Older second variants were "Move All Duplicate Materials" and the inventory's bottom-left button. The first is text, which the game draws anew at each resolution (it only just passed at 1080p); the second is greyed out in the storage view and needed a second template.
 

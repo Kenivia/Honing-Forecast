@@ -133,7 +133,7 @@ pub fn read_records(file: &[u8]) -> impl Iterator<Item = Record> + '_ {
 
 impl ScannerState {
     // What a scan left behind, to tell that a replay went the same way: every slot as the page
-    // gets it, the hover, the pages, the chests and the lines sent to be read. Scores are left
+    // gets it, the hover, the pages, the chests, the currencies and the lines sent to be read. Scores are left
     // out, they may differ in their last digits between wasm and native.
     pub fn digest(&self) -> u64 {
         let result = self.result(false);
@@ -164,7 +164,12 @@ impl ScannerState {
             .map(|x| (x.last_read_title, x.title, x.amount, x.tradability));
         let jobs: Vec<u32> = result.ocr_jobs.iter().map(|x| x.id).collect();
         let mut hasher = DefaultHasher::new();
-        format!("{:?}", (slots, pages, hover, &self.chests, jobs)).hash(&mut hasher);
+        let currencies = format!("{:?}", result.currencies);
+        format!(
+            "{:?}",
+            (slots, pages, hover, &self.chests, jobs, currencies)
+        )
+        .hash(&mut hasher);
         hasher.finish()
     }
 

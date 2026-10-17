@@ -7,22 +7,23 @@ use image::{
     imageops::{FilterType, resize},
 };
 
-// a line of a tooltip, whatever is bright in it
-pub fn text_line(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> OCRLine {
+// a rectangle of the frame as captured, to be read as this kind
+pub fn line_of(kind: Kind, buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> OCRLine {
     OCRLine {
         crop: buffer.raw_crop(x0, y0, x1, y1),
-        kind: Kind::Text,
+        kind,
         brightness: buffer.brightness,
     }
 }
 
+// a line of a tooltip, whatever is bright in it
+pub fn text_line(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> OCRLine {
+    line_of(Kind::Text, buffer, x0, y0, x1, y1)
+}
+
 // the same, to be read by what is in the amount yellow alone
 pub fn yellow_line(buffer: &Buffer, x0: usize, y0: usize, x1: usize, y1: usize) -> OCRLine {
-    OCRLine {
-        crop: buffer.raw_crop(x0, y0, x1, y1),
-        kind: Kind::Yellow,
-        brightness: buffer.brightness,
-    }
+    line_of(Kind::Yellow, buffer, x0, y0, x1, y1)
 }
 
 // Light text on a dark panel to dark text on white, which is what the recogniser reads best.

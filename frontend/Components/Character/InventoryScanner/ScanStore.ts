@@ -2,6 +2,7 @@ import { computed, ref, shallowRef } from "vue";
 import { useThrottleFn } from "@vueuse/core";
 import {
   Chest,
+  CurrencyResult,
   OneIconConfig,
   ScanResult,
   SlotAddress,
@@ -34,6 +35,7 @@ export const slot_key = (address: SlotAddress) =>
 
 export const slots = shallowRef(new Map<string, SlotResult>());
 export const chests = shallowRef<Chest[]>([]);
+export const currencies = shallowRef<CurrencyResult[]>([]);
 // the page each located window shows in game
 export const game_pages = ref<Record<string, number>>({});
 // what the user typed in; the scanner leaves these slots alone
@@ -112,6 +114,7 @@ export function reset_scan() {
   slot_images.clear();
   slots.value = new Map();
   chests.value = [];
+  currencies.value = [];
   game_pages.value = {};
   edits.value = {};
   material_overrides.value = {};
@@ -178,6 +181,7 @@ const render = useThrottleFn(
     slots.value = new Map(
       latest.slots.map((slot) => [slot_key(slot.address), slot]),
     );
+    currencies.value = latest.currencies;
     render_timings.push(performance.now() - start);
     if (render_timings.length > 5000) render_timings.shift();
   },

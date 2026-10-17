@@ -12,6 +12,7 @@ import {
   assumed_tradability,
   chest_overrides,
   chests_for,
+  currencies,
   deleted_chests,
   edits,
   material_overrides,
@@ -26,6 +27,12 @@ import CHESTS from "../../../../templates/chests.json";
 // to be opened. It sits between the scanner and the rest of the site.
 
 const BAND_OF = { CharBound: 0, RosterBound: 1, Tradable: 2 };
+export const BAND_NAMES = ["Char bound", "Roster bound", "Tradable"];
+export const CURRENCY_LABELS = {
+  Silver: "Silver",
+  Gold: "Gold",
+  Shards: "Shards",
+};
 
 // one row of templates/chests.json; contents are title, amount, and the chest it is
 type Opens = {
@@ -252,6 +259,17 @@ export const scanned = computed(() => {
       continue;
     }
     open(chest, amount, band);
+  }
+  // currencies sit in no slot, and come with their bands
+  for (const currency of currencies.value) {
+    const label = CURRENCY_LABELS[currency.currency];
+    if (currency.status !== "Good" || !currency.bands) {
+      missing.push({ place: "Currencies", item: label, why: currency.reason });
+      continue;
+    }
+    currency.bands.forEach((amount, band) => {
+      if (amount) owned[label][band] = (owned[label][band] ?? 0) + amount;
+    });
   }
   return {
     owned,

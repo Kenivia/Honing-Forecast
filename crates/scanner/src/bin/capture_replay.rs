@@ -89,6 +89,8 @@ fn main() {
     let reference_path = option(&args, "--reference");
     let reread = args.iter().any(|x| x == "--reread");
     let no_edits = args.iter().any(|x| x == "--no-edits");
+    // for a capture recorded with the switch left off
+    let forced = args.iter().any(|x| x == "--forced-21-9");
     let mut sim = native::Sim::new();
     let from: u64 = option(&args, "--from").map_or(0, |x| x.parse().unwrap());
     let to: u64 = option(&args, "--to").map_or(u64::MAX, |x| x.parse().unwrap());
@@ -101,7 +103,8 @@ fn main() {
     let Some(Record::Start(start)) = records.next() else { panic!("no start record") };
     println!("{start:?}");
     let game = (start.game_width, start.game_height);
-    let (mut state, _pixels) = native::new_state(start.width, start.height, game, start.forced_21_9);
+    let forced = forced || start.forced_21_9;
+    let (mut state, _pixels) = native::new_state(start.width, start.height, game, forced);
     state.hover_log = Some(vec![]);
 
     // per hover: the first and last scan it was on screen
@@ -154,7 +157,14 @@ fn main() {
             let kinds = [
                 ("title", read.title.as_ref().map(|x| x.0.clone())),
                 ("amount", read.amount.map(|x| x.to_vec())),
-                ("chest", read.chest.as_ref().map(|x| x.iter().flat_map(|x| x.0.iter().copied().chain([x.1])).collect())),
+                (
+                    "chest",
+                    read.chest.as_ref().map(|x| {
+                        x.iter()
+                            .flat_map(|x| x.0.iter().copied().chain([x.1]))
+                            .collect()
+                    }),
+                ),
                 ("description", read.body.clone()),
             ];
             for (kind, jobs) in kinds {

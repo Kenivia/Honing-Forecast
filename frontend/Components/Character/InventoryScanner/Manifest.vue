@@ -13,6 +13,7 @@ import { column_labels, set_cell } from "@/Utils/InputColumn";
 import ChestPanels from "@/Components/Common/ChestPanels.vue";
 import { added_chests, chest_overrides, deleted_chests } from "./ScanStore";
 import {
+  BAND_NAMES,
   cell_text,
   convert,
   convert_owner,
@@ -23,7 +24,6 @@ import {
 const { active_profile, active_roster_mats_owned, active_tradable_mats_owned } =
   storeToRefs(useRosterStore());
 
-const BANDS = ["Char bound", "Roster bound", "Tradable"];
 // band of each toggle, in the order they are shown
 const TOGGLES = [1, 2, 0];
 
@@ -131,14 +131,14 @@ function export_to_calc() {
     class="card-shell card-body flex flex-col gap-2 text-sm"
   >
     <span class="text-(--warning)">
-      {{ manifest.missing.length }} slot(s) are not read yet or still need a
-      hover, so the manifest is hidden.
+      {{ manifest.missing.length }} slot(s) or currencies are not read yet or
+      still need a hover, so the manifest is hidden.
     </span>
     <button class="generic-button w-fit" @click="forced = true">
       Show the manifest without them
     </button>
     <ul aria-label="Missing slots" class="flex flex-col gap-1">
-      <li v-for="slot in manifest.missing" :key="slot.place">
+      <li v-for="slot in manifest.missing" :key="slot.place + slot.item">
         {{ slot.place }}: {{ slot.item }}
         <span class="text-(--text-muted)">{{ slot.why }}</span>
       </li>
@@ -157,7 +157,7 @@ function export_to_calc() {
           type="checkbox"
           :disabled="band === 0 && active_profile.tier === 0"
         />
-        Convert {{ BANDS[band].toLowerCase() }} T4 to Serca
+        Convert {{ BAND_NAMES[band].toLowerCase() }} T4 to Serca
       </label>
       <label class="flex items-center gap-1">
         <input v-model="editing" type="checkbox" />
@@ -171,7 +171,8 @@ function export_to_calc() {
       </span>
     </div>
     <span v-if="manifest.missing.length" class="text-sm text-(--warning)">
-      {{ manifest.missing.length }} slot(s) are missing from this manifest.
+      {{ manifest.missing.length }} slot(s) or currencies are missing from this
+      manifest.
     </span>
 
     <div class="flex gap-1 text-sm">
@@ -196,7 +197,7 @@ function export_to_calc() {
         <div class="mats-row h-fit! border-b border-(--border-main)">
           <span></span>
           <span
-            v-for="(name, band) in BANDS"
+            v-for="(name, band) in BAND_NAMES"
             :key="band"
             class="text-left"
             :style="{ color: `var(${BAND_COLORS[band]})` }"
@@ -222,7 +223,7 @@ function export_to_calc() {
             />
           </span>
           <div
-            v-for="(name, band) in BANDS"
+            v-for="(name, band) in BAND_NAMES"
             :key="band"
             class="flex h-full items-center gap-1"
           >
@@ -286,7 +287,11 @@ function export_to_calc() {
                 class="selector"
                 aria-label="New chest ownership"
               >
-                <option v-for="(name, band) in BANDS" :key="band" :value="band">
+                <option
+                  v-for="(name, band) in BAND_NAMES"
+                  :key="band"
+                  :value="band"
+                >
                   {{ name }}
                 </option>
               </select>

@@ -1,6 +1,7 @@
 use crate::{
     anchor_to_slot::slots::constants::LEVEL,
     buffer::Buffer,
+    currency::CurrencyResult,
     interface::setup::{OneIconConfig, WireRect},
     ocr::jobs::OcrJob,
     scanner_state::{InventoryType, OneSlotInfo, ScannerState, SlotAddress, Tradability},
@@ -35,7 +36,7 @@ impl Serialize for IconBytes<'_> {
     }
 }
 
-// what the page colours a slot by
+// what the page colours a slot, or a currency, by
 #[derive(Debug, Serialize, Clone, Copy)]
 pub enum SlotStatus {
     Pending,
@@ -300,6 +301,7 @@ pub struct ScanResult<'a> {
     // the page each located window shows in game
     pub pages: Vec<(InventoryType, usize)>,
     pub chests: Option<&'a Vec<Chest>>,
+    pub currencies: Vec<CurrencyResult>,
     // lines to recognise, whose text is to come back with a later scan
     pub ocr_jobs: &'a [OcrJob],
 }
@@ -354,6 +356,7 @@ impl ScannerState {
                 tradability: hover.tradability,
             }),
             chests: (full || self.chests_changed).then_some(&self.chests),
+            currencies: self.currency_results(),
             ocr_jobs: &self.ocr_queue,
         }
     }

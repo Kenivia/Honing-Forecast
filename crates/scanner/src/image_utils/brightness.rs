@@ -15,6 +15,29 @@ pub fn mean_intensity(icon: &OneIconConfig) -> f64 {
     pixels.iter().map(|&p| p as f64).sum::<f64>() / n
 }
 
+// spread of the grey levels, which template matching does not go by
+pub fn contrast(icon: &OneIconConfig) -> f64 {
+    let gray: GrayImage = grayscale(&icon.data);
+    let mean = mean_intensity(icon);
+    let pixels = gray.as_raw();
+    let n = pixels.len() as f64;
+    (pixels
+        .iter()
+        .map(|&p| (p as f64 - mean).powi(2))
+        .sum::<f64>()
+        / n)
+        .sqrt()
+}
+
+// how much redder than blue, which tells gold from silver where grey cannot
+pub fn tint(icon: &OneIconConfig) -> f64 {
+    let (warm, all) = icon.data.pixels().fold((0.0, 1.0), |(warm, all), p| {
+        let [r, g, b, _] = p.0.map(f64::from);
+        (warm + r - b, all + r + g + b)
+    });
+    warm / all
+}
+
 pub fn est_ingame_brightness(mean_intensity: f64, curve: &[f64; 3]) -> f64 {
     (curve[0] * mean_intensity * mean_intensity + curve[1] * mean_intensity + curve[2])
         .clamp(0.0, 100.0)

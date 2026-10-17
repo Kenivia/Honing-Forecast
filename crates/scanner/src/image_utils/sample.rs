@@ -23,6 +23,7 @@ impl ScannerState {
         let changed = samples.len() != self.last_samples.len()
             || diff_samples(&samples, &self.last_samples) > WORTH_SCAN_THRESH;
         let unfinished = self.slots_left
+            || self.currency_unfinished()
             || self
                 .hover
                 .as_ref()

@@ -31,13 +31,14 @@ The app used to have a Setup sub-page that captured anchors from a live screen s
 
 ## Where each anchor template was cut from
 
-All 22 anchor-tagged templates are cut from the stills in `scripts/brightness/1440p raw`, at whole pixels, and normalised from setting 70 with the gamma law. The stills carry no record of their setting; 70 is read off the sort button's flat face, which is level 62 in every one of them and 62.4 at setting 70 on the 1080p captures (one level is about 1.5 settings).
+The 22 older anchor-tagged templates are cut from the stills in `scripts/brightness/1440p raw`, at whole pixels, and normalised from setting 70 with the gamma law. The stills carry no record of their setting; 70 is read off the sort button's flat face, which is level 62 in every one of them and 62.4 at setting 70 on the 1080p captures (one level is about 1.5 settings).
 
 - `storage page 1.png` to `storage page 4.png` (pet menu): the storage page tabs, the pet Storage button, and the two storages' top-right icon groups. Each tab's active template is from the still with that page open, its inactive one from another.
 - `storage npc.png`: the NPC Storage button.
 - `inventory top left.png`: the sort button, the search button, character page 1 active and page 2 inactive.
 - `pet icon.png`: character page 2 active and page 1 inactive.
 - There is no 1440p still with roster page 2 open, so "Roster page 1 inactive" and "Roster page 2 active" are character-storage tab pixels, which look the same.
+- `silver gold shard/*.png` (2026-10-17, **setting 50**, read off the sort button with `locate`): the currency templates. `Basic currency header` and `Currency window tab` (the currency window's anchor, offsets from the game's top left) and `Destiny shard` from `currency breakdown default position .png`; `Gold coin`, `Silver coin` and the three `Bar ...` icons from `char inventory no hover.png`; `Gold tooltip title` from `hovered in inventory tooltip left.png`. The coins are cut with their rim and 2 px around it (`Currency.md`). The icons' offsets are not read: their bounds are in `currency.rs`. None has a brightness curve. The game's own files only have the large item art of these currencies (`Game files.md`), so they were cut from stills.
 
 The sort button and the four character page tabs used to be captures made in the app from some other frame; the stills differ from those by 0.3 to 1.8 levels on average.
 

@@ -15,5 +15,6 @@ impl ScannerState {
         timed("pages", || self.update_page_status());
         timed("slots", || self.update_slots());
         timed("tooltip", || self.update_tooltip());
+        timed("currency", || self.update_currency());
     }
 }

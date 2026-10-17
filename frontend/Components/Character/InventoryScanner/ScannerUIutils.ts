@@ -1,3 +1,13 @@
+// what a slot's border, or a currency, is coloured by its status
+export const STATUS_COLORS = {
+  Pending: "var(--text-muted)",
+  Good: "var(--achieved)",
+  NeedHover: "var(--series-fusion)",
+  NeedTradability: "var(--series-fusion)",
+  Error: "var(--warning)",
+  Irrelevant: "var(--border-very-muted)",
+};
+
 export function draw_icon(
   canvas: HTMLCanvasElement | null,
   data: ArrayLike<number>,

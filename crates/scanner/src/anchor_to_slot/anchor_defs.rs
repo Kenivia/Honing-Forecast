@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 use ahash::AHashMap;
 
 use crate::{
-    anchor_to_slot::anchors::{STORAGE_ANCHOR_SLACK, WINDOW_ANCHOR_SLACK},
+    anchor_to_slot::anchors::{CURRENCY_ANCHOR_SLACK, STORAGE_ANCHOR_SLACK, WINDOW_ANCHOR_SLACK},
     image_utils::common::Rect,
     scanner_state::{
         AnchorType,
@@ -32,7 +32,7 @@ const GRID_LEFT: f64 = 16.0;
 const CHAR_STORAGE_GRID_LEFT: f64 = 15.27;
 const ROSTER_ONLY_GRID_LEFT: f64 = 14.70;
 
-// every one but the last belongs to the storage layout
+// the storage layout, then the lone inventory and the currency window
 pub static ANCHORS: LazyLock<Vec<AnchorSpec>> = LazyLock::new(|| {
     vec![
         // the highlighted Storage button, which sits elsewhere for the NPC but does not move with the windows
@@ -102,6 +102,34 @@ pub static ANCHORS: LazyLock<Vec<AnchorSpec>> = LazyLock::new(|| {
                 },
             ],
             inventories: vec![(InventoryType::CharInventory, (0.0, 0.0))],
+        },
+        // See-through enough to tell the window is there, not its brightness. Its root is the
+        // game's top left when it is where the game first puts it.
+        AnchorSpec {
+            anchor_type: AnchorType::Currency,
+            variants: vec![
+                AnchorVariant {
+                    name: "Basic currency header",
+                    bound: Bound::Corner(with_slack(
+                        (36.0, 162.0),
+                        140.0,
+                        32.0,
+                        CURRENCY_ANCHOR_SLACK,
+                    )),
+                    brightness: None,
+                },
+                AnchorVariant {
+                    name: "Currency window tab",
+                    bound: Bound::Corner(with_slack(
+                        (88.0, 104.0),
+                        100.0,
+                        32.0,
+                        CURRENCY_ANCHOR_SLACK,
+                    )),
+                    brightness: None,
+                },
+            ],
+            inventories: vec![],
         },
     ]
 });
@@ -238,6 +266,8 @@ pub enum Bound {
     Frame,
     Ui(Rect),
     Storage(Rect),
+    // from the top left of the area the game renders into
+    Corner(Rect),
 }
 
 pub struct AnchorVariant {
@@ -255,7 +285,7 @@ pub struct AnchorSpec {
 }
 
 // where a template is expected, with some slack on every side
-fn with_slack(top_left: (f64, f64), width: f64, height: f64, slack: f64) -> Rect {
+pub fn with_slack(top_left: (f64, f64), width: f64, height: f64, slack: f64) -> Rect {
     Rect::ui(
         (top_left.0 - slack, top_left.1 - slack),
         width + slack * 2.0,

@@ -37,6 +37,8 @@ Each slot in a scan result carries a status, a reason and a value (the tooltip's
 
 ## The page
 
+- Above the grid, `CurrencyBar.vue` shows silver, gold and shards as the game's bar at the top of the screen does: the number, then the icon, underlined in the status colour slots use (`STATUS_COLORS` in `ScannerUIutils.ts`), with gold's bands or the reason under it.
+
 - The windows sit side by side as in game (roster storage, character storage, inventory) and grow with the page; slots shrink to 28 px before the windows wrap.
 - Each window has page tabs. The shown page follows the game: every result lists the page each located window shows (`pages`), and a window turns to it whenever that changes. A tab clicked by hand holds until the page in game next changes.
 - Hovering a slot shows it in the dashboard. Clicking one locks it: the dashboard then stays on it whatever is hovered, until it is clicked again (clicking another slot moves the lock there). The slot being shown gets a dotted white outline outside the status border.

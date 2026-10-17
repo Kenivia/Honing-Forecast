@@ -49,6 +49,8 @@ pub enum Kind {
     Text,
     // a tooltip's amount, by its yellow alone
     Yellow,
+    // a number with nothing else on its line, read with digits only
+    Digits,
     // A slot's count: the crop is the number's. `icon` is the slot's icon crop, normalised, and
     // `template` the name of the icon it matched; together they say what is behind the number.
     Number {
@@ -73,7 +75,7 @@ impl OCRLine {
     // the 64px strip the recogniser takes
     pub fn strip(&self) -> GrayImage {
         match &self.kind {
-            Kind::Text => text_strip(&self.crop, false, self.brightness),
+            Kind::Text | Kind::Digits => text_strip(&self.crop, false, self.brightness),
             Kind::Yellow => text_strip(&self.crop, true, self.brightness),
             Kind::Number { icon, template } => number_strip(
                 &self.crop,
@@ -85,10 +87,13 @@ impl OCRLine {
         }
     }
 
-    // a slot's count is read with digits only
+    pub fn digits_only(&self) -> bool {
+        matches!(self.kind, Kind::Number { .. } | Kind::Digits)
+    }
+
     pub fn read(&self) -> String {
         let strip = timed("ocr/preprocess", || self.strip());
-        recognize_line(&strip, matches!(self.kind, Kind::Number { .. }))
+        recognize_line(&strip, self.digits_only())
     }
 }
 
@@ -149,6 +154,7 @@ impl ScannerState {
             }
         }
         self.resolve_reads();
+        self.resolve_currency();
     }
 
     // for the native harnesses, which have no second worker

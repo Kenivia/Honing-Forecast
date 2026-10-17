@@ -73,6 +73,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 - `Screen scanner/Config and calibration.md`: the template config and brightness calibration.
 - `Screen scanner/Slot grid.md`: the scanner page's slot grid, slot statuses and manual edits.
 - `Screen scanner/Game files.md`: reading items, chests and icons out of the installed game.
+- `Screen scanner/Currency.md`: silver, gold and shards off the inventory, the currency window, the bar at the top of the screen and gold's tooltip.
 - `Screen scanner/Manifest.md`: the scan as materials per band and select-one chests, with overrides and T4 conversion.
 - `Browser harness/Overview.md`: driving the site in Chromium and Firefox, for debugging and e2e tests. One note per site section alongside it.
 

@@ -18,6 +18,7 @@ Code: `Manifest.ts` (build logic, `scanned` and `manifest` computeds), `Manifest
 - **`obtain_all` says which kind the scanner found.** A select-one with one option left is no choice, but it stays a select-one (`obtain_all: false`), as does a chest added by hand. The user deletes it if they would take the option that was not offered.
 - **No chest holds a chest.** An option is `label -> amount`, so nesting cannot be passed on. The table nests five deep (October 2026: 21 select-one in select-one, 83 obtain-all in select-one, 104 select-one in obtain-all among the top rows) and all of it is flattened as above. The one hole: an obtain-all option that holds a select-one with a real choice would lose that part in `alternatives`; no chest of the table is like that.
 - **Random** chests are listed apart, and chests that could not be settled under "Not included"; neither goes further.
+- **Currencies** come from the scan result's `currencies`, not from slots (`Currency.md`), with their bands: silver roster bound, shards character bound, gold as its tooltip splits it. They add to what chests give. One that is not good yet is listed as missing, under "Currencies".
 - **Irrelevant chests are nothing.** A slot the scanner marked irrelevant is skipped like any other, and a chest slot set by hand whose chests are all `irrelevant` rows of the table opens to nothing.
 
 ## Names and inner chests

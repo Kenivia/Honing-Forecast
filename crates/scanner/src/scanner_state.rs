@@ -1,6 +1,7 @@
 use crate::{
     anchor_to_slot::anchors::AnchorInfo,
     buffer::Buffer,
+    currency::Currencies,
     dev_utils::capture::Recorder,
     interface::setup::OneIconConfig,
     ocr::jobs::OcrJob,
@@ -20,6 +21,8 @@ pub struct ScreenInfo {
     pub effective_height: u32,
     pub scale_factor: f64,
     pub ui_origin: (f64, f64),
+    // top left of the area the game renders into, which the HUD and some windows hug
+    pub corner: (f64, f64),
 
     pub brightness: Option<f64>,
     // how many anchors that estimate is the average of
@@ -67,6 +70,15 @@ impl ScannerState {
         info.ui_origin = (
             (self.buffer.width as f64 - info.effective_height as f64 * 16.0 / 9.0) / 2.0,
             (self.buffer.height as f64 - info.effective_height as f64) / 2.0,
+        );
+        let render_width = if info.forced_21_9 {
+            (info.effective_height as f64 * 64.0 / 27.0).min(info.game_width as f64)
+        } else {
+            info.game_width as f64
+        };
+        info.corner = (
+            (self.buffer.width as f64 - render_width) / 2.0,
+            info.ui_origin.1,
         );
     }
 }
@@ -181,6 +193,14 @@ pub enum AnchorType {
     StorageCharStorage,
     StorageInventory,
     CharInventory,
+    // the currency breakdown window, in its default place
+    Currency,
+}
+
+impl AnchorType {
+    pub fn in_storage(self) -> bool {
+        !matches!(self, AnchorType::CharInventory | AnchorType::Currency)
+    }
 }
 
 // Everything the scanner remembers between frames. It never leaves Rust: see scan_result.rs.
@@ -197,6 +217,8 @@ pub struct ScannerState {
     pub hover: Option<Hover>,
     // chests are read off their tooltip alone, so they live apart from the slots
     pub chests: Vec<Chest>,
+    // silver, gold and shards, apart from the slots: see currency.rs
+    pub currency: Currencies,
 
     pub screen_info: ScreenInfo,
 
