@@ -13,7 +13,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - ~~code review~~
 
 - ~~sort out how page num works~~
-- try brightness calibration with 2160p
+- ~~try brightness calibration with 2160p~~
 - test if close enough actually needs the 9 shifts
 
 - measure where the char inventory anchor can be
