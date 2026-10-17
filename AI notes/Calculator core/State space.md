@@ -56,6 +56,15 @@ The response is in the core now (`optimizer/response.rs`), with one evaluation p
 
 Later in October 2026 the response learned to mix two ids of a pool, which was the largest single gain of that round, and `State::compute_streak_info` was found to read the back streak from the wrong end (`Optimizer.md`). The `ascend` numbers above are from before both.
 
+## Why a block in the middle
+
+Two lone upgrades whose best plan is not a streak plan (`lone_022`, `lone_029`; `Arena.md` has the tests), worked out exactly in October 2026:
+
+- **Moving juice one tap later saves juice and costs base materials.** Later taps are reached less often, so the juice is bought on fewer runs. Success comes later, so more taps are paid for. The best place is where the two cross.
+- **Owned stock makes the base material side step.** While a material is covered by owned stock that is worthless when left over, succeeding a tap later costs nothing in it. Once the stock runs out, every tap costs full price. The crossing lands on the tap where the stock runs out, which can be mid-run: in `lone_022` Red runs out on tap 8 and the best two juices are on taps 8 and 9; sliding them to the front costs 5,140 gold, to the back 138.
+- **Without owned stock the front is where juice pays most**, so a front streak, plus a back streak for the juices that pull the pity in, is what one expects there. This part is reasoned, not measured.
+- `lone_029`'s hole at its second tap is a tie (0.1 gold); its plan is really a block on taps 3 to 11.
+
 ## Not done
 
 - Moves that go from one pity to the next, and a state without the dead slots.

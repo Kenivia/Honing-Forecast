@@ -168,6 +168,48 @@ fn simulate<R: Rng>(data_size: usize, state_bundle: &StateBundle, rng: &mut R) -
     cost_data
 }
 
+/// The metric of one unlocked normal upgrade without free taps, summed exactly over the tap it succeeds on
+#[cfg(test)]
+pub fn exact_single(state_bundle: &StateBundle) -> f64 {
+    let prep = &state_bundle.prep_output;
+    let bands = &prep.bands[prep.optimizer_plan];
+    single_outcomes(state_bundle)
+        .iter()
+        .map(|(p, used)| {
+            p * used
+                .iter()
+                .zip(bands)
+                .map(|(used, bands)| gold(*used, bands))
+                .sum::<f64>()
+        })
+        .sum()
+}
+
+/// (probability, amount of every material used) for each tap one upgrade can succeed on
+#[cfg(test)]
+pub fn single_outcomes(state_bundle: &StateBundle) -> Vec<(f64, Vec<f64>)> {
+    let prep = &state_bundle.prep_output;
+    let upgrade = &state_bundle.upgrade_arr[0];
+    assert!(state_bundle.upgrade_arr.len() == 1 && upgrade.unlocked && prep.special_budget == 0);
+    let juice_before = juice_before(upgrade, state_bundle);
+    let ids = &prep.juice_info.normal_uindex_to_id[upgrade.piece_type_usize][upgrade.upgrade_index];
+    upgrade
+        .normal_dist
+        .iter()
+        .enumerate()
+        .map(|(tap, p)| {
+            let mut used = vec![0.0; prep.table.len()];
+            for row in 0..NUM_BASE_MATS {
+                used[row] = upgrade.costs[row] * tap as f64;
+            }
+            for &id in ids {
+                used[prep.table.juice_row(id)] += juice_before[tap][id];
+            }
+            (*p, used)
+        })
+        .collect()
+}
+
 /// gold value of having used this much, the function the evaluator takes the mean of
 pub fn gold(used: f64, bands: &[(f64, f64)]) -> f64 {
     let (last_thresh, last_price) = *bands.last().unwrap();

@@ -999,3 +999,211 @@ pub fn landscape(conn: &Connection, scenarios: &[Scenario], args: &LandscapeArgs
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::monte_carlo::{exact_single, single_outcomes};
+
+    /// the evaluator against an exact sum, on the two lone upgrades whose best plan is not a streak plan
+    #[test]
+    #[ignore]
+    fn lone_exact() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../test_cases/scenarios/tiny");
+        for name in ["lone_022_t4_n1", "lone_029_t4_n1"] {
+            let scenario = &crate::scenario::load(&dir, name)[0];
+            let payload = &scenario.steps[0];
+            let base = retuned(
+                &StateBundle::init_from_payload(payload.clone()),
+                &exact_tuning(),
+            );
+            let model = &models(&base)[0];
+            let response = response_of(&base, 0);
+            let mut rows = vec![
+                ("response", response.best().1),
+                ("streak", best_streak(&response).1),
+            ];
+            for (seed, found) in solved(payload, 4, &Tuning::default()).iter().enumerate() {
+                rows.push((
+                    ["solve 0", "solve 1", "solve 2", "solve 3"][seed],
+                    model.indices(&found.upgrade_arr[0].state.payload),
+                ));
+            }
+            println!("{name}");
+            for (label, indices) in rows {
+                let at = |tuning: &Tuning| {
+                    let mut state_bundle = with_plans(&base, &[indices.clone()], &[0], tuning);
+                    let ui = state_bundle.ui_average_gold_metric(&mut Probe::default()).0
+                        [state_bundle.prep_output.optimizer_plan];
+                    (state_bundle.metric, ui, exact_single(&state_bundle))
+                };
+                let (default, _, _) = at(&Tuning::default());
+                let (brute, ui, exact) = at(&exact_tuning());
+                println!(
+                    "  {label:9} default {default:12.3} brute {brute:12.3} ui {ui:12.3} exact {exact:12.3}  {}",
+                    model.pattern(&model.canonical(&indices))
+                );
+            }
+        }
+    }
+
+    /// per tap data of the same two cases for plotting, to the file in DUMP_OUT
+    #[test]
+    #[ignore]
+    fn lone_dump() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../test_cases/scenarios/tiny");
+        let mut out = serde_json::Map::new();
+        for name in ["lone_022_t4_n1", "lone_029_t4_n1"] {
+            let scenario = &crate::scenario::load(&dir, name)[0];
+            let base = retuned(
+                &StateBundle::init_from_payload(scenario.steps[0].clone()),
+                &exact_tuning(),
+            );
+            let model = &models(&base)[0];
+            let response = response_of(&base, 0);
+            let plan_of = |indices: &Vec<usize>| {
+                let mut state_bundle = with_plans(&base, &[indices.clone()], &[0], &exact_tuning());
+                let plan = state_bundle.prep_output.optimizer_plan;
+                let breakdown =
+                    state_bundle.ui_average_gold_metric(&mut Probe::default()).2[plan].clone();
+                let (dist, used): (Vec<f64>, Vec<Vec<f64>>) =
+                    single_outcomes(&state_bundle).into_iter().unzip();
+                // the metric with each tap of each pool toggled to its first id or to nothing
+                let flips: Vec<Vec<f64>> = (0..model.pools.len())
+                    .map(|pool| {
+                        (0..model.len)
+                            .map(|tap| {
+                                let mut other = indices.clone();
+                                let stride = model.strides[pool];
+                                let id = other[tap] / stride % (model.pools[pool].len() + 1);
+                                if id == 0 {
+                                    other[tap] += stride;
+                                } else {
+                                    other[tap] -= stride * id;
+                                }
+                                with_plans(&base, &[other], &[0], &exact_tuning()).metric
+                            })
+                            .collect()
+                    })
+                    .collect();
+                json!({
+                    "metric": state_bundle.metric,
+                    "pattern": model.pattern(&model.canonical(indices)),
+                    "pity": model.pity(indices).0,
+                    "dist": dist, "used": used, "breakdown": breakdown, "flips": flips,
+                })
+            };
+            let prep = &base.prep_output;
+            out.insert(
+                name.to_string(),
+                json!({
+                    "labels": prep.table.labels,
+                    "bands": prep.bands[prep.optimizer_plan],
+                    "costs": base.upgrade_arr[0].costs,
+                    "extra": model.extra, "base": model.base, "artisan": model.artisan,
+                    "best": plan_of(&response.best().1),
+                    "streak": plan_of(&best_streak(&response).1),
+                }),
+            );
+        }
+        std::fs::write(
+            std::env::var("DUMP_OUT").unwrap(),
+            Value::Object(out).to_string(),
+        )
+        .unwrap();
+    }
+
+    /// every placement of the best plan's juices (pool 0), the rest kept, by material, to DUMP_OUT
+    #[test]
+    #[ignore]
+    fn lone_moves() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../test_cases/scenarios/tiny");
+        let mut out = serde_json::Map::new();
+        for name in ["lone_022_t4_n1", "lone_029_t4_n1"] {
+            let scenario = &crate::scenario::load(&dir, name)[0];
+            let base = retuned(
+                &StateBundle::init_from_payload(scenario.steps[0].clone()),
+                &exact_tuning(),
+            );
+            let model = &models(&base)[0];
+            let best = response_of(&base, 0).best().1;
+            let stride = model.strides[0];
+            let pity = model.pity(&best).0;
+            let rest: Vec<usize> = best
+                .iter()
+                .map(|x| {
+                    x % stride
+                        + x / stride / (model.pools[0].len() + 1)
+                            * stride
+                            * (model.pools[0].len() + 1)
+                })
+                .collect();
+            let used: Vec<usize> = (0..model.len)
+                .filter(|&tap| best[tap] != rest[tap])
+                .collect();
+            let row = |taps: &[usize]| {
+                let mut indices = rest.clone();
+                for &tap in taps {
+                    indices[tap] += stride;
+                }
+                let mut state_bundle = with_plans(&base, &[indices.clone()], &[0], &exact_tuning());
+                let plan = state_bundle.prep_output.optimizer_plan;
+                let (metric, _, breakdown) =
+                    state_bundle.ui_average_gold_metric(&mut Probe::default());
+                let (dist, _): (Vec<f64>, Vec<Vec<f64>>) =
+                    single_outcomes(&state_bundle).into_iter().unzip();
+                json!({"taps": taps, "metric": metric[plan], "breakdown": breakdown[plan], "pity": model.pity(&indices).0, "dist": dist})
+            };
+            // every k-subset of the taps before the pity, k the best plan's count, where few enough
+            let k = used.len();
+            let subsets: Vec<Value> = if k <= 3 {
+                (0..pity).combinations(k).map(|taps| row(&taps)).collect()
+            } else {
+                Vec::new()
+            };
+            // one juice moved from a used tap to an unused one
+            let moves: Vec<Value> = used
+                .iter()
+                .flat_map(|&from| {
+                    (0..pity)
+                        .filter(|tap| !used.contains(tap))
+                        .map(move |to| (from, to))
+                })
+                .map(|(from, to)| {
+                    let taps: Vec<usize> = used
+                        .iter()
+                        .map(|&tap| if tap == from { to } else { tap })
+                        .sorted()
+                        .collect();
+                    let mut value = row(&taps);
+                    value["from"] = json!(from);
+                    value["to"] = json!(to);
+                    value
+                })
+                .collect();
+            // the same count as one block, slid from the first tap to the last before the pity
+            let slides: Vec<Value> = (0..=pity - k)
+                .map(|start| row(&(start..start + k).collect::<Vec<usize>>()))
+                .collect();
+            // a single juice anywhere, and none
+            let singles: Vec<Value> = (0..pity).map(|tap| row(&[tap])).collect();
+            out.insert(
+                name.to_string(),
+                json!({
+                    "labels": base.prep_output.table.labels,
+                    "used": used, "pity": pity,
+                    "best": row(&used), "none": row(&[]),
+                    "subsets": subsets, "moves": moves, "slides": slides, "singles": singles,
+                }),
+            );
+        }
+        std::fs::write(
+            std::env::var("DUMP_OUT").unwrap(),
+            Value::Object(out).to_string(),
+        )
+        .unwrap();
+    }
+}

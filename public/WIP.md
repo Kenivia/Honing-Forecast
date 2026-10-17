@@ -18,7 +18,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - ~~measure where the char inventory anchor can be~~
 - ~~gold shard silver reading~~
-- non-streak optimality
+- ~~non-streak optimality~~
 - constant extraction script
 - auto detect 21:9
 - manual overwrite brightness
