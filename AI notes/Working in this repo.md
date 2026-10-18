@@ -2,33 +2,23 @@
 
 Environment traps and the checks that catch things. Read this before a large edit.
 
-## Line endings: the repo is LF, the working tree is CRLF
+## Line endings: LF everywhere
 
-`core.autocrlf=true` and there is no `.gitattributes`. So:
+`.gitattributes` has `* text=auto eol=lf`, the repo-local `core.autocrlf` is `false`
+(overriding Git for Windows' system-wide `true`), and VS Code's `files.eol` is `\n`.
+Index and working tree are both LF; `git ls-files --eol` should show no `w/crlf` or
+`w/mixed`.
 
-- Blobs in git are **LF**. Files on disk are **CRLF**.
-- Prettier's `endOfLine` default is `lf`, so `prettier --check` reports _every_ file as
-  failing in a fresh clone. That noise is environmental. It is not something a change
-  introduced, and "62 files failing" means nothing on its own.
-- Converting a file's line endings is a no-op as far as git is concerned: the clean filter
-  normalises CRLF to LF before comparing, so a working-tree conversion produces **no
-  diff**. `git status` may still list the file until the stat cache refreshes. Trust
-  `git diff HEAD --numstat`, or compare `git hash-object --path <f> -- <f>` against
-  `git rev-parse HEAD:<f>`; do not trust `git status` alone after a bulk rewrite.
+CRLF can still be introduced by Windows tools that write the platform newline:
 
-What this means in practice:
-
-- **Multi-line string matching fails silently.** A script that reads a file and searches
-  for a two-line pattern written with `\n` will not match, because the file has `\r\n`.
-  Normalise on read (`read().replace("\r\n", "\n")`) or build the pattern from the file's
-  own line ending. This has cost real time more than once.
-- `sed` in Git Bash strips `\r` from its output, so piping through `sed` or `cat -A`
-  can hide CRLF. Check the raw bytes instead: `python -c "print(open(f,'rb').read()[:200])"`.
-- Mixing endings inside one file is the worst case: a tool rewrites some lines as LF and
-  later searches then match only part of the file. If an edit script half-worked, suspect
-  this first.
-- Prettier rewrites to LF. Running it on a file is fine; it just makes that file LF on
-  disk like everything in the index already is.
+- Python text-mode writes on Windows emit `\r\n`. Pass `newline="\n"` to `open()`, or
+  use `Path.write_text(..., newline="\n")`.
+- PowerShell `Set-Content` / `Out-File` / `Add-Content` join lines with `\r\n`.
+- If an edit script half-matches a file, suspect a mixed-ending file first. Check raw
+  bytes (`python -c "print(open(f,'rb').read()[:200])"`); `sed` and `cat -A` in Git Bash
+  can hide `\r`.
+- Fix stray files with `git ls-files --eol | grep -E 'w/(crlf|mixed)' | cut -f2 | xargs dos2unix`.
+  Git sees no diff from that, since the blobs are already LF.
 
 ## `.tmp/`
 

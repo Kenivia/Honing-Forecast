@@ -1,6 +1,7 @@
 {
     "autopep8.args": ["--line-length 160"],
     "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "files.eol": "\n",
     "git.confirmSync": false,
     "git.enableSmartCommit": true,
 

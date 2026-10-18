@@ -7,28 +7,28 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - ~~test & decide wtf to do with the core~~
   - code review
+- x10 streak frontend
+
 
 ## OCR
 
-- ~~code review~~
-
-- ~~sort out how page num works~~
-- ~~try brightness calibration with 2160p~~
-- ~~test if close enough actually needs the 9 shifts~~
-
-- ~~measure where the char inventory anchor can be~~
-- ~~gold shard silver reading~~
-- ~~non-streak optimality~~
+- ~~CRLF~~
+- sort out the order of the eval method (is it brute first or coarse first?)
+- remove references to ./docs
+- add status output of scanner?
+- "waiting for ocr" spinner
+- reorganize tests and separate from arena
+- SOMEHOW indicate the amount coming from chests
+- roster storage reading toggle when a roster reading exists (need to save scannerstate of previous scans?), sort out how to merge roster / tradable found in char storage / inventory, roster wide shared chest inventory
 - constant extraction script
 - auto detect 21:9
 - manual overwrite brightness
+- save where a chest was detected from? (there'll be multiple tho?)
 
-- enhanced book distinguishing???
+- enhanced book distinguishing (can i be bothered)
 
 - wipe current scan (just like starting a debug recording) changing characters
-- fix how tradability of gold chests are determined
-- add trivial chest amounts to manifest
-- roster wide shared chest inventory
+- determine tradability of (content of) gold chests from tooltip
 
 ## Forecast mode
 
@@ -40,7 +40,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Misc UI
 
-- just need to add the UI for choices and hard code some examples
+- need to add the UI for choices and hard code some examples
   - need to get paradise data from somewhere
   - gold chests
   - something happening over n weeks?
@@ -79,6 +79,16 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - maybe use indexdb instead of localstorage? (this will pobably be done as part of either inventory scanning or honing luck scanning)
 
 ## Done / cancelled
+
+- ~~code review~~
+
+- ~~sort out how page num works~~
+- ~~try brightness calibration with 2160p~~
+- ~~test if close enough actually needs the 9 shifts~~
+
+- ~~measure where the char inventory anchor can be~~
+- ~~gold shard silver reading~~
+- ~~non-streak optimality~~
 
 - ~~add some kind of sanity assertion that rectangles are scaled correctly~~
 ~~### Optimizations~~
