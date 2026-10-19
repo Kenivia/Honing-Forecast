@@ -25,10 +25,10 @@ pub struct Tuning {
     pub taylor_skip: f64,
     /// entries the memo of per material results may hold; 0 for no memo
     pub max_memo_size: usize,
-    /// grid points a standard deviation of a coarse lattice, which answers where the exact one is
-    /// too big and before the saddlepoint formula; 0 for none
+    /// grid points a standard deviation of the coarse lattice, which answers the metric where the
+    /// exact one is too big; 0 for none, which leaves it to the Edgeworth series
     pub coarse_cells: f64,
-    /// multiplications a coarse lattice may take before the saddlepoint formula answers instead
+    /// multiplications a coarse lattice may take before the Edgeworth series answers instead
     pub max_coarse_work: usize,
 
     // optimizer
@@ -114,7 +114,7 @@ impl Default for Tuning {
             max_lattice_work: 200000,
             taylor_skip: 1e-3,
             max_memo_size: 1 << 16,
-            coarse_cells: 0.0,
+            coarse_cells: 8.0,
             max_coarse_work: 20_000_000,
 
             max_iters: 48000,
@@ -158,7 +158,7 @@ impl Default for Tuning {
 }
 
 impl Tuning {
-    /// What reported metrics are scored with: the coarse lattice at 64 points, which the optimizer never sees
+    /// What reported metrics are scored with: the coarse lattice at 64 points, where the optimizer has 8
     pub fn reference() -> Tuning {
         Tuning {
             coarse_cells: 64.0,

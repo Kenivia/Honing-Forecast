@@ -31,7 +31,7 @@ A material is owned in three **bands**: character-bound, roster-bound and tradab
 
 `ValuationPlan::bands` turns a plan plus a material into the cumulative `(threshold, marginal value above it)` list the evaluator integrates against: entry `i`'s price applies to the interval `(threshold_i, threshold_{i+1}]`, and the **last** entry's price is what a unit costs to buy above the total owned.
 
-**The list length is the cost.** `one_dimension_average_gold` spends two saddlepoint evaluations per entry past the first and short-circuits to no work at all at one entry, and it does not skip an entry whose price gap is zero — it evaluates and then multiplies by zero. So every redundant entry is paid for. Three collapses keep the list minimal:
+**The list length is the cost.** `one_dimension_average_gold` spends a leftover evaluation per entry past the first and short-circuits to no work at all at one entry, and it does not skip an entry whose price gap is zero — it evaluates and then multiplies by zero. So every redundant entry is paid for. Three collapses keep the list minimal:
 
 - a zero-width band's entry drops out;
 - consecutive equal prices are one band;

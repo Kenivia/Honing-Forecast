@@ -29,8 +29,6 @@ counters!(
     TaylorSkip,
     Coarse,
     CoarseTooBig,
-    Direct,
-    DirectFallback,
 );
 
 #[cfg(feature = "trace")]

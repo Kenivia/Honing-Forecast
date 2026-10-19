@@ -318,8 +318,6 @@ fn sweep(name: &str, state_bundle: &StateBundle, rng: &mut StdRng, summary: &mut
                     let count = |counter: Counter| probe.data.counts[counter as usize] as u64;
                     let method = if count(Counter::Coarse) > 0 {
                         "coarse"
-                    } else if count(Counter::Direct) > count(Counter::DirectFallback) {
-                        "direct"
                     } else if count(Counter::Conditioned) > 0 {
                         "conditioned"
                     } else if count(Counter::Edgeworth) > 0 {

@@ -4,7 +4,7 @@ use std::f64::{INFINITY, NEG_INFINITY};
 use std::ops::Deref;
 
 use crate::constants::{FLOAT_TOL, IGNORE_PROB_TOL};
-use crate::core::cumulants::KsTuple;
+use crate::core::probability::cumulants::KsTuple;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(transparent)]

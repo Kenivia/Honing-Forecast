@@ -13,7 +13,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 ## OCR
 
 - ~~CRLF~~
-- sort out the order of the eval method (is it brute first or coarse first?)
+- ~~sort out the order of the eval method (is it brute first or coarse first?)~~
 - remove references to ./docs
 - add status output of scanner?
 - "waiting for ocr" spinner
@@ -23,7 +23,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - constant extraction script
 - auto detect 21:9
 - manual overwrite brightness
-- save where a chest was detected from? (there'll be multiple tho?)
+- save where a chest was detected from? (there'll be multiple tho?) and show it with hover
 
 - enhanced book distinguishing (can i be bothered)
 
