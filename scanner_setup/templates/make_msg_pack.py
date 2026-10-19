@@ -57,7 +57,7 @@ def build_icon_config(name: str, rarity: str, confidence, path=None, tag="Icon")
     return {
         "name": name,
         "offset": {"top_left": [0, 0], "width": WIDTH, "height": HEIGHT},
-        "data": list(final.tobytes()),
+        "data": final.tobytes(),
         "tag": tag,
         "normalized": True,
         "required_confidence": confidence,

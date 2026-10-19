@@ -63,7 +63,7 @@ def sweep_means(name: str) -> tuple[list[int], list[float]]:
 def load_anchor_templates() -> dict:
     config = msgpack.unpackb(CONFIG_PATH.read_bytes(), raw=False)
     return {
-        e["name"]: np.array(e["data"], dtype=np.float64).reshape(
+        e["name"]: np.frombuffer(e["data"], dtype=np.uint8).astype(np.float64).reshape(
             e["offset"]["height"], e["offset"]["width"], 4
         )[..., :3]
         for e in config

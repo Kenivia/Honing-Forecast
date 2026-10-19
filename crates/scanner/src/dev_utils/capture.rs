@@ -1,18 +1,22 @@
-// A session as Rust saw it, to be run again: every input of every scan, the frames lossless.
-// A file is MAGIC, then records of [tag][payload length as u32 LE][payload]. Start and Scan
-// payloads are msgpack with field names.
+// A session recorded to be run again. A file is MAGIC, then records of [tag][payload length as
+// u32 LE][payload]: the start, then per frame the scanner was sent an input and a trace, then the
+// end. Start, input and trace payloads are msgpack with field names.
+// The input is what any build can be run on: the frame, lossless, its time and the edits. The trace
+// is what this build made of it, for running the same build again scan for scan.
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 use crate::scanner_state::{Detected, ScannerState, SlotEdit};
 
-pub const MAGIC: &[u8] = b"HFCAP003";
+pub const MAGIC: &[u8] = b"HFCAP004";
 pub const START: u8 = b'S';
-pub const SCAN: u8 = b'F';
-// how the session ended on the page, corrections included, as JSON; the page writes it
+pub const INPUT: u8 = b'I';
+pub const TRACE: u8 = b'F';
+// how the session ended on the page, corrections included, as JSON
 pub const END: u8 = b'E';
 
+// written by the page
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Start {
     pub width: usize,
@@ -20,22 +24,29 @@ pub struct Start {
     // as the user gave them: what is detected is detected again on replay
     pub forced_21_9: Detected<bool>,
     pub brightness: Detected<f64>,
+    pub build: Build,
 }
 
-// The XOR with the last scanned frame, LZ4. Alpha is apart and only there when it changed,
-// which after the first frame it does not.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Frame {
-    pub rgb: ByteBuf,
-    pub alpha: Option<ByteBuf>,
+// which build recorded it: a trace is only good for the same wasm
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct Build {
+    pub commit: String,
+    pub wasm: String,
 }
 
+// A frame the scanner was sent: the XOR with the one before it, RGBA, LZ4, nothing when the two
+// are the same. Its timestamp in microseconds, and the edits the scan of it took in.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Scan {
-    pub ocr_results: Vec<(u32, String)>,
+pub struct Input {
+    pub delta: Option<ByteBuf>,
+    pub time: f64,
     pub edits: Vec<SlotEdit>,
-    // nothing for a frame skipped as still
-    pub frame: Option<Frame>,
+}
+
+// what the scan of a frame took from elsewhere, and the state it left
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Trace {
+    pub ocr_results: Vec<(u32, String)>,
     // where the time budget cut the look at the slots, the one thing a scan takes from the clock
     pub slot_cut: Option<usize>,
     // of the state after the scan, see digest
@@ -44,61 +55,52 @@ pub struct Scan {
 
 pub enum Record {
     Start(Start),
-    Scan(Scan),
+    Input(Input),
+    Trace(Trace),
     End(String),
 }
 
+// Records every frame on a worker of its own. Frames are copied into the two buffers in turn,
+// so the one before is still there.
 #[derive(Debug, Default)]
-pub struct Recorder {
-    started: bool,
-    previous: Vec<u8>,
-    rgb: Vec<u8>,
-    alpha: Vec<u8>,
+pub struct InputRecorder {
+    frames: [Vec<u8>; 2],
+    current: usize,
+    delta: Vec<u8>,
 }
 
-impl Recorder {
-    fn frame(&mut self, data: &[u8]) -> Frame {
-        let pixels = data.len() / 4;
-        self.previous.resize(data.len(), 0);
-        // a pixel is written as four bytes and the next one overwrites its alpha
-        self.rgb.resize(pixels * 3 + 1, 0);
-        self.alpha.resize(pixels, 0);
-        let mut alpha_changed = 0;
-        for (i, (new, old)) in data
-            .chunks_exact(4)
-            .zip(self.previous.chunks_exact(4))
-            .enumerate()
-        {
-            let new = u32::from_le_bytes(new.try_into().unwrap());
-            let old = u32::from_le_bytes(old.try_into().unwrap());
-            let delta = new ^ old;
-            self.rgb[i * 3..i * 3 + 4].copy_from_slice(&delta.to_le_bytes());
-            self.alpha[i] = (delta >> 24) as u8;
-            alpha_changed |= self.alpha[i];
+impl InputRecorder {
+    // where the next frame is to be copied
+    pub fn buffer(&mut self, size: usize) -> &mut [u8] {
+        for x in self.frames.iter_mut().chain([&mut self.delta]) {
+            x.resize(size, 0);
         }
-        self.previous.copy_from_slice(data);
-        let pack = |x: &[u8]| ByteBuf::from(lz4_flex::compress_prepend_size(x));
-        Frame {
-            rgb: pack(&self.rgb[..pixels * 3]),
-            alpha: (alpha_changed != 0).then(|| pack(&self.alpha)),
+        &mut self.frames[self.current]
+    }
+
+    // the frame just copied in, as a record
+    pub fn record(&mut self, time: f64, edits: Vec<SlotEdit>) -> Vec<u8> {
+        let [a, b] = &self.frames;
+        let (new, old) = if self.current == 0 { (a, b) } else { (b, a) };
+        let mut changed = 0;
+        for ((delta, new), old) in self.delta.iter_mut().zip(new).zip(old) {
+            *delta = new ^ old;
+            changed |= *delta;
         }
+        self.current ^= 1;
+        let delta =
+            (changed != 0).then(|| ByteBuf::from(lz4_flex::compress_prepend_size(&self.delta)));
+        record(INPUT, &Input { delta, time, edits })
     }
 }
 
-impl Frame {
-    // onto the frame it is the difference from
+impl Input {
+    // onto the frame before
     fn apply(&self, data: &mut [u8]) {
-        let rgb = lz4_flex::decompress_size_prepended(&self.rgb).unwrap();
-        for (pixel, delta) in data.chunks_exact_mut(4).zip(rgb.chunks_exact(3)) {
-            for c in 0..3 {
-                pixel[c] ^= delta[c];
-            }
-        }
-        if let Some(alpha) = &self.alpha {
-            let alpha = lz4_flex::decompress_size_prepended(alpha).unwrap();
-            for (pixel, delta) in data.chunks_exact_mut(4).zip(alpha) {
-                pixel[3] ^= delta;
-            }
+        let Some(delta) = &self.delta else { return };
+        let delta = lz4_flex::decompress_size_prepended(delta).unwrap();
+        for (pixel, delta) in data.iter_mut().zip(delta) {
+            *pixel ^= delta;
         }
     }
 }
@@ -111,12 +113,12 @@ fn record(tag: u8, payload: &impl Serialize) -> Vec<u8> {
     out
 }
 
-pub fn parse_scan(payload: &[u8]) -> Scan {
+pub fn parse<T: serde::de::DeserializeOwned>(payload: &[u8]) -> T {
     rmp_serde::from_slice(payload).unwrap()
 }
 
 pub fn read_records(file: &[u8]) -> impl Iterator<Item = Record> + '_ {
-    assert!(file.starts_with(MAGIC));
+    assert!(file.starts_with(MAGIC), "not an {MAGIC:?} capture");
     let mut rest = &file[MAGIC.len()..];
     std::iter::from_fn(move || {
         let (&tag, after) = rest.split_first()?;
@@ -124,11 +126,30 @@ pub fn read_records(file: &[u8]) -> impl Iterator<Item = Record> + '_ {
         let payload = &after[4..4 + length];
         rest = &after[4 + length..];
         Some(match tag {
-            START => Record::Start(rmp_serde::from_slice(payload).unwrap()),
-            SCAN => Record::Scan(parse_scan(payload)),
+            START => Record::Start(parse(payload)),
+            INPUT => Record::Input(parse(payload)),
+            TRACE => Record::Trace(parse(payload)),
             _ => Record::End(String::from_utf8_lossy(payload).into_owned()),
         })
     })
+}
+
+// a file's frames, each with its trace
+pub fn read_frames(file: &[u8]) -> (Start, Vec<(Input, Trace)>, Option<String>) {
+    let mut records = read_records(file);
+    let Some(Record::Start(start)) = records.next() else {
+        panic!("no start record")
+    };
+    let (mut frames, mut input, mut end) = (vec![], None, None);
+    for record in records {
+        match record {
+            Record::Input(x) => input = Some(x),
+            Record::Trace(x) => frames.push((input.take().unwrap(), x)),
+            Record::End(x) => end = Some(x),
+            Record::Start(_) => panic!("a second start record"),
+        }
+    }
+    (start, frames, end)
 }
 
 impl ScannerState {
@@ -173,56 +194,36 @@ impl ScannerState {
         hasher.finish()
     }
 
-    // The scan that just ran, as a record; the first comes with the head of the file.
-    pub fn record_scan(
-        &mut self,
-        ocr_results: Vec<(u32, String)>,
-        edits: Vec<SlotEdit>,
-    ) -> Vec<u8> {
-        let mut recorder = self.recorder.take().unwrap();
-        let mut out = vec![];
-        if !recorder.started {
-            recorder.started = true;
-            let info = &self.screen_info;
-            out.extend(MAGIC);
-            out.extend(record(
-                START,
-                &Start {
-                    width: self.buffer.width,
-                    height: self.buffer.height,
-                    forced_21_9: info.forced_21_9.setting(),
-                    brightness: info.brightness.setting(),
-                },
-            ));
-        }
-        let scan = Scan {
+    // the scan that just ran, as a record
+    pub fn record_scan(&self, ocr_results: Vec<(u32, String)>) -> Vec<u8> {
+        let trace = Trace {
             ocr_results,
-            edits,
-            frame: self.scanned.then(|| recorder.frame(self.buffer.data())),
             slot_cut: self.slot_cut,
             digest: self.digest(),
         };
-        out.extend(record(SCAN, &scan));
-        self.recorder = Some(recorder);
-        out
+        record(TRACE, &trace)
     }
 
-    // A recorded scan again. The buffer has to be the state's alone and start out as zeros: it
-    // holds the last scanned frame between calls.
-    pub fn replay_scan(&mut self, scan: Scan) {
-        self.apply_edits(scan.edits);
-        self.apply_ocr(scan.ocr_results);
-        match &scan.frame {
-            // all that a skipped frame changes
-            None => self.quiet_scans += 1,
-            Some(frame) => {
-                frame.apply(self.buffer.data_mut());
-                self.replay_cut = Some(scan.slot_cut);
+    // A recorded frame again. With its trace the scan goes as it did, and is checked against it;
+    // without, the texts are the caller's and the time budget is the clock's. The buffer has to
+    // be the state's alone and start out as zeros: it holds the frame before between calls.
+    pub fn replay(&mut self, input: Input, trace: Option<Trace>, ocr_results: Vec<(u32, String)>) {
+        self.apply_edits(input.edits.clone());
+        input.apply(self.buffer.data_mut());
+        match trace {
+            Some(trace) => {
+                self.apply_ocr(trace.ocr_results);
+                self.replay_cut = Some(trace.slot_cut);
+                self.cropper();
+                if self.digest() != trace.digest && self.replay_mismatch.is_none() {
+                    self.replay_mismatch = Some(self.replayed);
+                }
+            }
+            None => {
+                self.apply_ocr(ocr_results);
+                self.replay_cut = None;
                 self.cropper();
             }
-        }
-        if self.digest() != scan.digest && self.replay_mismatch.is_none() {
-            self.replay_mismatch = Some(self.replayed);
         }
         self.replayed += 1;
     }

@@ -1,23 +1,26 @@
-// Runs a debug capture from the page again, scan for scan, and says what went on in it.
+// Runs a debug capture from the page again, frame for frame, and says what went on in it.
 //   cargo run --release --bin capture_replay -- <file.hfcap> [options]
-// Always: whether every scan ended as recorded, each hover once its last texts were in (the scans
-// it was seen on, what it read and every vote), the chests and the slots at the end.
+// Always: whether every scan ended as recorded (as it is run on its trace, unless --reread), each
+// hover once its last texts were in (the scans it was seen on, what it read and every vote), the
+// chests and the slots at the end.
 //   --reference <file>      writes the page's own account of the end, corrections included (JSON)
 //   --slot "Roster 0 0,2"   every change to that slot (as the page's edits name it), and the
 //                           hovers that had it beside them
 //   --ocr                   every line sent to be read with what it is for, and its text when back
 //   --from N --to M         the scans --ocr and --dump cover (all by default)
 //   --dump <folder>         the frames scanned and the lines sent in those scans, as PNG
-//   --reread                reads every line again here, in place of the recorded texts, each
-//                           back one scan after it was sent. For trying a change: once the
-//                           scanner asks for other lines than it did, the recorded texts no
-//                           longer fit, and the run differs from the recording either way.
+//   --reread                runs the frames alone, as any build can: every line is read again
+//                           here, each back one scan after it was sent, and the slots are not
+//                           cut by the time budget. For trying a change; the run then differs
+//                           from the trace, which is expected.
 //   --no-edits              leaves out what the user set by hand, to see what the scanner makes
 //                           of those slots
+//   --check                 holds the slots against the hand edits of the end record, the only
+//                           right answers a capture has (see capture_edit); implies --no-edits
 use hf_scanner::{
     dev_utils::{
-        capture::{Record, read_records},
-        native::{self, describe, describe_chest, print_statuses},
+        capture::read_frames,
+        native::{self, check_edits, describe, describe_chest, print_statuses},
     },
     scanner_state::{ScannerState, SlotAddress},
     tooltip::hover::Hover,
@@ -91,7 +94,8 @@ fn main() {
     let dump = option(&args, "--dump");
     let reference_path = option(&args, "--reference");
     let reread = args.iter().any(|x| x == "--reread");
-    let no_edits = args.iter().any(|x| x == "--no-edits");
+    let check = args.iter().any(|x| x == "--check");
+    let no_edits = check || args.iter().any(|x| x == "--no-edits");
     let mut sim = native::Sim::new();
     let from: u64 = option(&args, "--from").map_or(0, |x| x.parse().unwrap());
     let to: u64 = option(&args, "--to").map_or(u64::MAX, |x| x.parse().unwrap());
@@ -100,10 +104,10 @@ fn main() {
     }
 
     let file = fs::read(path).unwrap();
-    let mut records = read_records(&file);
-    let Some(Record::Start(start)) = records.next() else {
-        panic!("no start record")
-    };
+    let (start, frames, end) = read_frames(&file);
+    if let (Some(path), Some(end)) = (&reference_path, &end) {
+        fs::write(path, end).unwrap();
+    }
     println!("{start:?}");
     let (mut state, _pixels) = native::new_state(start.width, start.height);
     state.screen_info.forced_21_9 = start.forced_21_9;
@@ -117,39 +121,30 @@ fn main() {
     let mut reads = 0;
     let mut skipped = 0;
     let mut slot_was = String::new();
-    for record in records {
-        let mut scan = match record {
-            Record::Scan(scan) => scan,
-            Record::End(reference) => {
-                if let Some(path) = &reference_path {
-                    fs::write(path, reference).unwrap();
-                }
-                continue;
-            }
-            Record::Start(_) => panic!("a second start record"),
-        };
+    for (mut input, trace) in frames {
         let index = state.replayed;
         let covered = (from..=to).contains(&index);
-        let scanned = scan.frame.is_some();
-        if reread {
-            scan.ocr_results = sim.take_ready();
-        }
+        let (trace, texts) = match reread {
+            true => (None, sim.take_ready()),
+            false => (Some(trace), vec![]),
+        };
         if no_edits {
-            scan.edits.clear();
+            input.edits.clear();
         }
-        skipped += !scanned as usize;
-        for edit in &scan.edits {
+        for edit in &input.edits {
             println!("scan {index}: edit {edit:?}");
         }
         if ocr && covered {
-            for (id, text) in &scan.ocr_results {
+            for (id, text) in trace.as_ref().map_or(&texts, |x| &x.ocr_results) {
                 println!(
                     "scan {index}: line {id} back as {text:?}  ({})",
                     lines.get(id).map_or("", |x| x)
                 );
             }
         }
-        state.replay_scan(scan);
+        state.replay(input, trace, texts);
+        let scanned = state.scanned;
+        skipped += !scanned as usize;
 
         if let Some(hover) = &state.hover {
             seen.entry(hover.id).or_insert((index, index)).1 = index;
@@ -248,9 +243,10 @@ fn main() {
         "{} scans, {skipped} of them skipped as still",
         state.replayed
     );
-    match state.replay_mismatch {
-        Some(scan) => println!("DIFFERS from the recording, first at scan {scan}"),
-        None => println!("every scan ended as recorded"),
+    match (reread, state.replay_mismatch) {
+        (true, _) => {}
+        (false, Some(scan)) => println!("DIFFERS from the recording, first at scan {scan}"),
+        (false, None) => println!("every scan ended as recorded"),
     }
     // still on screen, or still waiting for texts, when the recording stopped
     for hover in state.hover.iter().chain(&state.past_hovers) {
@@ -267,4 +263,8 @@ fn main() {
         println!("  {}", describe_chest(chest));
     }
     print_statuses(&state);
+    if check {
+        let (right, all) = check_edits(&state, end.as_deref().unwrap_or("{}"));
+        println!("check: {right} of {all} slots set by hand read right");
+    }
 }

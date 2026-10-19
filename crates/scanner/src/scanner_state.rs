@@ -2,7 +2,6 @@ use crate::{
     anchor_to_slot::anchors::AnchorInfo,
     buffer::Buffer,
     currency::Currencies,
-    dev_utils::capture::Recorder,
     interface::setup::OneIconConfig,
     ocr::jobs::OcrJob,
     tooltip::{chest::Chest, hover::Hover, ocr_interface::PendingRead},
@@ -304,9 +303,8 @@ pub struct ScannerState {
 
     pub resizer: Option<Resizer>,
 
-    // See capture.rs. While a session is recorded: the recorder, whether the last frame was
-    // scanned, and after how many slots the budget cut its look.
-    pub recorder: Option<Recorder>,
+    // See capture.rs. Whether the last frame was scanned, and after how many slots the budget cut
+    // its look.
     pub scanned: bool,
     pub slot_cut: Option<usize>,
     // While one is replayed: the recorded cut, followed in place of the clock, the scans so far

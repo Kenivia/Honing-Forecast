@@ -428,6 +428,12 @@ const sorted = (amounts: Amounts) =>
   Object.fromEntries(Object.entries(nonzero(amounts)).sort());
 
 async function export_now(page: Page) {
+  // Slots left unread hide the manifest; exporting without them sets them to irrelevant. What a
+  // re-run reads right is checked against hand edits, not here.
+  const force = page.getByRole("button", {
+    name: "Show the manifest without them",
+  });
+  if (await force.isVisible()) await force.click();
   await page.getByRole("button", { name: "Export to calculator" }).click();
   // saving is debounced
   await page.waitForTimeout(1000);
@@ -600,7 +606,38 @@ const ULTRAWIDE = new URL(
   RECORDINGS,
 );
 
-test("a native ultrawide capture reads as it did live", async ({
+// The slots set by hand in the capture's end record (capture_edit), the only right answers it
+// has, that the replay read otherwise, as the native capture_replay --check holds them.
+async function wrong_edits(page: Page): Promise<string[]> {
+  return page.evaluate(async () => {
+    const url = performance
+      .getEntriesByType("resource")
+      .map((entry) => entry.name)
+      .filter((name) => name.includes("InventoryScanner/ScanStore.ts"))
+      .pop();
+    const { slots } = await import(url);
+    const edits = (globalThis as any).__capture_reference.edits;
+    return Object.entries(edits).flatMap(([key, edit]: [string, any]) => {
+      const slot = slots.value.get(key);
+      const amount = edit.amount ?? 1;
+      const right =
+        slot &&
+        [slot.icon_name_score?.[0], ...slot.alternatives, slot.label].includes(
+          edit.item,
+        ) &&
+        slot.value === amount &&
+        (edit.tradability == null || slot.tradability === edit.tradability) &&
+        ["Good", "NeedTradability"].includes(slot.status);
+      return right
+        ? []
+        : [
+            `${key}: set ${edit.item} x${amount} ${edit.tradability}, read ${slot?.icon_name_score?.[0]} x${slot?.value} ${slot?.tradability} ${slot?.status}`,
+          ];
+    });
+  });
+}
+
+test("a native ultrawide capture reads its hand-set slots right", async ({
   page,
   browserName,
 }) => {
@@ -610,31 +647,21 @@ test("a native ultrawide capture reads as it did live", async ({
   );
   test.setTimeout(900_000);
   await replay(page, "Newchar", ULTRAWIDE);
-  await expect(page.getByText("every scan ended as recorded")).toBeVisible();
-  const [now, then] = await page.evaluate(async () => {
+  const read = await page.evaluate(async () => {
     const url = performance
       .getEntriesByType("resource")
       .map((entry) => entry.name)
       .filter((name) => name.includes("InventoryScanner/Manifest.ts"))
       .pop();
     const { manifest } = await import(url);
-    const reference = (globalThis as any).__capture_reference;
-    return JSON.parse(
-      JSON.stringify([manifest.value.read, reference.manifest.read]),
-    );
+    return manifest.value.read.map((one) => `${one.window} ${one.page}`);
   });
-  const by_page = (read) =>
-    unordered(
-      Object.fromEntries(
-        read.map((one) => [`${one.window} ${one.page}`, one.content]),
-      ),
-    );
-  expect(Object.keys(by_page(now))).toEqual([
+  expect(read.sort()).toEqual([
     "CharCurrency 0",
     "CharInventory 0",
     "CharStorage 0",
     "Currency 0",
     "Roster 0",
   ]);
-  expect(by_page(now)).toEqual(by_page(then));
+  expect(await wrong_edits(page)).toEqual([]);
 });

@@ -47,6 +47,9 @@ const LIT: f64 = 0.005;
 // A tooltip beside no slot we know that is lit up is held for this many scans, the highlight
 // fading in, and what is then read of it goes behind everything else by this much.
 const HOLD_SCANS: usize = 8;
+// How long a hover with all its texts in waits for the slot it belongs to: the slots of a page just
+// opened are recognised a few at a time, and with OCR quick the texts can be in before.
+const SLOT_WAIT_SCANS: usize = 60;
 
 const SLOT_RIGHT_OF_TITLE: f64 = 10.67; // tooltip on the slot's right: gap from the slot's right edge to the title
 const SLOT_LEFT_OF_TITLE: f64 = 16.0; // tooltip on the slot's left: gap from the title's right edge to the slot
@@ -119,6 +122,8 @@ pub struct Hover {
     pub lit: Vec<SlotAddress>,
     // scans it was on screen
     pub scans: usize,
+    // scans it has waited, its texts all in, for a slot beside it to be recognised
+    pub slot_waits: usize,
 }
 
 impl ScannerState {
@@ -225,7 +230,11 @@ impl ScannerState {
             self.past_hovers.push(hover);
         } else {
             self.write_hover(&mut hover, true);
-            if let Some(log) = &mut self.hover_log {
+            let placeable = hover.icon.is_some() || hover.title.is_some();
+            if hover.slot.is_none() && placeable && hover.slot_waits < SLOT_WAIT_SCANS {
+                hover.slot_waits += 1;
+                self.past_hovers.push(hover);
+            } else if let Some(log) = &mut self.hover_log {
                 log.push(hover);
             }
         }

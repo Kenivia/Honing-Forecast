@@ -378,3 +378,53 @@ impl Sim {
         )
     }
 }
+
+// The slots set by hand in a capture's end record, the only right answers it has, against what
+// the scanner read there. A slot is right when it is in order (Good, or only its tradability
+// missing, which the page may assume) with the icon, amount and tradability that were set; no
+// amount set is a single item, no tradability set is not checked. Prints each slot and returns
+// how many were right, of how many.
+pub fn check_edits(state: &ScannerState, end: &str) -> (usize, usize) {
+    use crate::interface::scan_result::SlotStatus;
+    let end: serde_json::Value = serde_json::from_str(end).unwrap();
+    let slots = state.result(true).slots;
+    let edits = end["edits"].as_object().cloned().unwrap_or_default();
+    let mut right = 0;
+    for (key, edit) in &edits {
+        let item = edit["item"].as_str();
+        let amount = edit["amount"].as_u64().unwrap_or(1) as u32;
+        let tradability = edit["tradability"].as_str();
+        let set = format!(
+            "{} x{amount} {}",
+            item.unwrap_or("?"),
+            tradability.unwrap_or("-")
+        );
+        let slot = slots
+            .iter()
+            .find(|x| serde_json::to_value(x.address).unwrap() == edit["address"]);
+        let Some(slot) = slot else {
+            println!("  {key}: set {set}, not read");
+            continue;
+        };
+        let icon = slot.icon_name_score.as_ref().map(|x| x.0.as_str());
+        let is_item = icon == item
+            || slot.alternatives.iter().any(|x| Some(x.as_str()) == item)
+            || slot.label.as_deref() == item;
+        let read_tradability = slot.tradability.map(|x| format!("{x:?}"));
+        let ok = is_item
+            && slot.value == Some(amount)
+            && (tradability.is_none() || read_tradability.as_deref() == tradability)
+            && matches!(slot.status, SlotStatus::Good | SlotStatus::NeedTradability);
+        right += ok as usize;
+        println!(
+            "  {key}: {} set {set}, read {} x{:?} {:?} {:?} {}",
+            if ok { "right" } else { "WRONG" },
+            icon.unwrap_or("nothing"),
+            slot.value,
+            slot.tradability,
+            slot.status,
+            slot.reason
+        );
+    }
+    (right, edits.len())
+}

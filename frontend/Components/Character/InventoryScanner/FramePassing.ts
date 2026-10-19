@@ -7,26 +7,25 @@ export function create_frame_source() {
   let reader: ReadableStreamDefaultReader<VideoFrame> | null = null;
   let cleanup: (() => void) | null = null;
   let size = { width: 0, height: 0 };
+  // the first frame, held back while its size is taken
+  let held: VideoFrame | null = null;
 
   function stop() {
     reader?.cancel();
     stream?.getTracks().forEach((t) => t.stop());
     cleanup?.();
+    held?.close();
     reader = null;
     stream = null;
     cleanup = null;
+    held = null;
   }
 
   return markRaw({
-    start(
-      new_stream: MediaStream,
-      width: number,
-      height: number,
-      new_cleanup: (() => void) | null = null,
-    ) {
+    start(new_stream: MediaStream, new_cleanup: (() => void) | null = null) {
       stop();
       stream = new_stream;
-      size = { width, height };
+      size = { width: 0, height: 0 };
       cleanup = new_cleanup;
       reader = get_readable(
         stream.getVideoTracks()[0] as MediaStreamVideoTrack,
@@ -37,7 +36,28 @@ export function create_frame_source() {
       size = { width, height };
     },
     // undefined once the stream has ended; the caller closes or transfers the frame
-    read: async () => (await reader?.read())?.value,
+    async read() {
+      const frame = held ?? (await reader?.read())?.value;
+      held = null;
+      return frame;
+    },
+    // The frames decide the size, not the track's settings (Chrome gave 3440x1920 for a
+    // 3440x1440 screen), so the first one is waited for. Null if the stream ended first.
+    async measure() {
+      if (!size.width) {
+        const from = reader;
+        const frame = (await from?.read())?.value ?? null;
+        // stopped or restarted meanwhile
+        if (from !== reader) frame?.close();
+        if (!frame || from !== reader) return null;
+        held = frame;
+        size = {
+          width: held.visibleRect.width,
+          height: held.visibleRect.height,
+        };
+      }
+      return size;
+    },
     get stream() {
       return stream;
     },
@@ -96,8 +116,6 @@ export async function file_to_stream(file: File) {
 
   return {
     stream: canvas.captureStream(),
-    width: canvas.width,
-    height: canvas.height,
     cleanup: () => {
       clearInterval(timer);
       stop_driving?.();

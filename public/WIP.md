@@ -15,7 +15,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - startup time or at least a loading icon
 - SOMEHOW indicate the amount coming from chests
-- determine tradability of (content of) gold chests from tooltip
+- ~~determine tradability of (content of) gold chests from tooltip~~
 
 ### LOW PRIO
 

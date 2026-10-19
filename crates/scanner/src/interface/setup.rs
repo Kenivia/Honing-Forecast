@@ -72,6 +72,8 @@ impl From<&Rect> for WireRect {
 // the file's `normalized` is not read: every stored template is
 #[derive(Deserialize)]
 struct OneIconConfigJs {
+    // bytes, so a Uint8Array crosses in one copy
+    #[serde(with = "serde_bytes")]
     data: Vec<u8>,
     name: String,
     offset: WireRect,

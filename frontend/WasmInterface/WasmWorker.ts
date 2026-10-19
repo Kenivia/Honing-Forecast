@@ -9,6 +9,8 @@ import init, {
   replay_mismatch,
   ocr_init_wrapper,
   ocr_wrapper,
+  recorder_buffer,
+  record_frame,
 } from "@/../crates/wasm/pkg/hf_wasm.js";
 import { Payload } from "./PayloadBuilder";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
@@ -24,6 +26,7 @@ export enum WasmOp {
   Reserve,
   OcrInit,
   Ocr,
+  Record,
 }
 
 // THESE BELOW DIRECTLY CORRESPOND TO A RUST STRUCT
@@ -83,8 +86,25 @@ export function ocr_job_buffers(job: OcrJob) {
   ];
 }
 
+// a frame's pixels as the scanner worker forwarded them, with its time and edits
+function record({ pixels, time, edits }, memory: WebAssembly.Memory, timings) {
+  const pointer = recorder_buffer(pixels.length);
+  const copy_start = performance.now();
+  new Uint8Array(memory.buffer, pointer, pixels.length).set(pixels);
+  timings.copy = performance.now() - copy_start;
+  const record_start = performance.now();
+  const out = record_frame(time, edits);
+  timings.record = performance.now() - record_start;
+  take_timings();
+  return out;
+}
+
 // where frames are copied to; the scanner state itself stays inside wasm
 let scanner_buffer: { pointer: number; size: number } | null = null;
+
+// One instance per worker: a message that comes in while the first is still loading it (the
+// recorder gets frames back to back) must wait for that one, not load another.
+let wasm_ready: ReturnType<typeof init> | null = null;
 
 self.addEventListener("message", async (ev) => {
   const msg = ev.data;
@@ -96,7 +116,7 @@ self.addEventListener("message", async (ev) => {
 
   let result;
 
-  const wasm = await init();
+  const wasm = await (wasm_ready ??= init());
   timings.init = performance.now() - start_time;
   // never log scanner state, Firefox keeps logged objects alive even with devtools closed
   const loggable = wasm_op <= WasmOp.Histogram;
@@ -108,12 +128,12 @@ self.addEventListener("message", async (ev) => {
     result = to_records(await histogram_wrapper(payload));
   } else if (wasm_op == WasmOp.Cropper) {
     // the main thread reads the frame and transfers it with the op
-    const { frame, replay, ...options } = payload;
+    const { frame, replay, trace, forward, ...options } = payload;
 
     if (replay) {
-      // a capture's scan record stands in for the frame and the options
+      // a capture's input record stands in for the frame; its trace, when given, for the texts
       const call_start = performance.now();
-      result = replay_wrapper(replay, options.full);
+      result = replay_wrapper(replay, trace ?? undefined, options);
       timings.wasm_call = performance.now() - call_start;
       timings.rust = take_timings();
       timings.replay_mismatch = replay_mismatch();
@@ -136,6 +156,13 @@ self.addEventListener("message", async (ev) => {
         await frame.copyTo(dest, { format: "RGBA" });
         frame.close();
         timings.copy = performance.now() - copy_start;
+        // the recorder gets the pixels from here rather than copying the frame again
+        let pixels: Uint8Array | null = null;
+        if (forward) {
+          const forward_start = performance.now();
+          pixels = dest.slice(0, requiredSize);
+          timings.forward = performance.now() - forward_start;
+        }
 
         const call_start = performance.now();
         result = await cropper_wrapper(options);
@@ -143,6 +170,7 @@ self.addEventListener("message", async (ev) => {
         timings.rust = take_timings();
         const capture = take_capture();
         if (capture.length) result.capture = capture;
+        if (pixels) result.pixels = pixels;
       } catch (err) {
         console.error("Error processing frame:", err);
       } finally {
@@ -151,6 +179,8 @@ self.addEventListener("message", async (ev) => {
   } else if (wasm_op == WasmOp.Reserve) {
     result = await reserve_buffer_wrapper(payload);
     scanner_buffer = result.buffer;
+  } else if (wasm_op == WasmOp.Record) {
+    result = record(payload, wasm.memory, timings);
   } else if (wasm_op == WasmOp.OcrInit) {
     ocr_init_wrapper(payload.model, payload.config);
   } else if (wasm_op == WasmOp.Ocr) {
@@ -177,11 +207,14 @@ self.addEventListener("message", async (ev) => {
       ? [
           ...result.ocr_jobs.flatMap(ocr_job_buffers),
           ...(result.capture ? [result.capture.buffer] : []),
+          ...(result.pixels ? [result.pixels.buffer] : []),
           ...result.slots.flatMap((slot) =>
             slot.image ? [slot.image.data.buffer] : [],
           ),
         ]
-      : [];
+      : wasm_op == WasmOp.Record
+        ? [result.buffer]
+        : [];
   self.postMessage({ type: "result", result, timings }, { transfer });
 });
 

@@ -112,3 +112,8 @@ Icon identification is the weak part with a large cursor: when the tooltip is le
 - Every title line is centred in the bar. If a line's left and right gaps differ, something is over it, and a covered start can turn one valid name into another ("Great Destiny Leapstone" into "Destiny Leapstone"). Frames with centred lines outvote the rest. The test is conservative: most off-centre frames still read correctly.
 
 The OCR used inserts stray letters now and then ("Destiny D Destruction Stone"), which the fuzzy match absorbs. The title count is not reliable and is absent on single items. The scanner since moved to 0.9 similarity and numerals by rivals.
+
+## Waiting for the slot
+
+- **Until 2026-10-19 a hover ended as soon as its last texts were in**, slot or not. Live it worked because OCR was slow; a re-run of `10-18` with every text back the scan after it was sent read hover 1 (an Armor Book, scans 9 and 10) at scan 11 while its slot was only recognised at scan 12, so it wrote nowhere and the slot asked for a hover. Waiting for a fixed count of scans was chosen over waiting until the slot is recognised, which could wait forever on a slot that never matches.
+

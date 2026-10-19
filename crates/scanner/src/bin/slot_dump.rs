@@ -7,7 +7,7 @@
 // templates in <folder>/../templates-<ui height>.
 use hf_scanner::{
     anchor_to_slot::anchor_defs::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
-    dev_utils::capture::{Record, read_records},
+    dev_utils::capture::read_frames,
     dev_utils::native,
     image_utils::{
         brightness::normalize_brightness,
@@ -34,27 +34,19 @@ fn main() {
     let (path, out) = (&args[0], &args[1]);
     fs::create_dir_all(out).unwrap();
     let file = fs::read(path).unwrap();
-    let mut records = read_records(&file);
-    let Some(Record::Start(start)) = records.next() else {
-        panic!("no start record")
-    };
+    let (start, frames, end) = read_frames(&file);
+    if let Some(end) = end {
+        fs::write(format!("{out}/reference.json"), end).unwrap();
+    }
     let (mut state, _pixels) = native::new_state(start.width, start.height);
     state.screen_info.forced_21_9 = start.forced_21_9;
     state.screen_info.brightness = start.brightness;
 
     let mut looks: HashMap<String, HashMap<u64, Look>> = HashMap::new();
-    for record in records {
-        let scan = match record {
-            Record::Scan(scan) => scan,
-            Record::End(reference) => {
-                fs::write(format!("{out}/reference.json"), reference).unwrap();
-                continue;
-            }
-            Record::Start(_) => panic!("a second start record"),
-        };
+    for (input, trace) in frames {
         let index = state.replayed;
-        let scanned = scan.frame.is_some();
-        state.replay_scan(scan);
+        state.replay(input, Some(trace), vec![]);
+        let scanned = state.scanned;
         state.clear_changed();
         let Some(brightness) = state.screen_info.brightness.value.filter(|_| scanned) else {
             continue;

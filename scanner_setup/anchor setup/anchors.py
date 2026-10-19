@@ -52,7 +52,7 @@ def save(config: list):
 
 def pixels(entry: dict) -> np.ndarray:
     size = (entry["offset"]["height"], entry["offset"]["width"], 4)
-    return np.array(entry["data"], dtype=np.uint8).reshape(size)
+    return np.frombuffer(entry["data"], dtype=np.uint8).reshape(size)
 
 
 def find(config: list, name: str) -> int:
@@ -125,7 +125,7 @@ def main():
     elif args.command == "add":
         # in the key order the file has
         entry = {
-            "data": cut(still_rgb(args.still), args.x, args.y, args.width, args.height, args.brightness).flatten().tolist(),
+            "data": cut(still_rgb(args.still), args.x, args.y, args.width, args.height, args.brightness).tobytes(),
             "name": args.name,
             # whole numbers stay whole, as the rest of the file has them
             "offset": {"top_left": [int(v) if v == int(v) else v for v in args.offset], "width": args.width, "height": args.height},
