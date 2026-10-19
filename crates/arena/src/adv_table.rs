@@ -14,7 +14,7 @@ use rusqlite::{Connection, OptionalExtension, params};
 use std::path::Path;
 use std::time::Duration;
 
-const PATH: &str = "test_cases/adv_cache.sqlite";
+const PATH: &str = "arena_data/adv_cache.sqlite";
 
 /// puts every distribution the payload's upgrades can ask for into its cache
 pub fn fill(payload: &mut Payload) {

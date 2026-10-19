@@ -9,26 +9,33 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
   - code review
 - x10 streak frontend
 
-
 ## OCR
 
 - ~~CRLF~~
 - ~~sort out the order of the eval method (is it brute first or coarse first?)~~
-- remove references to ./docs
-- add status output of scanner?
-- "waiting for ocr" spinner
-- reorganize tests and separate from arena
-- SOMEHOW indicate the amount coming from chests
-- roster storage reading toggle when a roster reading exists (need to save scannerstate of previous scans?), sort out how to merge roster / tradable found in char storage / inventory, roster wide shared chest inventory
-- constant extraction script
-- auto detect 21:9
-- manual overwrite brightness
-- save where a chest was detected from? (there'll be multiple tho?) and show it with hover
+- ~~remove references to ./docs~~
+- ~~add status output of scanner?~~ kinda not feasible to make it readable while being useful i think
 
-- enhanced book distinguishing (can i be bothered)
+- ~~reorganize tests and separate from arena~~
+
+### EZ
 
 - wipe current scan (just like starting a debug recording) changing characters
+- "waiting for ocr" spinner
+- auto detect 21:9
+- manual overwrite brightness
+
+### HARD
+
+- SOMEHOW indicate the amount coming from chests
 - determine tradability of (content of) gold chests from tooltip
+- roster storage reading toggle when a roster reading exists (need to save scannerstate of previous scans?), sort out how to merge roster / tradable found in char storage / inventory, roster wide shared chest inventory
+
+### LOW PRIO
+
+- save where a chest was detected from? (there'll be multiple tho?) and show it with hover?
+- enhanced book distinguishing (can i be bothered)
+- constant extraction script
 
 ## Forecast mode
 

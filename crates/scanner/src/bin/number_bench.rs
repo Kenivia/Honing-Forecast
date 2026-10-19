@@ -1,8 +1,8 @@
 // Scores slot-number clean-up variants: every time the scanner reads a slot's number, the same crop
 // is cleaned up with each of VARIANTS and read with both alphabets.
 //   cargo run --release --bin number_bench -- <image>... > stills.tsv
-//   python scripts/tooltips/dump_frames.py <mp4> | cargo run --release --bin number_bench -- --stdin <width> <height> > rec.tsv
-//   python scripts/tooltips/number_bench.py stills.tsv rec.tsv ...
+//   python scanner_setup/tooltips/dump_frames.py <mp4> | cargo run --release --bin number_bench -- --stdin <width> <height> > rec.tsv
+//   python scanner_setup/tooltips/number_bench.py stills.tsv rec.tsv ...
 // Lines: READ source frame slot icon, then per variant the full-alphabet read and the digits one;
 // TRUTH source slot icon amount, for slots a tooltip was tied to.
 use hf_scanner::{

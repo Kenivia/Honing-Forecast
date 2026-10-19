@@ -28,5 +28,5 @@
     ]
   },
   "include": ["frontend/**/*", "tests/**/*", "vite.config.ts"],
-  "exclude": ["node_modules", "dist", "junkyard", "crates"]
+  "exclude": ["node_modules", "dist", "ignored", "crates", "tests/e2e"]
 }

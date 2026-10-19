@@ -1,4 +1,4 @@
-// Runs the V7 -> V8 migration against the real save in scripts/V7 config.
+// Runs the V7 -> V8 migration against the real save in tests/V7 config.
 // V8 keys every material value by label and stores a shared material once, so the old
 // per-tier columns are merged: the character's active tier wins for its own budgets, and
 // tier 0 wins for the roster-wide columns that V7 kept in sync.
@@ -27,7 +27,7 @@ import {
 import { to_saved, from_saved } from "@/Stores/SavedConfig";
 import { input_column_to_num, parse_locale_int } from "@/Utils/InputColumn";
 
-const FIXTURE = "scripts/V7 config";
+const FIXTURE = "tests/V7 config";
 if (!fs.existsSync(FIXTURE)) {
   console.log(`  skipped: ${FIXTURE} is not present`);
   process.exit(0);

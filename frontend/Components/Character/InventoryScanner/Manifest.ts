@@ -20,8 +20,8 @@ import {
   slot_place,
   slots,
 } from "./ScanStore";
-import ITEMS from "../../../../templates/items.json";
-import CHESTS from "../../../../templates/chests.json";
+import ITEMS from "../../../../scanner_setup/templates/items.json";
+import CHESTS from "../../../../scanner_setup/templates/chests.json";
 
 // The manifest: what the scan amounts to, as materials per ownership band plus the chests still
 // to be opened. It sits between the scanner and the rest of the site.
@@ -34,7 +34,7 @@ export const CURRENCY_LABELS = {
   Shards: "Shards",
 };
 
-// one row of templates/chests.json; contents are title, amount, and the chest it is
+// one row of scanner_setup/templates/chests.json; contents are title, amount, and the chest it is
 type Opens = {
   id: number;
   title: string;

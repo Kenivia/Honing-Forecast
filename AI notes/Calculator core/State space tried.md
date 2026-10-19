@@ -4,7 +4,7 @@ The measurements behind `State space.md`, October 2026. Only read this when tryi
 
 ## The landscape
 
-`pnpm arena landscape` and `scripts/arena/landscape_plot.py`. On `chain_0011_t4_n7` (7 upgrades of 76 to 219 taps, juice only), front streak against back streak:
+`pnpm arena landscape` and `arena_data/landscape_plot.py`. On `chain_0011_t4_n7` (7 upgrades of 76 to 219 taps, juice only), front streak against back streak:
 
 - 20,661 interior peaks, all of them at the first length of a new pity. Between two of them each juice more costs a steady few hundred gold.
 - The peaks form one top on the upgrades of up to 112 taps; on the 219 tap ones several.

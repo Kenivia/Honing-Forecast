@@ -1,7 +1,7 @@
 // Every stage of one slot's number clean-up as images, each time the scanner reads that slot.
 //   cargo run --release --bin number_probe -- <out dir> <Roster|CharStorage|CharInventory> <page> <row> <col> <image>
-//   python scripts/tooltips/dump_frames.py <mp4> | cargo run --release --bin number_probe -- <out dir> <inv> <page> <row> <col> --stdin <width> <height>
-//   python scripts/tooltips/number_stages.py <out dir>     (one picture per read)
+//   python scanner_setup/tooltips/dump_frames.py <mp4> | cargo run --release --bin number_probe -- <out dir> <inv> <page> <row> <col> --stdin <width> <height>
+//   python scanner_setup/tooltips/number_stages.py <out dir>     (one picture per read)
 // Page, row and column count from 0. Files are f<frame>_<stage>.png.
 use hf_scanner::{
     dev_utils::native,

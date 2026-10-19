@@ -36,7 +36,7 @@ export type ChestKind = "SelectOne" | "Random" | "ObtainAll";
 export interface ChestContent {
   item: string;
   amount: number;
-  // the chest of templates/chests.json it is, when it is one
+  // the chest of scanner_setup/templates/chests.json it is, when it is one
   chest: number | null;
 }
 
@@ -45,7 +45,7 @@ export interface ChestRow {
   count_read: string;
 }
 
-// One of templates/chests.json, found by what its tooltip lists. Scanner only (not part of the
+// One of scanner_setup/templates/chests.json, found by what its tooltip lists. Scanner only (not part of the
 // calculator's types).
 export interface Chest {
   // the chests its rows read as, by id; kind and contents are the first one's
@@ -99,7 +99,7 @@ export interface SlotResult {
   reason: string;
   // the tooltip's amount, else the number on the icon
   value: number | null;
-  // for a chest: the chests of templates/chests.json its icon can be, by id
+  // for a chest: the chests of scanner_setup/templates/chests.json its icon can be, by id
   variants: number[];
   // the whole slot; only when it changed
   image?: OneIconConfig;

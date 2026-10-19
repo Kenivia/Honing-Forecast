@@ -23,8 +23,8 @@ Code: `Manifest.ts` (build logic, `scanned` and `manifest` computeds), `Manifest
 
 ## Names and inner chests
 
-- `templates/items.json` rows carry `label`, the material label in `Constants.ts`. Slots map by `icon`, the contents of chests by `title`. An icon that rows with different labels share (the books) maps to nothing: such a slot counts under its own `label`, or, set by hand, under the material it was set to (`SHARED_ICONS`). Gold and Silver are never scanned from a slot; a chest's "Gold" and "Silver" contents count under those labels.
-- **What a chest holds comes from `templates/chests.json`** (`Game files.md`), by id. A content is a title, an amount and, when it is a chest of the table itself, that chest's id, so a chest inside a chest is opened exactly, however deep, and its title is never matched. The old `inner_chests.json`, filled by hand per title, is gone.
+- `scanner_setup/templates/items.json` rows carry `label`, the material label in `Constants.ts`. Slots map by `icon`, the contents of chests by `title`. An icon that rows with different labels share (the books) maps to nothing: such a slot counts under its own `label`, or, set by hand, under the material it was set to (`SHARED_ICONS`). Gold and Silver are never scanned from a slot; a chest's "Gold" and "Silver" contents count under those labels.
+- **What a chest holds comes from `scanner_setup/templates/chests.json`** (`Game files.md`), by id. A content is a title, an amount and, when it is a chest of the table itself, that chest's id, so a chest inside a chest is opened exactly, however deep, and its title is never matched. The old `inner_chests.json`, filled by hand per title, is gone.
 - Rust reads the same two files. A change there needs `pnpm run wasm` before the scanner reads it.
 
 ## The page

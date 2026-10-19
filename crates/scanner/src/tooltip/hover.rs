@@ -84,7 +84,7 @@ pub struct Hover {
     // the material its description says it is
     pub body_votes: AHashMap<String, usize>,
     pub chest_kind_votes: AHashMap<ChestKind, usize>,
-    // by id, for the chests of templates/chests.json its rows read as
+    // by id, for the chests of scanner_setup/templates/chests.json its rows read as
     pub chest_votes: AHashMap<u32, usize>,
     pub chest_rows: Vec<ChestRow>,
     // its entry in the scanner state's chests

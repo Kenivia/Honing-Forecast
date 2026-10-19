@@ -13,7 +13,7 @@ What was measured on the currency reader (`Currency.md`), and the cases behind i
 
 ## Measured (2026-10-17)
 
-- The twelve 1440p stills in `scripts/brightness/1440p raw/silver gold shard` (setting 50, 16:9 and forced 21:9, window in its default place and moved, tooltip left and right of the inventory, from the bar and from the window) all read what `note.txt` says, wherever the currency is on screen. The moved window is not read, as intended.
+- The twelve 1440p stills in `scanner_setup/brightness/1440p raw/silver gold shard` (setting 50, 16:9 and forced 21:9, window in its default place and moved, tooltip left and right of the inventory, from the bar and from the window) all read what `note.txt` says, wherever the currency is on screen. The moved window is not read, as intended.
 - The capture there was recorded with "Forced 21:9" off. Replayed with `capture_replay --forced-21-9 --reread --no-edits`, all three and gold's split are read.
 - Template scores on those stills: 0.997 to 1.0 for the right icon; other icons of the bar 0.85 at most; silver against gold 0.87.
 - The three captures of 2026-10-17 08:27 to 08:35 there (forced 21:9 on, so 1080 lines): replayed with `--reread --no-edits`, everything is read, gold on its first hover. The one without gold on the bar and never hovered stays at "needs a hover", as it should.

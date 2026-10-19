@@ -15,7 +15,7 @@ const unusedVarsRule = [
 
 export default [
     // Global ignores
-    { ignores: ["dist/**", "junkyard/**", "crates/wasm/pkg/**"] },
+    { ignores: ["dist/**", "ignored/**", "crates/wasm/pkg/**"] },
 
     // Plain JS files
     {

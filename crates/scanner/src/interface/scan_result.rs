@@ -65,7 +65,7 @@ pub struct SlotResult<'a> {
     pub reason: String,
     // the tooltip's amount, else the number on the icon
     pub value: Option<u32>,
-    // for a chest: the chests of templates/chests.json its icon can be, by id
+    // for a chest: the chests of scanner_setup/templates/chests.json its icon can be, by id
     pub variants: Vec<u32>,
     pub image: Option<IconBytes<'a>>,
 }

@@ -2,7 +2,7 @@
 
 History behind `Evaluation pipeline.md`: measurements, bugs that were fixed, and what was dropped. Only read this when trying something new on the evaluator. All of it is October 2026 unless dated otherwise.
 
-The overnight test of the saddlepoint's replacements is archived with its driver, results and conclusions in `core experiments/FINDINGS.md` at the repository root (gitignored). It has everything tried against the approximations' weakness with one dominant upgrade, and the code of the alternatives that were dropped (the size-biased pair, the split). Its reference was `coarse_cells=512`, within 1e-8 of flow of `max_lattice_work=2e9` on `pilot` and 17 times faster. What was measured against the code before the evaluator's speed-up is in `Arena tried.md`.
+The overnight test of the saddlepoint's replacements is archived with its driver, results and conclusions in `ignored/core experiments/FINDINGS.md` at the repository root (gitignored). It has everything tried against the approximations' weakness with one dominant upgrade, and the code of the alternatives that were dropped (the size-biased pair, the split). Its reference was `coarse_cells=512`, within 1e-8 of flow of `max_lattice_work=2e9` on `pilot` and 17 times faster. What was measured against the code before the evaluator's speed-up is in `Arena tried.md`.
 
 ## The metric's saddlepoint, and why it went
 
@@ -27,7 +27,7 @@ None was worth its code.
 
 ## No root, and `one_cumulant`
 
-- No root used to be a panic. A weekly chain of the arena hit it under every optimizer (`test_cases/scenarios/regressions/no_root_week_inc_0022`). The Edgeworth value now stands in; nothing is known to reach it since the cause below was fixed.
+- No root used to be a panic. A weekly chain of the arena hit it under every optimizer (`arena_data/scenarios/regressions/no_root_week_inc_0022`). The Edgeworth value now stands in; nothing is known to reach it since the cause below was fixed.
 - **The cause was `one_cumulant`, not the root finder.** The evenly spaced path counts q from the end the tilt takes the weight off. Tilted hard, the weight sits at the far end, and the mean and variance come out as the difference of two nearly equal numbers: on that payload a juice of 4 upgrades (steps of 20 to 50) with 23 owned, whose biased search ran to theta near -1, where one upgrade's mean came out -2.7e-12 against 3.3e-21 and the biased K' was off by 1 at theta -1 and by 24,000 at -1.4, jumping by 0.08 within 1e-8 of theta. So there was no point with a residual under `y_value_tol`. The heavy-end path fixed it; it is rare: 120 states of `nh_quick` evaluate to the same bits and as fast as before, and `stress` on it gives the same table.
 
 ## The root finder

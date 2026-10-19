@@ -20,9 +20,9 @@ Ancient slots now score 0.966 to 0.98, at 1080p and 1440p. The same fit for reli
 
 ## calibrate_anchor.py
 
-`scripts/brightness/calibrate_anchor.py` is defunct and kept for reference: the crops its sweep mode reads were dumped by the `crop_icons` bin, which was removed with the scanner's debug info. It printed a line to paste into an anchor's entry, in two modes:
+`scanner_setup/brightness/calibrate_anchor.py` is defunct and kept for reference: the crops its sweep mode reads were dumped by the `crop_icons` bin, which was removed with the scanner's debug info. It printed a line to paste into an anchor's entry, in two modes:
 
 - **From the model (default, no screenshots).** A stored template is already normalised, so the script runs the brightness model backwards on it to get the anchor's mean at every setting, then fits the curve. Run it with anchor names, or with none for every anchor in `public/ScannerConfig.msgpack`. Only the pet Storage button still uses this. It was off by up to 4 settings for the NPC button and by 9 for the icon groups at 1080p.
-- **From a sweep (`--sweep`).** Fits real crops instead. `scripts/brightness/inputs` holds screenshots of the same scene at each setting, and `crates/scanner/src/main.rs` (a native harness with hardcoded local paths, removed on 2026-10-06) ran the scanner over them and dumped the crops. This is how the model itself was calibrated. The dump reads `scripts/brightness/inputs` only.
+- **From a sweep (`--sweep`).** Fits real crops instead. `scanner_setup/brightness/inputs` holds screenshots of the same scene at each setting, and `crates/scanner/src/main.rs` (a native harness with hardcoded local paths, removed on 2026-10-06) ran the scanner over them and dumped the crops. This is how the model itself was calibrated. The dump reads `scanner_setup/brightness/inputs` only.
 
 For the character inventory anchors the two modes agree to within about 5 settings at the dark end and 1 at the bright end.

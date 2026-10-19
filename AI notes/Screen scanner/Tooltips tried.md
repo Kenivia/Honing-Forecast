@@ -1,6 +1,6 @@
 # Hover tooltips: what was tried
 
-History behind `Tooltips.md`: the cases each rule was made for, measurements, and what was dropped. Only read this when trying something new on tooltip reading. Recordings and captures are named by their time; they are in `scripts/recordings`.
+History behind `Tooltips.md`: the cases each rule was made for, measurements, and what was dropped. Only read this when trying something new on tooltip reading. Recordings and captures are named by their time; they are in `ignored/recordings`.
 
 ## Finding the title bar
 
@@ -85,7 +85,7 @@ Overall at the time: all nine tooltip stills read correctly (title, amount, bind
 - With the estimate forced on the recordings at 60, everything reads from 56 to 61, two short chest hovers are lost from 62, and a quarter of the chests by 66.
 - Yellow used to be told by red above 190, which most yellow pixels of a recording at 100 did not reach.
 - With the chest panel's limit at 10 a recording at 100 had the panel start among the amount lines, losing the amounts and the chest.
-- On lossless captures of one chest tooltip at all 21 settings (`scripts/brightness/inputs storage`), everything reads at every setting but 5, natively; in the browser 0, 20 and 100 were checked. The recording at 100 reads 24 chests.
+- On lossless captures of one chest tooltip at all 21 settings (`scanner_setup/brightness/inputs storage`), everything reads at every setting but 5, natively; in the browser 0, 20 and 100 were checked. The recording at 100 reads 24 chests.
 - **Edge cases of compressed recordings.** The title bar's blue-grey test measured exactly its old limit of 4 on two hovers of 5 and 8 frames and failed in bands about every two brightness settings. On one 9-frame hover the yellow word of the chest header ("all") has a single pixel that counts as yellow at brightness 59 and none from 59.5 up, so natively that chest is not read at the true brightness of 60.
 - The 1440p example was taken at another setting and every colour is shifted a little against the 1080p ones.
 
@@ -94,7 +94,7 @@ Overall at the time: all nine tooltip stills read correctly (title, amount, bind
 The approach that worked in Python, before the scanner had it:
 
 1. **Is there a tooltip**: find rows with a flat run of the title colour that ends at a sharp right edge, at least half the title width long, on several consecutive rows. The tooltip's left edge is the run's right end minus 307. Confirm with the right margin below it: title colour for 25 to 80 rows, then the body colour. On lossless input "flat" can mean identical neighbouring pixels with no colour constant at all; the colour checks that reject other windows' grey bars are that the title is blue-grey and the body is the expected fraction of it.
-2. **What is hovered**: compare the 64 px icon at its fixed offset against the raw icon art in `templates/Icons`, using the art's own alpha as the mask and scoring only the closest 75% of pixels so a cursor over part of it does not matter. The existing slot templates do not work here because the tooltip draws the icon over a different background. The slot follows from placement: the column from the tooltip's edge, the row from its top when it was not pushed up, otherwise the slot in that column that was already known to hold that item.
+2. **What is hovered**: compare the 64 px icon at its fixed offset against the raw icon art in `scanner_setup/templates/Icons`, using the art's own alpha as the mask and scoring only the closest 75% of pixels so a cursor over part of it does not matter. The existing slot templates do not work here because the tooltip draws the icon over a different background. The slot follows from placement: the column from the tooltip's edge, the row from its top when it was not pushed up, otherwise the slot in that column that was already known to hold that item.
 3. **Where the text is**: split the body into text lines by row projection, using only the columns the cursor cannot reach. An amount line is a short line outside the black panel whose yellow reaches the line's right end and has white just before it; stacked and total are the first such pair one line apart. Untradable is a red right-aligned line above the amounts. Bound to Character or Roster is the line above that, judged by where it ends. Chest rows are the tall lines inside the black panel.
 
 Results on stills: all nine tooltip stills parse (1080p and 1440p, one and two line titles, both sides, all three chest kinds), and none of the 32 screenshots without a tooltip trigger it.

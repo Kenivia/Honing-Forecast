@@ -42,16 +42,16 @@ const CURRENT: &str = "current";
 struct Cli {
     #[command(subcommand)]
     command: Cmd,
-    #[arg(long, global = true, default_value = "test_cases/arena.sqlite")]
+    #[arg(long, global = true, default_value = "arena_data/arena.sqlite")]
     db: PathBuf,
-    #[arg(long, global = true, default_value = "test_cases/scenarios")]
+    #[arg(long, global = true, default_value = "arena_data/scenarios")]
     scenarios: PathBuf,
-    /// a named list of scenarios from `test_cases/sets`, in place of every scenario of the folder
+    /// a named list of scenarios from `arena_data/sets`, in place of every scenario of the folder
     #[arg(long, global = true)]
     set: Option<String>,
 }
 
-const SETS: &str = "test_cases/sets";
+const SETS: &str = "arena_data/sets";
 
 fn scenarios(cli: &Cli, filter: &str) -> Vec<Scenario> {
     let mut out = match &cli.set {

@@ -1,6 +1,6 @@
 # Arena: what was measured
 
-What past arena sessions measured, and the snapshots they used. Only read this when trying something new, or to find which session of `test_cases/arena.sqlite` holds a result. All of it is October 2026. The optimizer's own results are in `Optimizer tried.md`, the evaluator's in `Evaluation pipeline tried.md`.
+What past arena sessions measured, and the snapshots they used. Only read this when trying something new, or to find which session of `arena_data/arena.sqlite` holds a result. All of it is October 2026. The optimizer's own results are in `Optimizer tried.md`, the evaluator's in `Evaluation pipeline tried.md`.
 
 ## Snapshots
 
@@ -97,7 +97,7 @@ That is what led to the metric dropping the saddlepoint (`Evaluation pipeline tr
 
 ## Regressions
 
-Seed 2 of the first payload of `test_cases/scenarios/regressions` used to panic, and every seed of `no_root_week_inc_0022` (the second week of a weekly chain) did until the root finder's failure stopped being one.
+Seed 2 of the first payload of `arena_data/scenarios/regressions` used to panic, and every seed of `no_root_week_inc_0022` (the second week of a weekly chain) did until the root finder's failure stopped being one.
 
 ## Errors marked by hand
 

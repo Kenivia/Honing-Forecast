@@ -179,7 +179,7 @@ pub fn icon_lookup(
 }
 
 // The base templates everything is matched against. The file is written by
-// templates/make_msg_pack.py (icons) and scripts/anchor setup/anchors.py (anchors).
+// scanner_setup/templates/make_msg_pack.py (icons) and scanner_setup/anchor setup/anchors.py (anchors).
 pub fn set_config(config: Vec<OneIconConfig>) {
     *BASE_ICONS.write() = config
         .into_iter()

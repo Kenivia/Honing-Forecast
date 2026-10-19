@@ -26,7 +26,7 @@ pub enum ChestKind {
 pub struct ChestContent {
     pub item: String,
     pub amount: u32,
-    // the chest of templates/chests.json it is, when it is one
+    // the chest of scanner_setup/templates/chests.json it is, when it is one
     pub chest: Option<u32>,
 }
 
@@ -37,7 +37,7 @@ pub struct ChestRow {
     pub count_read: String,
 }
 
-// A chest is one of templates/chests.json, found by what its tooltip lists: its title is not read,
+// A chest is one of scanner_setup/templates/chests.json, found by what its tooltip lists: its title is not read,
 // and its icon only says which few it can be.
 #[derive(Debug, Serialize, Clone)]
 pub struct Chest {

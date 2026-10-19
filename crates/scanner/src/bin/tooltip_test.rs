@@ -1,6 +1,6 @@
 // Native harness for the tooltip reader: runs the whole scanner over stills or a recording and prints each hover.
 //   cargo run --release --bin tooltip_test -- <image>...
-//   python scripts/tooltips/dump_frames.py <mp4> | cargo run --release --bin tooltip_test -- --stdin <width> <height>
+//   python scanner_setup/tooltips/dump_frames.py <mp4> | cargo run --release --bin tooltip_test -- --stdin <width> <height>
 use hf_scanner::{
     anchor_to_slot::anchor_defs::ANCHORS,
     dev_utils::native::{self, describe, describe_chest, print_statuses},

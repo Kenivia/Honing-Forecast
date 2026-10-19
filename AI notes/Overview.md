@@ -17,13 +17,12 @@ These notes are high-level. They cover what is hard to work out from reading one
 | `frontend/` | Vue 3 + Pinia + Tailwind app. `@` aliases to this folder. |
 | `cloudflare/` | A Worker that proxies and caches market prices and character lookups. |
 | `public/` | Static assets, changelogs, `WIP.md` (the author's roadmap), scanner config and OCR model. |
-| `templates/` | Source icons and the script that builds the icon half of the scanner config. |
-| `scripts/` | Changelog helper, constants export, scanner brightness calibration. |
-| `e2e/` | Playwright tests, shared browser helpers and the market price fixture. |
-| `tests/` | Node-side frontend tests: migrations, the real-save fixture, cross-tier relations. `pnpm test:frontend`. |
-| `test_cases/` | Arena scenarios, and its gitignored results database. |
+| `scanner_setup/` | Everything that builds or calibrates the scanner config: source icons (`templates/`), game-file extraction, brightness calibration, anchor setup, the browser profiling scripts. |
+| `scripts/` | Changelog helper and the pre-deploy check; everything scanner-specific lives in `scanner_setup/` instead. |
+| `tests/` | Playwright e2e tests (`e2e/`), node-side frontend tests (migrations, the real-save fixture, cross-tier relations, `pnpm test:frontend`), and test fixtures (the V7 save, `test-results/`). |
+| `arena_data/` | Arena scenarios and its gitignored results database, plus the Python report scripts that read it. |
 
-Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-pack output), and the untracked `junkyard/` and `data_fetcher/`.
+Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-pack output), and `ignored/` (untracked: `junkyard/`, `data_fetcher/`, `game_file_reader/`, old saddlepoint reference PDF, the overnight evaluator experiments, scanner recordings).
 
 ## Build and run
 

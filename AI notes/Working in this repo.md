@@ -66,7 +66,7 @@ with `tests/shim.mjs` (localStorage, `self`, a stub `Worker`). `tests/helpers.ts
 <substring>` runs one suite.
 
 - `migration.test.ts`: a hand-built V7 payload through the real migration and save path.
-- `live.test.ts`: the same against `scripts/V7 config`, a real 27-character save. Skips
+- `live.test.ts`: the same against `tests/V7 config`, a real 27-character save. Skips
   itself if that file is absent.
 - `relations.test.ts`: cross-tier conversion, bundle pricing, material deduction.
 

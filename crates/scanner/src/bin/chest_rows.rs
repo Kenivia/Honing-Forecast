@@ -1,4 +1,4 @@
-// Debug: which chests of templates/chests.json a tooltip's rows read as.
+// Debug: which chests of scanner_setup/templates/chests.json a tooltip's rows read as.
 //   cargo run --release --bin chest_rows -- "<name> | <count>" ...
 use hf_scanner::tooltip::chest::chests_listing;
 

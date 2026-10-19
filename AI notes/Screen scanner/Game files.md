@@ -1,11 +1,11 @@
 # Game file scripts
 
-`scripts/game_files` builds the scanner's chest table and icon art from the installed game's own files. Nothing comes from lostarkcodex.com any more; `scripts/codex` held the scripts that asked it, and what is left there is old downloads, ignored and safe to delete.
+`scanner_setup/game_files` builds the scanner's chest table and icon art from the installed game's own files. Nothing comes from lostarkcodex.com any more; `scanner_setup/codex` held the scripts that asked it, and what is left there is old downloads, ignored and safe to delete.
 
 1. `extract.py` pulls the tables and the icon sheets out of the game, once per game patch.
-2. `chests.py` writes `templates/chests.json` and `templates/ChestIcons`: every chest that opens to something the scanner counts, and every other chest drawn like one of those.
-3. `decoys.py` writes `templates/decoys.json` and `templates/DecoyIcons`: what we do not count that looks like one of our templates.
-4. `python templates/make_msg_pack.py` and `pnpm run wasm`, as for any change to the tables.
+2. `chests.py` writes `scanner_setup/templates/chests.json` and `scanner_setup/templates/ChestIcons`: every chest that opens to something the scanner counts, and every other chest drawn like one of those.
+3. `decoys.py` writes `scanner_setup/templates/decoys.json` and `scanner_setup/templates/DecoyIcons`: what we do not count that looks like one of our templates.
+4. `python scanner_setup/templates/make_msg_pack.py` and `pnpm run wasm`, as for any change to the tables.
 
 `find_icon.py` is for looking: it says which icon a slot in a capture is drawn with.
 
@@ -13,10 +13,10 @@ What the tables were checked against, and what they replaced, is in `Game files 
 
 ## What is needed, and where it lives
 
-None of this is tracked. `game_file_reader/` is ignored whole.
+None of this is tracked. `ignored/game_file_reader/` is ignored whole.
 
-- **lostark-explorer** (github.com/Poyoanon/lostark-explorer), unpacked at `game_file_reader/lostark-explorer-main/lostark-explorer-main`. Its Core library holds the NA/EU keys and reads `.lpk`. Its CLI only inspects and patches, so `scripts/game_files/extract/` is a twenty-line C# program on top of Core that writes entries out. Core targets .NET 8 and builds with the .NET 10 SDK.
-- **The Lost Ark build of umodel** (UE Viewer) at `game_file_reader/umodel/umodel_lostark_v7.exe`, with `SDL2_64.dll` beside it. The build is linked from the first page of the Lost Ark thread on gildor.org (topic 3055), a Google Drive zip with only the exe. The stock umodel does not open Lost Ark packages. It is 64-bit and complains that `SDL2.dll` is missing, but what it loads is the x64 `SDL2.dll` from libsdl's releases **renamed to `SDL2_64.dll`**.
+- **lostark-explorer** (github.com/Poyoanon/lostark-explorer), unpacked at `ignored/game_file_reader/lostark-explorer-main/lostark-explorer-main`. Its Core library holds the NA/EU keys and reads `.lpk`. Its CLI only inspects and patches, so `scanner_setup/game_files/extract/` is a twenty-line C# program on top of Core that writes entries out. Core targets .NET 8 and builds with the .NET 10 SDK.
+- **The Lost Ark build of umodel** (UE Viewer) at `ignored/game_file_reader/umodel/umodel_lostark_v7.exe`, with `SDL2_64.dll` beside it. The build is linked from the first page of the Lost Ark thread on gildor.org (topic 3055), a Google Drive zip with only the exe. The stock umodel does not open Lost Ark packages. It is 64-bit and complains that `SDL2.dll` is missing, but what it loads is the x64 `SDL2.dll` from libsdl's releases **renamed to `SDL2_64.dll`**.
 - The game at `C:\Program Files (x86)\Steam\steamapps\common\Lost Ark`, or the folder given to `extract.py`. Reading it needs no elevation.
 
 Claude Code will not run a downloaded exe on its own: `umodel_lostark_v7.exe` is on the allow list in `.claude/settings.json`.
@@ -25,10 +25,10 @@ Claude Code will not run a downloaded exe on its own: `umodel_lostark_v7.exe` is
 
 About 15 s in all.
 
-- **`scripts/game_files/tables/`** (630 MB): seven of the 990 SQLite tables in `EFGame/data2.lpk`, decrypted, and `IconInfo.loa` from `data3.lpk`. The scripts open the `.db` files as they are.
-- **`scripts/game_files/atlas/`** (760 MB): the 1,541 textures of the 22 `EFUI_IconAtlas_*` packages as PNG, in `<package>/Texture2D/<sheet>.png`. umodel takes a package by its real name only with `-nameresolve`; on disk the files have scrambled names.
+- **`scanner_setup/game_files/tables/`** (630 MB): seven of the 990 SQLite tables in `EFGame/data2.lpk`, decrypted, and `IconInfo.loa` from `data3.lpk`. The scripts open the `.db` files as they are.
+- **`scanner_setup/game_files/atlas/`** (760 MB): the 1,541 textures of the 22 `EFUI_IconAtlas_*` packages as PNG, in `<package>/Texture2D/<sheet>.png`. umodel takes a package by its real name only with `-nameresolve`; on disk the files have scrambled names.
 
-Vite watches the whole project, and a folder of thousands of files being written had the dev server using two cores. `scripts/game_files` and `game_file_reader` are in `server.watch.ignored` in `vite.config.ts`.
+Vite watches the whole project, and a folder of thousands of files being written had the dev server using two cores. `scanner_setup/game_files` and `ignored/game_file_reader` are in `server.watch.ignored` in `vite.config.ts`.
 
 ## The tables
 
@@ -57,7 +57,7 @@ An icon is named `<Icon>_<IconIndex>` in lower case (`use_12_91`), the name the 
 
 ## chests.py
 
-`python scripts/game_files/chests.py` writes the whole table; nothing is picked by hand. A chest is in it when it opens, through any number of chests inside it, to a title of `templates/items.json`. So adding a material there (or an alias of one) and running this again brings in the chests that hold it.
+`python scanner_setup/game_files/chests.py` writes the whole table; nothing is picked by hand. A chest is in it when it opens, through any number of chests inside it, to a title of `scanner_setup/templates/items.json`. So adding a material there (or an alias of one) and running this again brings in the chests that hold it.
 
 - **Gold and silver.** A chest that reaches no material is in only when everything it opens to, all the way down, is gold alone or silver alone (and nothing of it differs by class). Silver with a potion, or gold with silver, is out. A chest that is in for a material still lists the gold and silver it holds.
 - **What opens.** Everything in `RandomBoxBase`, and bars of gold: an item with `GainMoneyType` 1 (silver) or 2 (gold) and a `UseGainCount` is written as a chest that obtains all of that much. A bar has no chest panel on its tooltip; its hover is told by its title (`Tooltips.md`, "Bars of gold").
@@ -81,30 +81,30 @@ An icon is named `<Icon>_<IconIndex>` in lower case (`use_12_91`), the name the 
 - **Not in the table either**: an irrelevant box with nothing listed, and the relevant boxes of tiers 1 to 3.
 - **Left out by art**: a chest drawn with one of `UNWANTED_ICONS` is dropped the same way. Five icons, ten chests: Splendid Pouch, Mariner's Treasure Chest, the two Act 4 Denouement Clear Event Chests and the six Honing Support Material pouches.
 - **Numbers** (October 2026): 1,979 rows: 932 that count, 925 of them top, and 1,047 irrelevant; 141 pieces of art making 221 templates with their rarity. 138 rows are gold alone and 102 silver alone. The file is 714 KB.
-- **The art** goes to `templates/ChestIcons/<icon>.png`, 64 px, cut lossless from the sheets. `make_msg_pack.py` names each template `<icon>@<rarity>`.
+- **The art** goes to `scanner_setup/templates/ChestIcons/<icon>.png`, 64 px, cut lossless from the sheets. `make_msg_pack.py` names each template `<icon>@<rarity>`.
 
 Seven groups of chests list exactly the same rows and still open differently, because a chest inside them is another one under the same title (the two "Trailblazer Supplies Chest: Crucible Level 3", say). Those cannot be told apart by their tooltip, and where their icon is the same too they end up "Not included" in the manifest.
 
 
 ### Aliases in items.json
 
-A material goes by other titles that are drawn alike: "[Event] Artisan's Metallurgy: Level 1", "Destiny Leapstone (Roster)", "[Event] Metallurgy: Hellfire [11-14] - Bound". Each has its own row in `templates/items.json` with the material's icon, rarity and label. They were found by listing the items that share an icon and a rarity with a known material and have another title. "Enhanced Metallurgy: Hellfire [19-20]" shares the book's art too and was left out, not knowing what it is.
+A material goes by other titles that are drawn alike: "[Event] Artisan's Metallurgy: Level 1", "Destiny Leapstone (Roster)", "[Event] Metallurgy: Hellfire [11-14] - Bound". Each has its own row in `scanner_setup/templates/items.json` with the material's icon, rarity and label. They were found by listing the items that share an icon and a rarity with a known material and have another title. "Enhanced Metallurgy: Hellfire [19-20]" shares the book's art too and was left out, not knowing what it is.
 
 ## decoys.py
 
-`python scripts/game_files/decoys.py`, after `chests.py` and after any change to `items.json`: a decoy is whatever is not ours, so the list follows the tables. What the scanner does with it is in `Pipeline.md`, "Slots".
+`python scanner_setup/game_files/decoys.py`, after `chests.py` and after any change to `items.json`: a decoy is whatever is not ours, so the list follows the tables. What the scanner does with it is in `Pipeline.md`, "Slots".
 
 - **The pool** is every icon of a named item on every rarity some item has it on: 22,498 pairs. The art and rarity of any item titled like a material of `items.json` are left out, since our material art is a lossy copy of the game's and would be its own decoy.
 - **A decoy** is a pair that renders within 0.93 of one of our templates and under 0.99 (the same picture, which a duplicate of our art under another name is). Rendered as a template is at 1080p, 46x29 without its outermost pixels, and scored as the scanner scores a slot. 757 pairs on 707 pieces of art.
 - **Why 0.93.** The slot limit was 0.95 when this was set (0.935 now) and a slot scores about 0.02 off what its template would. On the captures 129 decoys (0.94 and over) already tell every slot apart; 0.90 would be 6,530.
-- **A row** of `decoys.json` is `icon`, `rarity`, the template it is `like` and how `alike`. The art goes to `templates/DecoyIcons/<icon>.png`.
+- **A row** of `decoys.json` is `icon`, `rarity`, the template it is `like` and how `alike`. The art goes to `scanner_setup/templates/DecoyIcons/<icon>.png`.
 - **A decoy is not known to be irrelevant, only not in our tables.** A chest that should count and is missing from `chests.json` becomes a decoy, and is then refused where before it was only unrecognised.
 - Most of the pool can never sit in these inventories (mounts, sail glyphs); they do no harm.
 - It reads the icons from `icons.npz`, which `find_icon.py` makes on its first run.
 
 ## find_icon.py
 
-`python scripts/game_files/find_icon.py <crop.png>`, or a capture with `--rect x,y,size`, a recording with `--frame`, and `--brightness` for the in-game setting. Ranks every item icon against one slot and prints the best with the items drawn with each; `.tmp/find_icon.png` shows the crop and the matches.
+`python scanner_setup/game_files/find_icon.py <crop.png>`, or a capture with `--rect x,y,size`, a recording with `--frame`, and `--brightness` for the in-game setting. Ranks every item icon against one slot and prints the best with the items drawn with each; `.tmp/find_icon.png` shows the crop and the matches.
 
 - The crop is a whole slot cut roughly. It is brought to the art's brightness with the gamma law, and each icon is scored on the closest 75% of its opaque pixels, so the slot's background, its number and the cursor do not count. The best 300 are tried again up to 3 px off.
 - The icons are cut from the sheets once into `icons.npz` (about 10 s), and again whenever their number changes. A cached run takes about 5 s.

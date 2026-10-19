@@ -10,7 +10,7 @@ use strsim::{levenshtein, normalized_levenshtein};
 const TITLE_PASS: f64 = 0.9;
 const TITLE_MARGIN: f64 = 0.05; // over the next best
 
-// one row of templates/items.json: an in-game title and the slot icon template it is drawn with
+// one row of scanner_setup/templates/items.json: an in-game title and the slot icon template it is drawn with
 #[derive(Debug, Deserialize)]
 pub struct Item {
     pub title: Option<String>,
@@ -21,12 +21,12 @@ pub struct Item {
     pub body: Option<String>,
 }
 
-// the materials: templates/items.json
+// the materials: scanner_setup/templates/items.json
 pub static ITEMS: LazyLock<Vec<Item>> = LazyLock::new(|| {
-    serde_json::from_str(include_str!("../../../../templates/items.json")).unwrap()
+    serde_json::from_str(include_str!("../../../../scanner_setup/templates/items.json")).unwrap()
 });
 
-// One chest of templates/chests.json, which scripts/game_files/chests.py writes from the game's
+// One chest of scanner_setup/templates/chests.json, which scanner_setup/game_files/chests.py writes from the game's
 // own tables: everything that opens to a material, to gold or to silver, and whatever else is
 // drawn like one of those.
 #[derive(Debug, Deserialize)]
@@ -67,7 +67,7 @@ impl Variant {
 
 pub static VARIANTS: LazyLock<Vec<Variant>> = LazyLock::new(|| {
     let mut variants: Vec<Variant> =
-        serde_json::from_str(include_str!("../../../../templates/chests.json")).unwrap();
+        serde_json::from_str(include_str!("../../../../scanner_setup/templates/chests.json")).unwrap();
     for variant in &mut variants {
         variant.sorted = variant.contents.clone();
         variant.sorted.sort();
