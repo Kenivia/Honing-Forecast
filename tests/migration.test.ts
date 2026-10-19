@@ -241,6 +241,11 @@ check(
   loaded.profiles.map((p) => p.char_name).join(",") === "Alpha,Beta",
   loaded.profiles.map((p) => p.char_name).join(","),
 );
+check(
+  "every profile got a unique id",
+  loaded.profiles.every((p) => typeof p.id === "string" && p.id !== "") &&
+    new Set(loaded.profiles.map((p) => p.id)).size === loaded.profiles.length,
+);
 check("active index kept", loaded.active_profile_index === 1);
 check("last_seen_version kept", loaded.last_seen_version === "v1.2.8");
 check("tier kept (Beta=1)", loaded.profiles[1].tier === 1);
@@ -518,6 +523,11 @@ check(
     first.profiles.map((p) => p.char_name).join(","),
 );
 check(
+  "second load keeps the ids",
+  second.profiles.map((p) => p.id).join(",") ===
+    first.profiles.map((p) => p.id).join(","),
+);
+check(
   "second load is identical to the first",
   JSON.stringify(to_saved(second)) === JSON.stringify(to_saved(first)),
 );
@@ -528,6 +538,21 @@ const third = load_roster_config();
 check(
   "third load is still identical",
   JSON.stringify(to_saved(third)) === JSON.stringify(to_saved(first)),
+);
+check(
+  "third load keeps the ids",
+  third.profiles.map((p) => p.id).join(",") ===
+    first.profiles.map((p) => p.id).join(","),
+);
+
+console.log("\n=== 9. a duplicated id is replaced on load ===");
+const dup = to_saved(first);
+dup.profiles[1].id = dup.profiles[0].id;
+const deduped = from_saved({ ...dup, version: STORAGE_VERSION });
+check(
+  "first keeps its id, second gets a new one",
+  deduped.profiles[0].id === first.profiles[0].id &&
+    deduped.profiles[1].id !== first.profiles[0].id,
 );
 check(
   "no legacy key was resurrected",

@@ -35,8 +35,7 @@ watch(
       if (roster_store.roster_config.active_profile_index !== match) {
         // this happens one invalid names (routre param written to by the one-off code, triggering the watcher) i believe, idk how to prevent that but this works
         runtime.cancel_active();
-        // reset the scanner, the capture stream itself is kept
-        runtime.cropper?.cancel_and_clear_prev_result();
+        // the scan was wiped or moved by the router guard (ScanSwitch.ts)
         roster_store.switch_profile(match);
       }
     } else {

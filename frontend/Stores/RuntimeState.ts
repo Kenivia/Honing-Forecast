@@ -26,7 +26,7 @@ function new_char_runtime(): CharRuntime {
 export const useRuntimeStore = defineStore("runtime", {
   state: () => ({
     per_char: {} as Record<string, CharRuntime>,
-    // stand-in for the tick between a rename and sync_profiles catching up
+    // keyed by profile id; stand-in for the tick before sync_profiles catches up
     idle: new_char_runtime(),
 
     cropper: null as WorkerBundle | null,
@@ -42,8 +42,8 @@ export const useRuntimeStore = defineStore("runtime", {
 
   getters: {
     active(state): CharRuntime {
-      const name = useRosterStore().active_profile.char_name;
-      return state.per_char[name] ?? state.idle;
+      const id = useRosterStore().active_profile.id;
+      return state.per_char[id] ?? state.idle;
     },
     optimizer(): WorkerBundle {
       return this.active.optimizer;
@@ -54,22 +54,22 @@ export const useRuntimeStore = defineStore("runtime", {
   },
 
   actions: {
-    for_char(char_name: string): CharRuntime | undefined {
-      return this.per_char[char_name];
+    for_char(id: string): CharRuntime | undefined {
+      return this.per_char[id];
     },
 
-    // Driven by a single watch in App.vue, so adds, renames and deletes all land here.
-    sync_profiles(names: string[]) {
-      for (const name of names) {
-        if (!this.per_char[name]) {
-          this.per_char[name] = new_char_runtime();
+    // Driven by a single watch in App.vue, so adds and deletes all land here.
+    sync_profiles(ids: string[]) {
+      for (const id of ids) {
+        if (!this.per_char[id]) {
+          this.per_char[id] = new_char_runtime();
         }
       }
-      for (const name of Object.keys(this.per_char)) {
-        if (!names.includes(name)) {
-          this.per_char[name].optimizer.cancel();
-          this.per_char[name].histogram.cancel();
-          delete this.per_char[name];
+      for (const id of Object.keys(this.per_char)) {
+        if (!ids.includes(id)) {
+          this.per_char[id].optimizer.cancel();
+          this.per_char[id].histogram.cancel();
+          delete this.per_char[id];
         }
       }
     },

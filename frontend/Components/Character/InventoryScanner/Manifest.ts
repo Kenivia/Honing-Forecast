@@ -3,28 +3,48 @@ import {
   ALL_MATERIAL_LABELS,
   CONVERTIBLE_MATERIALS,
   NUM_BANDS,
+  SPECIAL_LEAP_LABELS,
 } from "@/Utils/Constants";
-import { parse_locale_int } from "@/Utils/InputColumn";
+import { column_labels, set_cell } from "@/Utils/InputColumn";
 import { add_stack, type Bag, type ManifestChest, merge } from "@/Utils/Chest";
-import { ChestKind } from "./LoadStorage";
 import {
-  added_chests,
+  add_loose,
+  add_material,
+  CURRENCY_PAGES,
+  empty_content,
+  other_pages,
+  own_pages,
+  page_key,
+  PageContent,
+  ROSTER_WINDOWS,
+  roster_unchanged,
+  save_pages,
+  ScanPage,
+  sum_pages,
+  take_snapshot,
+} from "@/Utils/Scans";
+import { useRosterStore } from "@/Stores/RosterConfig";
+import { ChestKind, SlotAddress } from "./LoadStorage";
+import {
   assumed_tradability,
-  chest_overrides,
   chests_for,
   currencies,
-  deleted_chests,
   edits,
-  material_overrides,
+  has_progress,
+  roster_cover,
+  seen_pages,
+  set_edit,
   shown_slot,
   slot_place,
   slots,
+  WINDOW_NAMES,
 } from "./ScanStore";
 import ITEMS from "../../../../scanner_setup/templates/items.json";
 import CHESTS from "../../../../scanner_setup/templates/chests.json";
 
 // The manifest: what the scan amounts to, as materials per ownership band plus the chests still
-// to be opened. It sits between the scanner and the rest of the site.
+// to be opened, merged with the pages saved by earlier exports. It sits between the scanner and
+// the rest of the site.
 
 const BAND_OF = { CharBound: 0, RosterBound: 1, Tradable: 2 };
 export const BAND_NAMES = ["Char bound", "Roster bound", "Tradable"];
@@ -46,16 +66,12 @@ type Opens = {
   irrelevant?: boolean;
 };
 
-// a slot the manifest is short of, and why
+// a slot the manifest is short of, and why; a currency has no address
 export interface MissingSlot {
   place: string;
   item: string;
   why: string;
-}
-// a chest that is listed but not passed on
-export interface LooseChest {
-  title: string;
-  count: number;
+  address: SlotAddress | null;
 }
 
 const ICON_LABEL: Record<string, string> = {};
@@ -117,6 +133,12 @@ function settle(variants: number[]): Opens | undefined {
   return same ? OPENS[first] : undefined;
 }
 
+// where a saved page is, in words
+export function page_place(window: string, page: number) {
+  if (WINDOW_NAMES[window]) return `${WINDOW_NAMES[window]} page ${page + 1}`;
+  return Object.keys(CURRENCY_PAGES)[page];
+}
+
 const digits = (text: string | null) =>
   text ? Number(text.replace(/\D/g, "")) : null;
 
@@ -137,23 +159,39 @@ function alternatives(
   return [merge(parts.flatMap((part) => (part.length === 1 ? part : [])))];
 }
 
-const add_loose = (list: LooseChest[], title: string, count: number) => {
-  const old = list.find((chest) => chest.title === title);
-  if (old) old.count += count;
-  else list.push({ title, count });
-};
+// Whether roster storage is taken from the pages saved by an earlier export, its grid covered and
+// whatever is read there ignored. It is unless no roster page was ever saved, or the roster's
+// budgets changed since the last snapshot. The user can flip it either way.
+export const roster_saved = computed(() => {
+  const { roster_config, active_profile } = useRosterStore();
+  return roster_config.scan_pages.some(
+    (page) =>
+      page.window === "Roster" &&
+      page.char_id === null &&
+      page.roster_id === active_profile.roster_id,
+  );
+});
+export const roster_covered = computed(() => {
+  if (!roster_saved.value) return false;
+  if (roster_cover.value !== null) return roster_cover.value;
+  const { roster_config, active_profile } = useRosterStore();
+  return roster_unchanged(roster_config, active_profile.roster_id);
+});
 
-// Straight off the slot grid, before overrides and conversion. Only slots that are good or were
-// set by hand count; the rest are `missing`.
-export const scanned = computed(() => {
-  const owned: Record<string, (number | null)[]> = {};
-  for (const label of ALL_MATERIAL_LABELS) owned[label] = [null, null, null];
-  const grouped = new Map<string, ManifestChest>();
-  const random: LooseChest[] = [];
-  const unknown: LooseChest[] = [];
+// Straight off the slot grid, per page, before conversion. Only slots that are good or were set
+// by hand count; the rest are `missing`. A page is `seen` once it was open in game or anything on
+// it counts. A currency is a page of its own, its roster-wide bands apart from its char-bound one.
+export const live = computed(() => {
+  const pages: Record<string, PageContent> = {};
+  const stacks: Record<string, Map<string, ManifestChest>> = {};
   const missing: MissingSlot[] = [];
+  const seen = new Set<string>();
+  const content = (key: string) => (pages[key] ??= empty_content());
+  const covered = (window: string) =>
+    window === "Roster" && roster_covered.value;
 
   function group(
+    key: string,
     title: string,
     band: number,
     count: number,
@@ -162,7 +200,7 @@ export const scanned = computed(() => {
   ) {
     // an obtain-all and a select-one are never one stack
     add_stack(
-      grouped,
+      (stacks[key] ??= new Map()),
       { title, band, count, options, obtain_all },
       `${obtain_all}|`,
     );
@@ -170,15 +208,15 @@ export const scanned = computed(() => {
 
   // What is inside a chest takes the chest's band, or its own where it is bound more loosely. No
   // select-one of the table holds such a thing, or gold, so its options all take the chest's.
-  function open(chest: Opens, count: number, band: number) {
+  function open(key: string, chest: Opens, count: number, band: number) {
     const { kind, title } = chest;
-    if (kind === "Random") return add_loose(random, title, count);
+    if (kind === "Random") return add_loose(content(key).random, title, count);
     if (kind === "SelectOne") {
       // an option that is no material, or a chest of chance, is not offered
       const options = chest.contents.flatMap(([inner, each, id]) =>
         alternatives(inner, each, id),
       );
-      if (options.length) group(title, band, count, options, false);
+      if (options.length) group(key, title, band, count, options, false);
       return;
     }
     // an obtain-all inside is part of this chest; any other chest inside is opened in turn
@@ -192,23 +230,30 @@ export const scanned = computed(() => {
         const opens = id ? OPENS[id] : undefined;
         if (label) bags[own][label] = (bags[own][label] ?? 0) + each * times;
         else if (opens?.kind === "ObtainAll") gather(opens, each * times, own);
-        else if (opens) open(opens, each * times * count, own);
+        else if (opens) open(key, opens, each * times * count, own);
       });
     };
     gather(chest, 1, band);
     // listed once for each band it gives into
     bags.forEach((bag, own) => {
-      if (Object.keys(bag).length) group(title, own, count, [bag], true);
+      if (Object.keys(bag).length) group(key, title, own, count, [bag], true);
     });
   }
 
+  for (const key of Object.keys(seen_pages.value)) {
+    if (!covered(key.split(" ")[0])) seen.add(key);
+  }
   const keys = new Set([...slots.value.keys(), ...Object.keys(edits.value)]);
   for (const key of keys) {
     const edit = edits.value[key];
     const slot = shown_slot(slots.value.get(key));
     if (!edit && (!slot || slot.status === "Irrelevant")) continue;
+    const address = edit?.address ?? slot.address;
+    if (covered(address.inventory_type)) continue;
     const item = edit ? edit.item : slot.icon_name_score?.[0];
     if (!item) continue;
+    const page = page_key(address.inventory_type, address.page_num);
+    seen.add(page);
     // a slot set by hand is as good as a read one: no amount is a single item, and no
     // tradability is what is assumed for its window
     const amount = edit
@@ -216,12 +261,12 @@ export const scanned = computed(() => {
       : slot.status === "Good"
         ? slot.value
         : null;
-    const address = edit?.address ?? slot.address;
     const miss = () =>
       missing.push({
         place: slot_place(address),
         item: item_name(item),
         why: slot.reason || "Its number is still being read.",
+        address,
       });
     const band =
       BAND_OF[
@@ -240,7 +285,7 @@ export const scanned = computed(() => {
       ICON_LABEL[item] ??
       (SHARED_LABELS.has(item) ? item : undefined);
     if (label) {
-      owned[label][band] = (owned[label][band] ?? 0) + amount;
+      add_material(content(page), label, band, amount);
       continue;
     }
     if (!CHEST_ICONS[item]) continue;
@@ -254,30 +299,36 @@ export const scanned = computed(() => {
     const chest = settle(variants);
     if (!chest) {
       // read, but as chests that hold different chests inside
-      if (edit || read) add_loose(unknown, read?.title ?? item, amount);
+      if (edit || read)
+        add_loose(content(page).unknown, read?.title ?? item, amount);
       else miss();
       continue;
     }
-    open(chest, amount, band);
+    open(page, chest, amount, band);
   }
   // currencies sit in no slot, and come with their bands
   for (const currency of currencies.value) {
     const label = CURRENCY_LABELS[currency.currency];
     if (currency.status !== "Good" || !currency.bands) {
-      missing.push({ place: "Currencies", item: label, why: currency.reason });
+      missing.push({
+        place: "Currencies",
+        item: label,
+        why: currency.reason,
+        address: null,
+      });
       continue;
     }
-    currency.bands.forEach((amount, band) => {
-      if (amount) owned[label][band] = (owned[label][band] ?? 0) + amount;
-    });
+    const at = CURRENCY_PAGES[currency.currency];
+    const keys = [page_key("CharCurrency", at), page_key("Currency", at)];
+    keys.forEach((key) => seen.add(key));
+    currency.bands.forEach((amount, band) =>
+      add_material(content(keys[Math.min(band, 1)]), label, band, amount),
+    );
   }
-  return {
-    owned,
-    chests: [...grouped.values()],
-    random,
-    unknown,
-    missing,
-  };
+  for (const [key, stack] of Object.entries(stacks)) {
+    content(key).chests = [...stack.values()];
+  }
+  return { pages, seen: [...seen], missing };
 });
 
 // indexed by band; a converted band's T4 materials become Serca ones
@@ -285,46 +336,47 @@ export const convert = ref([false, false, false]);
 // the character and tier the toggles were defaulted for
 export const convert_owner = ref("");
 
-const cell_key = (label: string, band: number) => `${label}|${band}`;
+const split_key = (key: string) => {
+  const at = key.lastIndexOf(" ");
+  return { window: key.slice(0, at), page: Number(key.slice(at + 1)) };
+};
 
-// what the input shows: the override, else what the slots hold, else nothing (a question mark)
-export function cell_text(label: string, band: number): string {
-  const override = material_overrides.value[cell_key(label, band)];
-  if (override !== undefined) return override;
-  return scanned.value.owned[label][band]?.toLocaleString() ?? "";
-}
-
-// without the deleted ones, and with the counts the user set
-const kept = (chests: ManifestChest[]) =>
-  chests
-    .filter((chest) => !deleted_chests.value.includes(chest.key))
-    .map((chest) => ({
-      ...chest,
-      count: chest_overrides.value[chest.key] ?? chest.count,
-    }));
-
-// an emptied cell goes back to what was scanned
-export function set_cell_text(label: string, band: number, text: string) {
-  const value = parse_locale_int(text);
-  if (isFinite(value)) {
-    material_overrides.value[cell_key(label, band)] = value.toLocaleString();
-  } else delete material_overrides.value[cell_key(label, band)];
-}
-
-const cell_value = (label: string, band: number) =>
-  parse_locale_int(cell_text(label, band)) || 0;
-
-// What the rest of the site takes: overrides applied, then conversion. Converted tradables come
-// out roster-bound. Chests are not opened or converted here: they are passed on whole, with
-// both tiers in them.
+// What an export writes: the pages seen now, this character's and roster's saved pages that were
+// not, and what the roster's other characters hold that is not bound to them. Then conversion;
+// converted tradables come out roster-bound. Chests are passed on whole, with both tiers in them.
 export const manifest = computed(() => {
+  const { roster_config, active_profile } = useRosterStore();
+  const { roster_id, id } = active_profile;
+  const { pages, seen, missing } = live.value;
+  const read = seen.map((key) => ({
+    ...split_key(key),
+    content: pages[key] ?? empty_content(),
+  }));
+  const saved = own_pages(roster_config, roster_id, id).filter(
+    (page) => !seen.includes(page_key(page.window, page.page)),
+  );
+  const others = other_pages(roster_config, roster_id, id);
+  const own = sum_pages([...read.map((page) => page.content), ...saved]);
+  // what is bound to another character is its own
+  const shared = others.map((page) => ({
+    ...empty_content(),
+    materials: Object.fromEntries(
+      Object.entries(page.materials).map(([label, bands]) => [
+        label,
+        bands.map((amount, band) => (band ? amount : 0)),
+      ]),
+    ),
+    chests: page.chests.filter((chest) => chest.band),
+  }));
+  const all = sum_pages([own, ...shared]);
+
   const bands = [...Array(NUM_BANDS).keys()];
   const materials: Record<string, number[]> = {};
-  // gained from T4, shown beside the input
+  // gained from T4, shown beside the amount
   const incoming: Record<string, number[]> = {};
   for (const label of ALL_MATERIAL_LABELS) {
     incoming[label] = [0, 0, 0];
-    materials[label] = bands.map((band) => cell_value(label, band));
+    materials[label] = bands.map((band) => all.materials[label]?.[band] ?? 0);
   }
   for (const mat of CONVERTIBLE_MATERIALS) {
     for (const band of bands) {
@@ -339,6 +391,87 @@ export const manifest = computed(() => {
   for (const label of ALL_MATERIAL_LABELS) {
     for (const band of bands) materials[label][band] += incoming[label][band];
   }
-  const chests = kept([...scanned.value.chests, ...added_chests.value]);
-  return { ...scanned.value, materials, incoming, chests };
+  return {
+    materials,
+    incoming,
+    chests: all.chests,
+    random: own.random,
+    unknown: own.unknown,
+    missing,
+    read,
+    saved,
+    others,
+  };
 });
+
+const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+
+// Overwrites the budgets and chests of this character and its roster with the manifest, and
+// saves the pages seen now. Slots still unresolved are set irrelevant first. The roster's budgets
+// are snapshotted before and after.
+export function export_manifest() {
+  for (const slot of live.value.missing) {
+    if (slot.address)
+      set_edit({
+        address: slot.address,
+        item: null,
+        amount: null,
+        tradability: null,
+      });
+  }
+  // read first: the snapshot can make roster storage covered by default
+  const { materials, chests, read } = manifest.value;
+  const store = useRosterStore();
+  const config = store.roster_config;
+  const profile = store.active_profile;
+  take_snapshot(config, profile.roster_id, "Before export");
+
+  [
+    profile.bound_budgets,
+    store.active_roster_mats_owned,
+    store.active_tradable_mats_owned,
+  ].forEach((column, band) => {
+    for (const label of column_labels(column)) {
+      if (materials[label])
+        set_cell(column, label, String(materials[label][band]));
+    }
+  });
+  // free taps are one number, whatever the band
+  for (const label of SPECIAL_LEAP_LABELS) {
+    const total = materials[label].reduce((sum, amount) => sum + amount, 0);
+    set_cell(profile.special_budget, label, String(total));
+  }
+  // what any character of the roster can open belongs to the roster
+  profile.chests = copy(chests.filter((chest) => !chest.band));
+  config.roster_chests[profile.roster_id] = copy(
+    chests.filter((chest) => chest.band),
+  );
+
+  const at = Date.now();
+  save_pages(
+    config,
+    read.map(
+      ({ window, page, content }): ScanPage => ({
+        ...copy(content),
+        roster_id: profile.roster_id,
+        char_id: ROSTER_WINDOWS.includes(window) ? null : profile.id,
+        window,
+        page,
+        at,
+        by: profile.id,
+      }),
+    ),
+  );
+  take_snapshot(config, profile.roster_id, "After export");
+  roster_cover.value = null;
+  exported_read.value = JSON.stringify(manifest.value.read);
+}
+
+// the pages read as of the last export
+const exported_read = ref<string | null>(null);
+// whether the scan has anything an export would change
+export const scan_unexported = computed(
+  () =>
+    has_progress.value &&
+    JSON.stringify(manifest.value.read) !== exported_read.value,
+);

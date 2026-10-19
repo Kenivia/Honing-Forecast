@@ -308,7 +308,7 @@ export function build_materials(): Record<string, OneMaterial> {
 
 export function build_payload(override?: OptimizerOverride): Payload {
   const runtime = useRuntimeStore();
-  const { active_profile } = storeToRefs(useRosterStore());
+  const { active_profile, active_chests } = storeToRefs(useRosterStore());
   const tier = active_profile.value.tier;
   // console.log(runtime.optimizer.result?.adv_cache);
   return {
@@ -343,7 +343,7 @@ export function build_payload(override?: OptimizerOverride): Payload {
     ),
     // Amounts stay fractional and Rust floors the total.
     chests: Object.fromEntries(
-      process_chests(active_profile.value.chests, tier).map((chest) => [
+      process_chests(active_chests.value, tier).map((chest) => [
         chest.key,
         { count: chest.count, band: chest.band, options: chest.options },
       ]),

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { get_icon_path } from "@/Utils/Helpers";
-import { CharProfile } from "@/Stores/CharacterProfile";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { useMediaIsNarrow } from "@/Utils/WindowSize";
 import { computed, watch } from "vue";
@@ -9,6 +8,7 @@ import { storeToRefs } from "pinia";
 import { FETCHABLE_REGIONS, start_fetch } from "./Utils/MarketDataFetcher";
 import { debounced_write_roster_config } from "./Stores/ConfigStorage";
 import { useRuntimeStore } from "./Stores/RuntimeState";
+import ScanSwitchDialog from "./Components/Character/InventoryScanner/ScanSwitchDialog.vue";
 
 const roster_store = useRosterStore();
 roster_store.init();
@@ -19,12 +19,12 @@ roster_store.$subscribe((_mutation, state) => {
   debounced_write_roster_config(state);
 });
 
-// The only place runtime state is kept in step with the character list, so adds,
-// renames and deletes all land here.
+// The only place runtime state is kept in step with the character list, so adds and
+// deletes all land here. Keyed by id, so a rename keeps its workers.
 const runtime = useRuntimeStore();
 watch(
-  () => all_profiles.value.map((p) => p.char_name),
-  (names) => runtime.sync_profiles(names),
+  () => all_profiles.value.map((p) => p.id),
+  (ids) => runtime.sync_profiles(ids),
   { immediate: true },
 );
 
@@ -34,8 +34,13 @@ const route = useRoute();
 const router = useRouter();
 
 function on_char_select(e: Event) {
-  const name = (e.target as HTMLSelectElement).value;
-  if (name) router.push({ name: "char", params: { characterName: name } });
+  const select = e.target as HTMLSelectElement;
+  const name = select.value;
+  // back to the shown character if the switch was held up
+  if (name)
+    router
+      .push({ name: "char", params: { characterName: name } })
+      .then(() => (select.value = char_name_from_route.value));
 }
 const char_name_from_route = computed(
   () => route.path.split("/")[route.path.split("/").length - 2],
@@ -100,6 +105,14 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region, false, true));
             Market & Mats
           </div>
         </router-link>
+        <router-link to="/snapshots">
+          <div
+            class="header-button header-font"
+            :class="{ selected: route.path == '/snapshots' }"
+          >
+            Snapshots
+          </div>
+        </router-link>
 
         <div class="header-spacer" />
         <div class="contents" v-if="!is900Narrow || all_profiles.length <= 1">
@@ -109,10 +122,10 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region, false, true));
             class="flex flex-row"
           >
             <div
-              v-for="[profile, profile_index] in all_profiles
-                .map((x, index): [CharProfile, number] => [x, index])
-                .filter((y) => y[0].roster_id === roster_id)"
-              :key="`profile-${profile_index}`"
+              v-for="profile in all_profiles.filter(
+                (p) => p.roster_id === roster_id,
+              )"
+              :key="profile.id"
             >
               <RouterLink
                 :to="{
@@ -141,7 +154,7 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region, false, true));
           <option value="" disabled key="empty selection">Character</option>
           <option
             v-for="profile in all_profiles"
-            :key="profile.char_name"
+            :key="profile.id"
             :value="profile.char_name"
           >
             {{ profile.char_name }}
@@ -151,5 +164,6 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region, false, true));
     </header>
 
     <RouterView />
+    <ScanSwitchDialog />
   </div>
 </template>

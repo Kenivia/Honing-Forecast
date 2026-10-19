@@ -20,6 +20,8 @@ import { CharProfile, new_char_profile } from "./CharacterProfile";
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
 
 import { load_roster_config } from "./ConfigStorage";
+import type { ManifestChest } from "@/Utils/Chest";
+import type { ScanPage, Snapshot } from "@/Utils/Scans";
 
 // Everything in here is persisted. Session-only state lives in RuntimeState.
 export interface RosterConfig {
@@ -30,6 +32,11 @@ export interface RosterConfig {
   selected_bundles: Record<MarketRegions, Record<string, number>>;
   roster_mats_owned: Record<number, InputColumn>;
   tradable_mats_owned: Record<number, InputColumn>;
+  // chests of a roster that are not bound to one character
+  roster_chests: Record<number, ManifestChest[]>;
+  // every page the scanner exported, as last exported, and the budget snapshots
+  scan_pages: ScanPage[];
+  snapshots: Snapshot[];
 
   all_regions: Record<number, MarketRegions>;
 
@@ -74,6 +81,9 @@ export function default_roster_config(): RosterConfig {
     },
     roster_mats_owned: { 0: create_default_owned_input_column() },
     tradable_mats_owned: { 0: create_default_owned_input_column() },
+    roster_chests: {},
+    scan_pages: [],
+    snapshots: [],
     all_regions: { 0: "nae" },
     cumulative_graph: true,
     selected_bundles: {
@@ -108,6 +118,14 @@ export const useRosterStore = defineStore("roster", {
     active_tradable_mats_owned(state): InputColumn {
       return state.roster_config.tradable_mats_owned[
         this.active_profile.roster_id
+      ];
+    },
+    // the character's own chests and its roster's
+    active_chests(state): ManifestChest[] {
+      return [
+        ...this.active_profile.chests,
+        ...(state.roster_config.roster_chests[this.active_profile.roster_id] ??
+          []),
       ];
     },
     active_region(state): MarketRegions {
@@ -156,9 +174,10 @@ export const useRosterStore = defineStore("roster", {
     },
 
     reset_active_profile() {
-      const { char_name, roster_id } = this.active_profile;
+      const { id, char_name, roster_id } = this.active_profile;
       this.roster_config.profiles[this.roster_config.active_profile_index] = {
         ...new_char_profile(),
+        id,
         char_name,
         roster_id,
       };

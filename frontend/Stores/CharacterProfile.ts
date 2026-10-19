@@ -22,6 +22,8 @@ import {
 } from "@/WasmInterface/PayloadBuilder";
 
 export interface CharProfile {
+  // stable and unique, what everything but the route identifies a character by
+  id: string;
   roster_id: number;
 
   // what a leftover unit of each ownership band is worth
@@ -55,6 +57,7 @@ export interface CharProfile {
 }
 
 export const DEFAULT_CHAR_PROFILE: CharProfile = {
+  id: "",
   band_values: ["Worthless", "Worthless", "TaxedSell"],
   chance_band: 0,
   express_event: false,
@@ -101,5 +104,5 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
 };
 
 export function new_char_profile(): CharProfile {
-  return structuredClone(DEFAULT_CHAR_PROFILE);
+  return { ...structuredClone(DEFAULT_CHAR_PROFILE), id: crypto.randomUUID() };
 }

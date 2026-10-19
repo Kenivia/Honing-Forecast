@@ -8,6 +8,8 @@ import RosterView from "@/Components/RosterView.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog";
 import ChangeLogsView from "@/Components/ChangeLogsView.vue";
+import SnapshotsView from "@/Components/SnapshotsView.vue";
+import { guard_switch } from "@/Components/Character/InventoryScanner/ScanSwitch";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -30,6 +32,11 @@ const router = createRouter({
       path: "/roster-setup",
       name: "roster",
       component: RosterView,
+    },
+    {
+      path: "/snapshots",
+      name: "snapshots",
+      component: SnapshotsView,
     },
     {
       path: "/change-logs",
@@ -99,5 +106,7 @@ const router = createRouter({
     },
   ],
 });
+
+router.beforeEach(guard_switch);
 
 export default router;

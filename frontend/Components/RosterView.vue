@@ -42,6 +42,7 @@ function duplicate(index) {
   let new_char = {
     ...new_char_profile(),
     ...structuredClone(toRaw(roster_config.value.profiles[index])),
+    id: crypto.randomUUID(),
   };
   new_char.char_name = format_char_name(
     "Newchar",
@@ -134,7 +135,7 @@ function swap_profiles(i: number, j: number) {
                 profile_pair, index_in_filtered
               ) in filtered_rosters_lists[roster_index]"
               class="char-row flex h-max min-h-max flex-row items-start justify-around border-b border-(--border-muted)"
-              :key="`${profile_pair.profile_index}-${profile_pair.profile.roster_id}`"
+              :key="profile_pair.profile.id"
             >
               <div class="max-w- flex w-min flex-row flex-wrap justify-around">
                 <Uwuowo

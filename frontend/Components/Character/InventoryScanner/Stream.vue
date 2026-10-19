@@ -10,10 +10,9 @@ import {
   stop_ocr,
   take_ocr_results,
 } from "./OcrRelay";
-import { has_progress, reset_scan, take_edits } from "./ScanStore";
-import { useRosterStore } from "@/Stores/RosterConfig";
+import { has_progress, reset_scan, scan_wipes, take_edits } from "./ScanStore";
+import { wipe_scan } from "./ScanSwitch";
 import { WasmOp } from "@/WasmInterface/WasmWorker";
-import { storeToRefs } from "pinia";
 import {
   ref,
   reactive,
@@ -43,9 +42,6 @@ const props = defineProps<{
   process_result: (result: ScanResult) => void;
 }>();
 const status = defineModel<"idle" | "capturing">("status", { default: "idle" });
-
-const roster_store = useRosterStore();
-const { roster_config } = storeToRefs(roster_store);
 
 const bundle = ref(runtime.cropper);
 // the stream outlives this component so permission is only asked once
@@ -152,31 +148,34 @@ async function start_capture() {
   }
 }
 
-// async function start_upload(event: Event) {
-//   const input = event.target as HTMLInputElement;
-//   const file = input.files[0];
-//   input.value = "";
-//   if (!file) return;
+// uploads are for development and tests only
+const DEV = import.meta.env.DEV;
 
-//   error.value = null;
-//   if (file.name.endsWith(CAPTURE_EXTENSION)) return start_replay(file);
-//   const fake = await file_to_stream(file);
-//   begin(fake.stream, fake.width, fake.height, fake.cleanup);
-// }
+async function start_upload(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files[0];
+  input.value = "";
+  if (!file) return;
 
-// async function start_replay(file: File) {
-//   stop_capture();
-//   const { start, first } = await open_capture(file);
-//   replay = { file, first, offset: first, ...start };
-//   Object.assign(scan_settings, {
-//     forced_21_9: start.forced_21_9,
-//     brightness: start.brightness,
-//   });
-//   discard_settings();
-//   replaying.value = true;
-//   status.value = "capturing";
-//   start_scanner();
-// }
+  error.value = null;
+  if (file.name.endsWith(CAPTURE_EXTENSION)) return start_replay(file);
+  const fake = await file_to_stream(file);
+  begin(fake.stream, fake.width, fake.height, fake.cleanup);
+}
+
+async function start_replay(file: File) {
+  stop_capture();
+  const { start, first } = await open_capture(file);
+  replay = { file, first, offset: first, ...start };
+  Object.assign(scan_settings, {
+    forced_21_9: start.forced_21_9,
+    brightness: start.brightness,
+  });
+  discard_settings();
+  replaying.value = true;
+  status.value = "capturing";
+  start_scanner();
+}
 
 // the scan starts over, since a capture can only be run again from an empty state
 function toggle_recording() {
@@ -385,11 +384,8 @@ onMounted(() => {
 // the stream and worker stay alive in the store
 onUnmounted(pause_cropper);
 
-// CharView clears the scanner state on character change
-watch(
-  () => roster_config.value.active_profile_index,
-  () => source.stream && start_scanner(),
-);
+// a wiped scan starts over on the stream or replay still running
+watch(scan_wipes, () => (source.stream || replay) && start_scanner());
 </script>
 
 <template>
@@ -490,7 +486,8 @@ watch(
       >
         Share screen
       </button>
-      <!-- <label
+      <label
+        v-if="DEV"
         class="cursor-pointer rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500"
       >
         Upload image / video / capture
@@ -501,13 +498,20 @@ watch(
           class="hidden"
           @change="start_upload"
         />
-      </label> -->
+      </label>
       <button
         class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
         :disabled="status !== 'capturing'"
         @click="stop_capture"
       >
         Stop
+      </button>
+      <button
+        class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+        :disabled="status !== 'capturing' && !has_progress"
+        @click="wipe_scan"
+      >
+        Reset scan
       </button>
       <span
         v-if="status === 'capturing'"

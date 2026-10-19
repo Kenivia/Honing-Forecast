@@ -34,8 +34,8 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
     );
   }
 
-  // may be a non-active character during a roster import, hence the lookup by name
-  const target_runtime = useRuntimeStore().for_char(target_profile.char_name);
+  // may be a non-active character during a roster import, hence the lookup by id
+  const target_runtime = useRuntimeStore().for_char(target_profile.id);
   target_runtime?.optimizer.cancel_and_clear_prev_result();
   target_runtime?.histogram.cancel_and_clear_prev_result();
 

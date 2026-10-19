@@ -27,6 +27,7 @@ import {
 import { get_valid_status_grid } from "@/Utils/StatusGrid";
 import { format_char_name } from "@/Utils/Helpers";
 import type { ManifestChest } from "@/Utils/Chest";
+import type { ScanPage, Snapshot } from "@/Utils/Scans";
 
 // ============================================================================
 // The persisted shape.
@@ -49,6 +50,7 @@ export interface SavedColumn {
 export type SavedUpgrade = Omit<OneUpgradeInput, "used_materials">;
 
 export interface SavedProfile {
+  id: string;
   char_name: string;
   roster_id: number;
   tier: number;
@@ -74,6 +76,9 @@ export interface SavedConfig {
   mats_prices: Partial<Record<MarketRegions, SavedColumn>>;
   roster_mats_owned: Record<string, SavedColumn>;
   tradable_mats_owned: Record<string, SavedColumn>;
+  roster_chests: Record<string, ManifestChest[]>;
+  scan_pages: ScanPage[];
+  snapshots: Snapshot[];
   all_regions: Record<string, MarketRegions>;
   // material label -> chosen bundle size, only for materials sold in several sizes
   selected_bundles: Partial<Record<MarketRegions, Record<string, number>>>;
@@ -134,6 +139,7 @@ function profile_to_saved(profile: CharProfile): SavedProfile {
   }
 
   return {
+    id: profile.id,
     char_name: profile.char_name,
     roster_id: profile.roster_id,
     tier: profile.tier,
@@ -189,6 +195,11 @@ function profile_from_saved(
 
   return {
     ...defaults,
+    // a save without ids, or a duplicated one, gets a fresh id
+    id:
+      saved.id && !earlier.some((p) => p.id === saved.id)
+        ? saved.id
+        : crypto.randomUUID(),
     char_name: format_char_name(
       saved.char_name ?? defaults.char_name,
       index,
@@ -303,6 +314,9 @@ export function to_saved(config: RosterConfig): Omit<SavedConfig, "version"> {
     mats_prices,
     roster_mats_owned,
     tradable_mats_owned,
+    roster_chests: config.roster_chests,
+    scan_pages: config.scan_pages,
+    snapshots: config.snapshots,
     all_regions: { ...config.all_regions },
     selected_bundles,
     latest_market_data: config.latest_market_data,
@@ -371,6 +385,10 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
   out.show_all_rows = saved.show_all_rows ?? out.show_all_rows;
   out.auto_deduct_costs = saved.auto_deduct_costs ?? out.auto_deduct_costs;
   out.auto_fetch = saved.auto_fetch ?? out.auto_fetch;
+  // arrived during V8, which is not released: a save without them has none
+  out.roster_chests = saved.roster_chests ?? {};
+  out.scan_pages = Array.isArray(saved.scan_pages) ? saved.scan_pages : [];
+  out.snapshots = Array.isArray(saved.snapshots) ? saved.snapshots : [];
   if (
     Array.isArray(saved.enabled_annotations) &&
     saved.enabled_annotations.length === out.enabled_annotations.length

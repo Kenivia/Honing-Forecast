@@ -1,15 +1,12 @@
 import { ref } from "vue";
 import { decode } from "@msgpack/msgpack";
 import {
-  added_chests,
   assume_char_bound,
   assume_roster_tradable,
-  chest_overrides,
   chests,
-  deleted_chests,
   edits,
   game_pages,
-  material_overrides,
+  seen_pages,
   slots,
 } from "./ScanStore";
 import { convert, manifest } from "./Manifest";
@@ -52,10 +49,7 @@ function reference() {
     game_pages: game_pages.value,
     assume_roster_tradable: assume_roster_tradable.value,
     assume_char_bound: assume_char_bound.value,
-    material_overrides: material_overrides.value,
-    chest_overrides: chest_overrides.value,
-    added_chests: added_chests.value,
-    deleted_chests: deleted_chests.value,
+    seen_pages: seen_pages.value,
     convert: convert.value,
     manifest: manifest.value,
   };

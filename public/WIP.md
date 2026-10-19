@@ -11,19 +11,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## OCR
 
-- ~~CRLF~~
-- ~~sort out the order of the eval method (is it brute first or coarse first?)~~
-- ~~remove references to ./docs~~
-- ~~add status output of scanner?~~ kinda not feasible to make it readable while being useful i think
-
-- ~~reorganize tests and separate from arena~~
-
 ### EZ
-
-- ~~wipe current scan (just like starting a debug recording) changing characters (maybe add a confirmation popup?)~~ make it so that clicking another char just re-assigns the target char instead of going to the calc page
-- ~~auto detect 21:9~~
-- ~~manual overwrite brightness~~
-- ~~"waiting for ocr" spinner~~
 
 - reset button
 
@@ -31,8 +19,6 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - SOMEHOW indicate the amount coming from chests
 - determine tradability of (content of) gold chests from tooltip
-- roster storage reading toggle when a roster reading exists (need to save scannerstate of previous scans?), sort out how to merge roster / tradable found in char storage / inventory, roster wide shared chest inventory
-- restore previous scan
 
 ### LOW PRIO
 
@@ -90,6 +76,18 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Done / cancelled
 
+- ~~CRLF~~
+- ~~sort out the order of the eval method (is it brute first or coarse first?)~~
+- ~~remove references to ./docs~~
+- ~~add status output of scanner?~~ kinda not feasible to make it readable while being useful i think
+
+- ~~reorganize tests and separate from arena~~
+- ~~wipe current scan (just like starting a debug recording) changing characters (maybe add a confirmation popup?)~~ make it so that clicking another char just re-assigns the target char instead of going to the calc page
+- ~~auto detect 21:9~~
+- ~~manual overwrite brightness~~
+- ~~"waiting for ocr" spinner~~
+- ~~roster storage reading toggle when a roster reading exists (need to save scannerstate of previous scans?), sort out how to merge roster / tradable found in char storage / inventory, roster wide shared chest inventory~~
+- ~~restore previous scan~~
 - ~~code review~~
 
 - ~~sort out how page num works~~

@@ -54,6 +54,7 @@ for (const route of [
   "/market-mats",
   "/Newchar/guide",
   "/change-logs",
+  "/snapshots",
 ]) {
   test(`${route} renders without errors`, async ({ page }) => {
     await hf.open(page, route);

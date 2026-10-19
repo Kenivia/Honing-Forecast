@@ -8,7 +8,7 @@ import {
   SlotAddress,
   SlotResult,
 } from "./LoadStorage";
-import type { ManifestChest } from "@/Utils/Chest";
+import { page_key } from "@/Utils/Scans";
 
 // What the slot grid shows. Module state: it outlives the page and the scanner worker, so the
 // grid stays up and editable after capture stops. Only a new capture wipes it.
@@ -21,7 +21,7 @@ export interface SlotEdit {
   retry?: boolean;
 }
 
-const WINDOW_NAMES = {
+export const WINDOW_NAMES = {
   Roster: "Roster storage",
   CharStorage: "Character storage",
   CharInventory: "Inventory",
@@ -38,6 +38,8 @@ export const chests = shallowRef<Chest[]>([]);
 export const currencies = shallowRef<CurrencyResult[]>([]);
 // the page each located window shows in game
 export const game_pages = ref<Record<string, number>>({});
+// every page that was open in game during this capture, by `page_key`
+export const seen_pages = ref<Record<string, true>>({});
 // what the user typed in; the scanner leaves these slots alone
 export const edits = ref<Record<string, SlotEdit>>({});
 // images only arrive when they change, and the same objects are reused so canvases are not redrawn
@@ -86,13 +88,11 @@ export function chests_for(address: SlotAddress, icon: string | null) {
   );
 }
 
-// what the user typed into the manifest, over what was scanned
-export const material_overrides = ref<Record<string, string>>({});
-export const chest_overrides = ref<Record<string, number>>({});
-// chests the user added to the manifest by hand
-export const added_chests = ref<ManifestChest[]>([]);
-// keys of the chests the user took out of the manifest
-export const deleted_chests = ref<string[]>([]);
+// the user's say on covering roster storage, null for the default; kept until the next export
+// or a wipe
+export const roster_cover = ref<boolean | null>(null);
+// bumped by `wipe_scan`, so a running capture starts over
+export const scan_wipes = ref(0);
 
 export const has_progress = computed(
   () => slots.value.size > 0 || Object.keys(edits.value).length > 0,
@@ -116,11 +116,8 @@ export function reset_scan() {
   chests.value = [];
   currencies.value = [];
   game_pages.value = {};
+  seen_pages.value = {};
   edits.value = {};
-  material_overrides.value = {};
-  chest_overrides.value = {};
-  added_chests.value = [];
-  deleted_chests.value = [];
 }
 
 // addresses come out of reactive state, and a proxy cannot be posted to the worker
@@ -169,6 +166,8 @@ export function process_result(result: ScanResult) {
   for (const [inventory, page] of result.pages) {
     if (game_pages.value[inventory] !== page)
       game_pages.value[inventory] = page;
+    if (!seen_pages.value[page_key(inventory, page)])
+      seen_pages.value[page_key(inventory, page)] = true;
   }
   latest = result;
   render();

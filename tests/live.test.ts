@@ -49,6 +49,11 @@ check(
     v7.profiles.map((p: any) => p.char_name).join(","),
 );
 check(
+  "every profile got a unique id",
+  loaded.profiles.every((p) => typeof p.id === "string" && p.id !== "") &&
+    new Set(loaded.profiles.map((p) => p.id)).size === loaded.profiles.length,
+);
+check(
   "tiers unchanged",
   loaded.profiles.every((p, i) => p.tier === v7.profiles[i].tier),
 );
@@ -301,6 +306,11 @@ check(
     loaded.profiles.map((p) => p.char_name).join(","),
 );
 check(
+  "second load keeps the ids",
+  second.profiles.map((p) => p.id).join(",") ===
+    loaded.profiles.map((p) => p.id).join(","),
+);
+check(
   "second load is byte-identical to the first",
   JSON.stringify(to_saved(second)) === JSON.stringify(once),
 );
@@ -309,6 +319,11 @@ const third = load_roster_config();
 check(
   "third load is still identical",
   JSON.stringify(to_saved(third)) === JSON.stringify(once),
+);
+check(
+  "third load keeps the ids",
+  third.profiles.map((p) => p.id).join(",") ===
+    loaded.profiles.map((p) => p.id).join(","),
 );
 
 console.log("\n--- size");

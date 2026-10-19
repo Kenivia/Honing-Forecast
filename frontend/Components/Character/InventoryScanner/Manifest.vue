@@ -9,20 +9,17 @@ import {
   TIER_MATERIALS,
 } from "@/Utils/Constants";
 import { get_icon_path } from "@/Utils/Helpers";
-import { column_labels, set_cell } from "@/Utils/InputColumn";
 import ChestPanels from "@/Components/Common/ChestPanels.vue";
-import { added_chests, chest_overrides, deleted_chests } from "./ScanStore";
 import {
   BAND_NAMES,
-  cell_text,
   convert,
   convert_owner,
+  export_manifest,
   manifest,
-  set_cell_text,
+  page_place,
 } from "./Manifest";
 
-const { active_profile, active_roster_mats_owned, active_tradable_mats_owned } =
-  storeToRefs(useRosterStore());
+const { active_profile, all_profiles } = storeToRefs(useRosterStore());
 
 // band of each toggle, in the order they are shown
 const TOGGLES = [1, 2, 0];
@@ -30,7 +27,7 @@ const TOGGLES = [1, 2, 0];
 const tier = ref(active_profile.value.tier);
 // a T4 character has no use for its own T4 materials as Serca ones
 watch(
-  () => `${active_profile.value.char_name} ${active_profile.value.tier}`,
+  () => `${active_profile.value.id} ${active_profile.value.tier}`,
   (owner) => {
     tier.value = active_profile.value.tier;
     // the toggles survive leaving the page, but not another character or tier
@@ -48,8 +45,6 @@ const labels = computed(() => [
   ...TIER_MATERIALS[tier.value].map((mat) => mat.label),
   SPECIAL_LEAP_LABELS[tier.value],
 ]);
-// cells and chests can only be changed while this is on
-const editing = ref(false);
 
 const loose = computed(() => [
   ...manifest.value.random.map((chest) => ({ ...chest, why: "random" })),
@@ -59,68 +54,34 @@ const loose = computed(() => [
   })),
 ]);
 
-// a chest typed in by hand; an option is one material
-const fresh_chest = () => ({
-  title: "",
-  count: 1,
-  band: 1,
-  options: [{ label: "", amount: "" }],
+const name_of = (id: string) =>
+  all_profiles.value.find((profile) => profile.id === id)?.char_name ??
+  "a deleted character";
+const when = (at: number) => new Date(at).toLocaleString();
+
+// the saved pages this manifest takes in place of ones not seen, a currency's two parts as one
+const saved = computed(() => {
+  const out = new Map<string, string>();
+  for (const page of manifest.value.saved) {
+    out.set(
+      page_place(page.window, page.page),
+      `scanned on ${name_of(page.by)}, ${when(page.at)}`,
+    );
+  }
+  return [...out];
 });
-const draft = ref(fresh_chest());
-const draft_options = computed(() =>
-  draft.value.options.filter(
-    (option) => option.label && Number(option.amount) > 0,
-  ),
-);
-
-function add_chest() {
-  added_chests.value.push({
-    key: `added|${Date.now()}`,
-    title: draft.value.title.trim() || "Added chest",
-    band: draft.value.band,
-    count: Math.max(1, Math.floor(Number(draft.value.count)) || 1),
-    options: draft_options.value.map((option) => ({
-      [option.label]: Number(option.amount),
-    })),
-    obtain_all: false,
-  });
-  draft.value = fresh_chest();
-}
-
-function remove_chest(key: string) {
-  added_chests.value = added_chests.value.filter((chest) => chest.key !== key);
-  deleted_chests.value.push(key);
-  delete chest_overrides.value[key];
-}
-
-function set_chest_count(key: string, event: Event) {
-  const value = parseInt((event.target as HTMLInputElement).value);
-  if (isFinite(value)) chest_overrides.value[key] = Math.max(0, value);
-  else delete chest_overrides.value[key];
-}
+// the other characters of the roster, with when their pages were last exported
+const others = computed(() => {
+  const out = new Map<string, number>();
+  for (const page of manifest.value.others) {
+    out.set(page.char_id, Math.max(out.get(page.char_id) ?? 0, page.at));
+  }
+  return [...out].map(([id, at]) => `${name_of(id)}, ${when(at)}`);
+});
 
 const exported = ref(false);
-// Placeholder: the manifest replaces what the calculator holds for this character and its
-// roster. A cell nothing was read for counts as 0.
 function export_to_calc() {
-  const { materials, chests } = manifest.value;
-  const profile = active_profile.value;
-  [
-    profile.bound_budgets,
-    active_roster_mats_owned.value,
-    active_tradable_mats_owned.value,
-  ].forEach((column, band) => {
-    for (const label of column_labels(column)) {
-      if (materials[label])
-        set_cell(column, label, String(materials[label][band]));
-    }
-  });
-  // free taps are one number, whatever the band
-  for (const label of SPECIAL_LEAP_LABELS) {
-    const total = materials[label].reduce((sum, amount) => sum + amount, 0);
-    set_cell(profile.special_budget, label, String(total));
-  }
-  profile.chests = JSON.parse(JSON.stringify(chests));
+  export_manifest();
   exported.value = true;
 }
 </script>
@@ -132,7 +93,8 @@ function export_to_calc() {
   >
     <span class="text-(--warning)">
       {{ manifest.missing.length }} slot(s) or currencies are not read yet or
-      still need a hover, so the manifest is hidden.
+      still need a hover, so the manifest is hidden. Exporting sets those slots
+      to irrelevant.
     </span>
     <button class="generic-button w-fit" @click="forced = true">
       Show the manifest without them
@@ -159,20 +121,17 @@ function export_to_calc() {
         />
         Convert {{ BAND_NAMES[band].toLowerCase() }} T4 to Serca
       </label>
-      <label class="flex items-center gap-1">
-        <input v-model="editing" type="checkbox" />
-        Edit manifest
-      </label>
       <button class="generic-button" @click="export_to_calc">
         Export to calculator
       </button>
       <span v-if="exported" class="text-(--text-muted)">
-        Exported. Materials and chests of this character were overwritten.
+        Exported. The budgets and chests of this character and its roster were
+        overwritten, and snapshots taken before and after.
       </span>
     </div>
     <span v-if="manifest.missing.length" class="text-sm text-(--warning)">
       {{ manifest.missing.length }} slot(s) or currencies are missing from this
-      manifest.
+      manifest. Exporting sets those slots to irrelevant.
     </span>
 
     <div class="flex gap-1 text-sm">
@@ -227,26 +186,13 @@ function export_to_calc() {
             :key="band"
             class="flex h-full items-center gap-1"
           >
-            <input
-              type="text"
-              class="generic-input w-25 pl-1"
-              placeholder="?"
-              :disabled="!editing"
+            <span
+              class="w-25 pl-1"
               :aria-label="`${label} ${name}`"
               :style="{ color: `var(${BAND_COLORS[band]})` }"
-              :value="cell_text(label, band)"
-              @change="
-                set_cell_text(
-                  label,
-                  band,
-                  ($event.target as HTMLInputElement).value,
-                );
-                ($event.target as HTMLInputElement).value = cell_text(
-                  label,
-                  band,
-                );
-              "
-            />
+            >
+              {{ manifest.materials[label][band].toLocaleString() }}
+            </span>
             <span
               v-if="manifest.incoming[label][band]"
               class="annotation whitespace-nowrap"
@@ -261,95 +207,7 @@ function export_to_calc() {
         <ChestPanels
           :selection="manifest.chests.filter((chest) => !chest.obtain_all)"
           :obtain_all="manifest.chests.filter((chest) => chest.obtain_all)"
-          :editing="editing"
-          @count="set_chest_count"
-          @remove="remove_chest"
-        >
-          <div v-if="editing" class="flex flex-col gap-2 pt-2">
-            <div class="card-title">Add a chest</div>
-            <div class="flex flex-wrap items-center gap-2">
-              <input
-                v-model="draft.count"
-                type="number"
-                min="1"
-                class="generic-input h-7! w-16 pl-1"
-                aria-label="New chest count"
-              />
-              <input
-                v-model="draft.title"
-                type="text"
-                class="generic-input h-7! w-48 pl-1"
-                placeholder="Name (optional)"
-                aria-label="New chest name"
-              />
-              <select
-                v-model="draft.band"
-                class="selector"
-                aria-label="New chest ownership"
-              >
-                <option
-                  v-for="(name, band) in BAND_NAMES"
-                  :key="band"
-                  :value="band"
-                >
-                  {{ name }}
-                </option>
-              </select>
-            </div>
-            <div
-              v-for="(option, index) in draft.options"
-              :key="index"
-              class="flex items-center gap-2"
-            >
-              <span class="w-4 text-(--text-very-muted)">
-                {{ index ? "or" : "" }}
-              </span>
-              <select
-                v-model="option.label"
-                class="selector"
-                :aria-label="`Option ${index + 1} material`"
-              >
-                <option value="" disabled>Material</option>
-                <option v-for="label in labels" :key="label">
-                  {{ label }}
-                </option>
-              </select>
-              <input
-                v-model="option.amount"
-                type="number"
-                min="1"
-                class="generic-input h-7! w-24 pl-1"
-                placeholder="Amount"
-                :aria-label="`Option ${index + 1} amount`"
-              />
-              <button
-                v-if="draft.options.length > 1"
-                class="generic-button"
-                @click="draft.options.splice(index, 1)"
-              >
-                Remove
-              </button>
-            </div>
-            <div class="flex gap-2">
-              <button
-                class="generic-button"
-                @click="draft.options.push({ label: '', amount: '' })"
-              >
-                Add option
-              </button>
-              <button
-                class="generic-button"
-                :class="{
-                  'cursor-not-allowed! opacity-50': !draft_options.length,
-                }"
-                :disabled="!draft_options.length"
-                @click="add_chest"
-              >
-                Add chest
-              </button>
-            </div>
-          </div>
-        </ChestPanels>
+        />
 
         <div v-if="loose.length" class="card-shell card-body text-sm">
           <div class="card-title">Not included</div>
@@ -360,6 +218,29 @@ function export_to_calc() {
             {{ chest.title }} x{{ chest.count.toLocaleString() }}
             <span class="text-(--text-muted)">({{ chest.why }})</span>
           </div>
+        </div>
+
+        <div
+          v-if="saved.length || others.length"
+          class="card-shell card-body text-sm"
+          role="group"
+          aria-label="Saved pages"
+        >
+          <div class="card-title">From earlier exports</div>
+          <span class="text-(--text-muted)">
+            Not open in game this time, so taken as last exported. Open them if
+            anything moved.
+          </span>
+          <div v-for="[place, from] in saved" :key="place">
+            {{ place }}
+            <span class="text-(--text-muted)">{{ from }}</span>
+          </div>
+          <template v-if="others.length">
+            <div class="pt-1 text-(--text-muted)">
+              Roster bound and tradable from other characters:
+            </div>
+            <div v-for="other in others" :key="other">{{ other }}</div>
+          </template>
         </div>
       </div>
     </div>

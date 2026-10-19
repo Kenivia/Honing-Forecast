@@ -6,7 +6,8 @@ The shape of the frontend state and how it is saved.
 
 - **Roster setup**: manage characters and rosters, set each roster's region, import characters.
 - **Market & mats**: roster-owned and tradable materials, market prices.
-- **Character page**: one per character, with sub-pages as child routes. The calculator sub-page is the main one: upgrade tickbox grids, material budgets and distribution graphs, the chest panels (read-only, empty until a scanner export, showing the chests as `process_chests` leaves them for the character's tier) and a provisional panel of how those with a choice are opened (`ChestState.vue`, read off the histogram's `state_bundle.chest_states`, so it follows the optimizer's interim states like the graphs do), optimizer controls, then the generated instructions.
+- **Snapshots** (`/snapshots`): the budget snapshots of a roster and what changed between two (`Screen scanner/Manifest.md`, "Snapshots").
+- **Character page**: one per character, with sub-pages as child routes. The calculator sub-page is the main one: upgrade tickbox grids, material budgets and distribution graphs, the chest panels (the character's chests and its roster's, `active_chests`, as `process_chests` leaves them for the character's tier; "Edit chests" swaps in the stored ones, editable) and a provisional panel of how those with a choice are opened (`ChestState.vue`, read off the histogram's `state_bundle.chest_states`, so it follows the optimizer's interim states like the graphs do), optimizer controls, then the generated instructions.
 - **Change logs**.
 
 The character page uses nested routes: `CharView` owns the sidebar and renders the sub-page through `<RouterView/>`.
@@ -23,13 +24,15 @@ Data in `roster_config` lives at four scopes:
 | Scope | Examples |
 | --- | --- |
 | Per character | Upgrade grids, keyed upgrades, bound material budgets, free-tap budget, chests, tier, band values, optimizer settings. |
-| Per roster | Roster-owned materials, tradable materials, region. |
+| Per roster | Roster-owned materials, tradable materials, roster chests, region, the scanner's saved pages and the budget snapshots (both lists in the config, filtered by roster). |
 | Per region | Market prices per bundle, the chosen bundle per material, the last fetched market response. |
 | Global | UI flags, the active character index, last seen version. |
 
 The active character is set from the route, and most components read through `active_*` getters.
 
-Runtime worker bundles are keyed by `char_name`. `App.vue` watches the list of names and calls `sync_profiles`, which is the only place entries are created or dropped, so adds, renames and deletes all flow through one point.
+Every profile has an `id` (`crypto.randomUUID()`), and everything internal identifies a character by it, never by `char_name`. The name is only for display, the route, lostark.bible requests, and matching imported in-game characters to profiles. The route `/:characterName` is resolved to a profile in the router guard and `CharView`, and from there the active index and ids take over. `new_char_profile` makes a fresh id and duplicating a character replaces the copied one; `reset_active_profile` keeps it.
+
+Runtime worker bundles are keyed by profile id. `App.vue` watches the list of ids and calls `sync_profiles`, which is the only place entries are created or dropped, so adds and deletes flow through one point and a rename keeps its workers.
 
 ## Conventions
 
@@ -57,7 +60,11 @@ Runtime worker bundles are keyed by `char_name`. `App.vue` watches the list of n
 
 **Changing the saved shape** means bumping `STORAGE_VERSION`, setting `STORAGE_KEY` to the new version's key, moving the old key to the top of `LEGACY_KEYS`, and adding one entry to `MIGRATIONS`. Adding a material no longer needs a migration at all: an unknown label in the save is dropped, a missing one falls back to the template value from `Constants.ts`.
 
-A profile's `chests` are saved as the scanner exported them (title, band, count, options by label, `obtain_all`), with both tiers in them; what the calculator uses is derived on the page. They arrived during V8, which is not released: V7 had none, so the migration writes an empty list and a save without the field loads as empty.
+A profile's `id` is saved and survives load, save, load unchanged. It also arrived during V8: a save without ids (or with an id an earlier profile already took) gets fresh ones in `profile_from_saved`, so there is no migration step for it.
+
+A profile's `chests` are saved as the scanner exported them (title, band, count, options by label, `obtain_all`), with both tiers in them; what the calculator uses is derived on the page. They arrived during V8, which is not released: V7 had none, so the migration writes an empty list and a save without the field loads as empty. Only char-bound chests are a profile's now; the rest are the roster's (`roster_chests`, keyed by roster id). `roster_chests`, `scan_pages` and `snapshots` also arrived during V8 and load empty from a save without them, V7 included (the migration goes through `from_saved`); there is no V9.
+
+`scan_pages` and `snapshots` only grow with exports and are rewritten with the rest of the config on every change. If that gets slow, they are the part to move to a key of their own.
 
 **Do not trust a pre-V8 column's own `keys` array.** Nothing before V8 read it, so it drifted out of order in real saves while `data` stayed positional against `ALL_LABELS`. `migrate_7_to_8` maps by position for that reason.
 
