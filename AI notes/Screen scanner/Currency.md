@@ -48,4 +48,4 @@ The scan result's `currencies` lists each with its status (the slots' `SlotStatu
 ## Tools
 
 - `print_statuses` (`tooltip_test`, `capture_replay`) prints each currency and every field's votes.
-- `tooltip_test` takes forced 21:9 from a still's name ("21 by 9"), as `anchor_locate` does; `capture_replay --forced-21-9` overrides a capture's start record.
+- The native bins detect forced 21:9 on stills like the page does; `capture_replay` takes it from the capture's start record.

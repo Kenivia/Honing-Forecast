@@ -10,7 +10,7 @@ use hf_scanner::dev_utils::capture::parse_scan;
 use hf_scanner::dev_utils::timing::{take, timed};
 use hf_scanner::interface::setup::{OneIconConfig, load_ocr_engine, set_config};
 use hf_scanner::ocr::jobs::OcrJob;
-use hf_scanner::scanner_state::{ScannerState, SlotEdit};
+use hf_scanner::scanner_state::{Detected, ScannerState, SlotEdit};
 use rand::rngs::ThreadRng;
 use serde::Deserialize;
 use serde_wasm_bindgen::{from_value, to_value};
@@ -147,7 +147,7 @@ pub fn take_timings() -> JsValue {
 // what a new scanner state is built from
 #[derive(Deserialize)]
 struct ReserveInput {
-    screen_info: GameResolution,
+    settings: ScanSettings,
     buffer: Buffer,
     config: Vec<OneIconConfig>,
     // record the session from its first scan
@@ -156,10 +156,9 @@ struct ReserveInput {
 }
 
 #[derive(Deserialize)]
-struct GameResolution {
-    game_width: u32,
-    game_height: u32,
-    forced_21_9: bool,
+struct ScanSettings {
+    forced_21_9: Detected<bool>,
+    brightness: Detected<f64>,
 }
 
 #[wasm_bindgen]
@@ -167,15 +166,14 @@ pub fn reserve_buffer_wrapper(input: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
     let ReserveInput {
-        screen_info: game,
+        settings,
         mut buffer,
         config,
         record,
     } = from_value(input).unwrap();
     buffer.reserve();
     set_config(config);
-    let mut scanner_state =
-        ScannerState::new(buffer, game.game_width, game.game_height, game.forced_21_9);
+    let mut scanner_state = ScannerState::new(buffer, settings.forced_21_9, settings.brightness);
     scanner_state.recorder = record.then(Default::default);
     let out = to_value(&scanner_state.result(true)).unwrap();
     if let Some(mut old) = SCANNER.replace(Some(scanner_state)) {

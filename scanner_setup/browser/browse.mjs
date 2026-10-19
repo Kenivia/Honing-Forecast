@@ -3,7 +3,7 @@
 import { chromium, firefox } from "@playwright/test";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import * as hf from "../../e2e/helpers.ts";
+import * as hf from "../../tests/e2e/helpers.ts";
 
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:5173";
 const args = process.argv.slice(2);

@@ -24,7 +24,7 @@ fn grey(w: u32, h: u32, value: impl Fn(usize) -> f64) -> GrayImage {
 fn dump(state: &ScannerState, address: &SlotAddress, out: &str, frame: usize) {
     let info = &state.slot_infos[address];
     let name = &info.icon_name_score.as_ref().unwrap().0;
-    let brightness = state.screen_info.brightness.unwrap();
+    let brightness = state.screen_info.brightness.value.unwrap();
     let (number, icon) = (&info.observed_number.data, &info.observed_icon.data);
     let (w, h) = number.dimensions();
     let template = BASE_ICONS.read()[name].data.clone();
@@ -76,8 +76,7 @@ fn main() {
         Some(image) => (image.width() as usize, image.height() as usize),
         None => (args[6].parse().unwrap(), args[7].parse().unwrap()),
     };
-    let (mut state, mut pixels) =
-        native::new_state(width, height, native::guess_game(width, height), false);
+    let (mut state, mut pixels) = native::new_state(width, height);
 
     let mut stdin = std::io::stdin().lock();
     for frame in 0.. {

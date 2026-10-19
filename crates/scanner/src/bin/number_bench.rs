@@ -55,7 +55,7 @@ fn report(state: &ScannerState, address: &SlotAddress, source: &str, frame: usiz
             &info.observed_number.data,
             &info.observed_icon.data,
             &template,
-            state.screen_info.brightness.unwrap(),
+            state.screen_info.brightness.value.unwrap(),
             &params,
         );
         // SAVE=<folder> keeps every strip
@@ -93,8 +93,7 @@ fn main() {
             Some(image) => (image.width() as usize, image.height() as usize),
             None => (args[1].parse().unwrap(), args[2].parse().unwrap()),
         };
-        let (mut state, mut pixels) =
-            native::new_state(width, height, native::guess_game(width, height), false);
+        let (mut state, mut pixels) = native::new_state(width, height);
 
         let mut stdin = std::io::stdin().lock();
         for frame in 0.. {

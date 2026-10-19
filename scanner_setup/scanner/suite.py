@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 RECORDINGS = ROOT / "ignored/recordings"
 STILLS = ROOT / "scanner_setup/brightness"
-# 768p and 900p are too small to say much; 900p ends in an out-of-bounds crop, which is expected
+# 768p and 900p are small, so their numbers read worst
 STILL_FOLDERS = [
     "720p raw", "768p raw", "900p raw", "1080p raw", "1440p raw", "2160p raw",
     "inputs", "inputs storage", "Hover tooltips",

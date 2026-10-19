@@ -21,23 +21,8 @@ pub fn load() {
     });
 }
 
-// The game resolution of a capture, where nothing says: 1078-tall recordings are still 1080p,
-// and a native ultrawide capture is as wide as the game.
-pub fn guess_game(width: usize, height: usize) -> (u32, u32) {
-    let ui_height = (height as f64 / 360.0).round() as u32 * 360;
-    (
-        (ui_height * 16 / 9).max(width as u32 / 100 * 100),
-        ui_height,
-    )
-}
-
-// a state and the frame it scans, to be filled by the caller
-pub fn new_state(
-    width: usize,
-    height: usize,
-    game: (u32, u32),
-    forced_21_9: bool,
-) -> (ScannerState, Vec<u8>) {
+// a state and the frame it scans, to be filled by the caller; 21:9 and brightness are detected
+pub fn new_state(width: usize, height: usize) -> (ScannerState, Vec<u8>) {
     load();
     let mut pixels = vec![0u8; width * height * 4];
     let buffer = Buffer {
@@ -49,7 +34,7 @@ pub fn new_state(
         brightness: 0.0,
     };
     (
-        ScannerState::new(buffer, game.0, game.1, forced_21_9),
+        ScannerState::new(buffer, Default::default(), Default::default()),
         pixels,
     )
 }

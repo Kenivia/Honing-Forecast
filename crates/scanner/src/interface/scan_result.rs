@@ -302,6 +302,9 @@ pub struct ScanResult<'a> {
     pub pages: Vec<(InventoryType, usize)>,
     pub chests: Option<&'a Vec<Chest>>,
     pub currencies: Vec<CurrencyResult>,
+    // as detected or given, none while not known yet
+    pub forced_21_9: Option<bool>,
+    pub brightness: Option<f64>,
     // lines to recognise, whose text is to come back with a later scan
     pub ocr_jobs: &'a [OcrJob],
 }
@@ -357,6 +360,8 @@ impl ScannerState {
             }),
             chests: (full || self.chests_changed).then_some(&self.chests),
             currencies: self.currency_results(),
+            forced_21_9: self.screen_info.forced_21_9.value,
+            brightness: self.screen_info.brightness.value,
             ocr_jobs: &self.ocr_queue,
         }
     }

@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
 use std::hash::{DefaultHasher, Hash, Hasher};
 
-use crate::scanner_state::{ScannerState, SlotEdit};
+use crate::scanner_state::{Detected, ScannerState, SlotEdit};
 
-pub const MAGIC: &[u8] = b"HFCAP001";
+pub const MAGIC: &[u8] = b"HFCAP003";
 pub const START: u8 = b'S';
 pub const SCAN: u8 = b'F';
 // how the session ended on the page, corrections included, as JSON; the page writes it
@@ -17,9 +17,9 @@ pub const END: u8 = b'E';
 pub struct Start {
     pub width: usize,
     pub height: usize,
-    pub game_width: u32,
-    pub game_height: u32,
-    pub forced_21_9: bool,
+    // as the user gave them: what is detected is detected again on replay
+    pub forced_21_9: Detected<bool>,
+    pub brightness: Detected<f64>,
 }
 
 // The XOR with the last scanned frame, LZ4. Alpha is apart and only there when it changed,
@@ -190,9 +190,8 @@ impl ScannerState {
                 &Start {
                     width: self.buffer.width,
                     height: self.buffer.height,
-                    game_width: info.game_width,
-                    game_height: info.game_height,
-                    forced_21_9: info.forced_21_9,
+                    forced_21_9: info.forced_21_9.setting(),
+                    brightness: info.brightness.setting(),
                 },
             ));
         }

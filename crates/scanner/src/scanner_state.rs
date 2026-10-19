@@ -11,12 +11,32 @@ use ahash::{AHashMap, AHashSet};
 use fast_image_resize::Resizer;
 use serde::{Deserialize, Serialize};
 
-// game resolution and forced 21:9 are picked by the user, the capture size says nothing about them
+// A setting the scanner works out by itself, unless the user gave it.
+#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub struct Detected<T> {
+    pub value: Option<T>,
+    pub manual: bool,
+}
+
+impl<T> Detected<T> {
+    // what the user gave, without what was detected since
+    pub fn setting(self) -> Self {
+        Detected {
+            value: self.value.filter(|_| self.manual),
+            manual: self.manual,
+        }
+    }
+}
+
+const BLACK: u8 = 10; // highest channel of a letterbox bar, with compression noise
+const BAR_SHARE: f64 = 0.95; // of a band's samples, leaving room for the cursor
+const LIT_SHARE: f64 = 0.2; // of the picture's samples above black, for the frame to count
+const SAMPLE_GAP: usize = 4;
+
+// The capture is the whole screen and the game fills it, so the capture size is the game's.
 #[derive(Debug, Default)]
 pub struct ScreenInfo {
-    pub game_width: u32,
-    pub game_height: u32,
-    pub forced_21_9: bool,
+    pub forced_21_9: Detected<bool>,
 
     pub effective_height: u32,
     pub scale_factor: f64,
@@ -26,7 +46,7 @@ pub struct ScreenInfo {
     // in pixels
     pub render_width: f64,
 
-    pub brightness: Option<f64>,
+    pub brightness: Detected<f64>,
     // how many anchors that estimate is the average of
     pub brightness_anchors: usize,
 }
@@ -35,14 +55,12 @@ impl ScannerState {
     // over a frame buffer that is already reserved; the config is set apart, in set_config
     pub fn new(
         buffer: Buffer,
-        game_width: u32,
-        game_height: u32,
-        forced_21_9: bool,
+        forced_21_9: Detected<bool>,
+        brightness: Detected<f64>,
     ) -> ScannerState {
         let screen_info = ScreenInfo {
-            game_width,
-            game_height,
             forced_21_9,
+            brightness,
             ..Default::default()
         };
         let mut state = ScannerState {
@@ -55,34 +73,66 @@ impl ScannerState {
         state
     }
 
+    // Forced 21:9 leaves black bars where a 16:9 picture would go on. Decided on the first frame
+    // that is not black (the game fades in) and not looked at again. False while undecided.
+    pub fn detect_21_9(&mut self) -> bool {
+        if self.screen_info.forced_21_9.value.is_some() {
+            return true;
+        }
+        let (game_width, game_height) = (self.buffer.width as f64, self.buffer.height as f64);
+        let decided = if game_width / game_height > 2.1 {
+            true
+        } else {
+            let edge = |ratio: f64| {
+                let picture = (game_width * ratio).min(game_height);
+                ((game_height - picture) / 2.0).round() as usize
+            };
+            let (top_16_9, top_21_9) = (edge(9.0 / 16.0), edge(27.0 / 64.0));
+            let (data, width, height) = (self.buffer.data(), self.buffer.width, self.buffer.height);
+            let dark_share = |rows: std::ops::Range<usize>| {
+                let samples: Vec<bool> = rows
+                    .step_by(SAMPLE_GAP)
+                    .flat_map(|y| {
+                        (0..width).step_by(SAMPLE_GAP).map(move |x| {
+                            let index = (y * width + x) * 4;
+                            data[index..index + 3].iter().all(|&c| c <= BLACK)
+                        })
+                    })
+                    .collect();
+                samples.iter().filter(|&&dark| dark).count() as f64 / samples.len().max(1) as f64
+            };
+            if 1.0 - dark_share(top_21_9..height - top_21_9) <= LIT_SHARE {
+                return false;
+            }
+            top_21_9 > top_16_9
+                && dark_share(top_16_9..top_21_9) >= BAR_SHARE
+                && dark_share(height - top_21_9..height - top_16_9) >= BAR_SHARE
+        };
+        self.screen_info.forced_21_9.value = Some(decided);
+        true
+    }
+
     // the UI scales with the height of the 16:9 (or 21:9) area the game renders into
     pub fn update_scale(&mut self) {
         let info = &mut self.screen_info;
+        let (width, height) = (self.buffer.width as f64, self.buffer.height as f64);
+        let forced_21_9 = info.forced_21_9.value.unwrap();
         // the game's 21:9 is really 64:27 (2560x1080)
-        let ratio = if info.forced_21_9 {
-            27.0 / 64.0
-        } else {
-            9.0 / 16.0
-        };
-        info.effective_height = (info.game_width as f64 * ratio)
-            .min(info.game_height as f64)
-            .round() as u32;
+        let ratio = if forced_21_9 { 27.0 / 64.0 } else { 9.0 / 16.0 };
+        info.effective_height = (width * ratio).min(height).round() as u32;
         info.scale_factor = info.effective_height as f64 / 1440.0;
-        // the UI is laid out in a 16:9 block, assumed centered in the capture
+        // the UI is laid out in a 16:9 block, centred in the capture
         info.ui_origin = (
-            (self.buffer.width as f64 - info.effective_height as f64 * 16.0 / 9.0) / 2.0,
-            (self.buffer.height as f64 - info.effective_height as f64) / 2.0,
+            (width - info.effective_height as f64 * 16.0 / 9.0) / 2.0,
+            (height - info.effective_height as f64) / 2.0,
         );
-        let render_width = if info.forced_21_9 {
-            (info.effective_height as f64 * 64.0 / 27.0).min(info.game_width as f64)
+        let render_width = if forced_21_9 {
+            (info.effective_height as f64 * 64.0 / 27.0).min(width)
         } else {
-            info.game_width as f64
+            width
         };
         info.render_width = render_width;
-        info.corner = (
-            (self.buffer.width as f64 - render_width) / 2.0,
-            info.ui_origin.1,
-        );
+        info.corner = ((width - render_width) / 2.0, info.ui_origin.1);
     }
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]

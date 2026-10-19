@@ -17,10 +17,7 @@ fn main() {
     for path in env::args().skip(1) {
         let image = image::open(&path).unwrap().to_rgba8();
         let (width, height) = (image.width() as usize, image.height() as usize);
-        // a still is the whole game window, so the capture size is the game resolution
-        let game = (width as u32, height as u32);
-        let (mut state, mut pixels) =
-            native::new_state(width, height, game, path.contains("21 by 9"));
+        let (mut state, mut pixels) = native::new_state(width, height);
         pixels.copy_from_slice(image.as_raw());
         for _ in 0..40 {
             state.cropper();
@@ -28,7 +25,7 @@ fn main() {
         }
 
         let name = path.split(['/', '\\']).last().unwrap().replace(' ', "_");
-        let brightness = state.screen_info.brightness.unwrap();
+        let brightness = state.screen_info.brightness.value.unwrap();
         let scale = state.screen_info.scale_factor;
         let mut addresses: Vec<_> = state
             .slot_infos

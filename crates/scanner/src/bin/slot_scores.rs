@@ -7,14 +7,16 @@ fn main() {
     for path in env::args().skip(1) {
         let image = image::open(&path).unwrap().to_rgba8();
         let (width, height) = (image.width() as usize, image.height() as usize);
-        let (mut state, mut pixels) =
-            native::new_state(width, height, native::guess_game(width, height), false);
+        let (mut state, mut pixels) = native::new_state(width, height);
         pixels.copy_from_slice(image.as_raw());
         for _ in 0..30 {
             state.cropper();
             state.run_ocr_inline();
         }
-        println!("{path}  brightness {:?}", state.screen_info.brightness);
+        println!(
+            "{path}  brightness {:?}",
+            state.screen_info.brightness.value
+        );
         for inventory in [
             hf_scanner::scanner_state::InventoryType::Roster,
             hf_scanner::scanner_state::InventoryType::CharStorage,

@@ -38,9 +38,9 @@ fn main() {
     let Some(Record::Start(start)) = records.next() else {
         panic!("no start record")
     };
-    let game = (start.game_width, start.game_height);
-    let (mut state, _pixels) =
-        native::new_state(start.width, start.height, game, start.forced_21_9);
+    let (mut state, _pixels) = native::new_state(start.width, start.height);
+    state.screen_info.forced_21_9 = start.forced_21_9;
+    state.screen_info.brightness = start.brightness;
 
     let mut looks: HashMap<String, HashMap<u64, Look>> = HashMap::new();
     for record in records {
@@ -56,7 +56,7 @@ fn main() {
         let scanned = scan.frame.is_some();
         state.replay_scan(scan);
         state.clear_changed();
-        let Some(brightness) = state.screen_info.brightness.filter(|_| scanned) else {
+        let Some(brightness) = state.screen_info.brightness.value.filter(|_| scanned) else {
             continue;
         };
         let s = state.screen_info.scale_factor;

@@ -48,7 +48,7 @@ impl ScannerState {
         );
         let observed = seen.unwrap_or_else(|| {
             let mut crop = self.crop_buffer(position);
-            normalize_brightness(&mut crop, self.screen_info.brightness.unwrap());
+            normalize_brightness(&mut crop, self.screen_info.brightness.value.unwrap());
             crop
         });
 
@@ -129,7 +129,7 @@ impl ScannerState {
                 Some(true) => true,
                 Some(false) => {
                     let mut crop = self.crop_buffer(position);
-                    normalize_brightness(&mut crop, self.screen_info.brightness.unwrap());
+                    normalize_brightness(&mut crop, self.screen_info.brightness.value.unwrap());
                     let same =
                         close_enough(&self.slot_infos[slot_address].observed_icon, &crop).is_some();
                     seen = Some(crop);
@@ -181,7 +181,7 @@ impl ScannerState {
                             icon: observed_icon.data.clone(),
                             template: icon_name_score.as_ref().unwrap().0.clone(),
                         },
-                        brightness: self.screen_info.brightness.unwrap(),
+                        brightness: self.screen_info.brightness.value.unwrap(),
                     };
                     let amount_job = self.request_ocr(number, 0, 0);
 
@@ -330,7 +330,7 @@ impl ScannerState {
             self.screen_info.effective_height,
             self.screen_info.scale_factor,
         );
-        let brightness = self.screen_info.brightness.unwrap();
+        let brightness = self.screen_info.brightness.value.unwrap();
         let afar_rows = (AFAR_ROWS * s).round() as usize;
         let position = self.anchored_slot_address_position(slot_address).unwrap();
         let mut observed = self.crop_buffer(position);

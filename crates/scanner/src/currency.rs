@@ -420,7 +420,7 @@ impl ScannerState {
         let s = self.screen_info.scale_factor;
         let ui_height = self.screen_info.effective_height;
         // lines are cut as captured, and read at what the brightness is thought to be
-        self.buffer.brightness = self.screen_info.brightness.unwrap_or(50.0);
+        self.buffer.brightness = self.screen_info.brightness.value.unwrap_or(50.0);
         self.currency.busy = false;
         let parts_wanted = PARTS
             .iter()

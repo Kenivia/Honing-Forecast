@@ -14,7 +14,15 @@ import { has_progress, reset_scan, take_edits } from "./ScanStore";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { storeToRefs } from "pinia";
-import { ref, computed, onMounted, onUnmounted, toRaw, watch } from "vue";
+import {
+  ref,
+  reactive,
+  computed,
+  onMounted,
+  onUnmounted,
+  toRaw,
+  watch,
+} from "vue";
 import { useIntervalFn } from "@vueuse/core";
 import { getModel, getScannerConfig, ScanResult } from "./LoadStorage";
 import {
@@ -27,12 +35,7 @@ import {
   read_record,
   recording,
 } from "./Capture";
-import {
-  auto_select_resolution,
-  game_resolution,
-  RESOLUTIONS_16_9,
-  RESOLUTIONS_21_9,
-} from "./Resolution";
+import { scan_settings } from "./ScanSettings";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 const runtime = useRuntimeStore();
 
@@ -61,17 +64,62 @@ let replay: {
 const replaying = ref(false);
 const replay_note = ref("");
 
-const resolutions = computed(() =>
-  game_resolution.ultrawide ? RESOLUTIONS_21_9 : RESOLUTIONS_16_9,
+// Edited here and applied with a restart, since everything scanned depends on them.
+const copy_settings = () => structuredClone(toRaw(scan_settings));
+const draft = reactive(copy_settings());
+const draft_changed = computed(
+  () => JSON.stringify(draft) !== JSON.stringify(scan_settings),
 );
-const selected_resolution = computed({
-  get: () => `${game_resolution.width}x${game_resolution.height}`,
-  set: (value) => {
-    [game_resolution.width, game_resolution.height] = value
-      .split("x")
-      .map(Number);
+const draft_valid = computed(() => {
+  const { manual, value } = draft.brightness;
+  return !manual || (typeof value === "number" && value >= 0 && value <= 100);
+});
+const aspect_choice = computed({
+  get: () =>
+    draft.forced_21_9.manual
+      ? draft.forced_21_9.value
+        ? "21:9"
+        : "16:9"
+      : "auto",
+  set: (choice) => {
+    draft.forced_21_9 =
+      choice === "auto"
+        ? { value: null, manual: false }
+        : { value: choice === "21:9", manual: true };
   },
 });
+const brightness_choice = computed({
+  get: () => (draft.brightness.manual ? "manual" : "auto"),
+  set: (choice) => {
+    draft.brightness =
+      choice === "auto"
+        ? { value: null, manual: false }
+        : { value: detected.value.brightness ?? 50, manual: true };
+  },
+});
+function apply_settings() {
+  Object.assign(scan_settings, structuredClone(toRaw(draft)));
+  restart_scanner();
+}
+function discard_settings() {
+  Object.assign(draft, copy_settings());
+}
+
+// what the scanner last reported, shown beside a setting left on auto
+const detected = ref<{
+  forced_21_9: boolean | null;
+  brightness: number | null;
+}>({ forced_21_9: null, brightness: null });
+function note_detected(result: ScanResult) {
+  const brightness =
+    result.brightness == null ? null : Math.round(result.brightness);
+  if (
+    detected.value.forced_21_9 !== result.forced_21_9 ||
+    detected.value.brightness !== brightness
+  ) {
+    detected.value = { forced_21_9: result.forced_21_9, brightness };
+  }
+}
 
 // templates and remembered slots are scale-specific, so start over
 function restart_scanner() {
@@ -120,12 +168,11 @@ async function start_replay(file: File) {
   stop_capture();
   const { start, first } = await open_capture(file);
   replay = { file, first, offset: first, ...start };
-  Object.assign(game_resolution, {
-    width: start.game_width,
-    height: start.game_height,
+  Object.assign(scan_settings, {
     forced_21_9: start.forced_21_9,
-    ultrawide: start.width / start.height > 2.1,
+    brightness: start.brightness,
   });
+  discard_settings();
   replaying.value = true;
   status.value = "capturing";
   start_scanner();
@@ -145,7 +192,6 @@ function begin(
 ) {
   stop_capture();
   source.start(s, width, height, cleanup);
-  auto_select_resolution(width, height);
   attach();
   start_scanner();
 }
@@ -167,17 +213,14 @@ async function start_scanner() {
   // what was recorded belongs to the state that is gone
   clear_capture();
   replay_note.value = "";
+  detected.value = { forced_21_9: null, brightness: null };
   if (replay) replay.offset = replay.first;
 
   const { width, height } = replay ?? source.size;
   const [config, model] = await Promise.all([getScannerConfig(), getModel()]);
   // the state is built once here and then stays inside the worker's wasm
   const new_scanner_state = {
-    screen_info: {
-      game_width: game_resolution.width,
-      game_height: game_resolution.height,
-      forced_21_9: game_resolution.forced_21_9,
-    },
+    settings: copy_settings(),
     buffer: { width, height, size: width * height * 4 },
     config: toRaw(config),
     record: recording.value && !replay,
@@ -273,6 +316,7 @@ async function cropper_loop(id: number, full = false) {
       const result_start = performance.now();
       // the next frame goes out before any UI work
       cropper_loop(id);
+      note_detected(result);
       props.process_result(result);
       scan_timings.push({
         ...timings,
@@ -317,6 +361,7 @@ async function replay_loop(id: number, full: boolean) {
         replay_note.value = `Replay differs from the recording, first at scan ${timings.replay_mismatch}.`;
       }
       cropper_loop(id);
+      note_detected(result);
       props.process_result(result);
     },
     0,
@@ -371,28 +416,70 @@ watch(
 
     <div
       v-if="status === 'capturing' && !replaying"
-      class="flex items-center gap-2"
+      class="flex flex-wrap items-center gap-2"
     >
-      <span> Game resolution: </span>
-      <select
-        v-model="selected_resolution"
-        class="selector"
-        aria-label="Game resolution"
-        @change="restart_scanner"
-      >
-        <option v-for="[w, h] in resolutions" :key="`${w}x${h}`">
-          {{ w }}x{{ h }}
-        </option>
+      <span> Aspect: </span>
+      <select v-model="aspect_choice" class="selector" aria-label="Aspect">
+        <option value="auto">Auto</option>
+        <option value="16:9">16:9</option>
+        <option value="21:9">Forced 21:9</option>
       </select>
-      <label class="flex items-center gap-1">
-        <input
-          type="checkbox"
-          v-model="game_resolution.forced_21_9"
-          :disabled="game_resolution.ultrawide"
-          @change="restart_scanner"
-        />
-        Forced 21:9
-      </label>
+      <span
+        v-if="!draft.forced_21_9.manual"
+        class="text-sm text-(--text-muted)"
+      >
+        {{
+          detected.forced_21_9 == null
+            ? "detecting"
+            : detected.forced_21_9
+              ? "21:9"
+              : "16:9"
+        }}
+      </span>
+      <span class="ml-4"> Brightness: </span>
+      <select
+        v-model="brightness_choice"
+        class="selector"
+        aria-label="Brightness"
+      >
+        <option value="auto">Auto</option>
+        <option value="manual">Manual</option>
+      </select>
+      <input
+        v-if="draft.brightness.manual"
+        v-model.number="draft.brightness.value"
+        class="generic-input number-border w-13"
+        type="number"
+        min="0"
+        max="100"
+        aria-label="In-game brightness"
+      />
+      <span v-else class="text-sm text-(--text-muted)">
+        {{ detected.brightness ?? "detecting" }}
+      </span>
+    </div>
+
+    <div
+      v-if="status === 'capturing' && !replaying && draft_changed"
+      class="flex flex-wrap items-center gap-2"
+    >
+      <span class="text-sm text-(--warning)">
+        Applying restarts the scanner and clears everything scanned so far,
+        corrections included.
+      </span>
+      <button
+        class="rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+        :disabled="!draft_valid"
+        @click="apply_settings"
+      >
+        Apply
+      </button>
+      <button
+        class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600"
+        @click="discard_settings"
+      >
+        Cancel
+      </button>
     </div>
 
     <div class="flex gap-2">

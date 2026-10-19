@@ -11,15 +11,7 @@ fn main() {
     for (index, path) in args[1..].iter().enumerate() {
         let image = image::open(path).unwrap().to_rgba8();
         let (width, height) = (image.width() as usize, image.height() as usize);
-        let ui_height = (height as f64 / 360.0).round() as u32 * 360;
-        let forced = path.contains("21 by 9");
-        let game_width = if forced {
-            width as u32
-        } else {
-            ui_height * 16 / 9
-        };
-        let (mut state, mut pixels) =
-            native::new_state(width, height, (game_width, ui_height), forced);
+        let (mut state, mut pixels) = native::new_state(width, height);
         pixels.copy_from_slice(image.as_raw());
         state.cropper();
         state.cropper();
@@ -44,7 +36,7 @@ fn main() {
                 .unwrap();
             manifest += &format!(
                 "{id}\t{name}\t{}\t{}\t{}\t{path}\n",
-                state.screen_info.brightness.unwrap(),
+                state.screen_info.brightness.value.unwrap(),
                 state.screen_info.effective_height,
                 info.amount.clone().unwrap_or_default().trim()
             );

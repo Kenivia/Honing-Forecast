@@ -116,6 +116,9 @@ export interface ScanResult {
   pages: [string, number][];
   chests?: Chest[];
   currencies: CurrencyResult[];
+  // as detected or given, null while not known yet
+  forced_21_9: boolean | null;
+  brightness: number | null;
   ocr_jobs: OcrJob[];
   // this scan's record, while a debug capture is recorded
   capture?: Uint8Array;

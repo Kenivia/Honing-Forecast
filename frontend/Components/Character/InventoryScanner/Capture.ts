@@ -13,13 +13,13 @@ import {
   slots,
 } from "./ScanStore";
 import { convert, manifest } from "./Manifest";
-import { game_resolution } from "./Resolution";
+import { Detected, scan_settings } from "./ScanSettings";
 
 // A debug capture: every scan as Rust saw it, to be sent in and run again. The scanner worker
 // hands back one record per scan and they are kept here until downloaded. The format is in
 // crates/scanner/src/capture.rs.
 
-const MAGIC = "HFCAP001";
+const MAGIC = "HFCAP003";
 export const CAPTURE_EXTENSION = ".hfcap";
 // recording stops by itself here
 const LIMIT = 5e9;
@@ -45,7 +45,7 @@ function reference() {
   return {
     saved_at: new Date().toISOString(),
     user_agent: navigator.userAgent,
-    game_resolution,
+    scan_settings,
     slots: [...slots.value.values()],
     edits: edits.value,
     chests: chests.value,
@@ -84,9 +84,8 @@ export function download_capture() {
 export interface CaptureStart {
   width: number;
   height: number;
-  game_width: number;
-  game_height: number;
-  forced_21_9: boolean;
+  forced_21_9: Detected<boolean>;
+  brightness: Detected<number>;
 }
 
 // null at the end of the file

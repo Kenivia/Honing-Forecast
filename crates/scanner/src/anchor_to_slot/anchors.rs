@@ -178,7 +178,7 @@ impl ScannerState {
     // Each found anchor is compared where it was. Until something tells the brightness, which
     // the comparison needs, it is matched again just around that place instead.
     pub fn check_existing_anchors(&mut self) {
-        let brightness = self.screen_info.brightness;
+        let brightness = self.screen_info.brightness.value;
         let mut to_clear: Vec<(AnchorType, usize)> = Vec::new();
         let mut estimates: Vec<(AnchorType, usize, f64)> = Vec::new();
 
@@ -271,8 +271,9 @@ impl ScannerState {
             }
 
             // only to start with: until an anchor has held up, there is nothing better
-            if self.screen_info.brightness_anchors == 0 && brightness.is_some() {
-                self.screen_info.brightness = brightness;
+            let info = &mut self.screen_info;
+            if !info.brightness.manual && info.brightness_anchors == 0 && brightness.is_some() {
+                info.brightness.value = brightness;
             }
         }
     }
@@ -282,6 +283,9 @@ impl ScannerState {
     // average over the most anchors ever found together, and stays once some of them are lost.
     // Anchors only count after their re-check, which a wrong match does not survive.
     fn update_brightness(&mut self) {
+        if self.screen_info.brightness.manual {
+            return;
+        }
         // in list order, so the sum does not depend on map order
         let found: Vec<f64> = ANCHORS
             .iter()
@@ -297,7 +301,8 @@ impl ScannerState {
         if found.is_empty() {
             self.screen_info.brightness_anchors = 0;
         } else if found.len() >= self.screen_info.brightness_anchors {
-            self.screen_info.brightness = Some(found.iter().sum::<f64>() / found.len() as f64);
+            self.screen_info.brightness.value =
+                Some(found.iter().sum::<f64>() / found.len() as f64);
             self.screen_info.brightness_anchors = found.len();
         }
     }

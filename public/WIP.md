@@ -20,7 +20,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ### EZ
 
-- wipe current scan (just like starting a debug recording) changing characters
+- wipe current scan (just like starting a debug recording) changing characters (maybe add a confirmation popup?)
 - "waiting for ocr" spinner
 - auto detect 21:9
 - manual overwrite brightness

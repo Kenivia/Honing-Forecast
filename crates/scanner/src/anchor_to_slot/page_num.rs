@@ -40,7 +40,7 @@ impl ScannerState {
                         get_resizer(&mut self.resizer),
                     );
                     let mut seen = self.crop_buffer(icon.offset.shifted(root));
-                    normalize_brightness(&mut seen, self.screen_info.brightness.unwrap());
+                    normalize_brightness(&mut seen, self.screen_info.brightness.value.unwrap());
                     (
                         confidence(&icon, &seen),
                         icon.required_confidence

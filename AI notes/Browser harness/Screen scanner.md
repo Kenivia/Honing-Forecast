@@ -18,10 +18,10 @@ export default async ({ page, hf }) => {
 - An image becomes a stream repeating that frame. A video plays once, drawn frame by frame, then repeats its last frame twice a second.
 - **Headless Chromium does not draw every frame of a video playing at full speed**: under load frames get drawn twice and others skipped (a third of them in one run). To feed the scanner every frame, play the upload at half speed: before opening the page, wrap `HTMLMediaElement.prototype.play` in an init script so it sets `playbackRate = 0.5` on blob sources. Count what was drawn by wrapping `CanvasRenderingContext2D.prototype.drawImage`.
 - Works headless and headed, in Chromium and Firefox, for PNG and H.264 MP4.
-- Any file size works. After upload a `Game resolution` select and a `Forced 21:9` checkbox appear, preselected from the file size; if the game in the file is smaller than the file (windowed, padded), pick its real resolution or nothing is recognised.
+- Any file size works. After upload the `Aspect` and `Brightness` selects appear, both on auto; manual brightness shows an input labelled `In-game brightness`. A change to those two shows `Apply` and `Cancel` buttons, and nothing happens until `Apply`.
 - **Recordings are whatever is in `ignored/recordings`** (any video; `.mp4` is git-ignored, so they are local). The suite and the profile take every file there, so a new one only has to be dropped in. `python scanner_setup/brightness/probe_capture.py "<file>"` says what one is. A recording stands for itself in a measurement by its file name.
-- Stills: `scanner_setup/brightness/inputs/*.png` (lone inventory) and `scanner_setup/brightness/inputs storage/*.png` (storage layout with a chest tooltip), both 1080p at every brightness setting; in `scanner_setup/brightness/1440p raw`, `inventory top left.png` and `hover tooltip.png` show a character inventory with items, the `storage ...` files show the storage layout, and `21 by 9 storage.png` is storage at forced 21:9 (tick the checkbox, keep 2560x1440).
-- A native 3440x1440 recording preselects 3440x1440 with the checkbox on, which is right. Headless Chromium plays 60 fps ones at half speed without trouble.
+- Stills: `scanner_setup/brightness/inputs/*.png` (lone inventory) and `scanner_setup/brightness/inputs storage/*.png` (storage layout with a chest tooltip), both 1080p at every brightness setting; in `scanner_setup/brightness/1440p raw`, `inventory top left.png` and `hover tooltip.png` show a character inventory with items, the `storage ...` files show the storage layout, and `old/21 by 9 storage.png` is storage at forced 21:9 (auto detects it; keep 2560x1440).
+- The file must be exactly the game's resolution: there is no resolution input. A native 3440x1440 recording is taken as 21:9 by auto. Headless Chromium plays 60 fps ones at half speed without trouble.
 - The grid keeps its slots after `Stop` and stays editable; starting the next capture wipes it, and the capture card says so while idle.
 - The first frame is slow (full-frame anchor search). Slots get a canvas once their page has been looked at, about a second and a half for a full page; until then they show `?`. A slot's status is its border colour (`style.borderColor` holds the CSS variable, see `Slot grid.md`).
 - Chests read from tooltips show in the dashboard under the grid when a slot with that chest's icon is hovered or clicked. The dashboard's inputs are labelled `Item`, `Amount` and `Tradability` (the last two only while an item is chosen; match `Tradability` exactly, the manifest has inputs ending in it), with buttons `Save edit` (disabled until amount and tradability are filled), `Retry` and `Okay`. Every frame of an uploaded recording is scanned. Texts arrive later than the frame they were cut from, so wait for the OCR queue to empty (`window.__ocr_timings` stops growing) before reading the grid.
@@ -84,7 +84,7 @@ The native suite says whether a change alters what is read; the browser profile 
 - `pnpm scanner-suite timings <a> [<b>]` prints the native stage timers as ms per scanned frame. They only mean something from `run <name> --seq`, which plays the recordings one at a time; a normal run plays all of them at once.
 - A stage with no timer is measured with a temporary `timing::timed("m/...", ...)` around it, which then shows in `timings` with its call count. A timed call costs about 60 ns natively, which matters past a million calls.
 - The 768p and 900p stills say little, and the 900p folder ends in an out-of-bounds crop; both are in the run so that it stays that way.
-- The suite needs python with opencv, which reads each recording's frame size; the harness guesses the game resolution from it (`native::guess_game`).
+- The suite needs python with opencv, which reads each recording's frame size; that size is the game resolution.
 
 The dumps are the three arrays the page keeps, all in ms:
 
@@ -94,10 +94,10 @@ The dumps are the three arrays the page keeps, all in ms:
 
 For checks that need the real capture path, launch headed and skip the picker:
 
-- Chrome: `--auto-select-desktop-capture-source=Entire screen`, and `viewport: null`. With an emulated viewport the capture is scaled to the viewport size, so the game no longer matches any selectable resolution.
+- Chrome: `--auto-select-desktop-capture-source=Entire screen`, and `viewport: null`. With an emulated viewport the capture is scaled to the viewport size, so the capture is no longer the game's resolution.
 - Firefox: the user pref `media.navigator.permission.disabled: true`. The auto-accept is flaky; check for `● Live` and retry.
 
-The game has to be on screen, with its resolution selected, for anything to be recognised.
+The game has to be full screen for anything to be recognised.
 
 ## Measuring memory
 

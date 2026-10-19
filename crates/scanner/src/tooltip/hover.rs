@@ -342,7 +342,7 @@ impl ScannerState {
     // Finds the tooltip and sends its text lines off to be read. Nothing here waits for OCR:
     // the votes are cast in resolve_reads, when the texts are back.
     pub fn update_tooltip(&mut self) {
-        let Some(brightness) = self.screen_info.brightness else {
+        let Some(brightness) = self.screen_info.brightness.value else {
             return;
         };
         self.buffer.lut = Some(brightness_lut(brightness));
@@ -403,7 +403,7 @@ impl ScannerState {
         bar_top: f64,
         s: f64,
     ) -> (bool, Vec<SlotAddress>) {
-        let brightness = self.screen_info.brightness.unwrap();
+        let brightness = self.screen_info.brightness.value.unwrap();
         let height = self.screen_info.effective_height;
         let (mut unknown, mut lit) = (false, vec![]);
         for (address, top) in beside {

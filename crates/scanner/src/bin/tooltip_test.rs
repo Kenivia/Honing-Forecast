@@ -9,9 +9,8 @@ use hf_scanner::{
 };
 use std::{env, io::Read, time::Instant};
 
-fn new_state(width: usize, height: usize, forced_21_9: bool) -> (ScannerState, Vec<u8>) {
-    let game = native::guess_game(width, height);
-    let (mut state, pixels) = native::new_state(width, height, game, forced_21_9);
+fn new_state(width: usize, height: usize) -> (ScannerState, Vec<u8>) {
+    let (mut state, pixels) = native::new_state(width, height);
     // SLOT_BUDGET=1 keeps the time budget, as in the browser; runs then differ with the machine's load
     state.no_slot_budget = env::var("SLOT_BUDGET").is_err();
     (state, pixels)
@@ -22,10 +21,8 @@ fn main() {
     if args[0] != "--stdin" {
         for path in &args {
             let image = image::open(path).unwrap().to_rgba8();
-            // a still says it is forced 21:9 in its name
-            let forced = path.contains("21 by 9");
             let (mut state, mut pixels) =
-                new_state(image.width() as usize, image.height() as usize, forced);
+                new_state(image.width() as usize, image.height() as usize);
             pixels.copy_from_slice(image.as_raw());
             // enough scans for every slot to be read, they are looked at a few at a time
             for _ in 0..30 {
@@ -40,7 +37,7 @@ fn main() {
                 .collect();
             println!(
                 "  brightness {:?}, {} slots recognised, mean confidence {:.4}",
-                state.screen_info.brightness,
+                state.screen_info.brightness.value,
                 scores.len(),
                 scores.iter().sum::<f64>() / scores.len() as f64
             );
@@ -54,7 +51,7 @@ fn main() {
     }
 
     let (width, height) = (args[1].parse().unwrap(), args[2].parse().unwrap());
-    let (mut state, mut pixels) = new_state(width, height, false);
+    let (mut state, mut pixels) = new_state(width, height);
     let mut stdin = std::io::stdin().lock();
     let (mut index, mut seen, mut hovers, mut start) = (0, 0, 0, 0);
     let mut previous: Option<Hover> = None;
@@ -69,14 +66,14 @@ fn main() {
             // cropper(), with the tooltip step and all OCR timed on their own
             let ready = sim.take_ready();
             state.apply_ocr(ready);
-            let scan = state.worth_scanning();
+            let scan = state.detect_21_9() && state.worth_scanning();
             skipped += !scan as usize;
-            state.update_scale();
             if scan {
+                state.update_scale();
                 state.update_anchors();
             }
-            if state.screen_info.brightness != brightness {
-                brightness = state.screen_info.brightness;
+            if state.screen_info.brightness.value != brightness {
+                brightness = state.screen_info.brightness.value;
                 // each found anchor's own estimate
                 let anchors: Vec<String> = ANCHORS
                     .iter()
@@ -150,7 +147,7 @@ fn main() {
     println!(
         "{index} frames, tooltip on {seen}, {hovers} hovers, {:.1} ms per frame in the tooltip step and OCR, brightness {:?}",
         spent / index as f64,
-        state.screen_info.brightness
+        state.screen_info.brightness.value
     );
     eprintln!("{}", sim.summary());
     println!("{} chests", state.chests.len());

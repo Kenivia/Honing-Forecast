@@ -92,8 +92,6 @@ fn main() {
     let reference_path = option(&args, "--reference");
     let reread = args.iter().any(|x| x == "--reread");
     let no_edits = args.iter().any(|x| x == "--no-edits");
-    // for a capture recorded with the switch left off
-    let forced = args.iter().any(|x| x == "--forced-21-9");
     let mut sim = native::Sim::new();
     let from: u64 = option(&args, "--from").map_or(0, |x| x.parse().unwrap());
     let to: u64 = option(&args, "--to").map_or(u64::MAX, |x| x.parse().unwrap());
@@ -107,9 +105,9 @@ fn main() {
         panic!("no start record")
     };
     println!("{start:?}");
-    let game = (start.game_width, start.game_height);
-    let forced = forced || start.forced_21_9;
-    let (mut state, _pixels) = native::new_state(start.width, start.height, game, forced);
+    let (mut state, _pixels) = native::new_state(start.width, start.height);
+    state.screen_info.forced_21_9 = start.forced_21_9;
+    state.screen_info.brightness = start.brightness;
     state.hover_log = Some(vec![]);
 
     // per hover: the first and last scan it was on screen
