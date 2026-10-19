@@ -23,6 +23,7 @@ const WHITE: u8 = 8;
 const BRIGHT: u8 = 16;
 const BLACK: u8 = 32;
 const TAN: u8 = 64;
+const PALE: u8 = 128;
 
 #[derive(Debug, Clone)]
 struct Line {
@@ -63,6 +64,10 @@ fn classify([r, g, b]: [i32; 3]) -> u8 {
     if max > 110 && b * 2 >= r && b * 4 < r * 3 && g < r && g * 5 > r * 4 {
         class |= TAN;
     }
+    // the pale yellow some descriptions highlight a phrase in: green as red, blue at 0.78
+    if max > 110 && g * 25 >= r * 24 && g * 25 <= r * 26 && b * 5 >= r * 3 && b * 10 < r * 9 {
+        class |= PALE;
+    }
     class
 }
 
@@ -72,7 +77,7 @@ pub struct Layout {
     // frame rectangle (x0, y0, x1, y1) of the "Amount Stacked" number, no margin
     pub amount: Option<(usize, usize, usize, usize)>,
     pub chest: Option<ChestLayout>,
-    // frame rectangles of the description lines, which say which book a book is
+    // frame rectangles of the description lines, which say which book or bar of gold it is
     pub description: Vec<(usize, usize, usize, usize)>,
     // last row the shortcut hints under the body were seen on
     pub bottom: usize,
@@ -190,7 +195,7 @@ pub fn parse_layout(buffer: &Buffer, bar: &TitleBar, s: f64) -> Layout {
             ICON_BOTTOM * s <= y as f64
                 && stacked.is_none_or(|amount| y < amount.top)
                 && !panel.is_some_and(|p| p.0 <= y && y <= p.1)
-                && count(y, y + 1, 0, columns, TAN) >= 3
+                && count(y, y + 1, 0, columns, TAN | PALE) >= 3
         })
         .collect();
     let description = text_lines(&described, 8.0 * s)

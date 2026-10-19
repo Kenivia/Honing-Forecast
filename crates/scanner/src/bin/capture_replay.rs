@@ -51,12 +51,12 @@ fn votes(hover: &Hover) -> String {
     let lit: Vec<String> = hover.lit.iter().map(key).collect();
     let level = hover.chest_place.1.as_ref().map(key);
     format!(
-        "      bar {:?}  sent (title, amount, chest, description) {:?}  icon tries {} shared {}\n      votes: title {:?}  description {:?}  icon {:?}  amount {:?}  tradability {:?}\n      beside {beside:?}
+        "      bar {:?}  sent (title, amount, chest, description) {:?}  icon tries {} read body {}\n      votes: title {:?}  description {:?}  icon {:?}  amount {:?}  tradability {:?}\n      beside {beside:?}
       lit {lit:?}  level with {level:?}",
         hover.bar,
         hover.sent,
         hover.icon_tries,
-        hover.shared_icon,
+        hover.read_body,
         sorted(&hover.title_votes),
         sorted(&hover.body_votes),
         sorted(&hover.icon_votes),

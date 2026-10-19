@@ -241,6 +241,18 @@ impl ScannerState {
             if info.hovered && info.tooltip_failed {
                 return failed();
             }
+            // bars whose gold is bound in different ways, read before their description was
+            let unread_bar = |chest: &&&Chest| {
+                let variants: Vec<&Variant> =
+                    chest.variants.iter().map(|id| variant(*id)).collect();
+                !open_alike(&variants) && variants.iter().all(|x| !x.descs.is_empty())
+            };
+            if !standing.is_empty() && standing.iter().all(unread_bar) {
+                return (
+                    SlotStatus::NeedHover,
+                    "Only the description on its tooltip says how this gold is bound. Hover it a little longer.".into(),
+                );
+            }
             if sure || !standing.is_empty() || info.hovered {
                 return good(false);
             }

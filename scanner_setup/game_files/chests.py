@@ -10,8 +10,10 @@ A row is one chest as the game has it: id, title, icon (the art's name), rarity,
 level it asks for, contents as [title, amount, id if it is a chest of this table], and "extra", how
 many more rows its tooltip has for things that differ by class. Items that only differ in how they
 are bound are one row, and "binds" has the ways; "content_binds" is there when something inside is
-not bound to a character, with how each content is bound instead. Gold always has its own there,
-by the chest's art: a chest's band says nothing about its gold. "top" rows can sit in a slot: they have an English name, are
+not bound to a character, with how each content is bound instead. Gold always has its own there:
+a bar's from its item category, any other chest's tradable. Bars whose gold is bound differently
+are separate rows, and a bar has "descs", its descriptions, which its tooltip is told by.
+"top" rows can sit in a slot: they have an English name, are
 not past their expiry date and are not of tiers 1 to 3. The others are only there for being inside
 one. Chests with "Cube" or "Engraving" in their title never count as opening to a material.
 An irrelevant row is there so that a slot holding it can be told from the chest it looks like. Its
@@ -26,15 +28,15 @@ from datetime import date
 
 from PIL import Image
 
-from game import ROOT, box, icon_art, icon_info, load_index, table
+from game import ROOT, box, icon_art, icon_info, load_index, table, text
 
-TEMPLATES = ROOT / "templates"
+TEMPLATES = ROOT / "scanner_setup/templates"
 ART = TEMPLATES / "ChestIcons"
 MONEY = {1: "Silver", 2: "Gold"}  # Item.GainMoneyType
 BOUND = {1: "CharBound", 2: "RosterBound"}  # Item.BindTarget, of an item whose BindType is not 0
 LOOSER = ["RosterBound", "Tradable"]  # than bound to a character, the least so first
-# The bars of gold: their gold is bound to the character. Any other chest's can be traded.
-BOUND_GOLD_ICONS = ("use_13_34", "use_13_35", "use_13_36", "use_13_37", "use_13_38")
+# How a bar's gold is bound, by Item.Category: plain, deposit (two kinds), roster, character. Any other chest's can be traded.
+GOLD_BANDS = {34300: "Tradable", 34301: "Tradable", 34302: "Tradable", 34303: "RosterBound", 34304: "CharBound"}
 UNWANTED = ("Cube", "Engraving")  # in a chest's title: it is irrelevant, and so is what only it leads to
 UNWANTED_ICONS = ("all_quest_02_184", "all_quest_02_196", "all_quest_02_198", "all_quest_02_199", "all_quest_02_226")  # likewise, by its art
 
@@ -58,9 +60,11 @@ def main():
         chest = (kind, [(content_id, bare(title), amount) for content_id, title, amount in contents], by_class)
         named = any(word in index.get(int(item_id), (0, ""))[1] for word in UNWANTED)
         (unwanted if named else opens)[int(item_id)] = chest
+    bars = set()
     for item_id, row in items.items():
         if item_id not in opens and int(row["GainMoneyType"]) in MONEY and int(row["UseGainCount"]):
-            opens[item_id] = ("ObtainAll", [(None, MONEY[int(row["GainMoneyType"])], int(row["UseGainCount"]))], [])
+            bars.add(item_id)
+            opens[item_id] =("ObtainAll", [(None, MONEY[int(row["GainMoneyType"])], int(row["UseGainCount"]))], [])
 
     # every title a chest opens to, all the way down
     leaves = {}
@@ -106,7 +110,9 @@ def main():
             _, title, rarity, icon = index.get(item_id, (item_id, "", "common", ""))
             level = int(items[item_id]["ReUseBalanceLevel"])
             inside = [[name, amount, merged[content_id] if content_id in wanted else None] for content_id, name, amount in contents]
-            key = json.dumps([bare(title), icon, rarity, kind, level, inside, extra])
+            bar = item_id in bars
+            gold = GOLD_BANDS.get(int(items[item_id]["Category"]), "Tradable") if bar else "Tradable"
+            key = json.dumps([bare(title), icon, rarity, kind, level, inside, extra, gold])
             row = rows.setdefault(key, {"id": item_id, "title": bare(title), "icon": icon, "rarity": rarity, "kind": kind})
             if level:
                 row["level"] = level
@@ -114,8 +120,9 @@ def main():
                 row["extra"] = extra
             row["top"] = row.get("top", False) or top(item_id)
             row["contents"] = inside
+            if bar:
+                row["descs"] = sorted(set(row.get("descs", [])) | {text(items[item_id]["Desc"])})
             inside_binds = [bind(content_id) if content_id in items else None for content_id, _, _ in contents]
-            gold = "CharBound" if icon in BOUND_GOLD_ICONS else "Tradable"
             inside_binds = [gold if name == "Gold" else kind for kind, (_, name, _) in zip(inside_binds, contents)]
             row.setdefault("binds", []).append((top(item_id), bind(item_id), inside_binds))
             now[item_id] = row["id"]

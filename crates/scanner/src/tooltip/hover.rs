@@ -1,7 +1,7 @@
 use super::{
     chest::{Chest, ChestKind, ChestRow, chest_strips},
     detect_title::TitleBar,
-    items::{ITEMS, bars_titled, match_title, shares_icon, variant},
+    items::{Described, ITEMS, bars_differ, bars_titled, match_title, shares_icon, variant},
     layout::parse_layout,
     title::title_lines,
     tooltip_icon::tooltip_icon,
@@ -79,10 +79,11 @@ pub struct Hover {
     // the slot icon its large icon is, and how often that was looked at
     pub icon_votes: AHashMap<String, usize>,
     pub icon_tries: usize,
-    // its large icon is one several materials are drawn with, so its description is read too
-    pub shared_icon: bool,
-    // the material its description says it is
-    pub body_votes: AHashMap<String, usize>,
+    // its description is read too: its large icon is one several materials are drawn with, or its
+    // title is that of bars of gold bound in different ways
+    pub read_body: bool,
+    // the material or bar its description says it is
+    pub body_votes: AHashMap<Described, usize>,
     pub chest_kind_votes: AHashMap<ChestKind, usize>,
     // by id, for the chests of scanner_setup/templates/chests.json its rows read as
     pub chest_votes: AHashMap<u32, usize>,
@@ -263,7 +264,7 @@ impl ScannerState {
             if let Some((icon, clear)) =
                 timed("tooltip/icon", || tooltip_icon(&self.buffer, &bar, s))
             {
-                hover.shared_icon |= shares_icon(&icon);
+                hover.read_body |= shares_icon(&icon);
                 if clear {
                     *hover.icon_votes.entry(icon).or_default() += 1;
                 }
@@ -299,9 +300,11 @@ impl ScannerState {
                 strips.chest = Some(timed("tooltip/chest", || chest_strips(&self.buffer, chest)));
             }
         }
-        // which book a book is: its description says so more often than its title, whose start
-        // the cursor covers when the tooltip is level with the slot
-        if hover.shared_icon
+        // Which book a book is: its description says so more often than its title, whose start
+        // the cursor covers when the tooltip is level with the slot. Which bar of gold a bar is,
+        // and so how its gold is bound: only its description says.
+        hover.read_body |= hover.title.as_deref().is_some_and(bars_differ);
+        if hover.read_body
             && !layout.description.is_empty()
             && highest_vote_count(&hover.body_votes) + hover.waiting[3] < SETTLED
             && hover.sent[3] < MAX_READS
@@ -439,7 +442,10 @@ impl ScannerState {
         // kinds look too alike for the picture match to pick one.
         let titled = hover.title.as_ref().and_then(|title| match_title(title));
         hover.label = winner(&hover.body_votes)
-            .map(|x| x.0)
+            .and_then(|x| match x.0 {
+                Described::Material(label) => Some(label),
+                Described::Bar(_) => None,
+            })
             .or_else(|| titled?.label.clone());
         let labelled = || {
             ITEMS
@@ -524,7 +530,7 @@ impl ScannerState {
 
     // The chest a hover's rows read as: the chests with the most votes, and of those the ones
     // drawn like the slot the tooltip is level with, else like any slot beside it, if some are.
-    // With no rows read it is the bars of its title.
+    // With no rows read it is the bars of its title, those its description is closest to once read.
     fn hovered_chest(&self, hover: &Hover) -> Option<Chest> {
         let top = highest_vote_count(&hover.chest_votes);
         let mut variants: Vec<u32> = hover
@@ -536,6 +542,9 @@ impl ScannerState {
         variants.sort();
         if let (true, Some(title)) = (variants.is_empty(), &hover.title) {
             variants = bars_titled(title);
+            let top = highest_vote_count(&hover.body_votes);
+            variants
+                .retain(|id| top == 0 || hover.body_votes.get(&Described::Bar(*id)) == Some(&top));
         }
         let icons_of = |address: &SlotAddress| {
             self.slot_infos

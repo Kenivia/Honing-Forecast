@@ -11,12 +11,9 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## OCR
 
-### EZ
-
-- reset button
-
 ### HARD
 
+- startup time or at least a loading icon
 - SOMEHOW indicate the amount coming from chests
 - determine tradability of (content of) gold chests from tooltip
 
@@ -24,7 +21,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - save where a chest was detected from? (there'll be multiple tho?) and show it with hover?
 - enhanced book distinguishing (can i be bothered)
-- constant extraction script
+- constant extraction script / update script
 
 ## Forecast mode
 
@@ -75,6 +72,8 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - maybe use indexdb instead of localstorage? (this will pobably be done as part of either inventory scanning or honing luck scanning)
 
 ## Done / cancelled
+
+- ~~reset button~~
 
 - ~~CRLF~~
 - ~~sort out the order of the eval method (is it brute first or coarse first?)~~

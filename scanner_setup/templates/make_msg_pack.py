@@ -30,7 +30,7 @@ CHEST_ICONS_DIR = SCRIPT_DIR / "ChestIcons"
 CHESTS_PATH = SCRIPT_DIR / "chests.json"
 DECOY_ICONS_DIR = SCRIPT_DIR / "DecoyIcons"
 DECOYS_PATH = SCRIPT_DIR / "decoys.json"
-OUTPUT_PATH = SCRIPT_DIR.parent / "public" / "ScannerConfig.msgpack"
+OUTPUT_PATH = SCRIPT_DIR.parent.parent / "public" / "ScannerConfig.msgpack"
 
 
 def find_icon_path(name: str) -> Path:

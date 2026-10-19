@@ -8,3 +8,4 @@ What was checked about the tables `Game files.md` builds, and what they replaced
 - **Against the codex**: the amounts are the game's, and the cases the codex had wrong or empty (the shard pouches at five times too much, "Honing Support Selection Chest II" with nothing in it) come out right. How the table did against the recordings is in `Tooltips tried.md`.
 - `chests.json` went from 258 KB to 714 KB with the irrelevant rows.
 - `find_icon.py` on the codex's own copy of the weapon book put the right icon first (33.3 against 68.3; lower is closer).
+- **Gold by art** (2026-10-11 to 10-19): a bar's gold was "CharBound" for `use_13_34` to `use_13_38` and "Tradable" for every other chest, nothing measured. `Item.Category` replaced it: on the 16-29-47 capture the "Gold Chest"s (said tradable) give roster-bound gold and the 200,000 / 300,000 piles (300,000 said character bound) give deposit gold.

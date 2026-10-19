@@ -2,7 +2,7 @@ use std::mem::take;
 
 use super::{
     chest::{ChestKind, ChestRow, chests_listing},
-    items::{item_from_body, match_bar_title, match_title},
+    items::{described_by, match_bar_title, match_title},
     title::join_title,
 };
 use crate::{ocr::jobs::OCRLine, tooltip::hover::Hover};
@@ -232,9 +232,9 @@ impl ScannerState {
             }
             if let Some(lines) = &read.body {
                 let lines: Vec<String> = lines.iter().map(text).collect();
-                if let Some(label) = item_from_body(&lines).and_then(|item| item.label.clone()) {
-                    // every level's line and the gear's read, or it would name no book
-                    *hover.body_votes.entry(label).or_default() += SETTLED;
+                let title = winner(&hover.title_votes).map(|x| x.0);
+                for (described, weight) in described_by(&lines, title.as_deref()) {
+                    *hover.body_votes.entry(described).or_default() += weight;
                 }
                 hover.waiting[3] -= 1;
             }

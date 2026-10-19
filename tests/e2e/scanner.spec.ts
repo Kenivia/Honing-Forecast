@@ -593,3 +593,48 @@ test("a scan moved to another character mid-capture reads the same", async ({
   });
   expect(unordered(await live_pages(page))).toEqual(unordered(straight));
 });
+
+// a native 3440x1440 game, roster storage hovered
+const ULTRAWIDE = new URL(
+  "honing-forecast-2026-10-19T16-29-47-201Z.hfcap",
+  RECORDINGS,
+);
+
+test("a native ultrawide capture reads as it did live", async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    !fs.existsSync(ULTRAWIDE) || browserName !== "chromium",
+    "local recordings, replayed in one browser",
+  );
+  test.setTimeout(900_000);
+  await replay(page, "Newchar", ULTRAWIDE);
+  await expect(page.getByText("every scan ended as recorded")).toBeVisible();
+  const [now, then] = await page.evaluate(async () => {
+    const url = performance
+      .getEntriesByType("resource")
+      .map((entry) => entry.name)
+      .filter((name) => name.includes("InventoryScanner/Manifest.ts"))
+      .pop();
+    const { manifest } = await import(url);
+    const reference = (globalThis as any).__capture_reference;
+    return JSON.parse(
+      JSON.stringify([manifest.value.read, reference.manifest.read]),
+    );
+  });
+  const by_page = (read) =>
+    unordered(
+      Object.fromEntries(
+        read.map((one) => [`${one.window} ${one.page}`, one.content]),
+      ),
+    );
+  expect(Object.keys(by_page(now))).toEqual([
+    "CharCurrency 0",
+    "CharInventory 0",
+    "CharStorage 0",
+    "Currency 0",
+    "Roster 0",
+  ]);
+  expect(by_page(now)).toEqual(by_page(then));
+});

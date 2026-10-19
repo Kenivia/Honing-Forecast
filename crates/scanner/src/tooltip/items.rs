@@ -1,6 +1,6 @@
 use crate::{
     scanner_state::{InventoryType, Tradability},
-    tooltip::chest::ChestKind,
+    tooltip::{chest::ChestKind, ocr_interface::SETTLED},
 };
 use ahash::AHashMap;
 use serde::Deserialize;
@@ -9,6 +9,8 @@ use strsim::{levenshtein, normalized_levenshtein};
 
 const TITLE_PASS: f64 = 0.9;
 const TITLE_MARGIN: f64 = 0.05; // over the next best
+const DESCRIPTION_PASS: f64 = 0.8;
+const EXACT_DESCRIPTION: f64 = 0.995;
 
 // one row of scanner_setup/templates/items.json: an in-game title and the slot icon template it is drawn with
 #[derive(Debug, Deserialize)]
@@ -56,6 +58,12 @@ pub struct Variant {
     pub binds: Vec<Tradability>,
     // title, amount, and the chest of this table it is
     pub contents: Vec<(String, u32, Option<u32>)>,
+    // how each content is bound, where that is not to a character
+    #[serde(default)]
+    pub content_binds: Vec<Option<Tradability>>,
+    // bars of gold and silver only: the descriptions of the items it stands for
+    #[serde(default)]
+    pub descs: Vec<String>,
     // the same in a fixed order, to compare two chests by
     #[serde(skip)]
     pub sorted: Vec<(String, u32, Option<u32>)>,
@@ -66,6 +74,19 @@ impl Variant {
     pub fn template(&self) -> Option<String> {
         Some(format!("{}@{}", self.icon.as_ref()?, self.rarity.as_ref()?))
     }
+
+    // how the gold it holds is bound
+    pub fn gold_band(&self) -> Option<Tradability> {
+        let at = self.contents.iter().position(|x| x.0 == "Gold")?;
+        self.content_binds.get(at).copied().flatten()
+    }
+}
+
+// what a tooltip's description says it is
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Described {
+    Material(String),
+    Bar(u32),
 }
 
 pub static VARIANTS: LazyLock<Vec<Variant>> = LazyLock::new(|| {
@@ -111,13 +132,15 @@ pub fn has_level(icon: &str) -> bool {
         .any(|x| x.level.is_some() && !x.irrelevant)
 }
 
-// Whether every one of these chests opens to the same things, so that it does not matter which
-// of them a slot holds. Those that open to nothing counted are all the same.
+// Whether every one of these chests opens to the same things, gold bound the same way, so that it
+// does not matter which of them a slot holds. Those that open to nothing counted are all the same.
 pub fn open_alike(variants: &[&Variant]) -> bool {
     variants.windows(2).all(|pair| {
         pair[0].irrelevant == pair[1].irrelevant
             && (pair[0].irrelevant
-                || (pair[0].kind == pair[1].kind && pair[0].sorted == pair[1].sorted))
+                || (pair[0].kind == pair[1].kind
+                    && pair[0].sorted == pair[1].sorted
+                    && pair[0].gold_band() == pair[1].gold_band()))
     })
 }
 
@@ -169,6 +192,45 @@ pub fn item_from_body(lines: &[String]) -> Option<&'static Item> {
     let gear = gear.next().filter(|_| gear.next().is_none())?;
     let body = format!("{gear} {}-{}", levels.first()?, levels.last()?);
     ITEMS.iter().find(|item| item.body.as_ref() == Some(&body))
+}
+
+// What a tooltip's description lines say it is, each with its vote: a book by its levels, which
+// settles it, or the bars of its title whose descriptions read closest, which only an exact read
+// settles.
+pub fn described_by(lines: &[String], title: Option<&str>) -> Vec<(Described, usize)> {
+    if let Some(label) = item_from_body(lines).and_then(|item| item.label.clone()) {
+        return vec![(Described::Material(label), SETTLED)];
+    }
+    let squash = |x: &str| {
+        x.split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+            .to_lowercase()
+    };
+    let read = squash(&lines.join(" "));
+    let scores: Vec<(u32, f64)> = title
+        .map_or(vec![], bars_titled)
+        .into_iter()
+        .map(|id| {
+            let descs = variant(id).descs.iter();
+            let score = descs.map(|x| normalized_levenshtein(&read, &squash(x)));
+            (id, score.fold(0.0, f64::max))
+        })
+        .collect();
+    let best = scores.iter().map(|x| x.1).fold(0.0, f64::max);
+    if best < DESCRIPTION_PASS {
+        return vec![];
+    }
+    let weight = if best >= EXACT_DESCRIPTION {
+        SETTLED
+    } else {
+        1
+    };
+    scores
+        .into_iter()
+        .filter(|x| x.1 >= best - 1e-6)
+        .map(|x| (Described::Bar(x.0), weight))
+        .collect()
 }
 
 // A word of a name that is a numeral: one with a digit in it, or for `roman` one of numeral
@@ -285,4 +347,14 @@ pub fn bars_titled(title: &str) -> Vec<u32> {
         .iter()
         .find(|x| x.0 == title)
         .map_or(vec![], |x| x.1.clone())
+}
+
+// the bars of this title hold gold bound in different ways, which only their descriptions say
+pub fn bars_differ(title: &str) -> bool {
+    let mut bands = bars_titled(title)
+        .into_iter()
+        .map(|id| variant(id).gold_band());
+    bands
+        .next()
+        .is_some_and(|first| bands.any(|band| band != first))
 }

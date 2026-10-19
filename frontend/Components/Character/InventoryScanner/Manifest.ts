@@ -110,12 +110,16 @@ export function item_name(icon: string | null) {
   return titles.slice(0, 2).join(" / ") + more;
 }
 
-// What a chest opens to, all the way down, as text: two chests are the same to the manifest when
-// this is.
+// What a chest opens to, all the way down, as text, gold with how it is bound: two chests are the
+// same to the manifest when this is.
 function opens_to(id: number): string {
   const chest = OPENS[id];
-  const contents = chest.contents.map(([title, amount, inner]) =>
-    inner ? [opens_to(inner), amount] : [title, amount],
+  const contents = chest.contents.map(([title, amount, inner], at) =>
+    inner
+      ? [opens_to(inner), amount]
+      : title === "Gold"
+        ? [title, amount, chest.content_binds?.[at]]
+        : [title, amount],
   );
   // the order they are listed in says nothing
   return JSON.stringify([
@@ -224,8 +228,7 @@ export const live = computed(() => {
     const gather = (chest: Opens, times: number, band: number) => {
       chest.contents.forEach(([inner, each, id], at) => {
         const bind = BAND_OF[chest.content_binds?.[at] ?? ""];
-        // gold is bound as the table says, whatever the chest
-        const own = inner === "Gold" ? bind : Math.max(band, bind ?? 0);
+        const own = Math.max(band, bind ?? 0);
         const label = TITLE_LABEL[inner];
         const opens = id ? OPENS[id] : undefined;
         if (label) bags[own][label] = (bags[own][label] ?? 0) + each * times;
