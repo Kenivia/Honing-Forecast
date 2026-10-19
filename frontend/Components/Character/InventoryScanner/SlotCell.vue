@@ -3,6 +3,7 @@ import { computed, ref, watchPostEffect } from "vue";
 import { OneIconConfig, SlotResult } from "./LoadStorage";
 import { SlotEdit } from "./ScanStore";
 import { STATUS_COLORS, draw_icon } from "./ScannerUIutils";
+import Spinner from "./Spinner.vue";
 
 const props = defineProps<{
   info?: SlotResult;
@@ -42,7 +43,13 @@ watchPostEffect(() => {
 <template>
   <div
     class="relative aspect-square cursor-pointer border"
-    :class="{ 'border-dashed': edit, 'z-10': active }"
+    :class="{
+      'border-dashed':
+        edit ||
+        props.info?.status === 'NeedHover' ||
+        props.info?.status === 'NeedTradability',
+      'z-10': active,
+    }"
     :style="{
       borderColor: border,
       borderWidth: border_width,
@@ -65,5 +72,9 @@ watchPostEffect(() => {
     >
       ?
     </span>
+    <Spinner
+      v-if="!edit && info?.reading"
+      class="absolute inset-[18.75%] h-[62.5%] w-[62.5%] text-(--text-bright)"
+    />
   </div>
 </template>

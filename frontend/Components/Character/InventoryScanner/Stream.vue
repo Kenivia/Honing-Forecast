@@ -152,31 +152,31 @@ async function start_capture() {
   }
 }
 
-async function start_upload(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files[0];
-  input.value = "";
-  if (!file) return;
+// async function start_upload(event: Event) {
+//   const input = event.target as HTMLInputElement;
+//   const file = input.files[0];
+//   input.value = "";
+//   if (!file) return;
 
-  error.value = null;
-  if (file.name.endsWith(CAPTURE_EXTENSION)) return start_replay(file);
-  const fake = await file_to_stream(file);
-  begin(fake.stream, fake.width, fake.height, fake.cleanup);
-}
+//   error.value = null;
+//   if (file.name.endsWith(CAPTURE_EXTENSION)) return start_replay(file);
+//   const fake = await file_to_stream(file);
+//   begin(fake.stream, fake.width, fake.height, fake.cleanup);
+// }
 
-async function start_replay(file: File) {
-  stop_capture();
-  const { start, first } = await open_capture(file);
-  replay = { file, first, offset: first, ...start };
-  Object.assign(scan_settings, {
-    forced_21_9: start.forced_21_9,
-    brightness: start.brightness,
-  });
-  discard_settings();
-  replaying.value = true;
-  status.value = "capturing";
-  start_scanner();
-}
+// async function start_replay(file: File) {
+//   stop_capture();
+//   const { start, first } = await open_capture(file);
+//   replay = { file, first, offset: first, ...start };
+//   Object.assign(scan_settings, {
+//     forced_21_9: start.forced_21_9,
+//     brightness: start.brightness,
+//   });
+//   discard_settings();
+//   replaying.value = true;
+//   status.value = "capturing";
+//   start_scanner();
+// }
 
 // the scan starts over, since a capture can only be run again from an empty state
 function toggle_recording() {
@@ -490,7 +490,7 @@ watch(
       >
         Share screen
       </button>
-      <label
+      <!-- <label
         class="cursor-pointer rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500"
       >
         Upload image / video / capture
@@ -501,7 +501,7 @@ watch(
           class="hidden"
           @change="start_upload"
         />
-      </label>
+      </label> -->
       <button
         class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
         :disabled="status !== 'capturing'"

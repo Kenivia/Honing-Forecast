@@ -61,6 +61,8 @@ pub struct SlotResult<'a> {
     // the material the tooltip said it is, where the icon alone does not say
     pub label: &'a Option<String>,
     pub status: SlotStatus,
+    // its number is with OCR, a first read or a re-read
+    pub reading: bool,
     // why it needs a hover or is an error, for the user
     pub reason: String,
     // the tooltip's amount, else the number on the icon
@@ -329,6 +331,9 @@ impl ScannerState {
                     tradability,
                     label: &info.label,
                     status,
+                    reading: info
+                        .amount_job
+                        .is_some_and(|id| !self.ocr_texts.contains_key(&id)),
                     reason,
                     value: read
                         .filter(|_| info.icon_name_score.is_some())

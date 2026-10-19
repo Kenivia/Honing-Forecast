@@ -96,6 +96,8 @@ export interface SlotResult {
   // the material the tooltip said it is, where the icon alone does not say
   label: string | null;
   status: SlotStatus;
+  // its number is with OCR, a first read or a re-read
+  reading: boolean;
   reason: string;
   // the tooltip's amount, else the number on the icon
   value: number | null;

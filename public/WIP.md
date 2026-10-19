@@ -20,10 +20,11 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ### EZ
 
-- wipe current scan (just like starting a debug recording) changing characters (maybe add a confirmation popup?)
-- "waiting for ocr" spinner
-- auto detect 21:9
-- manual overwrite brightness
+- ~~wipe current scan (just like starting a debug recording) changing characters (maybe add a confirmation popup?)~~ make it so that clicking another char just re-assigns the target char instead of going to the calc page
+- ~~auto detect 21:9~~
+- ~~manual overwrite brightness~~
+- ~~"waiting for ocr" spinner~~
+
 - reset button
 
 ### HARD
@@ -31,6 +32,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - SOMEHOW indicate the amount coming from chests
 - determine tradability of (content of) gold chests from tooltip
 - roster storage reading toggle when a roster reading exists (need to save scannerstate of previous scans?), sort out how to merge roster / tradable found in char storage / inventory, roster wide shared chest inventory
+- restore previous scan
 
 ### LOW PRIO
 

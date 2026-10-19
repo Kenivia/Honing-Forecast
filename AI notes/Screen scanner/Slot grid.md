@@ -19,6 +19,8 @@ Each slot in a scan result carries a status, a reason and a value (the tooltip's
 | Irrelevant | greyed out | matches no icon; or a chest that opens to nothing counted |
 | edited | dotted blue | the user set it by hand |
 
+- **A spinner marks a number being read** (`Spinner.vue`, white, centred on the cell), on first reads and re-reads alike. The result's `reading` is true while the slot's `amount_job` has no text back yet; a re-read keeps the old amount and status meanwhile, so the status alone cannot say it. Tooltip reads get no spinner: they belong to a hover, not a slot. The spinner is two chasing arms after `6-dots-scale` of SVG Spinners (MIT).
+
 - **Every slot needs its tradability**, which only a tooltip gives, so every material needs a hover even when its number reads. A chest slot takes the tradability of the chest that stands for it.
 - **Assumed tradability.** The sidebar on the scanner page (`ScannerControlPanel.vue`) has "Assume roster storage is tradable" and "Assume char storage and inventory are char-bound", both off by default and not persisted. With one on, `shown_slot` in `ScanStore.ts` turns those windows' `NeedTradability` slots into good ones with the assumed value, and the dashboard marks it "(assumed)". Rust is never told: it keeps reporting `NeedTradability`, and a tooltip it reads replaces the assumption.
 - **A shared icon needs its label.** A book slot carries `label`, the material its tooltip named (`Tooltips.md`), and is not good without one. The dashboard shows the label in place of the icon name, and the edit list offers the materials in place of the shared icon, so a book set by hand is set to its material.
