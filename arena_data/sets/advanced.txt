@@ -1,0 +1,14 @@
+# mostly advanced honing
+# define advanced --note mostly advanced honing --kind single --where adv=0.7..1 --where tier=0..0.65 --where n=4..24 --limit 12
+single_0022_t4_n4
+single_0027_t4_n20
+single_0028_t4_n12
+single_0052_t4_n7
+single_0054_t4_n4
+single_0083_t4_n10
+single_0085_t4_n17
+single_0090_t4_n4
+single_0100_t4_n16
+single_0114_t4_n12
+single_0122_t4_n7
+single_0132_t4_n24

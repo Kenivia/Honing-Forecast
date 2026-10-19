@@ -1,0 +1,39 @@
+{
+  "attribution": false,
+  "permissions": {
+    "allow": ["Bash(umodel_lostark_v7.exe)"],
+    "deny": [
+      "Read(./docs/**)",
+      "Edit(./docs/**)",
+      "Edit(./CLAUDE.md)",
+
+      "Bash(git commit *)",
+      "Bash(git merge *)",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(git rebase *)",
+      "Bash(git reset *)",
+      "Bash(git cherry-pick *)",
+      "Bash(git switch *)",
+      "Bash(git restore *)",
+      "Bash(git clean *)",
+      "Bash(git tag *)",
+      "Bash(git branch *)",
+      "Bash(git am *)",
+
+      "PowerShell(git commit *)",
+      "PowerShell(git merge *)",
+      "PowerShell(git push *)",
+      "PowerShell(git pull *)",
+      "PowerShell(git rebase *)",
+      "PowerShell(git reset *)",
+      "PowerShell(git cherry-pick *)",
+      "PowerShell(git switch *)",
+      "PowerShell(git restore *)",
+      "PowerShell(git clean *)",
+      "PowerShell(git tag *)",
+      "PowerShell(git branch *)",
+      "PowerShell(git am *)"
+    ]
+  }
+}

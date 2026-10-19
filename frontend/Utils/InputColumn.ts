@@ -1,31 +1,43 @@
-import { ALL_LABELS, TIER_LABELS } from "./Constants";
-
+// A column of numeric inputs, keyed by material label. Display order is not stored here:
+// callers iterate the labels they want to show, which comes from Constants.
 export interface InputColumn {
-  data: string[];
-  keys: string[];
   type: InputType;
-  upper_bound: number[];
-  enabled: boolean[];
+  values: Record<string, string>; // locale-formatted, as typed
+  upper_bound: Record<string, number>;
+  enabled: Record<string, boolean>;
 }
 export enum InputType {
   Int,
   Float,
 }
+
+export interface ColumnInit {
+  value?: (label: string) => string;
+  upper_bound?: (label: string) => number;
+  enabled?: (label: string) => boolean;
+}
+
 export function create_input_column(
   type: InputType,
-  keys: string[],
-  data?: string[],
-  upper_bound?: number[],
-  enabled?: boolean[],
+  labels: string[],
+  init: ColumnInit = {},
 ): InputColumn {
-  return {
+  const out: InputColumn = {
     type,
-    keys,
-    data: data ?? keys.map((_) => "0"),
-    upper_bound: upper_bound ?? keys.map((_) => 999999999),
-    enabled: enabled ?? keys.map((_) => true),
+    values: {},
+    upper_bound: {},
+    enabled: {},
   };
+  for (const label of labels) {
+    out.values[label] = init.value?.(label) ?? "0";
+    out.upper_bound[label] = init.upper_bound?.(label) ?? 999999999;
+    out.enabled[label] = init.enabled?.(label) ?? true;
+  }
+  return out;
 }
+
+export const column_labels = (column: InputColumn): string[] =>
+  Object.keys(column.values);
 
 const parts = new Intl.NumberFormat().formatToParts(1234567.89);
 export const LOCALE_GROUP = parts.find((p) => p.type === "group")?.value ?? ",";
@@ -103,82 +115,48 @@ export function parse_locale_float(str: string): number {
 }
 
 export function parse_input(
-  input_column: InputColumn,
-  index: number,
+  column: InputColumn,
+  label: string,
   input: string,
   pretend_enabled?: boolean,
 ): number {
-  if (!input_column.enabled[index] && !pretend_enabled) {
+  if (!column.enabled[label] && !pretend_enabled) {
     return 999999999;
   }
-  let out =
-    input_column.type === InputType.Int
+  const out =
+    column.type === InputType.Int
       ? parse_locale_int(input)
       : parse_locale_float(input);
-  return isFinite(out) ? Math.min(input_column.upper_bound[index], out) : 0;
+  return isFinite(out) ? Math.min(column.upper_bound[label], out) : 0;
 }
+
 export function input_column_to_num(
-  input_column: InputColumn,
+  column: InputColumn,
   pretend_enabled?: boolean,
-): number[] {
-  return input_column.data.map((x: string, index: number) =>
-    parse_input(input_column, index, x, pretend_enabled),
-  );
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [label, value] of Object.entries(column.values)) {
+    out[label] = parse_input(column, label, value, pretend_enabled);
+  }
+  return out;
+}
+
+export function set_cell(column: InputColumn, label: string, value: string) {
+  column.values[label] = parse_input(column, label, value, true).toLocaleString();
 }
 
 export function get_modified_cell(
-  input_column: InputColumn,
-  index: number,
+  column: InputColumn,
+  label: string,
   event: Event,
 ) {
-  if (!input_column.enabled[index]) {
-    return input_column.data[index];
+  if (!column.enabled[label]) {
+    return column.values[label];
   }
   return parse_input(
-    input_column,
-    index,
+    column,
+    label,
     (event.target as HTMLInputElement).value,
     true,
   ).toLocaleString();
-}
-
-export function validate_input_column(
-  old: InputColumn,
-  default_example: InputColumn,
-): InputColumn {
-  const correct_len = default_example.data.length;
-
-  const pad_array = <T>(arr: T[], defaults: T[]): T[] => {
-    if (arr.length < correct_len) {
-      return arr.concat(defaults.slice(arr.length, correct_len));
-    }
-    if (arr.length > correct_len) {
-      return arr.slice(0, correct_len);
-    }
-    return arr;
-  };
-
-  old.data = pad_array(old.data, default_example.data);
-  old.keys = pad_array(old.keys, default_example.keys);
-  old.upper_bound = pad_array(old.upper_bound, default_example.upper_bound);
-  old.enabled = pad_array(old.enabled, default_example.enabled);
-
-  for (let row = 0; row < old.data.length; row++) {
-    old.data[row] = parse_input(old, row, old.data[row], true).toLocaleString();
-  }
-
-  return old;
-}
-
-export function validate_input_column_array(
-  old: InputColumn[],
-  example: InputColumn[],
-): InputColumn[] {
-  for (let index = 0; index < old.length; index++) {
-    old[index] = validate_input_column(old[index], example[index]);
-  }
-  while (old.length < TIER_LABELS.length) {
-    old.push(create_input_column(InputType.Int, ALL_LABELS[old.length]));
-  }
-  return old;
 }

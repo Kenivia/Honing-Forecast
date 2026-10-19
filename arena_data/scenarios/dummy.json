@@ -1,0 +1,1221 @@
+{
+  "name": "dummy",
+  "steps": [
+    {
+      "material_labels": [
+        "Red",
+        "Blue",
+        "Leapstones",
+        "Shards",
+        "Fusion",
+        "Gold",
+        "Silver",
+        "Juice 0",
+        "Juice 1",
+        "Juice 2",
+        "Juice 3",
+        "Juice 4",
+        "Juice 5",
+        "Juice 6",
+        "Juice 7",
+        "Juice 8",
+        "Juice 9",
+        "Juice 10",
+        "Juice 11",
+        "Juice 12",
+        "Juice 13",
+        "Juice 14",
+        "Juice 15",
+        "Juice 16",
+        "Juice 17"
+      ],
+      "materials": {
+        "Juice 10": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Leapstones": {
+          "bound": 900.0,
+          "roster": 225.0,
+          "tradable": 112.0,
+          "taxed_price": 20.9,
+          "market_price": 22.0
+        },
+        "Juice 14": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 11": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 13": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 16": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Red": {
+          "bound": 30000.0,
+          "roster": 7500.0,
+          "tradable": 3750.0,
+          "taxed_price": 5.31,
+          "market_price": 5.6
+        },
+        "Juice 12": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 5": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 4": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 1": {
+          "bound": 200.0,
+          "roster": 50.0,
+          "tradable": 25.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Gold": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 0.95,
+          "market_price": 1.0
+        },
+        "Fusion": {
+          "bound": 300.0,
+          "roster": 75.0,
+          "tradable": 37.0,
+          "taxed_price": 163.4,
+          "market_price": 172.0
+        },
+        "Blue": {
+          "bound": 60000.0,
+          "roster": 15000.0,
+          "tradable": 7500.0,
+          "taxed_price": 0.11,
+          "market_price": 0.12
+        },
+        "Juice 6": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 8": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 15": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 17": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Shards": {
+          "bound": 400000.0,
+          "roster": 100000.0,
+          "tradable": 50000.0,
+          "taxed_price": 0.2,
+          "market_price": 0.22
+        },
+        "Silver": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 0.0,
+          "market_price": 0.0
+        },
+        "Juice 0": {
+          "bound": 200.0,
+          "roster": 50.0,
+          "tradable": 25.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 3": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 2": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 7": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 9": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        }
+      },
+      "plans": [
+        [
+          "Worthless",
+          "Worthless",
+          "Worthless"
+        ],
+        [
+          "Worthless",
+          "TaxedSell",
+          "Market"
+        ]
+      ],
+      "optimizer_plan": 1,
+      "upgrade_info": [
+        {
+          "piece_index": 0,
+          "upgrade_index": 14,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 0,
+          "upgrade_index": 15,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 0,
+          "upgrade_index": 16,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 1,
+          "upgrade_index": 14,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 1,
+          "upgrade_index": 15,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 1,
+          "upgrade_index": 16,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 2,
+          "upgrade_index": 14,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 2,
+          "upgrade_index": 15,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 2,
+          "upgrade_index": 16,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 5,
+          "upgrade_index": 14,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 5,
+          "upgrade_index": 15,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 0,
+          "upgrade_index": 2,
+          "is_normal_honing": false,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": [
+            0,
+            0,
+            false,
+            false
+          ],
+          "double_balls": false
+        }
+      ],
+      "special_budget": 600,
+      "special_state": null,
+      "chests": {
+        "0": {
+          "count": 120,
+          "band": 1,
+          "options": [
+            {
+              "Red": 500.0
+            },
+            {
+              "Blue": 1500.0
+            },
+            {
+              "Leapstones": 20.0,
+              "Shards": 3000.0
+            }
+          ]
+        },
+        "1": {
+          "count": 7,
+          "band": 0,
+          "options": [
+            {
+              "Fusion": 30.0,
+              "Gold": 5000.0
+            }
+          ]
+        },
+        "2": {
+          "count": 33,
+          "band": 2,
+          "options": [
+            {
+              "Juice 0": 2.5
+            },
+            {
+              "Juice 1": 2.5
+            }
+          ]
+        },
+        "3": {
+          "count": 40,
+          "band": 0,
+          "options": [
+            {
+              "Special Leap": 12.0
+            },
+            {
+              "Leapstones": 6.4
+            }
+          ]
+        }
+      },
+      "chest_states": null,
+      "special_label": "Special Leap",
+      "tier": 0,
+      "express_event": false,
+      "min_resolution": 1,
+      "num_threads": 0,
+      "metric_type": 1,
+      "adv_cache": null
+    },
+    {
+      "material_labels": [
+        "Red",
+        "Blue",
+        "Leapstones",
+        "Shards",
+        "Fusion",
+        "Gold",
+        "Silver",
+        "Juice 0",
+        "Juice 1",
+        "Juice 2",
+        "Juice 3",
+        "Juice 4",
+        "Juice 5",
+        "Juice 6",
+        "Juice 7",
+        "Juice 8",
+        "Juice 9",
+        "Juice 10",
+        "Juice 11",
+        "Juice 12",
+        "Juice 13",
+        "Juice 14",
+        "Juice 15",
+        "Juice 16",
+        "Juice 17"
+      ],
+      "materials": {
+        "Juice 10": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Leapstones": {
+          "bound": 630.0,
+          "roster": 225.0,
+          "tradable": 112.0,
+          "taxed_price": 20.9,
+          "market_price": 22.0
+        },
+        "Juice 14": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 11": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 13": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 16": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Red": {
+          "bound": 21000.0,
+          "roster": 7500.0,
+          "tradable": 3750.0,
+          "taxed_price": 5.31,
+          "market_price": 5.6
+        },
+        "Juice 12": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 5": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 4": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 1": {
+          "bound": 140.0,
+          "roster": 50.0,
+          "tradable": 25.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Gold": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 0.95,
+          "market_price": 1.0
+        },
+        "Fusion": {
+          "bound": 210.0,
+          "roster": 75.0,
+          "tradable": 37.0,
+          "taxed_price": 163.4,
+          "market_price": 172.0
+        },
+        "Blue": {
+          "bound": 42000.0,
+          "roster": 15000.0,
+          "tradable": 7500.0,
+          "taxed_price": 0.11,
+          "market_price": 0.12
+        },
+        "Juice 6": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 8": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 15": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 17": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Shards": {
+          "bound": 280000.0,
+          "roster": 100000.0,
+          "tradable": 50000.0,
+          "taxed_price": 0.2,
+          "market_price": 0.22
+        },
+        "Silver": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 0.0,
+          "market_price": 0.0
+        },
+        "Juice 0": {
+          "bound": 140.0,
+          "roster": 50.0,
+          "tradable": 25.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 3": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 2": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 7": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 9": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        }
+      },
+      "plans": [
+        [
+          "Worthless",
+          "Worthless",
+          "Worthless"
+        ],
+        [
+          "Worthless",
+          "TaxedSell",
+          "Market"
+        ]
+      ],
+      "optimizer_plan": 1,
+      "upgrade_info": [
+        {
+          "piece_index": 0,
+          "upgrade_index": 16,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 1,
+          "upgrade_index": 14,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 1,
+          "upgrade_index": 15,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 1,
+          "upgrade_index": 16,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 2,
+          "upgrade_index": 14,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 2,
+          "upgrade_index": 15,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 2,
+          "upgrade_index": 16,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 5,
+          "upgrade_index": 14,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 5,
+          "upgrade_index": 15,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 0,
+          "upgrade_index": 2,
+          "is_normal_honing": false,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": [
+            0,
+            0,
+            false,
+            false
+          ],
+          "double_balls": false
+        }
+      ],
+      "special_budget": 250,
+      "special_state": null,
+      "chests": {
+        "0": {
+          "count": 120,
+          "band": 1,
+          "options": [
+            {
+              "Red": 500.0
+            },
+            {
+              "Blue": 1500.0
+            },
+            {
+              "Leapstones": 20.0,
+              "Shards": 3000.0
+            }
+          ]
+        },
+        "1": {
+          "count": 7,
+          "band": 0,
+          "options": [
+            {
+              "Fusion": 30.0,
+              "Gold": 5000.0
+            }
+          ]
+        },
+        "2": {
+          "count": 33,
+          "band": 2,
+          "options": [
+            {
+              "Juice 0": 2.5
+            },
+            {
+              "Juice 1": 2.5
+            }
+          ]
+        },
+        "3": {
+          "count": 40,
+          "band": 0,
+          "options": [
+            {
+              "Special Leap": 12.0
+            },
+            {
+              "Leapstones": 6.4
+            }
+          ]
+        }
+      },
+      "chest_states": null,
+      "special_label": "Special Leap",
+      "tier": 0,
+      "express_event": false,
+      "min_resolution": 1,
+      "num_threads": 0,
+      "metric_type": 1,
+      "adv_cache": null
+    },
+    {
+      "material_labels": [
+        "Red",
+        "Blue",
+        "Leapstones",
+        "Shards",
+        "Fusion",
+        "Gold",
+        "Silver",
+        "Juice 0",
+        "Juice 1",
+        "Juice 2",
+        "Juice 3",
+        "Juice 4",
+        "Juice 5",
+        "Juice 6",
+        "Juice 7",
+        "Juice 8",
+        "Juice 9",
+        "Juice 10",
+        "Juice 11",
+        "Juice 12",
+        "Juice 13",
+        "Juice 14",
+        "Juice 15",
+        "Juice 16",
+        "Juice 17"
+      ],
+      "materials": {
+        "Juice 10": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Leapstones": {
+          "bound": 630.0,
+          "roster": 225.0,
+          "tradable": 112.0,
+          "taxed_price": 26.125,
+          "market_price": 27.5
+        },
+        "Juice 14": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 11": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 13": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 16": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Red": {
+          "bound": 21000.0,
+          "roster": 7500.0,
+          "tradable": 3750.0,
+          "taxed_price": 6.637499999999999,
+          "market_price": 7.0
+        },
+        "Juice 12": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 5": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 4": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 1": {
+          "bound": 140.0,
+          "roster": 50.0,
+          "tradable": 25.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Gold": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 0.95,
+          "market_price": 1.0
+        },
+        "Fusion": {
+          "bound": 210.0,
+          "roster": 75.0,
+          "tradable": 37.0,
+          "taxed_price": 204.25,
+          "market_price": 215.0
+        },
+        "Blue": {
+          "bound": 42000.0,
+          "roster": 15000.0,
+          "tradable": 7500.0,
+          "taxed_price": 0.11,
+          "market_price": 0.12
+        },
+        "Juice 6": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 8": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 15": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 17": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Shards": {
+          "bound": 280000.0,
+          "roster": 100000.0,
+          "tradable": 50000.0,
+          "taxed_price": 0.2,
+          "market_price": 0.22
+        },
+        "Silver": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 0.0,
+          "market_price": 0.0
+        },
+        "Juice 0": {
+          "bound": 140.0,
+          "roster": 50.0,
+          "tradable": 25.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 3": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 2": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 7": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        },
+        "Juice 9": {
+          "bound": 0.0,
+          "roster": 0.0,
+          "tradable": 0.0,
+          "taxed_price": 285.0,
+          "market_price": 300.0
+        }
+      },
+      "plans": [
+        [
+          "Worthless",
+          "Worthless",
+          "Worthless"
+        ],
+        [
+          "Worthless",
+          "TaxedSell",
+          "Market"
+        ]
+      ],
+      "optimizer_plan": 1,
+      "upgrade_info": [
+        {
+          "piece_index": 0,
+          "upgrade_index": 16,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 1,
+          "upgrade_index": 14,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 1,
+          "upgrade_index": 15,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 1,
+          "upgrade_index": 16,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 2,
+          "upgrade_index": 14,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 2,
+          "upgrade_index": 15,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 2,
+          "upgrade_index": 16,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 5,
+          "upgrade_index": 14,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 5,
+          "upgrade_index": 15,
+          "is_normal_honing": true,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": null,
+          "double_balls": false
+        },
+        {
+          "piece_index": 0,
+          "upgrade_index": 2,
+          "is_normal_honing": false,
+          "starting_artisan": 0.0,
+          "starting_num_taps": 0,
+          "state": null,
+          "unlocked": false,
+          "adv_progress": [
+            0,
+            0,
+            false,
+            false
+          ],
+          "double_balls": false
+        }
+      ],
+      "special_budget": 250,
+      "special_state": null,
+      "chests": {
+        "0": {
+          "count": 120,
+          "band": 1,
+          "options": [
+            {
+              "Red": 500.0
+            },
+            {
+              "Blue": 1500.0
+            },
+            {
+              "Leapstones": 20.0,
+              "Shards": 3000.0
+            }
+          ]
+        },
+        "1": {
+          "count": 7,
+          "band": 0,
+          "options": [
+            {
+              "Fusion": 30.0,
+              "Gold": 5000.0
+            }
+          ]
+        },
+        "2": {
+          "count": 33,
+          "band": 2,
+          "options": [
+            {
+              "Juice 0": 2.5
+            },
+            {
+              "Juice 1": 2.5
+            }
+          ]
+        },
+        "3": {
+          "count": 40,
+          "band": 0,
+          "options": [
+            {
+              "Special Leap": 12.0
+            },
+            {
+              "Leapstones": 6.4
+            }
+          ]
+        }
+      },
+      "chest_states": null,
+      "special_label": "Special Leap",
+      "tier": 0,
+      "express_event": false,
+      "min_resolution": 1,
+      "num_threads": 0,
+      "metric_type": 1,
+      "adv_cache": null
+    }
+  ]
+}

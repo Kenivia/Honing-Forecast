@@ -4,6 +4,7 @@ use std::f64::{INFINITY, NEG_INFINITY};
 use std::ops::Deref;
 
 use crate::constants::{FLOAT_TOL, IGNORE_PROB_TOL};
+use crate::core::probability::cumulants::KsTuple;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(transparent)]
@@ -52,9 +53,113 @@ pub struct Support {
     min_value: f64,
     pub first_non_zero_prob_index: usize,
     skipped_pair: Vec<(f64, f64)>,
+    /// of the collapsed pairs, kept because they are asked for far more often than they change
+    pub mean: f64,
+    pub zero: KsTuple,
+    /// more than one outcome, each a gap from the last
+    pub arithmetic: bool,
+}
+
+/// What the supports of one distribution share when each is a start and a gap an outcome:
+/// where the probabilities start and stop, and the cumulants of how many outcomes in.
+pub struct Outline {
+    front: usize,
+    len: usize,
+    holes: bool,
+    log_sum: f64,
+    index: [f64; 4],
+}
+
+impl Outline {
+    pub fn of(prob_dist: &ProbDist) -> Outline {
+        let front = prob_dist
+            .iter()
+            .take_while(|p| p.abs() < IGNORE_PROB_TOL)
+            .count();
+        let back = prob_dist
+            .iter()
+            .rev()
+            .take_while(|p| p.abs() < IGNORE_PROB_TOL)
+            .count();
+        assert!(front != prob_dist.len());
+        let live = &prob_dist[front..prob_dist.len() - back];
+        let (mut sum, mut first, mut second, mut third, mut fourth) = (0.0, 0.0, 0.0, 0.0, 0.0);
+        for (index, p) in live.iter().enumerate() {
+            let x = index as f64;
+            sum += p;
+            first += x * p;
+            second += x * x * p;
+            third += x * x * x * p;
+            fourth += x * x * x * x * p;
+        }
+        let (mean, second, third, fourth) = (first / sum, second / sum, third / sum, fourth / sum);
+        let mu2 = (second - mean * mean).max(0.0);
+        let mu3 = third - 3.0 * second * mean + 2.0 * mean * mean * mean;
+        let mu4 = fourth - 4.0 * third * mean + 6.0 * second * mean * mean
+            - 3.0 * mean * mean * mean * mean;
+        Outline {
+            front,
+            len: live.len(),
+            holes: live.iter().any(|p| p.abs() <= IGNORE_PROB_TOL),
+            log_sum: sum.ln(),
+            index: [mean, mu2, mu3, mu4 - 3.0 * mu2 * mu2],
+        }
+    }
 }
 
 impl Support {
+    /// The support that starts here and rises by the gap an outcome, which is every base
+    /// material's. Nothing to collapse where the gap is real and no probability is missing,
+    /// and what is kept of it comes from the outline.
+    pub fn update_even(
+        &mut self,
+        start: f64,
+        gap: f64,
+        state_hash: u64,
+        prob_dist: &ProbDist,
+        outline: &Outline,
+    ) {
+        self.support.clear();
+        let mut value = start;
+        for index in 0..prob_dist.len() {
+            self.support.push(value);
+            if index + 1 < prob_dist.len() {
+                value += gap;
+            }
+        }
+        self.support_state_hash = state_hash;
+        self.gap_size = gap;
+        self.linear = true;
+        if outline.holes || outline.len < 2 || gap <= 0.0 {
+            self.collapse_support(prob_dist);
+            return;
+        }
+        let live = outline.front..outline.front + outline.len;
+        self.collapsed_pair.clear();
+        self.collapsed_pair.extend(
+            self.support[live.clone()]
+                .iter()
+                .copied()
+                .zip(prob_dist[live.clone()].iter().copied()),
+        );
+        self.min_value = self.support[live.start];
+        self.max_value = self.support[live.end - 1];
+        self.skipped_pair[0].0 = self.support[0];
+        self.ignore = false;
+        self.first_non_zero_prob_index = 0;
+        self.collapsed_state_hash = state_hash;
+        self.arithmetic = true;
+        self.mean = self.min_value + gap * outline.index[0];
+        let gap2 = gap * gap;
+        self.zero = KsTuple(
+            outline.log_sum,
+            self.mean,
+            gap2 * outline.index[1],
+            gap2 * gap * outline.index[2],
+            gap2 * gap2 * outline.index[3],
+        );
+    }
+
     pub fn access_collapsed(&self, skipped: bool) -> &Vec<(f64, f64)> {
         assert!(self.collapsed_state_hash == self.support_state_hash);
         if skipped {
@@ -78,6 +183,29 @@ impl Support {
             self.min_value
         }
     }
+    /// One certain outcome, for splitting a sum on this upgrade's outcomes
+    pub fn pin(&mut self, value: f64) {
+        self.collapsed_pair = vec![(value, 1.0)];
+        self.max_value = value;
+        self.min_value = value;
+        self.ignore = value.abs() < FLOAT_TOL;
+        self.summarise();
+    }
+
+    fn summarise(&mut self) {
+        self.mean = self
+            .collapsed_pair
+            .iter()
+            .fold(0.0, |prev, (s, p)| prev + s * p);
+        let low = self.collapsed_pair[0].0;
+        self.arithmetic = self.collapsed_pair.len() > 1
+            && self.collapsed_pair.iter().enumerate().all(|(index, pair)| {
+                (pair.0 - (low + index as f64 * self.gap_size)).abs()
+                    <= 1e-9 * pair.0.abs().max(1.0)
+            });
+        self.zero = self.one_cumulant(0.0, false);
+    }
+
     /// Incredibly crucial pre-processing, collapses identical values into 1 thing, and removes values with p = 0.
     /// cumulant.rs makes the assumption that nothing has p = 0
     ///
@@ -133,6 +261,7 @@ impl Support {
             self.first_non_zero_prob_index = 0;
             self.collapsed_pair = result;
             self.collapsed_state_hash = self.support_state_hash;
+            self.summarise();
         }
     }
 
@@ -167,6 +296,9 @@ impl Default for Support {
             min_value: 0.0,
             first_non_zero_prob_index: 0,
             skipped_pair: vec![(0.0, 1.0)],
+            mean: 0.0,
+            zero: KsTuple::default(),
+            arithmetic: false,
         }
     }
 }

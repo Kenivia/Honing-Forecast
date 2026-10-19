@@ -1,0 +1,18 @@
+# the first four steps of chains, for carrying a plan over
+# define chains --note the first four steps of chains, for carrying a plan over --kind chain --where n=6..24 --steps 4 --limit 16
+chain_0001_t4_n18:4
+chain_0003_t4_n8:4
+chain_0004_serca_n17:4
+chain_0005_t4_n6:4
+chain_0006_t4_n10:4
+chain_0008_t4_n11:4
+chain_0010_t4_n13:4
+chain_0011_t4_n7:4
+chain_0013_serca_n7:4
+chain_0015_serca_n22:4
+chain_0017_t4_n14:4
+chain_0018_t4_n9:4
+chain_0019_serca_n23:4
+chain_0020_serca_n19:4
+chain_0023_t4_n9:4
+chain_0024_t4_n20:4

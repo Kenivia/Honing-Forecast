@@ -18,7 +18,16 @@ export default defineConfig({
   assetsInclude: ["**/*.md"],
   server: {
     watch: {
-      ignored: ["/cloudflare/.wrangler/**", "/crate/**"],
+      ignored: [
+        "**/cloudflare/.wrangler/**",
+        "**/crates/**",
+        "**/ignored/**",
+        "**/target/**",
+        "**/scanner_setup/game_files/**",
+        "**/scanner_setup/brightness/**",
+        "**/scanner_setup/codex/**",
+        "**/.tmp/**",
+      ],
     },
   },
 });

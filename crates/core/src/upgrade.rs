@@ -1,6 +1,7 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 
 use crate::constants::juice_info::JuiceInfo;
+use crate::materials::NUM_BASE_MATS;
 use crate::state::{OneState, State};
 use crate::support::{ProbDist, Support};
 use crate::upgrade::PieceType::{Armor, Vambrace, Weapon};
@@ -34,12 +35,23 @@ pub struct Upgrade {
     pub starting_artisan: f64,
     pub starting_num_taps: usize, // this is only used to calculate the starting base chance, not cost (we don't distinguish between manual artisan input vs slider artisan input on the rust side, cost calculation happens in js)
     pub unlocked: bool,
-    pub unlock_costs: [f64; 7],
+    pub unlock_costs: [f64; NUM_BASE_MATS],
 
     pub extra_chance: f64,
 
     pub adv_config: AdvConfig,
     pub adv_dists: Vec<ProbDist>,
+
+    /// the distributions of the state before this one, which a rejected move comes back to
+    #[serde(skip)]
+    pub spare: Option<Box<Spare>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Spare {
+    pub normal_dist: ProbDist,
+    pub adv_dists: Vec<ProbDist>,
+    pub cost_dist: Vec<Support>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Copy, Eq, Hash)]
@@ -121,6 +133,7 @@ impl Upgrade {
             extra_chance,
             adv_config: AdvConfig::default(),
             adv_dists: Vec::new(),
+            spare: None,
         };
 
         let mut clean_upgrade = out.clone();
@@ -199,10 +212,11 @@ impl Upgrade {
                 start_balls,
                 next_free,
                 next_big,
-                double_balls ,
+                double_balls,
                 upgrade_index >= 2,
             ),
             adv_dists: vec![ProbDist::default(); 3],
+            spare: None,
         };
         out.update_dist_adv(adv_cache);
         out.update_support_adv(juice_info);

@@ -1,73 +1,9 @@
-use crate::constants::FLOAT_TOL;
-// use crate::my_dbg;
-use crate::parser::MaterialInput;
+use crate::materials::NUM_BASE_MATS;
 use crate::upgrade::Upgrade;
 use rand::Rng;
 use serde::Serialize;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Error, Write};
-
-/// Outputs in the form of [(threshold1, price1),(threshold2, price2) ... ]
-/// Where price(n+1) refers to the cost inccured for exceeding the owned_n
-/// This is insanely scuffed i probably could've made it more elegant but this works (i think) and i dont want to touch it
-pub fn distribute_budgets(material_info: &MaterialInput, plan: &[usize]) -> MaterialInput {
-    let mut pass_1: MaterialInput =
-        vec![vec![(0.0_f64, f64::NAN); material_info[0].len()]; material_info.len()];
-    for (support_index, thresh_price_pairs) in material_info.iter().enumerate() {
-        for (thresh_index, (owned, _)) in thresh_price_pairs.iter().enumerate() {
-            pass_1[support_index][plan[thresh_index]].0 += owned;
-            pass_1[support_index][plan[thresh_index]].1 = thresh_price_pairs[plan[thresh_index]].1;
-        }
-    }
-    // my_dbg!(&pass_1);
-    pass_1
-        .into_iter()
-        .map(|mut row| {
-            let mut cumulative: f64 = 0.0;
-            row.retain(|x| {
-                if x.1.is_nan() {
-                    assert!(x.0 == 0.0);
-                    false
-                } else {
-                    true
-                }
-            });
-            for entry in &mut row {
-                cumulative += entry.0;
-                entry.0 = cumulative;
-            }
-
-            let mut last_thresh: f64 = row[0].0;
-            let mut pass_2: Vec<(f64, f64)> = vec![row[0]];
-            for &(thresh, price) in row.iter() {
-                if (thresh - last_thresh).abs() < FLOAT_TOL {
-                    pass_2.last_mut().unwrap().1 = price;
-                } else {
-                    pass_2.push((thresh, price));
-                }
-                last_thresh = thresh;
-            }
-
-            let mut last_price: f64 = pass_2[0].1;
-            let mut out: Vec<(f64, f64)> = vec![pass_2[0]];
-            for &(thresh, price) in pass_2.iter() {
-                if (price - last_price).abs() < FLOAT_TOL {
-                    out.last_mut().unwrap().0 = thresh;
-                } else {
-                    out.push((thresh, price));
-                }
-                last_price = price;
-            }
-
-            if out[0].0 != 0.0 {
-                out.insert(0, (0.0, 0.0));
-            }
-            // my_dbg!(&out);
-            // assert!(out[0].1 == 0.0 || out.len() == 1);
-            out
-        })
-        .collect()
-}
 
 #[macro_export]
 macro_rules! my_dbg {
@@ -147,7 +83,7 @@ impl<'a, T> PairIterator<'a> for T where T: Iterator<Item = &'a Vec<(f64, f64)>>
 pub fn eqv_gold_per_tap(upgrade: &Upgrade, price_arr: &[f64]) -> f64 {
     // a bit redundent but whatever
     let mut c: f64 = 0.0;
-    for i in 0..7 {
+    for i in 0..NUM_BASE_MATS {
         c += price_arr[i] * upgrade.costs[i] as f64;
     }
     c
@@ -208,7 +144,7 @@ pub fn compute_gold_cost_from_raw(
     price_arr: &[f64],
 ) -> f64 {
     let mut c: f64 = 0f64;
-    for i in 0..7 {
+    for i in 0..NUM_BASE_MATS {
         let val = (needed[i] - input_budget_no_gold[i]).max(0) as f64
             - (input_budget_no_gold[i] - needed[i]).max(0) as f64 * 1.0; // this constant will be customizable 
         c += price_arr[i] * val;
@@ -218,7 +154,7 @@ pub fn compute_gold_cost_from_raw(
 
 pub fn compute_eqv_gold_values(input_budget: &[i64], price_arr: &[f64]) -> f64 {
     let mut c: f64 = 0f64;
-    for i in 0..7 {
+    for i in 0..NUM_BASE_MATS {
         c += price_arr[i] * input_budget[i] as f64;
     }
     c

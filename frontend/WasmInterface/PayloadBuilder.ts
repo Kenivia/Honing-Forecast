@@ -1,32 +1,56 @@
 import {
   ALL_LABELS,
-  BUNDLE_SIZE,
+  ALL_WORTHLESS,
+  BandPlan,
+  clamp_band_plan,
   GRACE_FIRST_N,
   JOINED_ADV_JUICE,
   NUM_ADV_PIECES,
+  SPECIAL_LEAP_LABELS,
+  ADV_ALWAYS_DOUBLE_BALLS,
 } from "@/Utils/Constants";
-import { TreatmentPlan } from "@/Stores/CharacterProfile";
 
 import { toRaw } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import {
   get_upgrade_map,
   KeyedUpgrades,
-  OneMaterialInput,
   OneUpgradeInput,
   Upgrade,
 } from "@/Utils/KeyedUpgrades";
-import { input_column_to_num, parse_locale_int } from "@/Utils/InputColumn";
+import { input_column_to_num } from "@/Utils/InputColumn";
 import { storeToRefs } from "pinia";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+import { Bag, process_chests } from "@/Utils/Chest";
 
 // I don't think it's possible to directly export this struct from rust to javascript because of all the vectors,
 // so it's copied & pasted here
+// Owned amounts and per-unit prices for one material. Mirrors Rust's OneMaterial.
+export interface OneMaterial {
+  bound: number;
+  roster: number;
+  tradable: number;
+  taxed_price: number;
+  market_price: number;
+}
+
 export interface Payload {
-  material_info: number[][][];
-  optimizer_plan?: number[];
+  // row order; the one place the order Rust's cost tables assume is declared
+  material_labels: string[];
+  materials: Record<string, OneMaterial>;
+  // every plan to evaluate. Index 0 is always ALL_WORTHLESS, so the histogram always
+  // reports plain gold spent alongside whatever the user picked.
+  plans: BandPlan[];
+  optimizer_plan: number;
   upgrade_info: OneUpgradeInput[];
   special_budget: number;
   special_state?: number[];
+  // every chest stack of process_chests, by its key
+  chests: Record<string, { count: number; band: number; options: Bag[] }>;
+  // how many of each stack go to each option, from the last optimizer run, by the same key
+  chest_states?: Map<string, number[]>;
+  // what a chest's special leaps are called
+  special_label: string;
   tier: number;
   express_event: boolean;
   min_resolution: number;
@@ -77,10 +101,7 @@ function keyed_to_array(
   normal_override?: StateOverride,
   adv_override?: AdvStateOverride,
 ): OneUpgradeInput[] {
-  const { active_profile } = storeToRefs(useRosterStore());
-
-  const juice_info =
-    active_profile.value.histogram_worker_bundle.result?.juice_info ?? null;
+  const juice_info = useRuntimeStore().histogram.result?.juice_info ?? null;
   const upgrade_map = get_upgrade_map(upgrade_arr, tier);
   return Object.entries(keyed_upgrades)
     .filter((x) => tier === 0 || x[1].is_normal_honing) // shouldn't really be necessary but apparently it went  wrong once somehow so adding this guard here
@@ -88,12 +109,11 @@ function keyed_to_array(
     .map(([key, one_upgrade_input]) => {
       const upgrade = upgrade_map.get(key) ?? null;
 
-      one_upgrade_input.double_balls = true;
-
-      // upgrade !== null &&
-      // !upgrade.is_normal_honing &&
-      // ((upgrade.upgrade_index < 2 && express) ||
-      //   (upgrade.upgrade_index >= 2 && pretend_30_40));
+      one_upgrade_input.double_balls =
+        !one_upgrade_input.is_normal_honing &&
+        (ADV_ALWAYS_DOUBLE_BALLS ||
+          (one_upgrade_input.upgrade_index < 2 && express) ||
+          (one_upgrade_input.upgrade_index >= 2 && pretend_30_40));
       // console.log(one_upgrade_input.double_balls);
       let out = structuredClone(toRaw(one_upgrade_input));
       if (
@@ -249,107 +269,87 @@ function apply_tax(x: number): number {
   return Math.max(Math.min(1, x), Math.floor(x * 0.95));
 }
 
-export function build_material_info(): OneMaterialInput[] {
+export function build_materials(): Record<string, OneMaterial> {
   const roster_store = useRosterStore();
-  const { active_profile } = storeToRefs(roster_store);
   const {
-    roster_config,
+    active_profile,
     active_roster_mats_owned,
     active_tradable_mats_owned,
-    active_region,
-    effective_serca_price,
-  } = storeToRefs(useRosterStore());
+  } = storeToRefs(roster_store);
 
   const tier = active_profile.value.tier;
-  const bound_budgets = input_column_to_num(
-    active_profile.value.bound_budgets[tier],
-  );
-  const enabled = active_profile.value.bound_budgets[tier].enabled;
-  const roster_mats_owned = input_column_to_num(
-    active_roster_mats_owned.value[tier],
-  );
-  const tradable_mats_owned = input_column_to_num(
-    active_tradable_mats_owned.value[tier],
-  );
+  const bound = input_column_to_num(active_profile.value.bound_budgets);
+  const enabled = active_profile.value.bound_budgets.enabled;
+  const roster_owned = input_column_to_num(active_roster_mats_owned.value);
+  const tradable_owned = input_column_to_num(active_tradable_mats_owned.value);
 
-  const leftover_price = input_column_to_num(
-    active_profile.value.leftover_price[tier],
-  );
-  const effective_price =
-    tier == 0
-      ? input_column_to_num(roster_store.active_mats_prices[tier])
-      : effective_serca_price.value;
+  // Prices here are per unit: which bundle a material is sold in, and whether it is
+  // cheaper to convert one up from a lower tier, are both resolved by the store.
+  const listed = roster_store.active_unit_prices;
+  const effective = roster_store.active_effective_prices;
 
-  // console.log(input_column_to_num(roster_store.active_mats_prices[tier]));
-  const selected_shard_size =
-    roster_config.value.shard_infos[active_region.value].selected;
-  const shard_prices =
-    roster_config.value.shard_infos[active_region.value].prices;
-
-  const selected_shard_price: number = parse_locale_int(
-    shard_prices[selected_shard_size].data[0],
-  );
-  const actual_mats_prices = effective_price.map((x: number, index: number) =>
-    ALL_LABELS[active_profile.value.tier][index] === "Shards"
-      ? selected_shard_price / selected_shard_size
-      : x / BUNDLE_SIZE[index],
-  );
-
-  const tradable_mats_price = input_column_to_num(
-    roster_store.active_mats_prices[tier],
-  ).map((x: number, index: number) =>
-    ALL_LABELS[active_profile.value.tier][index] === "Shards"
-      ? apply_tax(selected_shard_price) / selected_shard_size
-      : apply_tax(x) / BUNDLE_SIZE[index],
-  );
-  // console.log(ALL_LABELS, tier);
-  return ALL_LABELS[tier].map((_, index) => [
-    [0, 0],
-    [bound_budgets[index], leftover_price[index]],
-    [roster_mats_owned[index], tradable_mats_price[index]],
-    [
-      !enabled[index] || index == 5 ? 0 : tradable_mats_owned[index],
-      actual_mats_prices[index],
-    ], // disabled mats shouldn't be sold either, disregard tradable gold
-  ]);
+  const out: Record<string, OneMaterial> = {};
+  for (const label of ALL_LABELS[tier]) {
+    // A disabled material is one the user will not trade, which `bound` already models
+    // as an effectively infinite stock. Zero prices keep it out of the gold entirely, so
+    // what its leftovers are "worth" cannot depend on the plan.
+    const traded = enabled[label];
+    out[label] = {
+      bound: bound[label],
+      roster: roster_owned[label],
+      // gold is never sold
+      tradable: !traded || label === "Gold" ? 0 : tradable_owned[label],
+      taxed_price: traded ? apply_tax(listed[label]) : 0,
+      market_price: traded ? effective[label] : 0,
+    };
+  }
+  return out;
 }
 
 export function build_payload(override?: OptimizerOverride): Payload {
-  const { active_profile, roster_config } = storeToRefs(useRosterStore());
+  const runtime = useRuntimeStore();
+  const { active_profile, active_chests } = storeToRefs(useRosterStore());
   const tier = active_profile.value.tier;
-  // console.log(active_profile.value.optimizer_worker_bundle.result?.adv_cache);
+  // console.log(runtime.optimizer.result?.adv_cache);
   return {
-    material_info: build_material_info(),
-    optimizer_plan:
-      // wasm_op == WasmOp.OptimizeAverage
-      active_profile.value.optimizer_treatment_plan ===
-      TreatmentPlan.TreatRosterAsBound
-        ? [0, 0, 2, 3]
-        : active_profile.value.optimizer_treatment_plan ===
-            TreatmentPlan.TreatTradableAsBound
-          ? [0, 0, 0, 3]
-          : [0, 1, 2, 3], //this  shouldn't happen
-    // : null,
+    material_labels: ALL_LABELS[tier],
+    materials: build_materials(),
+    // Rust asserts the plan does not decrease, and the dropdowns only disable the values
+    // that would break that rather than preventing them. Clamping here also copies the
+    // plan out of the reactive proxy, which postMessage cannot clone.
+    plans: [ALL_WORTHLESS, clamp_band_plan(active_profile.value.band_values)],
+    optimizer_plan: 1,
     upgrade_info: keyed_to_array(
       active_profile.value.keyed_upgrades,
-      active_profile.value.optimizer_worker_bundle.result?.upgrade_arr,
+      runtime.optimizer.result?.upgrade_arr,
       tier,
       active_profile.value.express_event,
       active_profile.value.pretend_30_40_x2_grace,
       override?.normal,
       override?.advanced,
     ),
-    special_budget: input_column_to_num(active_profile.value.special_budget)[0],
+    special_budget: input_column_to_num(active_profile.value.special_budget)[
+      SPECIAL_LEAP_LABELS[active_profile.value.tier]
+    ],
     express_event: false, //active_profile.value.express_event, temporary overwrite while event doesn't do anything
     tier,
     min_resolution: active_profile.value.min_resolution,
     num_threads: 1,
     metric_type: 1,
     special_state: special_sort_override(
-      toRaw(active_profile.value.optimizer_worker_bundle.result?.special_state),
-      active_profile.value.optimizer_worker_bundle.result?.upgrade_arr,
+      toRaw(runtime.optimizer.result?.special_state),
+      runtime.optimizer.result?.upgrade_arr,
       override?.special,
     ),
-    adv_cache: toRaw(roster_config.value.adv_cache),
+    // Amounts stay fractional and Rust floors the total.
+    chests: Object.fromEntries(
+      process_chests(active_chests.value, tier).map((chest) => [
+        chest.key,
+        { count: chest.count, band: chest.band, options: chest.options },
+      ]),
+    ),
+    chest_states: toRaw(runtime.optimizer.result?.chest_states),
+    special_label: SPECIAL_LEAP_LABELS[tier],
+    adv_cache: toRaw(runtime.adv_cache),
   };
 }

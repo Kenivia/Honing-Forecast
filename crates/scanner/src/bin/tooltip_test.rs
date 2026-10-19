@@ -1,0 +1,181 @@
+// Native harness for the tooltip reader: runs the whole scanner over stills or a recording and prints each hover.
+//   cargo run --release --bin tooltip_test -- <image>...
+//   python scanner_setup/tooltips/dump_frames.py <mp4> | cargo run --release --bin tooltip_test -- --stdin <width> <height>
+use hf_scanner::{
+    anchor_to_slot::anchor_defs::ANCHORS,
+    dev_utils::native::{self, describe, describe_chest, print_statuses},
+    scanner_state::ScannerState,
+    tooltip::hover::Hover,
+};
+use std::{env, io::Read, time::Instant};
+
+fn new_state(width: usize, height: usize) -> (ScannerState, Vec<u8>) {
+    let (mut state, pixels) = native::new_state(width, height);
+    // SLOT_BUDGET=1 keeps the time budget, as in the browser; runs then differ with the machine's load
+    state.no_slot_budget = env::var("SLOT_BUDGET").is_err();
+    (state, pixels)
+}
+
+fn main() {
+    let args: Vec<String> = env::args().skip(1).collect();
+    if args[0] != "--stdin" {
+        for path in &args {
+            let image = image::open(path).unwrap().to_rgba8();
+            let (mut state, mut pixels) =
+                new_state(image.width() as usize, image.height() as usize);
+            pixels.copy_from_slice(image.as_raw());
+            // enough scans for every slot to be read, they are looked at a few at a time
+            for _ in 0..30 {
+                state.cropper();
+                state.run_ocr_inline();
+            }
+            println!("{path}");
+            let scores: Vec<f64> = state
+                .slot_infos
+                .values()
+                .filter_map(|slot| Some(slot.icon_name_score.as_ref()?.1))
+                .collect();
+            println!(
+                "  brightness {:?}, {} slots recognised, mean confidence {:.4}",
+                state.screen_info.brightness.value,
+                scores.len(),
+                scores.iter().sum::<f64>() / scores.len() as f64
+            );
+            match &state.hover {
+                Some(hover) => println!("  {}", describe(&state, hover)),
+                None => println!("  no tooltip"),
+            }
+            print_statuses(&state);
+        }
+        return;
+    }
+
+    let (width, height) = (args[1].parse().unwrap(), args[2].parse().unwrap());
+    let (mut state, mut pixels) = new_state(width, height);
+    let mut stdin = std::io::stdin().lock();
+    let (mut index, mut seen, mut hovers, mut start) = (0, 0, 0, 0);
+    let mut previous: Option<Hover> = None;
+    let mut spent = 0.0;
+    let mut brightness = None;
+    let mut skipped = 0;
+    // OCR_PX=n reads only so many px of strip a frame, as slow as the browser
+    let mut sim = native::Sim::new();
+    loop {
+        let more = stdin.read_exact(&mut pixels).is_ok();
+        if more {
+            // cropper(), with the tooltip step and all OCR timed on their own
+            let ready = sim.take_ready();
+            state.apply_ocr(ready);
+            let scan = state.detect_21_9() && state.worth_scanning();
+            skipped += !scan as usize;
+            if scan {
+                state.update_scale();
+                state.update_anchors();
+            }
+            if state.screen_info.brightness.value != brightness {
+                brightness = state.screen_info.brightness.value;
+                // each found anchor's own estimate
+                let anchors: Vec<String> = ANCHORS
+                    .iter()
+                    .flat_map(|spec| {
+                        let found = &state.anchors[&spec.anchor_type].positions;
+                        spec.variants
+                            .iter()
+                            .zip(found)
+                            .filter_map(|(variant, found)| {
+                                found.map(|x| {
+                                    format!(
+                                        "{:?} {} {:.1?}",
+                                        spec.anchor_type, variant.name, x.brightness
+                                    )
+                                })
+                            })
+                    })
+                    .collect();
+                eprintln!(
+                    "frame {index}: brightness {:.2} over {} anchors, now found: {anchors:?}",
+                    brightness.unwrap(),
+                    state.screen_info.brightness_anchors
+                );
+            }
+            if scan {
+                state.update_page_status();
+                state.update_slots();
+            }
+            let clock = Instant::now();
+            if scan {
+                state.update_tooltip();
+            }
+            sim.step(&mut state, index as u64);
+            spent += clock.elapsed().as_secs_f64() * 1000.0;
+        } else {
+            // what is still waiting is read before the last hover is printed
+            sim.finish(&mut state, index as u64);
+            state.hover = None;
+        }
+        let moved = match (&previous, &state.hover) {
+            (Some(old), Some(new)) => {
+                old.position.0.abs_diff(new.position.0) > 4
+                    || old.position.1.abs_diff(new.position.1) > 4
+            }
+            (Some(_), None) => true,
+            _ => false,
+        };
+        if moved {
+            hovers += 1;
+            println!(
+                "{start:4}-{:4}  {}",
+                index - 1,
+                describe(&state, previous.as_ref().unwrap())
+            );
+        }
+        if moved || previous.is_none() {
+            start = index;
+        }
+        if !more {
+            break;
+        }
+        seen += state.hover.as_ref().is_some_and(|hover| hover.missed == 0) as usize;
+        previous = state.hover.clone();
+        index += 1;
+    }
+    println!("{skipped} frames not scanned");
+    eprintln!(
+        "stage timings (name, ms, calls): {:?}",
+        hf_scanner::dev_utils::timing::take()
+    );
+    println!(
+        "{index} frames, tooltip on {seen}, {hovers} hovers, {:.1} ms per frame in the tooltip step and OCR, brightness {:?}",
+        spent / index as f64,
+        state.screen_info.brightness.value
+    );
+    eprintln!("{}", sim.summary());
+    println!("{} chests", state.chests.len());
+    for chest in &state.chests {
+        println!("  {}", describe_chest(chest));
+    }
+    let mut infos: Vec<_> = state.slot_infos.iter().collect();
+    infos.sort_by_key(|(address, _)| {
+        (
+            address.inventory_type as u8,
+            address.page_num,
+            address.pos_in_inv,
+        )
+    });
+    for (address, info) in infos {
+        if info.tradability.is_some() || info.tooltip_amount.is_some() {
+            println!(
+                "{:?} p{} {:?}  {}  slot amount {:?}  tooltip amount {:?}  {:?}  {:?}",
+                address.inventory_type,
+                address.page_num,
+                address.pos_in_inv,
+                info.icon_name_score.as_ref().unwrap().0,
+                info.amount,
+                info.tooltip_amount,
+                info.tradability,
+                info.label
+            );
+        }
+    }
+    print_statuses(&state);
+}

@@ -7,10 +7,19 @@ license = "AGPL-3.0-or-later"
 version = "0.1.0"
 
 [dependencies]
-hf-core = { path = "../core", default-features = false, features=["run_tests"]} 
+hf-core = { path = "../core", default-features = false, features = ["run_tests", "trace"] }
 rand = "0.9"
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-
-[features]
-v35=["hf-core/v35"]
-default=[]
+ahash = "0.8"
+itertools = "0.14.0"
+smallvec = "1.15.2"
+rusqlite = { version = "0.40", features = ["bundled"] }
+clap = { version = "4.6", features = ["derive"] }
+cpu-time = "1.0"
+comfy-table = "8.0"
+rayon = "1.12"
+sobol_burley = "0.5"
+rand_distr = "0.5"
+ctrlc = { version = "3", features = ["termination"] }
+postcard = { version = "1.1", default-features = false, features = ["alloc"] }

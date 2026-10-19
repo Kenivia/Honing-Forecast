@@ -1,32 +1,20 @@
 import {
-  ALL_LABELS,
+  ALL_BUNDLE_KEYS,
+  bundle_key,
+  cheapest_bundles,
   FALLBACK_PRICES,
+  MATERIALS,
   WORKER_URL,
-  SERCA_TO_T4_INDICES,
 } from "./Constants";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import {
-  create_input_column,
-  InputColumn,
-  InputType,
-  parse_locale_int,
-} from "./InputColumn";
+import { InputColumn } from "./InputColumn";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
 
-export interface ShardInfo {
-  selected: number;
-  prices: Record<number, InputColumn>; // x1000, price in a single-celled column
-}
-export const DEFAULT_SHARD_INFO: ShardInfo = {
-  prices: {
-    3000: create_input_column(InputType.Int, ["Shard"], ["0"]),
-    2000: create_input_column(InputType.Int, ["Shard"], ["0"]),
-    1000: create_input_column(InputType.Int, ["Shard"], ["0"]), // the labels kinda not needed so not gonna bother
-  },
-  selected: 3000,
-};
 const FETCH_MARKET_COOLDOWN_MS = 60 * 60 * 1000;
 export type MarketRegions = "nae" | "euc" | "Custom";
+// Custom is user-entered and is never fetched.
+export const FETCHABLE_REGIONS: MarketRegions[] = ["nae", "euc"];
 const BODY = {
   region_slug: "nae",
   item_slugs: [
@@ -80,67 +68,33 @@ export async function fetch_market_data(
   return data;
 }
 
-const default_prices: number[][] = FALLBACK_PRICES;
+// A material with several bundle sizes has one market slug per bundle, so the entry
+// carries the size. Single-bundle materials just name the material.
+function slug_bundle_key(entry: string | [string, number]): string {
+  if (Array.isArray(entry)) {
+    return bundle_key(entry[0], entry[1]);
+  }
+  const mat = MATERIALS[entry];
+  return mat === undefined ? "" : bundle_key(entry, mat.bundle_sizes[0]);
+}
 
+// Returns the price of every bundle, and which bundle is cheapest per unit.
 export function parse_response(
   response: any,
-): [number[][], number, Record<number, InputColumn>] {
-  let out = default_prices;
-  // for (let tier = 0; tier < ALL_LABELS.length; tier++) {
-  //     for (let index = 0; index < ALL_LABELS[tier].length; index++) {
-  //         let label = ALL_LABELS[tier][index]
-  //         // if (OVERRIDE_DEFAULT.hasOwnProperty(label)) {
-  //         //     out[tier][index] = OVERRIDE_DEFAULT[label]
-  //         // }
-  //         out[tier][index] = FALLBACK_PRICES[tier][index]
-  //     }
-  // }
-
-  // Track shard pouch prices: { 1000: price, 2000: price, 3000: price }
-  const shard_prices: Record<number, InputColumn> = {};
-  // console.log(response)
-  for (let index = 0; index < response.length; index++) {
-    const { item_slug, price } = response[index];
-    // console.log(ITEM_SLUG_TO_LABEL, item_slug)
-    if (Object.hasOwn(ITEM_SLUG_TO_LABEL, item_slug)) {
-      let label: string = ITEM_SLUG_TO_LABEL[item_slug];
-      for (let tier = 0; tier < ALL_LABELS.length; tier++) {
-        let index_in_labels = ALL_LABELS[tier].findIndex((x) => x == label);
-
-        const string_price = parseInt(price).toLocaleString();
-        const this_column = create_input_column(
-          InputType.Int,
-          ["Shard"],
-          [string_price],
-        );
-        if (index_in_labels >= 0) {
-          out[tier][index_in_labels] = price;
-        } else if (label === "Shards small") {
-          shard_prices[1000] = this_column;
-        } else if (label === "Shards medium") {
-          shard_prices[2000] = this_column;
-        } else if (label === "Shards large") {
-          shard_prices[3000] = this_column;
-        }
-      }
+): [Record<string, number>, Record<string, number>] {
+  // a fresh copy: a fetch must not mutate FALLBACK_PRICES
+  const prices: Record<string, number> = { ...FALLBACK_PRICES };
+  for (const { item_slug, price } of response) {
+    const entry = ITEM_SLUG_TO_LABEL[item_slug];
+    if (entry === undefined) {
+      continue;
+    }
+    const key = slug_bundle_key(entry);
+    if (Object.hasOwn(prices, key)) {
+      prices[key] = parseInt(price);
     }
   }
-
-  // Calculate which shard bag size is most efficient (lowest price per shard)
-  let selected_shard = 1000;
-  if (Object.keys(shard_prices).length > 0) {
-    let best_value = Infinity;
-    for (const [shard_count, this_column] of Object.entries(shard_prices)) {
-      const value_per_shard =
-        parse_locale_int(this_column.data[0]) / parseInt(shard_count);
-      if (value_per_shard < best_value) {
-        best_value = value_per_shard;
-        selected_shard = parseInt(shard_count);
-      }
-    }
-  }
-
-  return [out, selected_shard, shard_prices];
+  return [prices, cheapest_bundles(prices)];
 }
 
 const ITEM_SLUG_TO_LABEL = {
@@ -151,9 +105,9 @@ const ITEM_SLUG_TO_LABEL = {
 
   "destiny-guardian-stone": "Blue",
   "destiny-destruction-stone": "Red",
-  "destiny-shard-pouch-s": "Shards small",
-  "destiny-shard-pouch-m": "Shards medium",
-  "destiny-shard-pouch-l": "Shards large",
+  "destiny-shard-pouch-s": ["Shards", 1000],
+  "destiny-shard-pouch-m": ["Shards", 2000],
+  "destiny-shard-pouch-l": ["Shards", 3000],
   "destiny-leapstone": "Leaps",
   "abidos-fusion-material": "Fusion",
   "glaciers-breath": "Glacier's Breath",
@@ -190,9 +144,10 @@ export async function start_fetch(
   force?: boolean,
   ignore_fetch_cooldown?: boolean,
 ) {
+  const runtime = useRuntimeStore();
   const roster_store = useRosterStore();
   const { roster_config } = storeToRefs(roster_store);
-  if (roster_config.value.is_fetching && !ignore_fetch_cooldown) return;
+  if (runtime.is_fetching && !ignore_fetch_cooldown) return;
   if (region === "Custom" || (!roster_config.value.auto_fetch && !force)) {
     return;
   }
@@ -200,77 +155,54 @@ export async function start_fetch(
   if (
     cached !== undefined &&
     !is_data_stale(region, force === true ? 1000 : FETCH_MARKET_COOLDOWN_MS) &&
-    !roster_config.value.market_fetch_failed
+    !runtime.market_fetch_failed
   ) {
-    roster_config.value.is_fetching = true;
+    runtime.is_fetching = true;
     await new Promise((r) => setTimeout(r, 200));
-    roster_config.value.is_fetching = false;
+    runtime.is_fetching = false;
     const [_, result] = cached;
-    const [parsed, selectedShardSize, shard_prices] = parse_response(result);
-    fetch_callback(parsed, selectedShardSize, shard_prices, region);
+    fetch_callback(...parse_response(result), region);
     return;
   }
 
-  roster_config.value.is_fetching = true;
+  runtime.is_fetching = true;
 
   // Fetch new data
   const result = await (async () => {
     try {
       const out = await fetch_market_data(region);
 
-      roster_config.value.market_fetch_failed = false;
+      runtime.market_fetch_failed = false;
       return out;
     } catch {
-      roster_config.value.market_fetch_failed = true;
-      return cached !== undefined ? cached : FALLBACK_PRICES;
+      runtime.market_fetch_failed = true;
+      return cached !== undefined ? cached : [];
     }
   })();
 
-  const [parsed, selectedShardSize, shard_prices] = parse_response(result);
+  const parsed = parse_response(result);
 
   // Store the raw response data with timestamp
-  if (!roster_config.value.market_fetch_failed) {
+  if (!runtime.market_fetch_failed) {
     roster_config.value.latest_market_data[region] = [Date.now(), result];
   }
 
-  roster_config.value.is_fetching = false;
+  runtime.is_fetching = false;
 
-  fetch_callback(parsed, selectedShardSize, shard_prices, region);
+  fetch_callback(...parsed, region);
 }
 function fetch_callback(
-  result: number[][],
-  selected_shard_size: number,
-  shard_prices: Record<number, InputColumn>,
+  prices: Record<string, number>,
+  cheapest: Record<string, number>,
   region: MarketRegions,
 ) {
-  const roster_store = useRosterStore();
-  const { roster_config } = storeToRefs(roster_store);
-  // console.log(result)
-  // console.log("fetch callback");
-  // console.log(roster_store.active_mats_prices);
-  // if (region === "Custom") {
-  //   // shouldn't happen anyway but just in case
-  //   return;
-  // }
-  roster_config.value.shard_infos[region].selected = selected_shard_size;
-  roster_config.value.shard_infos[region].prices = shard_prices;
-  for (let tier = 0; tier < ALL_LABELS.length; tier++) {
-    for (let index = 0; index < ALL_LABELS[tier].length; index++) {
-      const syncing = index in SERCA_TO_T4_INDICES && tier == 1;
-      const actual_tier = syncing ? 0 : tier;
-      const actual_index = syncing ? SERCA_TO_T4_INDICES[index] : index;
-      // console.log(
-      //   actual_tier,
-      //   actual_index,
-      //   result[actual_tier][actual_index].toLocaleString(),
-      // );
-      roster_config.value.mats_prices[region][actual_tier].data[actual_index] =
-        result[actual_tier][actual_index].toLocaleString();
-      if (ALL_LABELS[actual_tier][actual_index] == "Shards") {
-        roster_config.value.mats_prices[region][actual_tier].data[
-          actual_index
-        ] = "0"; // this shoulnd never actually be read
-      }
+  const { roster_config } = storeToRefs(useRosterStore());
+  const column = roster_config.value.mats_prices[region];
+  for (const key of ALL_BUNDLE_KEYS) {
+    if (prices[key] !== undefined) {
+      column.values[key] = prices[key].toLocaleString();
     }
   }
+  // a fetch also picks the best-value bundle for anything sold in several sizes
+  roster_config.value.selected_bundles[region] = cheapest;
 }

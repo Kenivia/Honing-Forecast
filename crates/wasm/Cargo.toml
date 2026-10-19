@@ -10,7 +10,8 @@ version = "0.1.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-hf-core = { path = "../core", default-features = false, features=["wasm", "active_version"]}  
+hf-core = { path = "../core", default-features = false, features=["wasm"]}  
+hf-scanner = { path = "../scanner" }
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
 serde = { version = "1.0", features = ["derive"] }
 rand = "0.9"
@@ -18,11 +19,18 @@ serde-wasm-bindgen = "0.6"
 js-sys = "0.3"
 console_error_panic_hook = "0.1"
 web-sys = { version = "0.3", features = ["console"] }
-getrandom = { version = "0.3", features = ["wasm_js"] }
+getrandom = { version = "0.4", features = ["wasm_js"] }
 serde_json = "1.0"
+postcard = { version = "1.1", default-features = false, features = ["alloc"] }
+
+[build-dependencies]
+hf-core = { path = "../core", default-features = false }
+postcard = { version = "1.1", default-features = false, features = ["alloc"] }
+
 
 
 [features]
-# wasm feature here to make my_dbg macro happy  
+# features here to make my_dbg macro happy  
 wasm=[]  
+run_tests=[]
 default=["wasm"]

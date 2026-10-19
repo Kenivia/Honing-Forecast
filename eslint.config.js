@@ -15,7 +15,7 @@ const unusedVarsRule = [
 
 export default [
     // Global ignores
-    { ignores: ["dist/**", "junkyard/**", "crates/wasm/pkg/**"] },
+    { ignores: ["dist/**", "ignored/**", "crates/wasm/pkg/**"] },
 
     // Plain JS files
     {
@@ -29,6 +29,12 @@ export default [
             ...js.configs.recommended.rules,
             "no-unused-vars": unusedVarsRule,
         },
+    },
+
+    // Node-side test runner and shim
+    {
+        files: ["tests/**/*.{mjs,ts}"],
+        languageOptions: { globals: { ...globals.node } },
     },
 
     // TypeScript files

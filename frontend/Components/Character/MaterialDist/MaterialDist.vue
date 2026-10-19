@@ -1,21 +1,22 @@
 <script setup lang="ts">
 import {
   ALL_LABELS,
-  GRAPH_COLORS,
-  T4_MATS_LABELS,
+  JUICE_RANGES,
+  MATERIALS,
+  NUM_BANDS,
+  NUM_BASE_MATS,
   ANNOTATION_COLORS,
   ANNOTATION_POSITIONS,
   ANNOTATION_LABELS,
-  SERCA_TO_T4_INDICES,
+  SPECIAL_LEAP_LABELS,
 } from "@/Utils/Constants";
-import { TreatmentPlan } from "@/Stores/CharacterProfile";
 import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue";
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { computed, onMounted, ref, watchEffect } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { build_payload } from "@/WasmInterface/PayloadBuilder";
 import { input_column_to_num } from "@/Utils/InputColumn";
 import { start_all_workers } from "@/Components/Character/CharWorkerUtils";
@@ -23,6 +24,8 @@ import { WasmOp } from "@/WasmInterface/WasmWorker";
 import { GridConfig } from "@/Utils/GridStyling";
 import { useMediaIsNarrow } from "@/Utils/WindowSize";
 import Popup from "@/Components/Common/Popup.vue";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+const runtime = useRuntimeStore();
 
 const { active_profile } = storeToRefs(useRosterStore());
 const {
@@ -31,102 +34,81 @@ const {
   active_tradable_mats_owned,
   enabled_annotations,
 } = storeToRefs(useRosterStore());
-const histogram_result = computed(
-  () => active_profile.value.histogram_worker_bundle.result,
-);
+const histogram_result = computed(() => runtime.histogram.result);
+
+// Rust keys every material result by label, so these are read straight through.
+const tier = computed(() => active_profile.value.tier);
+const set_special_budget = (val: string) => {
+  active_profile.value.special_budget.values[
+    SPECIAL_LEAP_LABELS[active_profile.value.tier]
+  ] = val;
+};
+const zeroes = (): Record<string, number> =>
+  Object.fromEntries(ALL_LABELS[tier.value].map((label) => [label, 0]));
 
 // This is average mats cost (not gold)
 const average_breakdown = computed(
-  () =>
-    active_profile.value.histogram_worker_bundle.result?.avg_breakdown ??
-    new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
+  () => runtime.histogram.result?.avg_used ?? zeroes(),
 );
-// this is should always be treat tradable as bound (so it's actual gold spent)
-const gold_breakdown = computed(
-  () =>
-    active_profile.value.histogram_worker_bundle.result?.gold_breakdown_arr[0].map(
-      (x: number) => (x >= 0 ? 0 : -x),
-    ) ?? new Array(ALL_LABELS[active_profile.value.tier].length).fill(0),
-);
-
-const matsIndices = T4_MATS_LABELS.map((_, i) => i);
-const visibleRows = computed(() => {
-  return ALL_LABELS[active_profile.value.tier]
-    .map((label, row) => ({ label, row })) // keep original index
-    .filter(({ label, row }) => {
-      return (
-        matsIndices.includes(row) ||
-        label === "Lava's Breath" ||
-        label === "Glacier's Breath" ||
-        (active_profile.value.tier === 0 &&
-          ((has_upgrades_in_range(11, 14, true, false) &&
-            label === "11-14 Weapon") ||
-            (has_upgrades_in_range(15, 18, true, false) &&
-              label === "15-18 Weapon") ||
-            (has_upgrades_in_range(19, 20, true, false) &&
-              (label === "19-20 Weapon" ||
-                label === "Enhanced 19-20 Weapon")) ||
-            (has_upgrades_in_range(11, 14, false, false) &&
-              label === "11-14 Armor") ||
-            (has_upgrades_in_range(15, 18, false, false) &&
-              label === "15-18 Armor") ||
-            (has_upgrades_in_range(19, 20, false, false) &&
-              (label === "19-20 Armor" || label === "Enhanced 19-20 Armor")) ||
-            (has_upgrades_in_range(1, 1, true, true) &&
-              label === "Scroll 1 Weapon") ||
-            (has_upgrades_in_range(2, 2, true, true) &&
-              label === "Scroll 2 Weapon") ||
-            (has_upgrades_in_range(3, 3, true, true) &&
-              label === "Scroll 3 Weapon") ||
-            (has_upgrades_in_range(4, 4, true, true) &&
-              label === "Scroll 4 Weapon") ||
-            (has_upgrades_in_range(1, 1, false, true) &&
-              label === "Scroll 1 Armor") ||
-            (has_upgrades_in_range(2, 2, false, true) &&
-              label === "Scroll 2 Armor") ||
-            (has_upgrades_in_range(3, 3, false, true) &&
-              label === "Scroll 3 Armor") ||
-            (has_upgrades_in_range(4, 4, false, true) &&
-              label === "Scroll 4 Armor"))) ||
-        average_breakdown.value[row] > 0.0 ||
-        roster_config.value.show_all_rows
-      );
-    });
+// plan 0 is always ALL_WORTHLESS, so this is gold actually handed to the market
+const gold_breakdown = computed(() => {
+  const per_mat: Record<string, number> | undefined =
+    runtime.histogram.result?.gold_per_plan[0];
+  if (per_mat === undefined) return zeroes();
+  return Object.fromEntries(
+    Object.entries(per_mat).map(([label, x]) => [label, x >= 0 ? 0 : -x]),
+  );
 });
+const histogram_chances = computed(() => {
+  const per_mat: Record<string, number[]> | undefined =
+    runtime.histogram.result?.chance_within;
+  if (per_mat === undefined) return zeroes();
+  return Object.fromEntries(
+    Object.entries(per_mat).map(([label, bands]) => [
+      label,
+      bands[active_profile.value.chance_band],
+    ]),
+  );
+});
+
+const visibleRows = computed(() =>
+  ALL_LABELS[active_profile.value.tier]
+    .map((label, row) => ({ label, row, color: MATERIALS[label].color }))
+    .filter(({ label, row }) => {
+      if (row < NUM_BASE_MATS) return true;
+      if (label === "Lava's Breath" || label === "Glacier's Breath")
+        return true;
+      if (roster_config.value.show_all_rows) return true;
+      if (average_breakdown.value[label] > 0.0) return true;
+      // a juice row only shows when an upgrade in its range is wanted
+      const range = JUICE_RANGES[label];
+      return (
+        active_profile.value.tier === 0 &&
+        range !== undefined &&
+        has_upgrades_in_range(...range)
+      );
+    }),
+);
 
 const tickbox_tooltip = `Untick the box if you don't plan on buying that material from market.`;
 // <span style="color:var(--text-muted)">(it also disable selling this mat)</span>`
 
-const market_gold_text = "Avg gold spent buying from market";
-const tradable_gold_text =
-  "Avg gold spent buying minus gold from selling tradables";
 const total_market_gold_text = "Average tradable gold spent:";
 const total_market_gold_suffix = "(raw  +  buying needed mats & juice)";
-const total_tradable_gold_text = "Avg sell value of leftover tradable mats:";
-const total_tradable_gold_suffix = "(taxed)";
-const all_bound_text = "Treat roster bound as tradable"; // i dont think i'll show this tho cos its kinda confusing
-const selected_optimizer_treatement = ref(
-  active_profile.value.optimizer_treatment_plan ==
-    TreatmentPlan.TreatTradableAsBound
-    ? market_gold_text
-    : active_profile.value.optimizer_treatment_plan ==
-        TreatmentPlan.TreatRosterAsBound
-      ? tradable_gold_text
-      : all_bound_text,
-);
+const total_tradable_gold_text = "Avg value of leftover mats:";
+const total_tradable_gold_suffix = "";
 
-watchEffect(() => {
-  if (selected_optimizer_treatement.value == market_gold_text) {
-    active_profile.value.optimizer_treatment_plan =
-      TreatmentPlan.TreatTradableAsBound;
-  } else if (selected_optimizer_treatement.value == tradable_gold_text) {
-    active_profile.value.optimizer_treatment_plan =
-      TreatmentPlan.TreatRosterAsBound;
-  } else if (selected_optimizer_treatement.value == all_bound_text) {
-    active_profile.value.optimizer_treatment_plan =
-      TreatmentPlan.TreatRosterAsTradable;
-  }
-});
+// Plan 0 credits nothing, so it is the gross spend; plan 1 is the user's, which is what
+// the optimizer minimises. The gap between them is what the leftovers are worth.
+const total_gold = computed(() => runtime.histogram.result?.metric_per_plan[0]);
+const leftover_credit = computed(
+  () =>
+    runtime.histogram.result?.metric_per_plan[0] -
+    runtime.histogram.result?.metric_per_plan[1],
+);
+const any_credited = computed(() =>
+  active_profile.value.band_values.some((v) => v !== "Worthless"),
+);
 
 const bound_chance_text =
   "Chance to succeed all upgrades within Char-Bound material";
@@ -134,109 +116,56 @@ const roster_chance_text =
   "Chance to succeed all upgrades within Roster-Bound material";
 const tradable_chance_text =
   "Chance to succeed all upgrades within Tradable material";
-// const chance_explainer_text = computed(() =>
-//   active_profile.value.histogram_treatment_plan ==
-//   TreatmentPlan.TreatTradableAsBound
-//     ? tradable_chance_text
-//     : active_profile.value.histogram_treatment_plan ==
-//         TreatmentPlan.TreatRosterAsBound
-//       ? roster_chance_text
-//       : bound_chance_text,
-// );
+// parallel to chance_band
+const CHANCE_TEXTS = [
+  bound_chance_text,
+  roster_chance_text,
+  tradable_chance_text,
+];
+const CHANCE_COLORS = ["var(--bound)", "var(--roster)", "var(--tradable)"];
 
-const selected_histogram_treatment = ref(
-  active_profile.value.histogram_treatment_plan ==
-    TreatmentPlan.TreatTradableAsBound
-    ? tradable_chance_text
-    : active_profile.value.histogram_treatment_plan ==
-        TreatmentPlan.TreatRosterAsBound
-      ? roster_chance_text
-      : bound_chance_text,
+const selected_chance_band = ref(
+  CHANCE_TEXTS[active_profile.value.chance_band],
+);
+// initialize here otherwise it'll be null until we change it
+const selected_chance_color = ref(
+  CHANCE_COLORS[active_profile.value.chance_band],
 );
 
-const selected_histogram_color = ref(
-  active_profile.value.histogram_treatment_plan ==
-    TreatmentPlan.TreatRosterAsTradable
-    ? "var(--bound)"
-    : active_profile.value.histogram_treatment_plan ==
-        TreatmentPlan.TreatRosterAsBound
-      ? "var(--roster)"
-      : "var(--tradable)",
-); // initialize here otherwise it'll be null until we change it
-function change_histogram_treatment(event) {
-  let new_val = event.target.value;
-  if (new_val === null) {
+function change_chance_band(event) {
+  const band = CHANCE_TEXTS.indexOf(event.target.value);
+  if (band < 0) {
     return;
   }
-  if (new_val == bound_chance_text) {
-    active_profile.value.histogram_treatment_plan =
-      TreatmentPlan.TreatRosterAsTradable;
-  } else if (new_val == roster_chance_text) {
-    active_profile.value.histogram_treatment_plan =
-      TreatmentPlan.TreatRosterAsBound;
-  } else if (new_val == tradable_chance_text) {
-    active_profile.value.histogram_treatment_plan =
-      TreatmentPlan.TreatTradableAsBound;
-  }
+  active_profile.value.chance_band = band;
   set_enabled();
-  selected_histogram_color.value =
-    active_profile.value.histogram_treatment_plan ==
-    TreatmentPlan.TreatRosterAsTradable
-      ? "var(--bound)"
-      : active_profile.value.histogram_treatment_plan ==
-          TreatmentPlan.TreatRosterAsBound
-        ? "var(--roster)"
-        : "var(--tradable)";
-  active_profile.value.histogram_worker_bundle.throttled_start(
-    WasmOp.Histogram,
-    build_payload(),
-  );
+  selected_chance_color.value = CHANCE_COLORS[band];
+  runtime.histogram.throttled_start(WasmOp.Histogram, build_payload());
 }
 
+// annotation 0 is the average line, the rest are the ownership bands
 function set_enabled() {
-  if (
-    active_profile.value.histogram_treatment_plan ==
-    TreatmentPlan.TreatRosterAsTradable
-  ) {
-    enabled_annotations.value[1] = true;
-    enabled_annotations.value[2] = false;
-    enabled_annotations.value[3] = false;
-  } else if (
-    active_profile.value.histogram_treatment_plan ==
-    TreatmentPlan.TreatRosterAsBound
-  ) {
-    enabled_annotations.value[1] = false;
-    enabled_annotations.value[2] = true;
-    enabled_annotations.value[3] = false;
-  } else if (
-    active_profile.value.histogram_treatment_plan ==
-    TreatmentPlan.TreatTradableAsBound
-  ) {
-    enabled_annotations.value[1] = false;
-    enabled_annotations.value[2] = false;
-    enabled_annotations.value[3] = true;
+  for (let band = 0; band < NUM_BANDS; band++) {
+    enabled_annotations.value[band + 1] =
+      band === active_profile.value.chance_band;
   }
 }
 onMounted(set_enabled); // overwrite the graph control options on load, which lowkey shouldn't even be there but whatever
 
 const annotation_values = computed(() => {
-  let bound = input_column_to_num(
-    active_profile.value.bound_budgets[active_profile.value.tier],
-  );
-  let roster = input_column_to_num(
-    active_roster_mats_owned.value[active_profile.value.tier],
-  );
-  let trade = input_column_to_num(
-    active_tradable_mats_owned.value[active_profile.value.tier],
-  );
-  return bound.map((_, i) =>
-    [
-      average_breakdown.value[i],
-      bound[i],
-      roster[i] + bound[i],
-      roster[i] + bound[i] + trade[i],
-    ].filter((_, i) => enabled_annotations.value[i]),
-  );
+  const bound = input_column_to_num(active_profile.value.bound_budgets);
+  const roster = input_column_to_num(active_roster_mats_owned.value);
+  const trade = input_column_to_num(active_tradable_mats_owned.value);
+  const out: Record<string, number[]> = {};
+  for (const label of ALL_LABELS[tier.value]) {
+    out[label] = [
+      average_breakdown.value[label],
+      bound[label],
+      roster[label] + bound[label],
+      roster[label] + bound[label] + trade[label],
+    ].filter((_, i) => enabled_annotations.value[i]);
+  }
+  return out;
 });
 
 function hover_annotation(x, _y, cy, material_type, color, is_last): string {
@@ -298,12 +227,13 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
           <span class="w-25 text-left text-(--bound)">Bound Mats</span>
         </div>
         <select
+          aria-label="Chance column"
           class="selector -mr-4! ml-4!"
-          v-model="selected_histogram_treatment"
+          v-model="selected_chance_band"
           :style="{
-            color: selected_histogram_color,
+            color: selected_chance_color,
           }"
-          @change="change_histogram_treatment"
+          @change="change_chance_band"
         >
           <option>{{ bound_chance_text }}</option>
           <option>{{ roster_chance_text }}</option>
@@ -332,66 +262,56 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
         </label>
         <!-- <span v-if="customLeftovers">Left</span> -->
       </div>
-      <div
-        v-if="
-          ALL_LABELS[active_profile.tier].length ==
-            active_profile.bound_budgets[active_profile.tier].data.length &&
-          active_profile.histogram_worker_bundle.result
-        "
-        class="contents"
-      >
+      <div v-if="runtime.histogram.result" class="contents">
         <div
-          v-for="{ label, row } in visibleRows"
+          v-for="{ label, row, color } in visibleRows"
           :key="`graph-${label}`"
           class="mats-row"
+          role="group"
+          :aria-label="label"
           :class="{
-            disabled:
-              !active_profile.bound_budgets[active_profile.tier].enabled[row],
+            disabled: !active_profile.bound_budgets.enabled[label],
           }"
         >
           <MaterialCell
-            :input_column="active_profile.bound_budgets[active_profile.tier]"
-            :row="row"
+            :input_column="active_profile.bound_budgets"
             :label="label"
+            :show_label="true"
+            aria_name="Bound owned"
             :input_color="'--bound'"
             :setter="
               (val) => {
-                active_profile.bound_budgets[active_profile.tier].data[row] =
-                  val;
+                active_profile.bound_budgets.values[label] = val;
               }
             "
-            :hide_tick="!matsIndices.includes(row)"
+            :hide_tick="row >= NUM_BASE_MATS"
             :callback="() => start_all_workers()"
-            :hide_label="is924Narrow && row < 7"
+            :hide_label="is924Narrow && row < NUM_BASE_MATS"
             :bound_label="true"
           />
           <!-- {{ console.log(averages) }} -->
           <MaterialCell
-            :input_column="
-              active_profile.histogram_worker_bundle.result.chances_arr[
-                active_profile.histogram_treatment_plan + 1
-              ]
-            "
-            :row="row"
-            :input_color="selected_histogram_color"
+            :input_column="histogram_chances"
+            :label="label"
+            :input_color="selected_chance_color"
             :is_percentage="true"
           />
           <MaterialCell
             :input_column="average_breakdown"
-            :row="row"
+            :label="label"
             :input_color="'--average'"
           />
           <MaterialCell
             :input_column="gold_breakdown"
-            :row="row"
+            :label="label"
             :input_color="'--gold'"
           />
           <MaterialGraph
-            :data="histogram_result?.cum_percentiles?.[row] ?? null"
+            :data="histogram_result?.cum_percentiles?.[label] ?? null"
             :material-label="label"
-            :graph-color="GRAPH_COLORS[active_profile.tier][row]"
+            :graph-color="color"
             :cumulative="roster_config.cumulative_graph"
-            :annotations="annotation_values[row]"
+            :annotations="annotation_values[label]"
             :annotationColors="
               ANNOTATION_COLORS.filter((_, i) => enabled_annotations[i])
             "
@@ -408,13 +328,11 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
         <div class="mats-row">
           <MaterialCell
             :input_column="active_profile.special_budget"
-            :row="0"
-            :setter="(val) => (active_profile.special_budget.data[0] = val)"
-            :label="
-              (active_profile.tier == 1 ? 'Serca ' : '') +
-              active_profile.special_budget.keys[0]
-            "
+            :label="SPECIAL_LEAP_LABELS[active_profile.tier]"
+            :show_label="true"
+            :setter="set_special_budget"
             :hide_tick="true"
+            aria_name="Special leaps owned"
             :callback="() => start_all_workers()"
           ></MaterialCell>
           <span
@@ -424,22 +342,22 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
           >
           <MaterialGraph
             :data="
-              active_profile.histogram_worker_bundle.result.state_bundle?.latest_special_probs
+              runtime.histogram.result.state_bundle?.latest_special_probs
                 .concat(
                   new Array(
                     Math.max(
                       0,
-                      active_profile.histogram_worker_bundle.result.state_bundle.upgrade_arr.filter(
+                      runtime.histogram.result.state_bundle.upgrade_arr.filter(
                         (x) => x.is_normal_honing,
                       ).length -
-                        active_profile.histogram_worker_bundle.result
-                          .state_bundle?.latest_special_probs.length,
+                        runtime.histogram.result.state_bundle
+                          ?.latest_special_probs.length,
                     ),
                   ).fill(0),
                 )
                 .slice(
                   0,
-                  active_profile.histogram_worker_bundle.result.state_bundle.upgrade_arr.filter(
+                  runtime.histogram.result.state_bundle.upgrade_arr.filter(
                     (x) => x.is_normal_honing,
                   ).length,
                 )
@@ -463,40 +381,20 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
       </div>
       <div class="metric-result-container">
         <span class="metric-result text-(--gold)">
-          {{
-            metric_to_text(
-              active_profile.histogram_worker_bundle.result?.metrics_arr[
-                active_profile.optimizer_treatment_plan ===
-                TreatmentPlan.TreatRosterAsBound
-                  ? 0
-                  : 1
-              ],
-            )
-          }}
+          {{ metric_to_text(total_gold) }}
         </span>
         <span class="metric-result-suffix">
           {{ total_market_gold_suffix }}
         </span>
       </div>
     </div>
-    <div
-      v-if="
-        active_profile.optimizer_treatment_plan ==
-        TreatmentPlan.TreatRosterAsBound
-      "
-      class="metric-container"
-    >
+    <div v-if="any_credited" class="metric-container">
       <div class="metric-label text-(--text-muted)">
         {{ total_tradable_gold_text }}
       </div>
       <div class="metric-result-container">
         <span class="metric-result text-(--text-muted)">
-          {{
-            metric_to_text(
-              active_profile.histogram_worker_bundle.result?.metrics_arr[0] -
-                active_profile.histogram_worker_bundle.result?.metrics_arr[1],
-            )
-          }}
+          {{ metric_to_text(leftover_credit) }}
         </span>
         <span class="metric-result-suffix">
           {{ total_tradable_gold_suffix }}
@@ -583,211 +481,4 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
   transform: translateY(-0.25rem);
   padding-left: 1px;
 }
-
-/* .special-convert-guide {
-  color: var(--free-tap);
-  font-size: 12px;
-  text-decoration-line: underline;
-}
-
-.special-convert-guide:hover {
-  color: var(--free-tap-muted);
-  font-size: 12px;
-}
-
-.optimizer-progress-label {
-  display: flex;
-  flex-direction: column;
-  font-size: 16px;
-  /* grid-column: 1 / span 2;
-  text-align: right;
-  padding: 6px;
-  text-wrap-mode: nowrap;
-}
-
-.metric-label {
-  grid-column: span 4;
-  width: 100%;
-  gap: 30px;
-  color: var(--gold);
-  font-size: 20px;
-  text-align: right;
-  padding-right: 8px;
-  justify-content: center;
-}
-
-.smaller-label {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.metric-status {
-  grid-column: 5 / span 2;
-  width: 100%;
-  gap: 30px;
-  color: var(--gold);
-  font-size: 30px;
-  text-align: left;
-  padding-right: 8px;
-  justify-content: center;
-  text-wrap-mode: nowrap;
-}
-
-.bound-header {
-  color: var(--bound);
-  text-align: right;
-  padding-right: 8px;
-}
-
-.average-header {
-  color: var(--average);
-  text-align: center;
-}
-
-.gold-header {
-  color: var(--gold);
-  text-align: center;
-}
-.gold-header-suffix {
-  color: var(--text-very-muted);
-  font-size: 12px;
-  min-width: 0;
-  text-align: left;
-  justify-self: right;
-  margin-left: auto;
-  position: absolute;
-  transform: translateX(100%) translateY(4px);
-  right: 22px;
-}
-.hover-hint {
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 11px;
-}
-
-.bound-select {
-  min-width: 0;
-}
-
-.analysis-pane {
-  width: min(100%, 992px);
-  overflow-x: visible;
-  overflow-y: visible;
-}
-
-.dist-scroll {
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  /* scrollbar-gutter: stable; */
-/* }
-
-.dist-stack {
-  display: flex;
-  flex-direction: column;
-  width: max-content;
-  min-width: 100%;
-}
-
-.analysis-pane :deep(.card-header) {
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.analysis-pane :deep(.card-header > div) {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.analysis-tab {
-  border: 1px solid var(--border-muted);
-  border-radius: 999px;
-  background: rgba(10, 13, 19, 0.48);
-  color: var(--text-main);
-  padding: 6px 12px;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-}
-
-.analysis-tab.active {
-  background: rgba(212, 179, 90, 0.22);
-  border-color: rgba(212, 179, 90, 0.6);
-  color: var(--text-bright);
-}
-.dist-graphs {
-  --dist-columns: 160px 90px 90px 120px 120px 350px;
-  display: grid;
-  grid-template-columns: var(--dist-columns);
-  align-items: center;
-  justify-content: start;
-  row-gap: 0;
-  min-width: max-content;
-}
-
-.table-title-row,
-.mats-row {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: var(--dist-columns);
-  align-items: center;
-  border-bottom: 1px solid var(--border-main);
-  min-height: 0;
-} */
-
-/* @media (max-width: 900px) {
-  .dist-graphs {
-    --dist-columns: 100px 70px 70px 78px 78px 192px;
-    min-width: max-content;
-    width: auto;
-  }
-
-  .metric-label {
-    grid-column: 1 / span 3;
-    font-size: 16px;
-    text-align: right;
-    gap: 0;
-  }
-
-  .metric-status {
-    grid-column: 4 / span 2;
-    font-size: 22px;
-    text-align: left;
-    gap: 0;
-  }
-
-  .bound-select {
-    width: 100%;
-    font-size: 11px;
-  }
-
-  .bound-header,
-  .average-header,
-  .gold-header {
-    font-size: 11px;
-  }
-
-  .average-header,
-  .gold-header {
-    text-align: center;
-  }
-
-  .table-title-row {
-    font-size: 11px;
-  }
-
-  .hover-hint {
-    font-size: 10px;
-  }
-
-  .mats-row :deep(.material-cell) {
-    --cell-input-width: 64px;
-    --cell-label-width: 88px;
-    --cell-icon-size: 20px;
-  }
-} */
 </style>

@@ -1,0 +1,81 @@
+# Overview
+
+Honing Forecast is a Lost Ark honing (gear upgrade) calculator. Given the upgrades a character wants, the materials they own and market prices, it finds the juice / book / free-tap plan that minimises **average gold spent**, and shows the cost distribution per material.
+
+The core idea, which drives most of the complexity: owned materials are subtracted from the cost *per outcome, before averaging*. Leftover bound materials are worth nothing (or a lower price), so gold cost is a piecewise-linear function of total consumption and `E[f(X)] != f(E[X])`. See `README.md` for the motivating example.
+
+These notes are high-level. They cover what is hard to work out from reading one file; they do not track constants, thresholds or UI details.
+
+## Repo map
+
+| Path | What it is |
+| --- | --- |
+| `crates/core` (`hf-core`) | All honing maths: domain model, average-gold evaluation, optimizer. |
+| `crates/scanner` (`hf-scanner`) | Screen scanner image processing. In development. |
+| `crates/wasm` (`hf-wasm`) | Thin `wasm_bindgen` wrappers over core and scanner. The only crate the frontend loads. |
+| `crates/arena` (`hf-arena`) | Native test harness for the core: Monte Carlo correctness, optimizer accuracy and speed, results in SQLite. |
+| `frontend/` | Vue 3 + Pinia + Tailwind app. `@` aliases to this folder. |
+| `cloudflare/` | A Worker that proxies and caches market prices and character lookups. |
+| `public/` | Static assets, changelogs, `WIP.md` (the author's roadmap), scanner config and OCR model. |
+| `scanner_setup/` | Everything that builds or calibrates the scanner config: source icons (`templates/`), game-file extraction, brightness calibration, anchor setup, the browser profiling scripts. |
+| `scripts/` | Changelog helper and the pre-deploy check; everything scanner-specific lives in `scanner_setup/` instead. |
+| `tests/` | Playwright e2e tests (`e2e/`), node-side frontend tests (migrations, the real-save fixture, cross-tier relations, `pnpm test:frontend`), and test fixtures (the V7 save, `test-results/`). |
+| `arena_data/` | Arena scenarios and its gitignored results database, plus the Python report scripts that read it. |
+
+Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-pack output), and `ignored/` (untracked: `junkyard/`, `data_fetcher/`, `game_file_reader/`, old saddlepoint reference PDF, the overnight evaluator experiments, scanner recordings).
+
+## Build and run
+
+- `pnpm dev` builds the wasm package with wasm-pack, then starts Vite. Vite does not watch `crates/`, so **Rust changes need `pnpm run wasm` again**.
+- `pnpm e2e` runs the browser tests; `pnpm browse` runs a one-off browser script. See `Browser harness/Overview.md`.
+- `pnpm check` runs `vue-tsc --noEmit` over the `.ts` layer and `.vue` templates. `pnpm test:frontend` runs the node-side suites in `tests/`. Both are fast; run them after a frontend change.
+- `pnpm test` runs `cargo test -p hf-core -p hf-arena`: the valuation unit tests in `materials.rs`, plus a short Monte Carlo check and a seed-repeats check from the arena.
+- `pnpm arena <command>` runs the core's test harness. See `Calculator core/Arena.md`.
+- `pnpm build` chains `pnpm test` before the wasm and Vite builds and an unused-dependency check that needs nightly. `pnpm no-test-build` skips the test.
+- `pnpm deploy` only checks you are on a clean `main`, then force-pushes `main` to the `Production` branch (assumed to be what the hosted site builds from). It does not run tests.
+- `pnpm cloudflare-deploy` deploys the Worker separately.
+- `pnpm change-log` scaffolds the next changelog file in `public/change-logs`.
+
+## Cargo features
+
+- `hf-core` has no default features.
+- `wasm` gates the histogram, the progress-message bridge and browser logging and timing.
+- `run_tests` only makes `my_dbg!` print natively.
+- `trace` fills in `Probe`, the instrumentation struct. Off in wasm, where it is empty; on in the arena.
+- `my_dbg!` is an exported macro whose feature checks resolve in the *calling* crate. That is why `hf-wasm` and `hf-scanner` declare dummy `wasm` / `run_tests` features.
+- The wasm target is built with SIMD enabled (`.cargo/config.toml`).
+
+## Game glossary
+
+- **Tap**: one honing attempt. It costs materials whether or not it succeeds.
+- **Normal honing**: +N to +N+1, with a success chance that rises after each failure.
+- **Artisan / pity**: a meter that fills on failed taps; when full, the next tap is guaranteed.
+- **Advanced honing**: a separate XP-based system in blocks of ten levels, with "grace" taps and its own consumables.
+- **Juice, books, scrolls**: optional consumables that raise the success chance of a tap. Juices and books apply to normal honing, juices and scrolls to advanced. In code they share one id space ("juice ids").
+- **Special honing / free tap**: an attempt paid for with special leapstones. Success skips the upgrade entirely.
+- **Bound / roster-bound / tradable**: the three ownership bands of a material. What a leftover unit of each is worth is the user's choice, out of nothing / taxed sell price / buy price, and must not decrease across the bands.
+- **Tier**: 0 is T4, 1 is Serca. Each has its own material set and cost tables.
+- **Express / event**: temporary modifiers to costs and chances.
+
+## Index
+
+Each note describes the code as it is now. Where there is history (what was measured, tried, dropped or fixed), it is in a `<note> tried.md` beside the note. **Read a tried file only when trying something new** in its area, to avoid repeating what was already ruled out. When changing something, update the main note to the new state and put the before/after in the tried file.
+
+- `Calculator core/Domain model.md`: the structs and index conventions.
+- `Calculator core/Evaluation pipeline.md`: payload to result, method selection, invariants.
+- `Calculator core/Optimizer.md`: what the annealer does and may and may not change.
+- `Calculator core/State space.md`: what a normal honing plan is, and the exact best plan of one upgrade.
+- `Calculator core/Arena.md`: the native test harness: variants, snapshots, scenarios, sets, what it measures.
+- `Working in this repo.md`: line endings, scratch space, what the type checker cannot see, and the test suites. Read before a large edit.
+- `Frontend/State and persistence.md`: the store, data scopes, localStorage and migrations.
+- `Frontend/Wasm contract.md`: payload building, worker protocol, what must match Rust.
+- `Frontend/External services.md`: market prices, character import, changelogs.
+- `Screen scanner/Pipeline.md`: capture to recognised slots, and what is still stubbed.
+- `Screen scanner/Tooltips.md`: reading the hover tooltip, chests among it, and tying it to a slot.
+- `Screen scanner/Config and calibration.md`: the template config and brightness calibration.
+- `Screen scanner/Icon matching bench.md`: the offline bench for how a slot is matched to an icon.
+- `Screen scanner/Slot grid.md`: the scanner page's slot grid, slot statuses and manual edits.
+- `Screen scanner/Game files.md`: reading items, chests and icons out of the installed game.
+- `Screen scanner/Currency.md`: silver, gold and shards off the inventory, the currency window, the bar at the top of the screen and gold's tooltip.
+- `Screen scanner/Manifest.md`: the scan as materials per band and chests, merged with saved pages and other characters, the export, and the budget snapshots.
+- `Browser harness/Overview.md`: driving the site in Chromium and Firefox, for debugging and e2e tests. One note per site section alongside it.

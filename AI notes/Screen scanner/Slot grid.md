@@ -1,0 +1,56 @@
+# Slot grid
+
+What the scanner page shows: every slot of the three windows, coloured by how far the scanner got with it, and a dashboard to inspect and correct one slot. The scan is treated as a snapshot: amounts are assumed not to change while it is taken.
+
+Code: `ScanStore.ts` (state), `SlotGrid.vue`, `SlotCell.vue`, `SlotDashboard.vue`. The status is worked out in Rust (`slot_status` in `scan_result.rs`). The cases behind the status rules are in `Slot grid tried.md`; read it only when changing them.
+
+## Status
+
+Each slot in a scan result carries a status, a reason and a value (the tooltip's amount, else the number on the icon). The reason is a sentence for the user, written in Rust, saying why the slot needs a hover or is an error (for a chest, how many of its column's chests were read); the dashboard shows it in its own block.
+
+| Status | Border | When |
+| --- | --- | --- |
+| not in the result | white, with a `?` | the slot's page has not been looked at yet |
+| Pending | white | recognised, number not read yet |
+| Good | green | a material whose icon number is under 9999; or a tooltip was resolved to the slot; or a chest that is accounted for |
+| NeedHover | orange | a material showing 9999 or more with no tooltip; a chest not accounted for; an icon several materials share (the books) with no tooltip saying which |
+| NeedTradability | orange | would be good, but no tooltip gave its tradability and the game's table does not settle it (materials, and chests bound more than one way: `Tooltips.md`). Shown as needing a hover, unless assumed (below) |
+| Error | red | a tooltip was resolved to the slot but gave no amount |
+| Irrelevant | greyed out | matches no icon; or a chest that opens to nothing counted |
+| edited | dotted blue | the user set it by hand |
+
+- **A spinner marks a number being read** (`Spinner.vue`, white, centred on the cell), on first reads and re-reads alike. The result's `reading` is true while the slot's `amount_job` has no text back yet; a re-read keeps the old amount and status meanwhile, so the status alone cannot say it. Tooltip reads get no spinner: they belong to a hover, not a slot. The spinner is two chasing arms after `6-dots-scale` of SVG Spinners (MIT).
+
+- **Every slot needs its tradability**, which only a tooltip gives, so every material needs a hover even when its number reads. A chest slot takes the tradability of the chest that stands for it.
+- **Assumed tradability.** The sidebar on the scanner page (`ScannerControlPanel.vue`) has "Assume roster storage is tradable" and "Assume char storage and inventory are char-bound", both off by default and not persisted. With one on, `shown_slot` in `ScanStore.ts` turns those windows' `NeedTradability` slots into good ones with the assumed value, and the dashboard marks it "(assumed)". Rust is never told: it keeps reporting `NeedTradability`, and a tooltip it reads replaces the assumption.
+- **A shared icon needs its label.** A book slot carries `label`, the material its tooltip named (`Tooltips.md`), and is not good without one. The dashboard shows the label in place of the icon name, and the edit list offers the materials in place of the shared icon, so a book set by hand is set to its material.
+- **The icon number** has everything but digits dropped, and nothing left means 1 (a single item shows no number). `9999+` therefore reads 9999.
+- **The tooltip is trusted over the icon.** A disagreement between the two is not an error; the value is simply the tooltip's.
+- **A chest is a slot whose icon is a chest's template**, `<icon>@<rarity>` for a top row of `scanner_setup/templates/chests.json` (`Game files.md`). Any other chest shows as irrelevant. The result lists the chests the slot can be (`variants`): those of every icon it may be drawn with (`Pipeline.md`), and of those the ones that ask for an item level when one is written across the slot, or the ones that do not when none is.
+- **A chest that can only open one way needs no hover for its contents.** When every chest the slot can be has the same kind and contents (70 of the 221 templates, bars of gold among them), it is good as it stands, short of its tradability. An irrelevant chest of the table (`Game files.md`) opens unlike any that counts, so a template shared with one needs a hover.
+- **An irrelevant chest makes its slot irrelevant**, by the same rules that make a chest slot good: the chests that stand for the slot are all irrelevant, or, by the count of chests read in the column, all of those are. Its amount not reading is then no error. The reason says "It opens to nothing that is counted."
+- **Never without a hover.** A slot that can only be irrelevant chests (after the item-level filter) still needs one: a look-alike art near the limit would otherwise drop a chest that counts unseen.
+- **A chest the client has no contents for is not in the table** (`Game files.md`). On a template that opens one way its slot is good and counts as the chest it looks like; elsewhere it stays orange. Either way it is set to Irrelevant by hand.
+- **Chests are matched per column**, because a pushed-up tooltip only tells the column. A chest read there counts for a slot when one of the icons it is drawn with is one the slot may be (`Tooltips.md`). The slot is then good when the chest's stacked amount is the number on the slot, when the chest was read in that very slot, when a tooltip was resolved to it, or, for a slot whose number was misread, when as many chests with its icon were read in the column as there are slots showing it.
+- **Stacks with the same icon and amount in a column** all go green from one hover: their tooltips would be identical.
+- **The chest's title plays no part.** What a chest holds is a row of the game's table, picked by what its tooltip lists.
+- **Green for a hovered material comes when the title read is back**, since only the title says which slot the tooltip belongs to.
+
+## The page
+
+- Above the grid, `CurrencyBar.vue` shows silver, gold and shards as the game's bar at the top of the screen does: the number, then the icon, underlined in the status colour slots use (`STATUS_COLORS` in `ScannerUIutils.ts`), with gold's bands or the reason under it.
+
+- The windows sit side by side as in game (roster storage, character storage, inventory) and grow with the page; slots shrink to 28 px before the windows wrap.
+- Each window has page tabs. The shown page follows the game: every result lists the page each located window shows (`pages`), and a window turns to it whenever that changes. A tab clicked by hand holds until the page in game next changes.
+- **A tab whose page the manifest takes from the last export** (not open in game yet this capture, `Manifest.md`) has a small save icon at its top right, named "saved", and the window says "not open yet: last export used" beside its tabs. The icon goes as soon as the page is open in game.
+- **Roster storage covered** (`roster_covered`, `Manifest.md`): an overlay of the grid's own size, so the other windows do not grow, saying who exported it last and when, with "Scan roster storage" to uncover it. Uncovered while a saved roster exists, "Use saved" beside the tabs covers it again. The slots under it are still read and shown when uncovered; covered, they count for nothing.
+- Hovering a slot shows it in the dashboard. Clicking one locks it: the dashboard then stays on it whatever is hovered, until it is clicked again (clicking another slot moves the lock there). The slot being shown gets a dotted white outline outside the status border.
+- For a chest slot the dashboard lists the chest read in that slot, else every chest with one of its icons read in its column. A chest's icon is named after its art (`use_12_177@epic`), so the dashboard and the edit list show the titles of the chests drawn with it that count instead (`item_name` in `Manifest.ts`). A chest read as irrelevant says so, and at most ten of its contents are listed.
+
+## Edits
+
+- The dashboard reads left to right: the slot with its status and reason, what was read (or what was set by hand), a chest's contents, then "Correct it".
+- **Save edit** sets item, amount and tradability by hand. An item needs both its amount and its tradability: while one is missing its field is outlined red and the button is disabled. "Irrelevant" needs neither, and hides those fields. **Okay** is held to the same rule: it is disabled while what was read lacks an amount or a tradability. **Okay** (errors only) keeps what was read as an edit. **Retry** forgets the slot, edit included, so it goes white and is read again.
+- The page owns the edits (`edits` in `ScanStore.ts`). They also go to Rust with the next scan, in the scan options beside the OCR texts (`SlotEdit`, `apply_edits`). Rust keeps them in their own map, leaves those slots alone (no matching, no tooltip writes, not counted among a column's chests) and leaves them out of the result. A retry removes the slot from Rust's state and forces scanning to go on until it is read again.
+- Addresses come out of reactive state and are copied to plain objects before they are queued; a proxy cannot be posted to the worker.
+- **After Stop** the worker is gone but the store is not, so the grid stays up and edits still work; a retry then only blanks the slot. Starting a capture, applying a settings change, **Reset scan** beside Stop, or going to another character without moving the scan (`Pipeline.md`) calls `reset_scan`, and the capture card warns about that while idle.

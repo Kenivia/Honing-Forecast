@@ -12,11 +12,13 @@ profile.kernel.etl
 
 *.local
 *.tmp
+
+.tmp/
 crates/wasm/pkg/*
 !crates/wasm/pkg/LICENSE
 
 
-data_fetcher
+ignored/
 CONOUT$
 
 !.vscode/extensions.json
@@ -28,8 +30,29 @@ CONOUT$
 *.sln
 *.sw?
 target/
-junkyard/
 
 cloudflare/.wrangler/
 
 .env.production
+
+
+scanner_setup/brightness/all icons/*
+scanner_setup/game_files/tables/
+scanner_setup/game_files/atlas/
+scanner_setup/game_files/*.npz
+scanner_setup/game_files/extract/bin/
+scanner_setup/game_files/extract/obj/
+
+# leftovers of the old codex scripts
+scanner_setup/codex/
+
+tests/test-results/
+playwright-report/
+.playwright-mcp/
+
+
+**/*.mp4
+**/*.hfcap
+
+
+*.sqlite

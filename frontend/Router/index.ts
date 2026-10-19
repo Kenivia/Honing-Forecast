@@ -1,10 +1,15 @@
 import { createRouter, createWebHistory } from "vue-router";
 import CharView from "../Components/Character/CharView.vue";
+import Calc from "@/Components/Character/Calc.vue";
+import Guide from "@/Components/Character/Guide.vue";
+import Scanner from "@/Components/Character/InventoryScanner/Scanner.vue";
 import MarketView from "@/Components/Market/MarketView.vue";
 import RosterView from "@/Components/RosterView.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog";
 import ChangeLogsView from "@/Components/ChangeLogsView.vue";
+import SnapshotsView from "@/Components/SnapshotsView.vue";
+import { guard_switch } from "@/Components/Character/InventoryScanner/ScanSwitch";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -27,6 +32,11 @@ const router = createRouter({
       path: "/roster-setup",
       name: "roster",
       component: RosterView,
+    },
+    {
+      path: "/snapshots",
+      name: "snapshots",
+      component: SnapshotsView,
     },
     {
       path: "/change-logs",
@@ -77,24 +87,16 @@ const router = createRouter({
         }
       },
       children: [
-        {
-          path: "calc",
-          name: "calc",
-          component: CharView,
-        },
-        // {
-        //     path: "instructions",
-        //     name: "instructions",
-        //     component: CharView,
-        // },
-        {
-          path: "guide",
-          name: "char-guide",
-          component: CharView,
-        },
+        { path: "calc", name: "calc", component: Calc },
+        { path: "guide", name: "char-guide", component: Guide },
+        { path: "scanner", name: "char-scanner", component: Scanner },
         {
           path: ":x/guide",
           redirect: (c) => `/${c.params.characterName}/guide`,
+        },
+        {
+          path: ":x/scanner",
+          redirect: (c) => `/${c.params.characterName}/scanner`,
         },
         {
           path: ":pathMatch(.*)*",
@@ -104,5 +106,7 @@ const router = createRouter({
     },
   ],
 });
+
+router.beforeEach(guard_switch);
 
 export default router;

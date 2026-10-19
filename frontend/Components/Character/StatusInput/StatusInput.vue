@@ -77,9 +77,7 @@ const dummy = ref(true);
       <Uwuowo
         :name="active_profile.char_name"
         :profile_index="
-          all_profiles.findIndex(
-            (profile) => profile.char_name === active_profile.char_name, // a bit cursed but shoul be fine
-          )
+          all_profiles.findIndex((profile) => profile.id === active_profile.id)
         "
         :name_change="(new_name) => (active_profile.char_name = new_name)"
         :region_change="roster_store.active_region_change"

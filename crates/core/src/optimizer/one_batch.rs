@@ -1,0 +1,138 @@
+// use std::f64::NAN;
+
+use super::scaler::AdaptiveScaler;
+use crate::state_bundle::StateBundle;
+use crate::state_bundle::StateEssence;
+use crate::upgrade::PieceType::Armor;
+use ordered_float::OrderedFloat;
+use priority_queue::DoublePriorityQueue;
+use rand::Rng;
+use rand::SeedableRng;
+use rand::rngs::SmallRng;
+
+pub struct SolverStateBundle {
+    pub state_bundle: StateBundle,
+    pub scaler: AdaptiveScaler,
+    // pub temp: f64,
+    pub rng: SmallRng,
+    // pub max_state_len: usize,
+    // pub best_state_so_far: StateBundle,
+    pub best_n_states: DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
+    pub prev_state: StateBundle,
+    pub count: i64,
+    pub temps_without_improvement: i64,
+    pub upgrade_impact: Vec<f64>,
+    pub special_affinity: f64,
+    /// per upgrade, its state and the rest of the state when it last took its best plan
+    pub settled: Vec<(u64, u64)>,
+    /// evaluations the last move counts as, on top of its own
+    pub extra_cost: i64,
+}
+
+impl SolverStateBundle {
+    pub fn initialize(
+        state_bundle: &StateBundle,
+        scaler: AdaptiveScaler,
+        seed: u64,
+        best_n_states: &DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
+        upgrade_impact: &Vec<f64>,
+    ) -> Self {
+        Self {
+            state_bundle: state_bundle.clone(),
+            scaler,
+
+            // temp: NAN,
+            special_affinity: 0.9,
+            rng: SmallRng::seed_from_u64(seed),
+            // max_state_len,
+            best_n_states: best_n_states.clone(),
+            prev_state: state_bundle.clone(),
+            count: 0,
+            temps_without_improvement: 0,
+            upgrade_impact: upgrade_impact.clone(),
+            settled: vec![(0, 0); state_bundle.upgrade_arr.len()],
+            extra_cost: 0,
+        }
+    }
+    pub fn perform_crossover(&mut self) {
+        if self.best_n_states.len() < 2 {
+            return;
+        }
+        let best = self.best_n_states.peek_max().unwrap();
+        self.state_bundle.clone_from_essence(best.0, best.1);
+        if self.state_bundle.tuning.fresh_streaks {
+            for upgrade in self.state_bundle.upgrade_arr.iter_mut() {
+                upgrade.state.streak_cache = None;
+            }
+        }
+        if self.rng.random_bool(self.progress()) {
+            let u_len = self.state_bundle.upgrade_arr.len();
+            let source_index = self.rng.random_range(0..u_len);
+            let source = &self.state_bundle.upgrade_arr[source_index];
+
+            if !source.is_normal_honing || source.piece_type != Armor {
+                return;
+            }
+
+            let identical: Vec<usize> = self
+                .state_bundle
+                .upgrade_arr
+                .iter()
+                .enumerate()
+                .filter(|(i, target)| {
+                    *i != source_index
+                        && target.is_normal_honing
+                        && target.upgrade_index == source.upgrade_index
+                        && target.piece_type == source.piece_type
+                        // one further along has fewer taps left, and a plan of another length
+                        && target.starting_artisan == source.starting_artisan
+                        && target.starting_num_taps == source.starting_num_taps
+                })
+                .map(|(i, _)| i)
+                .collect();
+
+            if !identical.is_empty()
+                && let Some(&chosen_idx) = identical.get(self.rng.random_range(0..identical.len()))
+            {
+                let payload = self.state_bundle.upgrade_arr[chosen_idx]
+                    .state
+                    .payload
+                    .clone();
+
+                self.state_bundle.upgrade_arr[source_index]
+                    .state
+                    .update_payload(payload);
+            }
+        }
+    }
+    // pub fn current_resolution(&self) -> usize {
+    //     if self.progress() > COOLING_PHASE_START {
+    //         (self.lam_rate() / MAGIC_NUMBER).ceil() as usize * DEFAULT_RESOLUTION
+    //     } else {
+    //         self.state_bundle.min_resolution
+    //     }
+    // }
+    pub fn progress(&self) -> f64 {
+        self.count as f64 / self.state_bundle.tuning.max_iters as f64
+    }
+
+    pub fn lam_rate(&self) -> f64 {
+        let magic_number = self.state_bundle.tuning.magic_number;
+        let warm_up_phase_end = self.state_bundle.tuning.warm_up_phase_end;
+        let cooling_phase_start = self.state_bundle.tuning.cooling_phase_start;
+        if self.progress() < warm_up_phase_end {
+            magic_number
+                + (1.0 - magic_number)
+                    * (magic_number * 1000.0).powf(-self.progress() / warm_up_phase_end)
+        } else if self.progress() < cooling_phase_start {
+            magic_number
+        } else {
+            magic_number
+                * (magic_number * 1000.0)
+                    .powf(-(self.progress() - cooling_phase_start) / (1.0 - cooling_phase_start)) // i mean this 1000 seems to work fine for all MAX_ITERS so whatever
+        }
+    }
+    // pub fn one_batch(&mut self, batch_iters: i64) {
+
+    // }
+}

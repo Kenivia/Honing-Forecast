@@ -57,11 +57,6 @@ export type StatusGrid = UpgradeStatus[][];
 // ========================================================================================
 // These are to interface between UI and rust
 
-//                    'bound','tradable', leftover(bound), tradable sell price, market price
-
-export type BudgetPricePair = [number, number];
-export type OneMaterialInput = BudgetPricePair[]; // an array of this is passed into rust
-
 //                        piece type, upgrade index, is_normal_honing, normal_progress, state, unlocked, succeeded, adv_progress
 export type OldOneUpgrade = [
   number,
@@ -89,7 +84,7 @@ export interface OneUpgradeInput {
   // This is here because 1. it needs to persist through optimizser runs and 2. extra fields are ignored by serde so its perfect
   expanded: boolean;
   taps_since_last_input: number;
-  used_materials: number[] | null;
+  used_materials: Record<string, number> | null;
 }
 
 export type OneUpgradeKey = `${number},${number},${"true" | "false"},${number}`;

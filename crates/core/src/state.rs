@@ -2,12 +2,7 @@ use crate::constants::FLOAT_TOL;
 use crate::constants::{ALLOWED_JUICE_POOLS, NUM_PIECE_TYPES, juice_info::JuiceInfo};
 use serde::{Deserialize, Serialize};
 use smallvec::{SmallVec, smallvec};
-use std::hash::Hash;
-use std::{
-    hash::DefaultHasher,
-    hash::Hasher,
-    ops::{Deref, DerefMut},
-};
+use std::ops::{Deref, DerefMut};
 
 pub type OneState = SmallVec<[usize; NUM_PIECE_TYPES]>;
 
@@ -81,10 +76,30 @@ impl State {
         out
     }
 
+    /// Becomes the other state of the same upgrade, as `clone_from` would, without allocating
+    /// and without copying a payload that is already the same. The optimizer does this for
+    /// every upgrade on every iteration.
+    pub fn copy_from(&mut self, source: &State) {
+        if self.hash != source.hash {
+            self.payload.clone_from(&source.payload);
+            self.hash = source.hash;
+        }
+        match (&mut self.streak_cache, &source.streak_cache) {
+            (Some(to), Some(from)) => {
+                to.front.clone_from(&from.front);
+                to.back.clone_from(&from.back);
+            }
+            (to, from) => *to = from.clone(),
+        }
+        // the same for every state of an upgrade
+        if self.pool_ids_list.is_none() {
+            self.pool_ids_list.clone_from(&source.pool_ids_list);
+        }
+    }
+
     pub fn update_hash(&mut self) {
-        let mut hasher: DefaultHasher = DefaultHasher::new();
-        self.payload.hash(&mut hasher);
-        self.hash = hasher.finish();
+        // fixed seeds: a hash has to be the same from one run to the next
+        self.hash = ahash::RandomState::with_seeds(1, 2, 3, 4).hash_one(&self.payload);
     }
 
     pub fn update_payload(&mut self, new_payload: Vec<OneState>) {
@@ -127,15 +142,15 @@ impl State {
                     .count(),
             };
 
-            let back_region_end = len - front_len;
-            let back_id = if back_region_end > 0 {
-                find_id(&self.payload[back_region_end - 1])
+            // what is left after the front streak, from the last tap backwards
+            let back_id = if front_len < len {
+                find_id(&self.payload[len - 1])
             } else {
                 None
             };
             let back_len = match back_id {
                 None => 0,
-                Some(id) => self.payload[..back_region_end]
+                Some(id) => self.payload[front_len..]
                     .iter()
                     .rev()
                     .take_while(|slot| find_id(slot) == Some(id))
@@ -162,11 +177,8 @@ impl State {
 
         let len = self.payload.len();
 
-        let all_pool_ids: std::collections::HashSet<usize> =
-            pool_ids_list.iter().flatten().copied().collect();
-
         for slot in self.payload.iter_mut() {
-            slot.retain(|id| !all_pool_ids.contains(id));
+            slot.retain(|id| !pool_ids_list.iter().flatten().any(|pool_id| pool_id == id));
         }
 
         for p in 0..pool_ids_list.len() {

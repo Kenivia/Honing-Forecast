@@ -6,7 +6,7 @@ use crate::{
     advanced_honing::utils::{AdvConfig, AdvDistTriplet},
     constants::juice_info::JuiceInfo,
     state_bundle::StateBundle,
-    upgrade::Upgrade,
+    upgrade::{Spare, Upgrade},
 };
 impl Upgrade {
     pub fn update_this_prob_dist(
@@ -14,6 +14,21 @@ impl Upgrade {
         adv_cache: &mut AHashMap<AdvConfig, AdvDistTriplet>,
         juice_info: &JuiceInfo,
     ) {
+        if self.cost_dist[0].support_state_hash == self.state.hash {
+            return;
+        }
+        // What is here goes to the spare and what was there comes back, to be used if it is
+        // of this state and overwritten if not.
+        let spare = self.spare.get_or_insert_with(|| {
+            Box::new(Spare {
+                normal_dist: self.normal_dist.clone(),
+                adv_dists: self.adv_dists.clone(),
+                cost_dist: self.cost_dist.clone(),
+            })
+        });
+        std::mem::swap(&mut self.normal_dist, &mut spare.normal_dist);
+        std::mem::swap(&mut self.adv_dists, &mut spare.adv_dists);
+        std::mem::swap(&mut self.cost_dist, &mut spare.cost_dist);
         if self.is_normal_honing {
             self.update_dist_normal(juice_info);
         } else {

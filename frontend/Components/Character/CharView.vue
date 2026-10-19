@@ -1,30 +1,19 @@
 <script setup lang="ts">
-import MaterialDist from "@/Components/Character/MaterialDist/MaterialDist.vue";
-import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
-
 import { storeToRefs } from "pinia";
-
-import { onUnmounted, watch } from "vue";
-import { RouterLink, useRoute, useRouter } from "vue-router";
+import { computed, onUnmounted, watch } from "vue";
+import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import ControlPanel from "@/Components/Character/ControlPanel.vue";
-
+import ScannerControlPanel from "@/Components/Character/InventoryScanner/ScannerControlPanel.vue";
 import Sidebar from "@/Components/Common/Sidebar.vue";
-import {
-  start_all_workers,
-  start_eval_hist,
-} from "@/Components/Character/CharWorkerUtils";
-import GraphControlPanel from "@/Components/Character/GraphControlPanel.vue";
-import Guide from "@/Components/Character/Guide.vue";
-import OptimizerControlPanel from "@/Components/Character/OptimizerControlPanel/OptimizerControlPanel.vue";
-import Instructions from "@/Components/Character/Instructions/Instructions.vue";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+const runtime = useRuntimeStore();
 
 const route = useRoute();
 const router = useRouter();
 
 const roster_store = useRosterStore();
-const { active_profile, all_profiles, active_region } =
-  storeToRefs(roster_store);
+const { active_profile, all_profiles } = storeToRefs(roster_store);
 
 const match = all_profiles.value.findIndex(
   (c) => c.char_name === (route.params.characterName as string),
@@ -45,9 +34,8 @@ watch(
     if (match >= 0) {
       if (roster_store.roster_config.active_profile_index !== match) {
         // this happens one invalid names (routre param written to by the one-off code, triggering the watcher) i believe, idk how to prevent that but this works
-        active_profile.value.optimizer_worker_bundle.cancel();
-        active_profile.value.histogram_worker_bundle.cancel();
-        // active_profile.value.evaluation_worker_bundle.cancel()
+        runtime.cancel_active();
+        // the scan was wiped or moved by the router guard (ScanSwitch.ts)
         roster_store.switch_profile(match);
       }
     } else {
@@ -59,36 +47,16 @@ watch(
     }
   },
 );
-watch(
-  [
-    () => active_profile.value.express_event,
-    // () => active_profile.value.pretend_30_40_x2_grace,
-    () => active_profile.value.optimizer_treatment_plan,
-    () => active_profile.value.auto_start_optimizer,
-    () => active_region.value,
-  ],
-  () => {
-    // console.log("start", active_profile.value, roster_config.value)
-    if (active_profile.value.auto_start_optimizer) {
-      start_all_workers();
-    } else {
-      start_eval_hist();
-    }
-  },
-  { deep: true, immediate: true },
-);
+
+const is_calc = computed(() => route.name === "calc");
+
 onUnmounted(() => {
   // kill workers when going to market / roster view
-  active_profile.value.optimizer_worker_bundle.cancel();
-  active_profile.value.histogram_worker_bundle.cancel();
-  // active_profile.value.evaluation_worker_bundle.cancel()
+  runtime.cancel_active();
 });
 </script>
 <template>
-  <Sidebar
-    :width="route.path.endsWith('calc') ? 1255 : 1201"
-    :header="active_profile.char_name"
-  >
+  <Sidebar :width="is_calc ? 1255 : 1201" :header="active_profile.char_name">
     <template #sidebar="{ close }">
       <div class="flex flex-col">
         <RouterLink to="guide" class="side-bar-link" @click="close">
@@ -97,21 +65,18 @@ onUnmounted(() => {
         <RouterLink to="calc" class="side-bar-link" @click="close">
           Calc
         </RouterLink>
+        <RouterLink to="scanner" class="side-bar-link" @click="close">
+          Scanner
+        </RouterLink>
       </div>
 
-      <!-- <GraphControlPanel v-if="route.path.endsWith('calc')" /> -->
-      <ControlPanel v-if="route.path.endsWith('calc')" />
+      <ControlPanel v-if="is_calc" />
+      <ScannerControlPanel v-if="route.name === 'char-scanner'" />
     </template>
 
     <template #main>
-      <Guide v-if="route.path.endsWith('guide')" />
-      <StatusInput v-if="route.path.endsWith('calc')" />
-
-      <MaterialDist v-if="route.path.endsWith('calc')" />
-      <OptimizerControlPanel v-if="route.path.endsWith('calc')" />
-      <Instructions v-if="route.path.endsWith('calc')" :is_normal="true" />
-      <Instructions v-if="route.path.endsWith('calc')" :is_normal="false" />
-      <div class="min-h-30"></div>
+      <RouterView />
+      <div class="min-h-300"></div>
     </template>
   </Sidebar>
 </template>

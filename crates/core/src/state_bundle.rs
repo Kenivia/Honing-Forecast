@@ -1,7 +1,9 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
+use crate::chest::ChestStates;
 use crate::parser::PreparationOutput;
-use crate::performance::Performance;
+use crate::probe::Probe;
 use crate::state::{OneState, State};
+use crate::tuning::Tuning;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
 use ordered_float::OrderedFloat;
@@ -12,6 +14,8 @@ use std::f64::NAN;
 pub struct StateBundle {
     pub upgrade_arr: Vec<Upgrade>,
     pub special_state: Vec<usize>,
+    /// one per chest of prep_output.chests, under its key
+    pub chest_states: ChestStates,
     pub special_invalid_index: Option<usize>,
     pub latest_special_probs: Option<Vec<f64>>,
     pub metric_type: i64,
@@ -21,10 +25,22 @@ pub struct StateBundle {
 
     pub num_threads: usize,
 
+    /// by free tap budget, which the chest states move, then by free tap order
     #[serde(skip)]
-    pub special_cache: AHashMap<Vec<usize>, Vec<f64>>,
+    pub special_cache: AHashMap<i64, AHashMap<Vec<usize>, Vec<f64>>>,
 
     pub adv_cache: AHashMap<AdvConfig, AdvDistTriplet>,
+
+    /// the free tap budget and order the cache was last filled for
+    #[serde(skip)]
+    pub special_done: Option<(i64, Vec<usize>)>,
+
+    /// one material's average gold under one free tap outcome, by what it was made from
+    #[serde(skip)]
+    pub gold_memo: AHashMap<u64, f64>,
+
+    #[serde(skip)]
+    pub tuning: Tuning,
 }
 
 pub fn default_state_arr(upgrade_arr: &Vec<Upgrade>) -> Vec<Vec<OneState>> {
@@ -49,10 +65,28 @@ impl StateBundle {
         self.latest_special_probs = Some(out);
     }
 
-    pub fn metric_router(&mut self, performance: &mut Performance) -> f64 {
+    /// The taps that go together: from an upgrade's next tap on, each run of this many takes
+    /// the same, so that every streak but the last before the pity is a multiple of it.
+    pub fn block(&self) -> usize {
+        if self.tuning.streak_length > 0 {
+            self.tuning.streak_length
+        } else {
+            self.min_resolution.max(1)
+        }
+    }
+
+    /// whether the budget pays for one free tap of any upgrade; where not, the order is nothing
+    pub fn affords_a_free_tap(&self) -> bool {
+        let budget = self.prep_output.special_budget;
+        self.upgrade_arr
+            .iter()
+            .any(|upgrade| upgrade.is_normal_honing && upgrade.special_cost <= budget)
+    }
+
+    pub fn metric_router(&mut self, probe: &mut Probe) -> f64 {
         match self.metric_type {
             0 => unreachable!(), //self.success_prob_metric(performance),
-            1 => self.optimizer_average_gold_metric(performance),
+            1 => self.optimizer_average_gold_metric(probe),
             _ => NAN,
         }
     }
@@ -62,6 +96,11 @@ impl StateBundle {
             special_invalid_index: None,
             metric: -1.0,
             special_state: (0..upgrade_arr.len()).collect(),
+            chest_states: prep_output
+                .chests
+                .iter()
+                .map(|(key, chest)| (key.clone(), chest.default_state()))
+                .collect(),
             prep_output,
             upgrade_arr,
             metric_type: -1,
@@ -71,6 +110,9 @@ impl StateBundle {
 
             special_cache: AHashMap::new(),
             adv_cache: AHashMap::new(),
+            gold_memo: AHashMap::new(),
+            special_done: None,
+            tuning: Tuning::default(),
         };
 
         state_bundle
@@ -78,9 +120,10 @@ impl StateBundle {
 
     pub fn my_clone_from(&mut self, source: &StateBundle) {
         for (s, upgrade) in source.upgrade_arr.iter().zip(self.upgrade_arr.iter_mut()) {
-            upgrade.state.clone_from(&s.state);
+            upgrade.state.copy_from(&s.state);
         }
         self.special_state.clone_from(&source.special_state);
+        self.set_chest_state(&source.chest_states);
         self.metric = source.metric;
     }
 
@@ -92,15 +135,26 @@ impl StateBundle {
                 .map(|x| x.state.payload.clone())
                 .collect(),
             special_state: self.special_state.clone(),
+            chest_states: self.chest_states.clone(),
+        }
+    }
+
+    pub fn set_chest_state(&mut self, source: &ChestStates) {
+        if self.chest_states != *source {
+            self.chest_states.clone_from(source);
+            self.apply_chest_state(false);
         }
     }
 
     pub fn clone_from_essence(&mut self, source: &StateEssence, input_metric: &OrderedFloat<f64>) {
         for (s, upgrade) in source.state_arr.iter().zip(self.upgrade_arr.iter_mut()) {
-            upgrade.state.payload.clone_from(s);
-            upgrade.state.update_hash();
+            if upgrade.state.payload != *s {
+                upgrade.state.payload.clone_from(s);
+                upgrade.state.update_hash();
+            }
         }
         self.special_state.clone_from(&source.special_state);
+        self.set_chest_state(&source.chest_states);
         self.metric = f64::from(*input_metric);
     }
 }
@@ -109,4 +163,5 @@ impl StateBundle {
 pub struct StateEssence {
     pub state_arr: Vec<Vec<OneState>>,
     pub special_state: Vec<usize>,
+    pub chest_states: ChestStates,
 }

@@ -65,8 +65,25 @@ impl AdvConfig {
             non_grace_scroll_target: 0,
         }
     }
+
+    /// every strategy there is from this start
+    pub fn strategies(self) -> Vec<AdvConfig> {
+        let mut out = Vec::new();
+        for juice in (0..=MAX_ADV_STATE).map(index_to_tuple) {
+            for scroll in (0..=MAX_ADV_STATE).map(index_to_tuple) {
+                out.push(AdvConfig {
+                    grace_juice_target: juice.0 as u8,
+                    non_grace_juice_target: juice.1 as u8,
+                    grace_scroll_target: scroll.0 as u8,
+                    non_grace_scroll_target: scroll.1 as u8,
+                    ..self
+                });
+            }
+        }
+        out
+    }
 }
-#[derive(Hash, Eq, PartialEq, Clone, Debug)]
+#[derive(Hash, Eq, PartialEq, Clone, Copy, Debug)]
 pub struct SmallAdvState {
     pub cur_xp: u8,
     pub cur_balls: u8,
@@ -76,6 +93,21 @@ pub struct SmallAdvState {
     pub non_grace_scroll_count: u8,
     pub grace_juice_count: u8,
     pub grace_scroll_count: u8,
+}
+
+impl SmallAdvState {
+    pub fn packed(&self) -> u64 {
+        u64::from_le_bytes([
+            self.cur_xp,
+            self.cur_balls,
+            self.next_free as u8,
+            self.next_big as u8,
+            self.non_grace_juice_count,
+            self.non_grace_scroll_count,
+            self.grace_juice_count,
+            self.grace_scroll_count,
+        ])
+    }
 }
 
 impl Upgrade {

@@ -23,11 +23,13 @@ import {
   mark_upgrade_as_done,
   apply_remaining_mats,
 } from "./SuccessUtils";
-import { FLOAT_TOL } from "@/Utils/Constants";
+import { FLOAT_TOL, SPECIAL_LEAP_LABELS } from "@/Utils/Constants";
 import { GridConfig } from "@/Utils/GridStyling";
 import ManualArtisanInput from "@/Components/Character/Instructions/Details/ManualArtisanInput.vue";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+const runtime = useRuntimeStore();
 
-const { active_profile, roster_config } = storeToRefs(useRosterStore());
+const { active_profile } = storeToRefs(useRosterStore());
 
 const props = defineProps<{
   upgrade: Upgrade;
@@ -37,11 +39,10 @@ const props = defineProps<{
 }>();
 
 const juice_info = computed(() => {
-  return active_profile.value.histogram_worker_bundle.result.juice_info;
+  return runtime.histogram.result.juice_info;
 });
 
 const optimizer_working = computed(get_optimizer_working);
-const tier = computed(() => active_profile.value.tier);
 const this_keyed = computed(
   () => active_profile.value.keyed_upgrades[upgrade_key.value],
 );
@@ -128,12 +129,12 @@ function post_opt_run_reset() {
   taps_since_last_input.value = 0;
   using_slider.value = true;
   this_keyed.value.taps_since_last_input = 0;
-  roster_config.value.budget_snapshot = null;
+  runtime.budget_snapshot = null;
   clear_used_budget();
 }
 
 watch(
-  () => active_profile.value.optimizer_worker_bundle.run_counter,
+  () => runtime.optimizer.run_counter,
   () => {
     // only do this as we start the optimizer,  shouldn't really matter but whatever
     if (optimizer_working.value) {
@@ -147,12 +148,12 @@ watch(
 // this is for when autostart is turned off only
 watch(
   [
-    () => active_profile.value.bound_budgets[tier.value].data,
-    () => active_profile.value.bound_budgets[tier.value].enabled,
+    () => active_profile.value.bound_budgets.values,
+    () => active_profile.value.bound_budgets.enabled,
   ],
   () => {
     if (!active_profile.value.auto_start_optimizer) {
-      if (!roster_config.value.is_details_update) {
+      if (!runtime.is_details_update) {
         post_opt_run_reset();
       }
     }
@@ -191,6 +192,7 @@ function set_used_materials(pretend_zero_no_unlock: boolean) {
     0,
     0,
     pretend_zero_no_unlock,
+    active_profile.value.tier,
   );
 }
 
@@ -199,7 +201,7 @@ function change_wrapper(
   func: () => void,
   worker_func = start_eval_hist,
 ) {
-  roster_config.value.is_details_update = true;
+  runtime.is_details_update = true;
 
   taps_since_last_input.value = slider
     ? clamp(
@@ -223,7 +225,7 @@ function change_wrapper(
   write_normal_progress();
   worker_func();
   nextTick(() => {
-    roster_config.value.is_details_update = false;
+    runtime.is_details_update = false;
   });
 }
 function manual_artisan_change() {
@@ -340,7 +342,7 @@ function reset() {
 
 // not gonna use change_wrapper cos its so different
 function succeed_click() {
-  roster_config.value.is_details_update = true;
+  runtime.is_details_update = true;
   set_used_materials(false); // deduct unlock costs (just like free tap)
   apply_remaining_mats();
 
@@ -348,7 +350,7 @@ function succeed_click() {
 
   mark_upgrade_as_done(props.upgrade); // this will call optimizer
   nextTick(() => {
-    roster_config.value.is_details_update = false;
+    runtime.is_details_update = false;
   });
 }
 
@@ -368,14 +370,18 @@ watch(
   },
 );
 
+const special_leap_label = computed(
+  () => SPECIAL_LEAP_LABELS[active_profile.value.tier],
+);
 const new_special_leaps = ref(
-  parse_locale_int(active_profile.value.special_budget.data[0]),
+  parse_locale_int(
+    active_profile.value.special_budget.values[special_leap_label.value],
+  ),
 );
 
 function special_succeed_click() {
-  active_profile.value.special_budget.data[0] =
+  active_profile.value.special_budget.values[special_leap_label.value] =
     new_special_leaps.value.toLocaleString();
-  console.log(active_profile.value.special_budget.data[0]);
   this_keyed.value.used_materials = compute_used_materials(
     props.upgrade,
     0,
@@ -383,13 +389,14 @@ function special_succeed_click() {
     0,
     0,
     false, // so this is just the unlock cost
+    active_profile.value.tier,
   );
   apply_remaining_mats();
   mark_upgrade_as_done(props.upgrade);
 }
 
 function special_fail_click() {
-  active_profile.value.special_budget.data[0] = "0";
+  active_profile.value.special_budget.values[special_leap_label.value] = "0";
   start_all_workers();
 }
 
@@ -480,7 +487,11 @@ const special_grid: GridConfig = {
         v-model="new_special_leaps"
         type="number"
         :min="0"
-        :max="parse_locale_int(active_profile.special_budget.data[0])"
+        :max="
+          parse_locale_int(
+            active_profile.special_budget.values[special_leap_label],
+          )
+        "
       />
 
       <button

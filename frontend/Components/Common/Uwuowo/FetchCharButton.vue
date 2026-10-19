@@ -70,7 +70,7 @@ async function click() {
       cursor: region === null ? 'not-allowed' : 'pointer',
     }"
   >
-    Fetch from lostark.bible
+    Fetching not working rn...
   </button>
   <Popup :show_popup="show_popup" @close_popup="show_popup = false">
     <span> {{ char_parsed.status }}</span>

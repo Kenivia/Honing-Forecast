@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { useRosterStore } from "@/Stores/RosterConfig";
 import { MarketRegions } from "@/Utils/MarketDataFetcher";
-import { storeToRefs } from "pinia";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+const runtime = useRuntimeStore();
 
 defineProps<{
   region: MarketRegions;
   region_change: (event) => void;
 }>();
-const roster_store = useRosterStore();
-const { roster_config } = storeToRefs(roster_store);
 </script>
 <template>
   <div class="flex max-w-fit flex-row items-center gap-2">
@@ -17,7 +15,7 @@ const { roster_config } = storeToRefs(roster_store);
       :value="region"
       @change="region_change"
       class="selector"
-      :disabled="roster_config.is_fetching"
+      :disabled="runtime.is_fetching"
     >
       <option value="nae">NA</option>
       <option value="euc">EU</option>

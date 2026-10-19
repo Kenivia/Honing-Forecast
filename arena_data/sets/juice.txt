@@ -1,0 +1,14 @@
+# a partial stock of juice, the hardest regime
+# define juice --note a partial stock of juice, the hardest regime --kind single --where juice_owned=0.4..0.7 --where n=6..24 --limit 12
+single_0000_t4_n16
+single_0004_serca_n7
+single_0010_serca_n17
+single_0011_t4_n6
+single_0017_serca_n13
+single_0027_t4_n20
+single_0034_t4_n14
+single_0038_t4_n6
+single_0052_t4_n7
+single_0074_serca_n6
+single_0078_t4_n13
+single_0085_t4_n17

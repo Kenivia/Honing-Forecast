@@ -1,10 +1,11 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
+use crate::chest::Chests;
 use crate::constants::accessor::{
     get_artisan, get_data, get_event_extra_chance, get_normal_hone_chances, get_special_leap_cost,
 };
 use crate::constants::juice_info::{JuiceInfo, get_event_adjusted_juice_info};
 use crate::constants::*;
-use crate::helpers::distribute_budgets;
+use crate::materials::{MaterialTable, NUM_BASE_MATS, OneMaterial, ValuationPlan};
 use crate::state::OneState;
 use crate::upgrade::{PieceType, Upgrade, piece_index_to_type, piece_type_to_usize};
 use ahash::AHashMap;
@@ -12,16 +13,24 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PreparationOutput {
+    /// with what the chests give, see apply_chest_state
     pub special_budget: i64,
-    pub raw_material_info: MaterialInput,
-    pub optimizer_plan: Vec<usize>,
-    pub optimizer_material_info: MaterialInput,
-    pub raw_num_breakpoints: usize,
+    pub base_special_budget: i64,
+    pub table: MaterialTable,
+    pub materials: Vec<OneMaterial>, // row order
+    /// before any chest is opened
+    pub base_materials: Vec<OneMaterial>,
+    pub chests: Chests,
+    /// what a chest's special leaps are called
+    pub special_label: String,
+    pub plans: Vec<ValuationPlan>,
+    pub optimizer_plan: usize, // index into plans
+    /// bands[plan][row], derived from materials and plans
+    #[serde(skip)]
+    pub bands: Vec<Vec<Vec<(f64, f64)>>>,
     pub test_case: i64,
     pub juice_info: JuiceInfo,
 }
-
-pub type MaterialInput = Vec<Vec<(f64, f64)>>; // [material type][treatment plan].0 = owned, .1 = price
 
 #[derive(Deserialize, Clone, Serialize)]
 pub struct OneUpgradeInput {
@@ -38,10 +47,14 @@ pub struct OneUpgradeInput {
 
 impl PreparationOutput {
     pub fn initialize(
-        raw_material_info: MaterialInput,
-        inp_optimizer_plan: Option<Vec<usize>>,
+        material_labels: Vec<String>,
+        keyed_materials: AHashMap<String, OneMaterial>,
+        plans: Vec<ValuationPlan>,
+        optimizer_plan: usize,
         upgrade_info: Vec<OneUpgradeInput>,
         special_budget: i64,
+        chests: Chests,
+        special_label: String,
         express_event: bool,
         tier: usize,
         inp_adv_cache: Option<AHashMap<AdvConfig, AdvDistTriplet>>,
@@ -50,11 +63,10 @@ impl PreparationOutput {
         Vec<Upgrade>,
         AHashMap<AdvConfig, AdvDistTriplet>,
     ) {
-        let juice_info: JuiceInfo = get_event_adjusted_juice_info(
-            &BASE_JUICE_INFOS[tier],
-            &raw_material_info,
-            express_event,
-        );
+        let juice_info: JuiceInfo =
+            get_event_adjusted_juice_info(&BASE_JUICE_INFOS[tier], express_event);
+        let table = MaterialTable::new(material_labels, juice_info.num_juice_avail);
+        let materials: Vec<OneMaterial> = table.in_row_order(&keyed_materials);
         let mut adv_cache: AHashMap<AdvConfig, AdvDistTriplet> = if inp_adv_cache.is_none() {
             AHashMap::new()
         } else {
@@ -70,8 +82,8 @@ impl PreparationOutput {
                             && start_balls == key.start_balls
                             && next_free == key.next_free
                             && next_big == key.next_big
-                            // && (express_event && upgrade.upgrade_index < 2) == key.double_balls
-                            // && ((upgrade.upgrade_index >= 2) == key.is_30_40);
+                            && upgrade.double_balls == key.double_balls
+                            && ((upgrade.upgrade_index >= 2) == key.is_30_40);
                     }
                     false
                 })
@@ -86,27 +98,23 @@ impl PreparationOutput {
             tier,
             &mut adv_cache,
         );
-        let optimizer_plan = if inp_optimizer_plan.is_none() {
-            (0..raw_material_info.len()).collect::<Vec<usize>>()
-        } else {
-            inp_optimizer_plan.unwrap()
-        };
-        let optimizer_material_info = distribute_budgets(&raw_material_info, &optimizer_plan);
-        // my_dbg!(
-        //     &raw_material_info,
-        //     &optimizer_material_info,
-        //     &optimizer_plan
-        // );
-        let raw_num_breakpoints = raw_material_info[0].len();
-        assert!(raw_num_breakpoints > 0);
+        assert!(optimizer_plan < plans.len());
+        let bands: Vec<Vec<Vec<(f64, f64)>>> = plans
+            .iter()
+            .map(|plan| materials.iter().map(|mat| plan.bands(mat)).collect())
+            .collect();
         let out: PreparationOutput = Self {
-            // upgrade_arr,
-            raw_material_info,
-            optimizer_material_info,
+            table,
+            base_materials: materials.clone(),
+            materials,
+            chests,
+            special_label,
+            plans,
             optimizer_plan,
-            raw_num_breakpoints,
+            bands,
             special_budget,
-            test_case: -1, // arena will overwrite this
+            base_special_budget: special_budget,
+            test_case: -1,
             juice_info,
         };
 
@@ -145,10 +153,12 @@ pub fn parser(
         let piece_type_usize: usize = piece_type_to_usize(piece_type);
         let relevant_cost = get_data(express_event, tier, !is_normal_honing, piece_type, false);
         let relevant_unlock = get_data(express_event, tier, !is_normal_honing, piece_type, true);
-        let this_cost =
-            &Vec::from_iter((0..7).map(|cost_type| relevant_cost[cost_type][upgrade_index]));
-        let this_unlock =
-            &Vec::from_iter((0..7).map(|cost_type| relevant_unlock[cost_type][upgrade_index]));
+        let this_cost = &Vec::from_iter(
+            (0..NUM_BASE_MATS).map(|cost_type| relevant_cost[cost_type][upgrade_index]),
+        );
+        let this_unlock = &Vec::from_iter(
+            (0..NUM_BASE_MATS).map(|cost_type| relevant_unlock[cost_type][upgrade_index]),
+        );
         let this_unlocked: bool = unlocked;
         let this_state_given: Vec<OneState> = state.unwrap_or(Vec::new());
 

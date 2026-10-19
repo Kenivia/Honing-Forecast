@@ -8,6 +8,8 @@ import { get_any_overwritten, get_optimizer_working } from "./InstructionUtils";
 import InstructionRow from "./InstructionRow.vue";
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { locale_to_fixed } from "@/Utils/Helpers";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+const runtime = useRuntimeStore();
 
 const props = defineProps<{
   is_normal: boolean;
@@ -18,8 +20,8 @@ const any_overwritten = computed(get_any_overwritten);
 const relevant_result = computed(() => {
   // console.log("relevant", any_overwritten.value);
   return any_overwritten.value
-    ? active_profile.value.histogram_worker_bundle.result.state_bundle
-    : active_profile.value.optimizer_worker_bundle.result;
+    ? runtime.histogram.result.state_bundle
+    : runtime.optimizer.result;
 });
 // This sorts the upgrades into an order that can actually be performed in game
 // special_state is already guaranteed to be valid on the rust side, but it doesn't tell us how to do the non-special taps
@@ -151,7 +153,7 @@ const optimizer_working = computed(get_optimizer_working);
         <span v-if="optimizer_working" class="text-(--text-main)">
           ({{
             locale_to_fixed(
-              active_profile.optimizer_worker_bundle.est_progress_percentage,
+              runtime.optimizer.est_progress_percentage,
               2,
             )
           }}%)</span
@@ -199,8 +201,8 @@ const optimizer_working = computed(get_optimizer_working);
       </div>
       <div
         v-if="
-          active_profile.optimizer_worker_bundle.result &&
-          active_profile.histogram_worker_bundle.result
+          runtime.optimizer.result &&
+          runtime.histogram.result
         "
         class="contents"
       >
@@ -227,7 +229,7 @@ const optimizer_working = computed(get_optimizer_working);
             :upgrade="upgrade"
             :perform_order="perform_order"
             :special_invalid_index="
-              active_profile.histogram_worker_bundle.result.state_bundle
+              runtime.histogram.result.state_bundle
                 .special_invalid_index
             "
             :index_in_special_state="index_in_special_state"
