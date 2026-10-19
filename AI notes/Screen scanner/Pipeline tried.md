@@ -168,3 +168,7 @@ How it got here, each measured on the 1080p recordings of its day (so not compar
 ## Changing character
 
 - **Until 2026-10-19 any character change cleared the scan**: `CharView` terminated the worker, and the capture component restarted the scanner if a stream was open. With no stream open the store was left alone, so a stopped scan stayed on the grid and in the manifest of the next character. Now a router guard wipes or moves it (`Pipeline.md`).
+
+## Native ultrawide
+
+- **Until 2026-10-19 nothing was found on a native 3440x1440 screen** (Chrome 155). The buffer was sized from the track's `getSettings()`, which said 3440x1920; the 3440x1440 frames left the bottom 480 rows at zero, so the scale and centring were off. Also, the render area at 21:9 was taken as 64:27 centred (3413 wide at 3440x1440), which put the right edge 13 px in: the lone inventory dragged to the right edge lay 15 px past its roam bound (slack 6). Both fixed; the recording is `ignored/recordings/honing-forecast-2026-10-19T15-52-16-446Z.hfcap` (padded frames, so it cannot be replayed as a 3440x1440 game).

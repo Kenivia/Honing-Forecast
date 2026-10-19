@@ -126,13 +126,9 @@ impl ScannerState {
             (width - info.effective_height as f64 * 16.0 / 9.0) / 2.0,
             (height - info.effective_height as f64) / 2.0,
         );
-        let render_width = if forced_21_9 {
-            (info.effective_height as f64 * 64.0 / 27.0).min(width)
-        } else {
-            width
-        };
-        info.render_width = render_width;
-        info.corner = ((width - render_width) / 2.0, info.ui_origin.1);
+        // full width: a native ultrawide (3440x1440, wider than 64:27) is drawn edge to edge
+        info.render_width = width;
+        info.corner = (0.0, info.ui_origin.1);
     }
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]

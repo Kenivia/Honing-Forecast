@@ -33,6 +33,9 @@ export function create_frame_source() {
       ).getReader();
     },
     stop,
+    resize(width: number, height: number) {
+      size = { width, height };
+    },
     // undefined once the stream has ended; the caller closes or transfers the frame
     read: async () => (await reader?.read())?.value,
     get stream() {

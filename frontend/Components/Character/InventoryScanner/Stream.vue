@@ -293,6 +293,15 @@ async function cropper_loop(id: number, full = false) {
     cropper_running.value = false;
     return;
   }
+  // The share's reported size can be wrong (Chrome gave 3440x1920 for a 3440x1440 screen) and
+  // can change mid-share, so the frames decide; the scan starts over at the new size.
+  const { width, height } = frame.visibleRect;
+  if (width !== source.size.width || height !== source.size.height) {
+    frame.close();
+    source.resize(width, height);
+    restart_scanner();
+    return;
+  }
 
   sent_at.push(performance.now());
   // one result per op, a late reply from an earlier op must not fork the loop
