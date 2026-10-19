@@ -9,6 +9,8 @@
 
 `find_icon.py` is for looking: it says which icon a slot in a capture is drawn with.
 
+What the tables were checked against, and what they replaced, is in `Game files tried.md`; read it only when trying something new here.
+
 ## What is needed, and where it lives
 
 None of this is tracked. `game_file_reader/` is ignored whole.
@@ -61,12 +63,10 @@ An icon is named `<Icon>_<IconIndex>` in lower case (`use_12_91`), the name the 
 - **What opens.** Everything in `RandomBoxBase`, and bars of gold: an item with `GainMoneyType` 1 (silver) or 2 (gold) and a `UseGainCount` is written as a chest that obtains all of that much. A bar has no chest panel on its tooltip; its hover is told by its title (`Tooltips.md`, "Bars of gold").
 - **A row** is `id`, `title`, `icon` (the art's name), `rarity`, `kind`, `level`, `extra`, `top` and `contents`, each content being title, amount and the id of the chest it is, when it is one of this table. "(Bound)" is cut off titles.
 - **`binds`** is how the row's items are bound, as the scanner's `Tradability` names. A row is several items, so it can be several ways: of the 925 top rows that count, 461 are character bound only, 446 roster bound only, 15 either (gold coins, some event gold bars, "Honing Support Selection Chest II") and 3 all three (Destiny Shard Pouch S, M and L). Only the items that can sit in a slot count, or all of them for a row none of whose can; irrelevant rows have none. The scanner takes a chest's tradability from it when no tooltip gave one (`Tooltips.md`, "Tradability").
-  - Checked against the tooltips read on the suite (2026-10-10), by title, for titles bound one way in the table: all 165 bound reads agree (33 character, 132 roster). The 10 that do not are "Tradable" reads of gear, bracelets, engraving recipes and a quest item, none of them a chest.
   - By slot template: 175 of the 221 are bound one way over every chest that counts, and 218 in roster storage.
   - Materials gain little: the tradable, bound and "(Roster)" items of one material share an icon.
 - **`content_binds`** is how each content is bound, in the order of `contents`: a content is an item with a `BindType` and `BindTarget` of its own. Only "RosterBound" and "Tradable" are written, and nothing for a currency or a content bound to a character, which is never looser than its chest; the field is left out when nothing is.
   - **Gold is the exception, and is hard-coded.** Gold comes tradable, roster bound or character bound like a material, the tables do not say which a chest gives (it is a currency, with no item behind it), and telling by the tooltip was judged not worth it. So a "Gold" content always has an entry, by the chest's art: "CharBound" for the bars of gold (`BOUND_GOLD_ICONS`: `use_13_34` to `use_13_38`, 86 contents), "Tradable" for every other chest (42: the "Gold Chest"s, the coins, the sacks, and the "10,000 Gold Bars" drawn with `use_11_212`). The user's rule, 2026-10-11; nothing was measured against tooltips. Where the items of a row differ, it is the tightest of them. The manifest uses it (`Manifest.md`); the scanner does not read it.
-  - Counted contents against their chest (October 2026): 97 are looser (44 tradable and 41 roster bound in a character-bound chest, 12 tradable in a roster-bound one), 538 are character bound in a roster-bound chest, the rest the same or a currency.
   - The looser ones are all in obtain-all and random chests. Nine obtain-all chests give tradable things only (the Emergency, Harvest and Abundance Honing Materials Chests, S to L), 25 give into two bands ("Raid: Argeos", the Achievement Chests). No select-one has an option, however deep, that is looser than the chest.
   - One list for a row is exact: over every item of every row it gives the band the item's own contents would. Rows that list the same things would differ in one case only, which needs a character-bound chest neither has.
 - **`level`** is `Item.ReUseBalanceLevel`, the item level the chest asks for. The game writes it across the slot (`Pipeline.md`), and 223 of the chests have one.
@@ -80,12 +80,11 @@ An icon is named `<Icon>_<IconIndex>` in lower case (`use_12_91`), the name the 
 - **Not in the table: chests the client has no contents for.** 128 live items on 29 of the templates are chests by category and are not in `RandomBoxBase`: old gear chests, "Raid: Ur'nil", the "Illusion Gift Chest" and "Cryptic Treasure Chest" that give gold, "Weekly Purification Mission Reward Chest III". Every one of the 789 tables was searched for their ids (2026-10-10): 125 are in none, so the server decides what they give, and the gold ones only say so in their description. Left out on purpose: such a slot reads as the chest it is drawn like, and is set by hand.
 - **Not in the table either**: an irrelevant box with nothing listed, and the relevant boxes of tiers 1 to 3.
 - **Left out by art**: a chest drawn with one of `UNWANTED_ICONS` is dropped the same way. Five icons, ten chests: Splendid Pouch, Mariner's Treasure Chest, the two Act 4 Denouement Clear Event Chests and the six Honing Support Material pouches.
-- **Numbers** (October 2026): 1,979 rows: 932 that count, 925 of them top, and 1,047 irrelevant; 141 pieces of art making 221 templates with their rarity. 138 rows are gold alone and 102 silver alone. The file is 714 KB, from 258.
+- **Numbers** (October 2026): 1,979 rows: 932 that count, 925 of them top, and 1,047 irrelevant; 141 pieces of art making 221 templates with their rarity. 138 rows are gold alone and 102 silver alone. The file is 714 KB.
 - **The art** goes to `templates/ChestIcons/<icon>.png`, 64 px, cut lossless from the sheets. `make_msg_pack.py` names each template `<icon>@<rarity>`.
 
 Seven groups of chests list exactly the same rows and still open differently, because a chest inside them is another one under the same title (the two "Trailblazer Supplies Chest: Crucible Level 3", say). Those cannot be told apart by their tooltip, and where their icon is the same too they end up "Not included" in the manifest.
 
-The amounts are the game's: the cases the codex had wrong or empty (the shard pouches at five times too much, "Honing Support Selection Chest II" with nothing in it) come out right. How the table did against the recordings is in `Tooltips.md`.
 
 ### Aliases in items.json
 
@@ -110,4 +109,4 @@ A material goes by other titles that are drawn alike: "[Event] Artisan's Metallu
 - The crop is a whole slot cut roughly. It is brought to the art's brightness with the gamma law, and each icon is scored on the closest 75% of its opaque pixels, so the slot's background, its number and the cursor do not count. The best 300 are tried again up to 3 px off.
 - The icons are cut from the sheets once into `icons.npz` (about 10 s), and again whenever their number changes. A cached run takes about 5 s.
 - An icon with fewer than 1,000 opaque pixels is never a match, since it would match anything. 5,103 of the icons are under that, Destiny Leapstone (976) among them.
-- Not yet run on a real capture since the move from the codex's art; on the codex's own copy of the weapon book the right icon came first (33.3 against 68.3; lower is closer).
+- Not yet run on a real capture since the move from the codex's art.

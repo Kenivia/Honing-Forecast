@@ -1,6 +1,6 @@
 # State and persistence
 
-`docs/Frontend.md` has a diagram of how inputs flow through the store to the payload. This note covers the shape of the state and how it is saved.
+The shape of the frontend state and how it is saved.
 
 ## Pages
 
@@ -61,7 +61,7 @@ A profile's `chests` are saved as the scanner exported them (title, band, count,
 
 **Do not trust a pre-V8 column's own `keys` array.** Nothing before V8 read it, so it drifted out of order in real saves while `data` stayed positional against `ALL_LABELS`. `migrate_7_to_8` maps by position for that reason.
 
-`migrate_7_to_8` **drops** V7's `optimizer_treatment_plan` rather than mapping it: two of its four values behaved identically, one was unreachable, and it is not worth carrying, so `band_values` is left out and `profile_from_saved` supplies the default. `histogram_treatment_plan` is a different setting — which ownership line the chance column reads — and becomes `chance_band`. `leftover_price` is dropped too; it was always zero.
+`migrate_7_to_8` **drops** V7's `optimizer_treatment_plan` rather than mapping it: two of its four values behaved identically, one was unreachable, and it is not worth carrying, so `band_values` is left out and `profile_from_saved` supplies the default. `histogram_treatment_plan` is a different setting â€” which ownership line the chance column reads â€” and becomes `chance_band`. `leftover_price` is dropped too; it was always zero.
 
 `migrate_7_to_8` also collapses V7's per-tier columns into one. Where both tiers held a value for the same material, the character's **active tier wins** for its own budgets, and tier 0 wins for the roster-wide columns V7 kept in sync by a watcher. V7's separate `shard_infos` structure folds into Shards' three bundle prices plus `selected_bundles`.
 

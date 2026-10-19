@@ -1,6 +1,6 @@
 # Evaluation pipeline
 
-How a payload becomes a number. For the maths itself read `docs/Saddlepoint Approximation.pdf`; for a flow diagram, `docs/Average Evaluation.md`.
+How a payload becomes a number. What was measured, tried and dropped on this path is in `Evaluation pipeline tried.md`; read it only when trying something new here.
 
 ## Entry points
 
@@ -28,6 +28,7 @@ The optimizer changes one upgrade and evaluates again, so nearly everything is a
 - **Step 3 is skipped while the free-tap order and budget are the ones last computed for** (`special_done`).
 - **Step 4 is kept per material and free-tap outcome** in `StateBundle::gold_memo` (`material_average_gold`). The key is everything the number depends on: the material, its bands, the evaluator's tuning, and for every upgrade either its state hash (honed) or what a free tap leaves of it (skipped). An upgrade that does not use the material counts as a constant. The honed part is a sum, so the order of the honed upgrades does not change the key. That makes a result depend, at the 1e-8 level, on which order it was first computed under; a seed still repeats exactly. `Tuning::max_memo_size` of 0 turns it off. **Anything new that a material's result depends on has to go into the key.**
 - **A support keeps its mean, its cumulants at zero and whether it is evenly spaced** (`Support::summarise`), set wherever its collapsed pairs are.
+- **Advanced honing distributions** come from a memoised recursion (`compute_adv_dist_wrapper`) whose states are written end to end into one buffer; the output is the same to the bit as computing each alone (`dists_are_unchanged`). In the arena they come from a table on disk (`Arena.md`, "The advanced honing table"), in the browser from a table built into the wasm for an upgrade not yet started (`Frontend/Wasm contract.md`), and otherwise are worked out once per start position while the page lives.
 
 **Sign**: the metric is a gold *value*. It is usually negative (a cost) and the optimizer maximises it.
 
@@ -38,8 +39,10 @@ The code is in two folders of `crates/core/src/core`: `mean/` for the metric (`a
 **The metric** (`one_dimension_average_gold`), per material and free-tap outcome, in this order:
 
 - **Lattice** (`lattice_table` in `mean/lattice.rs`): the whole distribution of the sum, exactly, as an array over the lattice it lives on. Used when lattice points times outcomes is within `Tuning::max_lattice_work`, which is mostly juices and books. It answers every threshold of a material for every free-tap outcome in one pass: skipping k upgrades leaves the sum of the rest, so the sums are built from the last upgrade backwards, and nothing past the largest threshold is kept. The check for "small enough" is on the whole range, not on what is kept.
-- **Coarse lattice** (`Coarse`, `fallback_table`; `Tuning::coarse_cells`, 8 by default, 64 in `Tuning::reference`; `max_coarse_work`): where the exact lattice is too big, the sum on a grid of that many points a standard deviation (a whole number of spans where there is a lattice). Each outcome's mass is split between the two grid points around it, which keeps every mean, so t F - mean F' is exactly the leftover of the gridded sum, whose only error is the variance the split adds; half of that times the density is taken off. Mass under 1e-16 at either end and everything past the largest threshold is dropped. Its plain probability is a difference of leftovers half a step either side and only 1e-2 good, so it is never used as a probability.
-- **Edgeworth leftover** (`leftover` in `average.rs`): off the range the trivial answer, else the integral of the Edgeworth series, less span^2/12 times the density for the lattice, no lower than what any distribution of that mean has. It is a last resort that no measured case reaches: over 2,631 solves at c8 (98 million state evaluations, 1 billion coarse lattices) the coarse lattice never failed.
+- **Coarse lattice** (`Coarse`, `fallback_table`; `Tuning::coarse_cells`, 8 by default, 64 in `Tuning::reference`; `max_coarse_work`): where the exact lattice is too big, the sum on a grid of that many points a standard deviation (a whole number of spans where there is a lattice). Each outcome's mass is split between the two grid points around it, which keeps every mean, so t F - mean F' is exactly the leftover of the gridded sum, whose only error is the variance the split adds; half of that times the density is taken off. Mass under 1e-16 at either end and everything past the largest threshold is dropped. Its plain probability is a difference of leftovers half a step either side and only 1e-2 good, so it is never used as a probability. Its work goes with the square of its points.
+- **Edgeworth leftover** (`leftover` in `average.rs`): off the range the trivial answer, else the integral of the Edgeworth series, less span^2/12 times the density for the lattice, no lower than what any distribution of that mean has. A last resort for when the coarse lattice fails, which no measured case reaches.
+
+**The metric has no saddlepoint in it.** The saddlepoint's error leans optimistic and differs from state to state, so an optimizer scored by it prefers states for being misjudged; the coarse lattice's error is far smaller and has no lean.
 
 **The plain probability** (`saddlepoint_approximation_wrapper`, for the histogram's graphs and chances and `stress`), in this order:
 
@@ -47,55 +50,29 @@ The code is in two folders of `crates/core/src/core`: `mean/` for the metric (`a
 - **Lattice** (`lattice` in `mean/lattice.rs`): the same exact lattice for one outcome. No coarse lattice here, whatever the tuning.
 - **Saddlepoint** (`saddlepoint_approximation`): the Lugannani-Rice formula with the second continuity correction on the sum's lattice, which starts at the minimum and whose span is the gcd of the gaps of the upgrades with more than one outcome. It needs the root of the cumulant function's first derivative, found by `root_finder.rs`. `Tuning::root_finder` picks the finder, so a second one is a new enum variant and a match arm. Used where the product of outcome counts is past `max_brute_size` and the threshold is not near either end.
 - **Edgeworth**: in place of the main formula near the mean, where that is singular. It takes the cumulants at zero, so it needs no root.
-- **Conditioning**: when either of the last two is outside [0, 1], or the main formula's slope term (`1 + k4/8 - 5 k3^2/24` at the saddlepoint) is not positive, or the root finder finds no root, the sum is split on the outcomes of the upgrade with the most variance and each part goes through again. Two levels deep at most, then the value is clamped. Only a NaN there is a panic.
-  - No root used to be a panic. A weekly chain of the arena hit it under every optimizer (`test_cases/scenarios/regressions/no_root_week_inc_0022`). Now the Edgeworth value stands in, untrusted, so the split is what answers; nothing is known to reach it since the cause below was fixed.
-  - **The cause was `one_cumulant`, not the root finder.** The evenly spaced path counts q from the end the tilt takes the weight off. Tilted hard, the weight sits at the far end, and the mean and variance come out as the difference of two nearly equal numbers: on that payload a juice of 4 upgrades (steps of 20 to 50) with 23 owned, whose biased search ran to theta near -1, where one upgrade's mean came out -2.7e-12 against 3.3e-21 and the biased K' was off by 1 at theta -1 and by 24,000 at -1.4, jumping by 0.08 within 1e-8 of theta. So there was no point with a residual under `y_value_tol`. Now, where the variance keeps fewer than 8 digits, the same sums are taken from the heavy end, each weight its own exponential. That is rare: 120 states of `nh_quick` evaluate to the same bits and as fast as before, and `stress` on it gives the same table.
+- **Conditioning**: when either of the last two is outside [0, 1], or the main formula's slope term (`1 + k4/8 - 5 k3^2/24` at the saddlepoint) is not positive, or the root finder finds no root, the sum is split on the outcomes of the upgrade with the most variance and each part goes through again. Two levels deep at most, then the value is clamped. Only a NaN there is a panic. With no root the Edgeworth value stands in, untrusted, so the split is what answers.
 - **Brute force** (`brute.rs`): exact convolution with pruning, for one threshold, where the sum is small or the threshold is near either end.
 
-**The approximations are the weak part, not their implementation.** They are asymptotic in the number of comparable upgrades, and the pity tap puts some 15% of an upgrade's probability on its last outcome, so with one upgrade outweighing the rest they are off by up to 0.2 in a probability with nothing to flag it, and their error leans optimistic. The lattices are what make that case right. Everything tried against it, the measurements, and the code of the alternatives that were dropped (the size-biased pair, the split) are in `core experiments/FINDINGS.md` at the repository root (gitignored, an archive).
+**The approximations are the weak part, not their implementation.** They are asymptotic in the number of comparable upgrades, and the pity tap puts some 15% of an upgrade's probability on its last outcome, so with one upgrade outweighing the rest they are off by up to 0.2 in a probability with nothing to flag it, and their error leans optimistic. The lattices are what make that case right.
 
-**The metric has no saddlepoint in it** (October 2026). It had one: the leftover from one saddlepoint (`leftover`, called "direct"), with brute force near the ends and the coarse lattice at 16 points where it found no root. Its error leans optimistic and differs from state to state, so the optimizer could prefer states only because they were scored by it; the coarse lattice's error is a tenth of it and has no lean. Against the direct route, c8 (`.tmp/adaptive/out/summary.md` while it lasts):
+**The optimizer and what is reported use different evaluators.** The optimizer uses the default tuning (c8). Every number a person or the arena judges by is `Tuning::reference()`, c64, which is about 1e-5 of flow off at worst: the histogram's `metric_per_plan` (`histogram.rs` swaps the tuning around `ui_average_gold_metric` only, so the distribution graphs and chances are the plain probability either way), the arena's `metric_ref` and its Monte Carlo checks.
 
-- one evaluation 1.3 times as long, worst error 1.5e-4 of flow against 3.5e-3, mean 1e-5 against 5e-5;
-- solves 1.3 times as long on `pilot` and `nh_quick` (one job), 0.78 times on 175 upgrades (where the optimizer's own work dominates), 1.33 to 1.52 times in the browser;
-- plans under the reference the same within noise on `nh_dev`, `weekly_dev`, `chests` and `stress`, and some 13k gold better on `saddlepoint_out_of_range_t4_n27` (3 seeds), the case of one dominant upgrade the saddlepoint misjudges;
-- the optimizer's own number off the reference by 9.4e-5 of flow at worst, against 1.9e-3.
-
-**The optimizer and what is reported use different evaluators.** The optimizer uses the default tuning (c8). Every number a person or the arena judges by is `Tuning::reference()`, c64, which is 1e-6 of flow off on average and 1e-5 at worst: the histogram's `metric_per_plan` (`histogram.rs` swaps the tuning around `ui_average_gold_metric` only, so the distribution graphs and chances are the plain probability either way), the arena's `metric_ref` and its Monte Carlo checks. The coarse lattice's work goes with the square of its points; at 64 one evaluation is 5 times c8's.
-
-**Tried on the coarse lattice and dropped** (October 2026; none was worth its code):
-
-- A step chosen per sum from an estimate of the work, as fine as a budget of multiplications an outcome a threshold allows, falling back below some points a standard deviation. Per unit of time it beat a fixed `coarse_cells` once accuracy mattered (6.3 times the old direct route at a worst of 2.7e-6 of flow, against c64 at 7.0 and 6.8e-6), but no budget was as fast as c8 without falling back and bringing the fallback's errors with it.
-- A mirror, the grid of max - S where the thresholds reach less from the top. It halves the work of a lone threshold near the top, but a material's thresholds span both sides and the 1e-16 tails already bound the grid, so a whole evaluation was unchanged. A mirror of the exact lattice would admit nothing more, since its size check is on the whole range.
-- Brute force in place of the coarse lattice for small sums: same accuracy, 2% slower.
-
-`FLOAT_TOL` is smaller than the gap between f64s past about 8 million, so thresholds are compared with `float_tol(value)`. With the bare constant a threshold equal to a reachable total counted as short of it.
+`FLOAT_TOL` is smaller than the gap between f64s past about 8 million, so thresholds are compared with `float_tol(value)`; with the bare constant a threshold equal to a reachable total counts as short of it.
 
 The root finder's safeguards are empirical; treat changes there with care. Check a change anywhere on this path with `pnpm arena stress` and `pnpm arena verify` (`Arena.md`).
 
 ## The cost of a root
 
-Evaluating the cumulants is the unit of cost: one pass over every outcome of every upgrade. Only the plain probability takes roots now; the metric takes none. All of it is in `root_finder.rs`:
+Evaluating the cumulants is the unit of cost: one pass over every outcome of every upgrade. Only the plain probability takes roots; the metric takes none. All of it is in `root_finder.rs`:
 
-- **A last step shorter than `Tuning::taylor_skip` standard deviations is taken on the Taylor series** (`KsTuple::moved`) in place of the evaluation that would only confirm it. At 0.001 the variance read off the series was within 2e-8 of the true one over 6 million steps. Never from cumulants that came off a series themselves.
-  - **The limit is on where the series is read, not on the step that was proposed.** The proposed step can be short while the residual is large, and Newton on the series then walks to where the series means nothing and reports a root there. That killed 3 jobs in 7600 before the walk was held to the same limit.
-  - What bounds the series is the range, not the standard deviation: 0.1 standard deviations failed on a sum of one bimodal upgrade.
+- **A last step shorter than `Tuning::taylor_skip` standard deviations is taken on the Taylor series** (`KsTuple::moved`) in place of the evaluation that would only confirm it. Never from cumulants that came off a series themselves.
+  - **The limit is on where the series is read, not on the step that was proposed.** The proposed step can be short while the residual is large, and Newton on the series would then walk to where the series means nothing and report a root there.
+  - What bounds the series is the range, not the standard deviation.
 - **The cumulants at zero come from the supports**, not from an evaluation.
-- **`one_cumulant` takes its moments in units of outcomes** where the support is evenly spaced: running sums of running sums give the factorial moments of the outcome count with one multiplication an outcome, and the cumulants are scaled by the gap after. The count starts from the light end of the tilt, and from the heavy end where that loses the variance (see "Method selection").
-- **An id twice on a tap counts once** (`get_extra_arr`), as its cost always did. Before, the chance counted it twice and such a plan scored far above any real one. No optimizer has made one but an experiment of October 2026.
+- **`one_cumulant` takes its moments in units of outcomes** where the support is evenly spaced: running sums of running sums give the factorial moments of the outcome count with one multiplication an outcome, and the cumulants are scaled by the gap after. The count starts from the light end of the tilt. Where that keeps fewer than 8 digits of the variance (tilted hard, the weight at the far end, mean and variance a difference of two nearly equal numbers), the same sums are taken from the heavy end, each weight its own exponential.
+- **An id twice on a tap counts once** (`get_extra_arr`), in the chance as in the cost.
 
-`taylor_skip=0,max_memo_size=0` gives the root finding of before, which is how a doubt about these is settled. What was measured against the code before all of this is in `Arena.md`, "The evaluator before and after its speed-up".
-
-## Where the time goes now
-
-A solve is 2.8 times faster on the `pilot` set and 5.5 times on `stress`. Of what is left, on the explore singles:
-
-- **The advanced honing distributions were 59% of it**, and 75 to 96% of a solve with advanced upgrades: 300 to 1500 cache misses in `compute_adv_dist_wrapper`, 5 to 11 ms each. A miss is now 1 to 2 ms. The cost was copying: every memo hit cloned three vectors and every branch allocated three more. The states' distributions are now written end to end into one buffer, in the same order of additions, so the output is the same to the bit (`dists_are_unchanged`). In the arena no solve has a miss at all (`Arena.md`, "The advanced honing table"). The browser has none for an upgrade not yet started (`Frontend/Wasm contract.md`) and still has them for one in progress, once per start position while the page lives.
-  - Sharing one memo between the strategies of a start is another 2 to 3 times, at 60 to 160 MB while it runs.
-  - Every start position there is (some 8,400 of them, 361 strategies each) is too much to ship. The two fresh ones with double balls, 722 distributions, are 0.6 MB.
-- Of the rest: two fifths cumulant evaluations, an eighth the lattice, and the remainder spread thin over rebuilding supports, the memo's keys, `shape`, brute force and the free-tap probabilities.
-- **The annealer itself, outside the evaluator, was 29% of the `pilot` set** and 19% of `explore` (`decide_s`, `Arena.md`), and is 12% of `pilot` now. See `Optimizer.md`, "What a move costs".
-- The cumulant loop is bound by its chain of running sums, which a compiler cannot vectorise. Plain sums against a table of powers could be, at more work an outcome in scalar code.
+`taylor_skip=0,max_memo_size=0` gives the plain root finding, which is how a doubt about these is settled.
 
 Every function on this path takes a `&mut Probe` and counts which method it used. See `Arena.md`.
 
@@ -110,7 +87,7 @@ These fail silently or panic at a distance, and none is obvious from a single fi
 - **Supports are evenly spaced.** All current distributions have a constant gap between values, which the lattice correction assumes. The cumulant fast path checks it (`Support::arithmetic`) and falls back where an outcome in the middle was dropped.
 - **Distributions follow the state hash.** Nothing is rebuilt for an upgrade whose supports carry its state's hash, so whatever else a distribution came to depend on would have to move that hash.
 - **Plans are precomputed.** `PreparationOutput::bands` holds one band list per plan per material, built once per chest state (`Domain model.md`, "Chests"). The evaluator never recomputes them, so a payload with many plans costs extra evaluations, not extra parsing.
-- **A threshold the price does not change at is free.** `one_dimension_average_gold` skips its two saddlepoint evaluations, because they are multiplied by the price gap. `ValuationPlan::bands` already merges such entries wherever merging is sound, so in practice this fires only on the top entry, which has to stay for the base term. See `Domain model.md`.
+- **A threshold the price does not change at is free.** `one_dimension_average_gold` skips its leftover evaluation, because it is multiplied by the price gap. `ValuationPlan::bands` already merges such entries wherever merging is sound, so in practice this fires only on the top entry, which has to stay for the base term. See `Domain model.md`.
 
 ## Leftovers
 

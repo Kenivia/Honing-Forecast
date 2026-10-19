@@ -108,4 +108,4 @@ The game has to be on screen, with its resolution selected, for anything to be r
 - Results only carry images once an inventory is recognised, and operations are also much faster then, so always measure with an inventory on screen.
 - Chrome warns in the console when a video frame is garbage collected without being closed. Counting that warning is a direct test for unclosed frames.
 - Keep the browser window unobscured. The Firefox loop was seen stalling for tens of seconds in headed runs, most likely when its window was covered.
-- The few-hundred-MB sawtooth seen while scanning came from copying the state across the worker boundary every frame. That no longer happens; memory has not been re-measured since.
+- Memory has not been measured since the scanner state stopped crossing the worker boundary every frame (`Screen scanner/Pipeline tried.md`).

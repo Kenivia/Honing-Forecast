@@ -22,7 +22,6 @@ These notes are high-level. They cover what is hard to work out from reading one
 | `e2e/` | Playwright tests, shared browser helpers and the market price fixture. |
 | `tests/` | Node-side frontend tests: migrations, the real-save fixture, cross-tier relations. `pnpm test:frontend`. |
 | `test_cases/` | Arena scenarios, and its gitignored results database. |
-| `docs/` | Author-written docs: the saddlepoint paper, evaluation flow, optimizer, frontend flow, constants. |
 
 Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-pack output), and the untracked `junkyard/` and `data_fetcher/`.
 
@@ -61,20 +60,23 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 
 ## Index
 
+Each note describes the code as it is now. Where there is history (what was measured, tried, dropped or fixed), it is in a `<note> tried.md` beside the note. **Read a tried file only when trying something new** in its area, to avoid repeating what was already ruled out. When changing something, update the main note to the new state and put the before/after in the tried file.
+
 - `Calculator core/Domain model.md`: the structs and index conventions.
 - `Calculator core/Evaluation pipeline.md`: payload to result, method selection, invariants.
-- `Calculator core/Optimizer.md`: what the annealer may and may not change.
-- `Calculator core/Arena.md`: the native test harness: variants, snapshots, scenarios, what it measures.
+- `Calculator core/Optimizer.md`: what the annealer does and may and may not change.
+- `Calculator core/State space.md`: what a normal honing plan is, and the exact best plan of one upgrade.
+- `Calculator core/Arena.md`: the native test harness: variants, snapshots, scenarios, sets, what it measures.
 - `Working in this repo.md`: line endings, scratch space, what the type checker cannot see, and the test suites. Read before a large edit.
 - `Frontend/State and persistence.md`: the store, data scopes, localStorage and migrations.
 - `Frontend/Wasm contract.md`: payload building, worker protocol, what must match Rust.
 - `Frontend/External services.md`: market prices, character import, changelogs.
 - `Screen scanner/Pipeline.md`: capture to recognised slots, and what is still stubbed.
+- `Screen scanner/Tooltips.md`: reading the hover tooltip, chests among it, and tying it to a slot.
 - `Screen scanner/Config and calibration.md`: the template config and brightness calibration.
+- `Screen scanner/Icon matching bench.md`: the offline bench for how a slot is matched to an icon.
 - `Screen scanner/Slot grid.md`: the scanner page's slot grid, slot statuses and manual edits.
 - `Screen scanner/Game files.md`: reading items, chests and icons out of the installed game.
 - `Screen scanner/Currency.md`: silver, gold and shards off the inventory, the currency window, the bar at the top of the screen and gold's tooltip.
 - `Screen scanner/Manifest.md`: the scan as materials per band and select-one chests, with overrides and T4 conversion.
 - `Browser harness/Overview.md`: driving the site in Chromium and Firefox, for debugging and e2e tests. One note per site section alongside it.
-
-Read alongside `docs/`: `Saddlepoint Approximation.pdf` for the maths, `Average Evaluation.md` and `Frontend.md` for flow diagrams, `Constants.md` for updating game data.

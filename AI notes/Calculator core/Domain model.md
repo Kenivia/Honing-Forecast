@@ -27,17 +27,17 @@ These orderings are shared with the frontend and with the constants JSON. Nothin
 
 ## Materials and prices
 
-A material is owned in three **bands**: character-bound, roster-bound and tradable. A `ValuationPlan` says what one *leftover* unit of each band is worth, out of three levels — nothing, the taxed sell price, or the buy price — and the three must not decrease across the bands, which `bands()` asserts.
+A material is owned in three **bands**: character-bound, roster-bound and tradable. A `ValuationPlan` says what one *leftover* unit of each band is worth, out of three levels â€” nothing, the taxed sell price, or the buy price â€” and the three must not decrease across the bands, which `bands()` asserts.
 
 `ValuationPlan::bands` turns a plan plus a material into the cumulative `(threshold, marginal value above it)` list the evaluator integrates against: entry `i`'s price applies to the interval `(threshold_i, threshold_{i+1}]`, and the **last** entry's price is what a unit costs to buy above the total owned.
 
-**The list length is the cost.** `one_dimension_average_gold` spends a leftover evaluation per entry past the first and short-circuits to no work at all at one entry, and it does not skip an entry whose price gap is zero — it evaluates and then multiplies by zero. So every redundant entry is paid for. Three collapses keep the list minimal:
+**The list length is the cost.** `one_dimension_average_gold` spends a leftover evaluation per entry past the first and short-circuits to no work at all at one entry, and it does not skip an entry whose price gap is zero â€” it evaluates and then multiplies by zero. So every redundant entry is paid for. Three collapses keep the list minimal:
 
 - a zero-width band's entry drops out;
 - consecutive equal prices are one band;
 - an all-zero list becomes the single entry `(0, 0)`, which is what a disabled material produces.
 
-Neither of the first two may remove the final entry: it is a buy price, not a credit, so dropping it moves the whole function by a constant. The old `distribute_budgets` did drop it, which silently erased a band's credit whenever its sell price equalled its buy price — any material priced under 1 gold per unit, since `apply_tax` floors. `every_plan_produces_a_minimal_list` locks all of this in.
+Neither of the first two may remove the final entry: it is a buy price, not a credit, so dropping it moves the whole function by a constant: it would silently erase a band's credit whenever its sell price equals its buy price, which is any material priced under 1 gold per unit, since `apply_tax` floors. `every_plan_produces_a_minimal_list` locks all of this in.
 
 That final entry is still allowed to repeat the price under it, and when it does, **it costs nothing**: its coefficient is `prev_price - price`, so `one_dimension_average_gold` skips the two evaluations outright. It has to stay for the base term, which carries the constant, but the probabilities at it are never needed. A two-entry list always has value zero at its kink, which is why the entry cannot simply be merged away instead. This is what makes a fully market-valued plan free to evaluate: every price in its list is the same, so nothing is computed.
 
@@ -56,11 +56,11 @@ A `Chest` is a count, the band it is owned in and its options, each a `label -> 
 
 - **Normal honing**: the distribution is over "succeeds on exactly tap i", up to the pity tap. Slot 0 is reserved for the free-tap outcome and is otherwise zero.
 - **Advanced honing**: computed by a memoised recursion over the XP / grace state, giving three separate distributions: paid taps, juices used, scrolls used. The memo (`adv_cache`) is expensive, so it round-trips through JS between calls.
-- **Free taps**: `special_state` is a permutation of upgrade indices. Free taps are attempted on one upgrade until it succeeds or the budget runs out, then on the next. This restriction is deliberate; the paper explains why.
+- **Free taps**: `special_state` is a permutation of upgrade indices. Free taps are attempted on one upgrade until it succeeds or the budget runs out, then on the next. This restriction is deliberate: it keeps the free-tap outcomes to one per prefix of the order, so step 3 of an evaluation (`Evaluation pipeline.md`) stays linear in the number of upgrades.
 
 ## Game data
 
-Costs and chances come from JSON embedded in the binary, under `constants/`, generated from a Google Sheet (see `docs/Constants.md`). Only two of the JSON files are wired in, one per tier. Vambrace support is partial: it exists for normal honing and is absent from the advanced tables.
+Costs and chances come from JSON embedded in the binary, under `constants/`, generated from a Google Sheet. Only two of the JSON files are wired in, one per tier. Vambrace support is partial: it exists for normal honing and is absent from the advanced tables.
 
 ### Honing data in the game files (open problem)
 
