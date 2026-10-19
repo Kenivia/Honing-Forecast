@@ -23,7 +23,10 @@ pub struct Item {
 
 // the materials: scanner_setup/templates/items.json
 pub static ITEMS: LazyLock<Vec<Item>> = LazyLock::new(|| {
-    serde_json::from_str(include_str!("../../../../scanner_setup/templates/items.json")).unwrap()
+    serde_json::from_str(include_str!(
+        "../../../../scanner_setup/templates/items.json"
+    ))
+    .unwrap()
 });
 
 // One chest of scanner_setup/templates/chests.json, which scanner_setup/game_files/chests.py writes from the game's
@@ -66,8 +69,10 @@ impl Variant {
 }
 
 pub static VARIANTS: LazyLock<Vec<Variant>> = LazyLock::new(|| {
-    let mut variants: Vec<Variant> =
-        serde_json::from_str(include_str!("../../../../scanner_setup/templates/chests.json")).unwrap();
+    let mut variants: Vec<Variant> = serde_json::from_str(include_str!(
+        "../../../../scanner_setup/templates/chests.json"
+    ))
+    .unwrap();
     for variant in &mut variants {
         variant.sorted = variant.contents.clone();
         variant.sorted.sort();

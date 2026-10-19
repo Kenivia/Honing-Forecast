@@ -1,7 +1,7 @@
 use std::mem::take;
 
 use super::{
-    chest::{ChestRow, chests_listing},
+    chest::{ChestKind, ChestRow, chests_listing},
     items::{item_from_body, match_bar_title, match_title},
     title::join_title,
 };
@@ -207,11 +207,16 @@ impl ScannerState {
                 // The chests that list these rows best get the vote. Several do when they list the
                 // same things, or when a numeral that tells them apart did not read. Those that
                 // open the way the header says go first: the header's wording varies ("Obtain one
-                // of the following items at random" reads as obtain all), so it only breaks ties.
+                // of the following items at random" reads as obtain all, so that lets random ones
+                // through too), so it only breaks ties.
                 let (mut listing, whole) = chests_listing(&texts);
                 let kind = winner(&hover.chest_kind_votes).map(|x| x.0);
-                if listing.iter().any(|x| Some(x.0.kind) == kind) {
-                    listing.retain(|x| Some(x.0.kind) == kind);
+                let opens = |x: ChestKind| {
+                    Some(x) == kind
+                        || (kind == Some(ChestKind::ObtainAll) && x == ChestKind::Random)
+                };
+                if listing.iter().any(|x| opens(x.0.kind)) {
+                    listing.retain(|x| opens(x.0.kind));
                 }
                 let best = listing.iter().map(|x| x.1).fold(0.0, f64::max);
                 // rows that read as a chest's to the letter, and are all of them, settle it

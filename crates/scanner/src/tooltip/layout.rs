@@ -255,6 +255,8 @@ pub fn parse_layout(buffer: &Buffer, bar: &TitleBar, s: f64) -> Layout {
         // The yellow phrase tells the three kinds apart: "Obtain [all] of the following items." is one
         // short word, "There is a [chance that you can obtain one]" runs to the end of the line,
         // "You can [select and obtain 1] of the" has white after it. Only "all" fits on one line.
+        // ObtainAll here can also be a random chest: "Obtain [one] of the following items at
+        // random" is one short word too, so the votes let random chests through under it.
         let (top, bottom) = *lines.first()?;
         let (first, last) =
             extent(top, bottom, text_left, YELLOW).filter(|x| (x.1 - x.0) as f64 >= PHRASE * s)?;

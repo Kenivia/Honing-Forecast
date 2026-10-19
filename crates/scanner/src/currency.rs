@@ -128,9 +128,6 @@ const PARTS: [Field; 6] = [
     Field::Deposit(2),
     Field::Deposit(3),
 ];
-// "/99,999,999,999" follows a band's amount on the tooltip
-const CAP: &str = "99999999999";
-
 // lit, as captured, for the title's colour to count
 const INK: i32 = 90;
 // a column with anything this much brighter than what is around it has text in it: the window is
@@ -145,9 +142,17 @@ const TO_ICON: f64 = 24.0;
 const LONGEST: f64 = 260.0;
 // a number's line, either side of its icon's middle
 const HALF_LINE: f64 = 13.0;
-// Around the text, one per read in turn: the recogniser doubles or drops a digit at some widths,
-// and the same crop is the same read. One thing gets this many reads, agreeing or not.
-const MARGINS: [f64; 6] = [4.0, 3.0, 5.0, 2.0, 6.0, 7.0];
+// Left and right of the text, one per read in turn: the recogniser drops a first or last digit at
+// some widths, and at most of them past 3 px (1080 lines), and the same crop is the same read. One
+// thing gets this many reads, agreeing or not.
+const MARGINS: [(f64, f64); 6] = [
+    (2.0, 2.0),
+    (1.0, 3.0),
+    (3.0, 1.0),
+    (0.0, 4.0),
+    (3.0, 3.0),
+    (1.0, 1.0),
+];
 const MAX_READS: usize = MARGINS.len();
 
 #[derive(Debug, Default)]
@@ -254,25 +259,28 @@ fn is_yellow(buffer: &Buffer, area: Rect) -> bool {
     !pixels.is_empty() && yellow * 5 > pixels.len() * 4
 }
 
+// "15,275,481": the recogniser drops a first or last digit, which breaks the groups of three. It
+// also misses a separator now and then, which is no harm.
+fn grouped(text: &str) -> Option<u64> {
+    let groups: Vec<&str> = text.trim().split([',', '.']).collect();
+    let well_formed = groups
+        .iter()
+        .all(|x| !x.is_empty() && x.chars().all(|c| c.is_ascii_digit()))
+        && groups[1..].iter().all(|x| x.len() % 3 == 0);
+    well_formed.then(|| groups.concat().parse().unwrap())
+}
+
 fn parse(field: Field, text: &str) -> Option<u64> {
-    let digits = |text: &str| {
-        text.chars()
-            .filter(char::is_ascii_digit)
-            .collect::<String>()
-    };
-    let number = match field {
-        Field::Owned | Field::Roster | Field::Char => match text.split_once('/') {
-            Some((amount, _)) => digits(amount),
-            None => digits(text).strip_suffix(CAP)?.to_string(),
-        },
+    match field {
+        // the amount, then "/99,999,999,999"
+        Field::Owned | Field::Roster | Field::Char => grouped(text.split_once('/')?.0),
         // after "D+1:", or without the colon after the day's digit
         Field::Deposit(_) => match text.split_once(':') {
-            Some((_, amount)) => digits(amount),
-            None => digits(text).get(1..)?.to_string(),
+            Some((_, amount)) => grouped(amount),
+            None => grouped(text.split_once(|c: char| c.is_ascii_digit())?.1),
         },
-        Field::Total(_) => digits(text),
-    };
-    number.parse().ok()
+        Field::Total(_) => grouped(text),
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -353,14 +361,23 @@ impl ScannerState {
         kind: Kind,
     ) {
         let sent = self.currency.fields.entry(field).or_default().sent;
-        for margin in &MARGINS[sent..(sent + SETTLED).min(MAX_READS)] {
-            let margin = (margin * self.screen_info.scale_factor).round() as usize;
+        // scaled down they round to the same pixels, and the same crop is the same read
+        let px = |x: f64| (x * self.screen_info.scale_factor).round() as usize;
+        let mut margins: Vec<(usize, usize)> = vec![];
+        for (left, right) in MARGINS {
+            let mut margin = (px(left), px(right));
+            while margins.contains(&margin) {
+                margin.1 += 1;
+            }
+            margins.push(margin);
+        }
+        for (left, right) in margins[sent..(sent + SETTLED).min(MAX_READS)].to_vec() {
             let line = line_of(
                 kind.clone(),
                 &self.buffer,
-                x0.saturating_sub(margin),
+                x0.saturating_sub(left),
                 y0,
-                (x1 + margin).min(self.buffer.width),
+                (x1 + right).min(self.buffer.width),
                 y1,
             );
             self.read_count += 1;
@@ -416,8 +433,12 @@ impl ScannerState {
             for (currency, name, bound) in &spec.icons {
                 let total = Field::Total(*currency);
                 let is_gold = *currency == Currency::Gold;
-                let needed = !matches!(self.field_read(total), Read::Settled(_))
-                    || (is_gold && parts_wanted);
+                // gold read off its tooltip needs nothing more
+                let needed = if is_gold {
+                    parts_wanted
+                } else {
+                    !matches!(self.field_read(total), Read::Settled(_))
+                };
                 if !needed {
                     continue;
                 }
@@ -531,9 +552,6 @@ impl ScannerState {
             value,
             bands,
         };
-        if matches!(total, Read::Disagree) || parts.iter().any(|x| matches!(x, Read::Disagree)) {
-            return result(SlotStatus::Error, disagree, total_value, None);
-        }
         let settled: Vec<u64> = parts
             .iter()
             .filter_map(|x| match x {
@@ -541,20 +559,16 @@ impl ScannerState {
                 _ => None,
             })
             .collect();
+        // the tooltip goes over what is shown, which can be half covered
         if settled.len() == PARTS.len() {
             // what is deposited becomes tradable in a few days, so it counts as such
             let tradable = settled[0] + settled[3..].iter().sum::<u64>();
             let bands = [settled[2], settled[1], tradable];
             let sum: u64 = bands.iter().sum();
-            return match total_value {
-                Some(shown) if shown != sum => result(
-                    SlotStatus::Error,
-                    format!("Its tooltip adds up to {sum}, but {shown} is shown."),
-                    Some(shown),
-                    None,
-                ),
-                _ => result(SlotStatus::Good, String::new(), Some(sum), Some(bands)),
-            };
+            return result(SlotStatus::Good, String::new(), Some(sum), Some(bands));
+        }
+        if matches!(total, Read::Disagree) || parts.iter().any(|x| matches!(x, Read::Disagree)) {
+            return result(SlotStatus::Error, disagree, total_value, None);
         }
         if parts.iter().any(|x| matches!(x, Read::Reading)) {
             return result(

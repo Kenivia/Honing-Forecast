@@ -24,6 +24,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - "waiting for ocr" spinner
 - auto detect 21:9
 - manual overwrite brightness
+- reset button
 
 ### HARD
 
