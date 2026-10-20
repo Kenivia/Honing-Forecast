@@ -111,3 +111,30 @@ export function process_chests(chests: ManifestChest[], tier: number): Chest[] {
   }
   return [...out.values()];
 }
+
+// Per label and band, what the chests give opened as the states say, floored as Rust does. A
+// missing or unfitting state puts every chest on the first option, also as Rust does.
+export function chest_gains(
+  chests: Chest[],
+  states?: Map<string, number[]>,
+): Record<string, number[]> {
+  const out: Record<string, number[]> = {};
+  for (const chest of chests) {
+    let state = states?.get(chest.key);
+    if (
+      state?.length !== chest.options.length ||
+      state.reduce((a, b) => a + b, 0) !== chest.count
+    )
+      state = chest.options.map((_, index) => (index ? 0 : chest.count));
+    chest.options.forEach((option, index) => {
+      for (const [label, amount] of Object.entries(option)) {
+        out[label] ??= [0, 0, 0];
+        out[label][chest.band] += amount * state[index];
+      }
+    });
+  }
+  for (const gains of Object.values(out)) {
+    gains.forEach((x, band) => (gains[band] = Math.floor(x + 1e-6)));
+  }
+  return out;
+}

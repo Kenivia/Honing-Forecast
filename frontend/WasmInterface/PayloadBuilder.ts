@@ -21,7 +21,7 @@ import {
 import { input_column_to_num } from "@/Utils/InputColumn";
 import { storeToRefs } from "pinia";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
-import { Bag, process_chests } from "@/Utils/Chest";
+import { Bag } from "@/Utils/Chest";
 
 // I don't think it's possible to directly export this struct from rust to javascript because of all the vectors,
 // so it's copied & pasted here
@@ -308,7 +308,7 @@ export function build_materials(): Record<string, OneMaterial> {
 
 export function build_payload(override?: OptimizerOverride): Payload {
   const runtime = useRuntimeStore();
-  const { active_profile, active_chests } = storeToRefs(useRosterStore());
+  const { active_profile, processed_chests } = storeToRefs(useRosterStore());
   const tier = active_profile.value.tier;
   // console.log(runtime.optimizer.result?.adv_cache);
   return {
@@ -343,7 +343,7 @@ export function build_payload(override?: OptimizerOverride): Payload {
     ),
     // Amounts stay fractional and Rust floors the total.
     chests: Object.fromEntries(
-      process_chests(active_chests.value, tier).map((chest) => [
+      processed_chests.value.map((chest) => [
         chest.key,
         { count: chest.count, band: chest.band, options: chest.options },
       ]),

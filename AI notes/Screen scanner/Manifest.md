@@ -62,17 +62,19 @@ Roster storage is shared, so it need not be shown again for every character. `ro
 - **Two chest panels side by side**, "Selection chests" (`obtain_all` false, a select-one with one option left included) and "Obtain-all chests" (strictly those), with the same rows: count, title, band, contents.
 - **Amounts are read-only text**, what the export writes. There are no overrides.
 - **"From earlier exports"** lists the saved pages in use (who scanned them and when) and the other characters whose roster-bound and tradable things are added.
-- **Conversion toggles**, one per band, kept in `convert`. The char-bound one is locked off for a T4 character and defaults on for a Serca one; they reset when the character (by id) or its tier changes. Conversion runs on the merged amounts at the `CONVERTS_FROM` ratio: the T4 remainder stays, the gain lands on the Serca label, and tradable comes out roster-bound. The gain shows as "+c from T4". Saved pages are stored unconverted.
+- **Conversion toggles**, one per band, kept in `convert`. The char-bound one is locked off for a T4 character and defaults on for a Serca one; they reset when the character (by id) or its tier changes. Conversion runs on the merged amounts at the `CONVERTS_FROM` ratio: the T4 remainder stays, the gain lands on the Serca label, and tradable comes out roster-bound. The gain shows as "+c from T4", and under it "+m from chests": what the chests with one option (obtain-all and trivial select-ones) give, as they are, by band (`chest_gains` with no states). Chests with a choice add nothing here. Both lines are `MaterialCell`'s `plus`. Saved pages are stored unconverted.
 - **The toggles are for materials only.** Chests keep their T4 materials whatever the toggles say; they are converted on the calculator page, for the character's tier (below).
 
 ## On the calculator page
 
-`process_chests(chests, tier)` in `Utils/Chest.ts` turns the character's chests and its roster's (`active_chests`) into what the calculator shows and the payload sends. Nothing of it is stored. Per chest:
+`process_chests(chests, tier)` in `Utils/Chest.ts` turns the character's chests and its roster's (`active_chests`) into what the calculator shows and the payload sends (the store getter `processed_chests`). Nothing of it is stored. Per chest:
 
 - **Serca character**: every T4 material becomes the Serca one at the `CONVERTS_FROM` ratio, unrounded (the panel shows at most one decimal, so whole results show whole). A chest with anything converted is roster bound at best, all of it: a stack has one band.
 - Labels of the other tier are dropped, and gold of a tradable chest (never counted). An option left empty is gone, which hides every Serca option from a T4 character.
 - **An option that another is at least as good as, label for label, is gone.** Of two alike the first stays.
 - A chest with no option left is gone. Chests that come out with the same band and options, in any order, are one stack (`add_stack` again): counts summed, titles joined. The key is the band and the options, and it is what `chest_states` is keyed by.
+
+**What they add to the budgets** shows in the costs distribution: `chest_gains(processed_chests, chest_states)` mirrors Rust's `resolve_chests` and `apply_chest_state` (an unfitting or missing state puts the stack on its first option, each band floored), read off the histogram's `state_bundle.chest_states`. A material row shows "+n from chests" (`MaterialCell`'s `plus`, which keeps its width when 0) for the band the chance dropdown picks, the special leap row the sum of all bands; the graph's owned lines add each band's gain to that band.
 
 The panels there are "Selection chests" (several options left) and "Obtain-all and trivial selection chests" (one). `tests/chests.test.ts` covers this.
 

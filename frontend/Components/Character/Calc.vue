@@ -11,15 +11,13 @@ import { storeToRefs } from "pinia";
 import { start_all_workers, start_eval_hist } from "./CharWorkerUtils.js";
 import { useRosterStore } from "@/Stores/RosterConfig.js";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
-import { process_chests } from "@/Utils/Chest";
 const runtime = useRuntimeStore();
-const { active_profile, active_region, active_chests } =
-  storeToRefs(useRosterStore());
-
-// what the payload sends: the character's and roster's chests as its tier takes them
-const chests = computed(() =>
-  process_chests(active_chests.value, active_profile.value.tier),
-);
+const {
+  active_profile,
+  active_region,
+  active_chests,
+  processed_chests: chests,
+} = storeToRefs(useRosterStore());
 // the stored chests are shown in place of these while editing
 const editing_chests = ref(false);
 // the only ones with a choice to show

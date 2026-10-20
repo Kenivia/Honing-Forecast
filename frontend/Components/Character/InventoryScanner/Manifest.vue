@@ -10,6 +10,8 @@ import {
 } from "@/Utils/Constants";
 import { get_icon_path } from "@/Utils/Helpers";
 import ChestPanels from "@/Components/Common/ChestPanels.vue";
+import MaterialCell from "@/Components/Common/MaterialCell.vue";
+import { chest_gains } from "@/Utils/Chest";
 import {
   BAND_NAMES,
   convert,
@@ -36,6 +38,13 @@ watch(
     convert.value = [active_profile.value.tier === 1, false, false];
   },
   { immediate: true },
+);
+
+// only chests with no choice add, each as it is, of either tier
+const gains = computed(() =>
+  chest_gains(
+    manifest.value.chests.filter((chest) => chest.options.length === 1),
+  ),
 );
 
 // shown although some slots are not in it
@@ -181,25 +190,20 @@ function export_to_calc() {
               :alt="label"
             />
           </span>
-          <div
+          <MaterialCell
             v-for="(name, band) in BAND_NAMES"
             :key="band"
-            class="flex h-full items-center gap-1"
-          >
-            <span
-              class="w-25 pl-1"
-              :aria-label="`${label} ${name}`"
-              :style="{ color: `var(${BAND_COLORS[band]})` }"
-            >
-              {{ manifest.materials[label][band].toLocaleString() }}
-            </span>
-            <span
-              v-if="manifest.incoming[label][band]"
-              class="annotation whitespace-nowrap"
-            >
-              +{{ manifest.incoming[label][band].toLocaleString() }} from T4
-            </span>
-          </div>
+            :input_column="{ [label]: manifest.materials[label][band] }"
+            :label="label"
+            :aria_name="`${label} ${name}`"
+            :input_color="BAND_COLORS[band]"
+            :input_width="100"
+            :justify_left="true"
+            :plus="[
+              { amount: manifest.incoming[label][band], text: 'from T4' },
+              { amount: gains[label]?.[band] ?? 0, text: 'from chests' },
+            ]"
+          />
         </div>
       </div>
 

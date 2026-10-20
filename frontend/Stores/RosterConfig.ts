@@ -20,7 +20,7 @@ import { CharProfile, new_char_profile } from "./CharacterProfile";
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
 
 import { load_roster_config } from "./ConfigStorage";
-import type { ManifestChest } from "@/Utils/Chest";
+import { process_chests, type Chest, type ManifestChest } from "@/Utils/Chest";
 import type { ScanPage, Snapshot } from "@/Utils/Scans";
 
 // Everything in here is persisted. Session-only state lives in RuntimeState.
@@ -127,6 +127,10 @@ export const useRosterStore = defineStore("roster", {
         ...(state.roster_config.roster_chests[this.active_profile.roster_id] ??
           []),
       ];
+    },
+    // what the payload sends: the active chests as the character's tier takes them
+    processed_chests(): Chest[] {
+      return process_chests(this.active_chests, this.active_profile.tier);
     },
     active_region(state): MarketRegions {
       return state.roster_config.all_regions[this.active_profile.roster_id];

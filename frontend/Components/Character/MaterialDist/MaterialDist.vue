@@ -25,6 +25,7 @@ import { GridConfig } from "@/Utils/GridStyling";
 import { useMediaIsNarrow } from "@/Utils/WindowSize";
 import Popup from "@/Components/Common/Popup.vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
+import { chest_gains } from "@/Utils/Chest";
 const runtime = useRuntimeStore();
 
 const { active_profile } = storeToRefs(useRosterStore());
@@ -33,6 +34,7 @@ const {
   active_roster_mats_owned,
   active_tradable_mats_owned,
   enabled_annotations,
+  processed_chests,
 } = storeToRefs(useRosterStore());
 const histogram_result = computed(() => runtime.histogram.result);
 
@@ -45,6 +47,15 @@ const set_special_budget = (val: string) => {
 };
 const zeroes = (): Record<string, number> =>
   Object.fromEntries(ALL_LABELS[tier.value].map((label) => [label, 0]));
+
+// what the chests give under the chest states the histogram last evaluated
+const gains = computed(() =>
+  chest_gains(
+    processed_chests.value,
+    runtime.histogram.result?.state_bundle.chest_states,
+  ),
+);
+const gain = (label: string, band: number) => gains.value[label]?.[band] ?? 0;
 
 // This is average mats cost (not gold)
 const average_breakdown = computed(
@@ -158,11 +169,13 @@ const annotation_values = computed(() => {
   const trade = input_column_to_num(active_tradable_mats_owned.value);
   const out: Record<string, number[]> = {};
   for (const label of ALL_LABELS[tier.value]) {
+    const b = bound[label] + gain(label, 0);
+    const r = b + roster[label] + gain(label, 1);
     out[label] = [
       average_breakdown.value[label],
-      bound[label],
-      roster[label] + bound[label],
-      roster[label] + bound[label] + trade[label],
+      b,
+      r,
+      r + trade[label] + gain(label, 2),
     ].filter((_, i) => enabled_annotations.value[i]);
   }
   return out;
@@ -204,7 +217,7 @@ const show_special_guide = ref(false);
 
 const grid: GridConfig = {
   grid_template_columns:
-    "minmax(190px, 250px) minmax(70px, 90px) minmax(110px, 120px) minmax(110px, 120px) 350px",
+    "minmax(260px, 320px) minmax(70px, 90px) minmax(110px, 120px) minmax(110px, 120px) 350px",
 };
 
 const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width where the checkboxes overlap the labels
@@ -224,7 +237,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
       <div class="mats-row h-fit! items-end! border-b-(--border-main)!">
         <div class="flex flex-row justify-between">
           <QuestionMark :text="tickbox_tooltip" class="mb-1" />
-          <span class="w-25 text-left text-(--bound)">Bound Mats</span>
+          <span class="mr-17.5 w-25 text-left text-(--bound)">Bound Mats</span>
         </div>
         <select
           aria-label="Chance column"
@@ -288,6 +301,12 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
             :callback="() => start_all_workers()"
             :hide_label="is924Narrow && row < NUM_BASE_MATS"
             :bound_label="true"
+            :plus="[
+              {
+                amount: gain(label, active_profile.chance_band),
+                text: 'from chests',
+              },
+            ]"
           />
           <!-- {{ console.log(averages) }} -->
           <MaterialCell
@@ -334,6 +353,14 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
             :hide_tick="true"
             aria_name="Special leaps owned"
             :callback="() => start_all_workers()"
+            :plus="[
+              {
+                amount: (
+                  gains[SPECIAL_LEAP_LABELS[active_profile.tier]] ?? []
+                ).reduce((a, b) => a + b, 0),
+                text: 'from chests',
+              },
+            ]"
           ></MaterialCell>
           <span
             class="h-max text-xs leading-3 text-(--free-tap) underline hover:text-(--free-tap-bright)"
@@ -446,7 +473,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
 /* trying to align the gold value with the gold breadown column, kinda scuffed but works i tihnk*/
 .metric-label {
   flex-shrink: 1;
-  flex-basis: 49.48%; /* (250+90+120+16)/962  */
+  flex-basis: 52.9%; /* (320+90+120+16)/1032  */
   text-align: right;
   font-size: 1.25rem;
   line-height: 1.75rem;
@@ -454,9 +481,9 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
 /* aligning for the non-squished cases */
 .metric-result-container {
   display: flex;
-  min-width: calc(100% - 49.48%);
+  min-width: calc(100% - 52.9%);
   flex-shrink: 1;
-  flex-basis: calc(100% - 49.48%);
+  flex-basis: calc(100% - 52.9%);
   flex-wrap: wrap;
   align-content: center;
 }

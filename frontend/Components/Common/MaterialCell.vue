@@ -26,11 +26,15 @@ const props = defineProps<{
   disabled?: boolean;
   bound_label?: boolean;
   aria_name?: string;
+  // "+N <text>" lines on the right, taking plus_width whether shown or not
+  plus?: { amount: number; text: string }[];
+  plus_width?: number;
 }>();
 
 const actual_input_width = computed(() => `${props.input_width ?? 100}px`);
 const actual_label_width = computed(() => `${props.label_width ?? 150}px`);
 const actual_icon_size = computed(() => `${props.icon_size ?? 34}px`);
+const actual_plus_width = computed(() => `${props.plus_width ?? 70}px`);
 const actual_height = computed(() => `${props.height ?? 42}px`);
 const resolved_color = computed(() =>
   cssVar(props.input_color, props.input_color),
@@ -116,7 +120,11 @@ watch(source_value, (val) => {
     <label
       v-else
       class="material-cell-result"
-      :style="{ color: resolved_color }"
+      :aria-label="aria_name"
+      :style="{
+        color: resolved_color,
+        minWidth: input_width ? actual_input_width : undefined,
+      }"
       type="text"
       >{{
         is_percentage
@@ -130,6 +138,20 @@ watch(source_value, (val) => {
     <label class="material-cell-suffix annotation" v-if="suffix">{{
       suffix
     }}</label>
+    <div
+      v-if="plus"
+      class="flex shrink-0 flex-col gap-1 text-left"
+      :style="{ width: actual_plus_width }"
+    >
+      <span
+        v-for="line in plus"
+        :key="line.text"
+        class="annotation whitespace-nowrap"
+        :class="{ invisible: Math.floor(line.amount) <= 0 }"
+      >
+        +{{ Math.floor(line.amount).toLocaleString("en-US") }} {{ line.text }}
+      </span>
+    </div>
   </div>
   <!-- <input v-if="customLeftovers" type="text" :value="matsLeftover[label]" @input="setRecordValue(matsLeftover, label, $event)" /> -->
 </template>
