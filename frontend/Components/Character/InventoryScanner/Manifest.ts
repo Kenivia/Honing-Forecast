@@ -58,6 +58,7 @@ export const CURRENCY_LABELS = {
 type Opens = {
   id: number;
   title: string;
+  icon: string;
   kind: ChestKind;
   contents: [string, number, number | null][];
   // how each content is bound, where one is gold or bound more loosely than to a character
@@ -196,16 +197,17 @@ export const live = computed(() => {
 
   function group(
     key: string,
-    title: string,
+    chest: Opens,
     band: number,
     count: number,
     options: Bag[],
     obtain_all: boolean,
   ) {
+    const { title, icon } = chest;
     // an obtain-all and a select-one are never one stack
     add_stack(
       (stacks[key] ??= new Map()),
-      { title, band, count, options, obtain_all },
+      { title, band, count, options, obtain_all, icons: [icon] },
       `${obtain_all}|`,
     );
   }
@@ -220,7 +222,7 @@ export const live = computed(() => {
       const options = chest.contents.flatMap(([inner, each, id]) =>
         alternatives(inner, each, id),
       );
-      if (options.length) group(key, title, band, count, options, false);
+      if (options.length) group(key, chest, band, count, options, false);
       return;
     }
     // an obtain-all inside is part of this chest; any other chest inside is opened in turn
@@ -239,7 +241,7 @@ export const live = computed(() => {
     gather(chest, 1, band);
     // listed once for each band it gives into
     bags.forEach((bag, own) => {
-      if (Object.keys(bag).length) group(key, title, own, count, [bag], true);
+      if (Object.keys(bag).length) group(key, chest, own, count, [bag], true);
     });
   }
 

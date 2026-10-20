@@ -2,7 +2,8 @@
 import { computed } from "vue";
 import { BAND_COLORS } from "@/Utils/Constants";
 import { get_icon_path } from "@/Utils/Helpers";
-import type { Chest } from "@/Utils/Chest";
+import { amount_text, type Chest } from "@/Utils/Chest";
+import ChestIcon from "./ChestIcon.vue";
 
 // The chests still to be opened, as two lists. Which chest goes where is the page's to say. The
 // slot is the foot of the selection panel.
@@ -26,9 +27,6 @@ const panels = computed(() => [
     chests: props.obtain_all,
   },
 ]);
-
-const amount_text = (amount: number) =>
-  amount.toLocaleString("en-US", { maximumFractionDigits: 1 });
 </script>
 
 <template>
@@ -59,7 +57,7 @@ const amount_text = (amount: number) =>
           @change="emit('count', chest.key, $event)"
         />
         <span class="flex flex-col">
-          {{ chest.title }}
+          <ChestIcon :chest="chest" />
           <span
             class="annotation"
             :style="{ color: `var(${BAND_COLORS[chest.band]})` }"

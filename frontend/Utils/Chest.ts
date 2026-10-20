@@ -10,6 +10,8 @@ export interface Chest {
   band: number;
   count: number;
   options: Bag[];
+  // the art each chest of the stack is drawn with; none for one added by hand
+  icons?: string[];
 }
 
 // A stack as the scanner found it, with both tiers in it.
@@ -26,6 +28,9 @@ export function merge(bags: Bag[]): Bag {
   }
   return out;
 }
+
+export const amount_text = (amount: number) =>
+  amount.toLocaleString("en-US", { maximumFractionDigits: 1 });
 
 const SERCA_OF = Object.fromEntries(
   CONVERTIBLE_MATERIALS.map((mat) => [mat.from.label, mat]),
@@ -64,6 +69,7 @@ export function add_stack<T extends Chest>(
   const old = stacks.get(key);
   if (!old) return void stacks.set(key, { ...chest, key, options } as T);
   old.count += chest.count;
+  old.icons = [...new Set([...(old.icons ?? []), ...(chest.icons ?? [])])];
   if (!old.title.split(" / ").includes(chest.title))
     old.title += ` / ${chest.title}`;
 }
@@ -107,7 +113,13 @@ export function process_chests(chests: ManifestChest[], tier: number): Chest[] {
         ),
     );
     if (options.length)
-      add_stack(out, { title: chest.title, band, count: chest.count, options });
+      add_stack(out, {
+        title: chest.title,
+        band,
+        count: chest.count,
+        options,
+        icons: chest.icons,
+      });
   }
   return [...out.values()];
 }

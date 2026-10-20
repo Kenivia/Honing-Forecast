@@ -2,7 +2,8 @@
 import { computed } from "vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 import { get_icon_path } from "@/Utils/Helpers";
-import type { Chest } from "@/Utils/Chest";
+import { amount_text, type Chest } from "@/Utils/Chest";
+import ChestIcon from "@/Components/Common/ChestIcon.vue";
 
 // Provisional: how each chest stack is opened in what the histogram last evaluated, which is
 // the optimizer's latest state, the ones it reports while running included.
@@ -34,19 +35,25 @@ const rows = computed(() => {
       :key="row.chest.key"
       class="flex flex-wrap items-center gap-2 border-b border-(--border-very-muted) py-1"
     >
-      <span>{{ row.chest.title }} x{{ row.chest.count.toLocaleString() }}</span>
+      <ChestIcon :chest="row.chest" />
+      <span>x{{ row.chest.count.toLocaleString() }}</span>
       <template v-for="(option, index) in row.chest.options" :key="index">
         <span class="text-(--text-very-muted)">{{ index ? "," : ":" }}</span>
         <span class="flex items-center gap-1">
           {{ row.state[index].toLocaleString() }} as
-          <img
-            v-for="(_, label) in option"
+          <span
+            v-for="(amount, label) in option"
             :key="label"
-            :src="get_icon_path(label)"
-            class="generic-icon h-6 w-6"
-            :alt="label"
-            :title="label"
-          />
+            class="flex items-center gap-1"
+          >
+            <img
+              :src="get_icon_path(label)"
+              class="generic-icon h-6 w-6"
+              :alt="label"
+              :title="label"
+            />
+            x{{ amount_text(amount) }}
+          </span>
         </span>
       </template>
     </div>
