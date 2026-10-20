@@ -1,5 +1,5 @@
 // Bundles each *.test.ts with esbuild and runs it under node with a browser shim.
-// Frontend tests only; `pnpm test` runs the Rust side.
+// The node suites only (`pnpm test:node`); `pnpm test` runs every suite.
 import { build } from "esbuild";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";

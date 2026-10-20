@@ -19,6 +19,8 @@ export default mergeConfig(
       include: ["tests/unit/**/*.test.ts"],
       environment: "jsdom",
       setupFiles: ["tests/unit/setup.ts"],
+      // one jsdom per worker, still a fresh module graph per file
+      pool: "vmThreads",
     },
   }),
 );

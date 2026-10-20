@@ -42,10 +42,11 @@ outside the repo (an archived copy) needs `.cargo/config.toml` with it.
 | Command              | What it covers                                                           |
 | -------------------- | ------------------------------------------------------------------------ |
 | `pnpm check`         | `vue-tsc --noEmit`: the `.ts` layer **and** `.vue` template expressions. |
-| `pnpm test:frontend` | The node-side suites in `tests/`. See `tests/` below.                    |
+| `pnpm test`          | Every suite below in turn: Rust, node, Vitest, browser.                  |
+| `pnpm test:node`     | The node-side suites in `tests/`. See `tests/` below.                    |
 | `pnpm test:unit`     | Vitest unit and component tests in `tests/unit/`. See `tests/` below.   |
-| `pnpm e2e`           | Playwright browser tests.                                                |
-| `pnpm test`          | Rust unit tests for the core, and the arena's short checks.              |
+| `pnpm test:e2e`      | Playwright browser tests.                                                |
+| `pnpm test:rust`     | Rust unit tests for the core, and the arena's short checks.              |
 | `pnpm arena`         | The core's test harness. See `Calculator core/Arena.md`.                 |
 | `pnpm arena stress`  | The evaluator's probabilities against an exact convolution.              |
 | `pnpm scanner-suite` | The scanner over every recording and still, natively; compares two runs. |
@@ -69,7 +70,7 @@ type is intersected with `Record<string, unknown>`.
 
 ## tests/
 
-`pnpm test:frontend` bundles each `tests/*.test.ts` with esbuild and runs it under node
+`pnpm test:node` bundles each `tests/*.test.ts` with esbuild and runs it under node
 with `tests/shim.mjs` (localStorage, `self`, a stub `Worker`). `tests/helpers.ts` has
 `check` / `equal` / `done`; a suite exits non-zero if any check failed. `node tests/run.mjs
 <substring>` runs one suite.
@@ -81,7 +82,8 @@ with `tests/shim.mjs` (localStorage, `self`, a stub `Worker`). `tests/helpers.ts
 
 `pnpm test:unit` runs Vitest (`vitest.config.ts`, merged over `vite.config.ts`) with jsdom
 and `@vue/test-utils`, over `tests/unit/**/*.test.ts`, one folder per frontend module. Unlike
-the node suites it can mount `.vue` files. `tests/unit/setup.ts` stubs `Worker` and the
+the node suites it can mount `.vue` files. It runs in the `vmThreads` pool, one jsdom per worker rather than
+per file, which halves the run; each file still gets a fresh module graph. `tests/unit/setup.ts` stubs `Worker` and the
 `v-tooltip` directive and clears localStorage before each test; `tests/unit/mount.ts`
 mounts with a fresh pinia and a memory router carrying the app's route names. Outside the dev
 server plugin-vue turns `<img src="/x.png">` into an import; an alias in `vitest.config.ts` points

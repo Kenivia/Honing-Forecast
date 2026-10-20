@@ -21,7 +21,7 @@ Per-section instructions:
 | --- | --- | --- |
 | Playwright MCP | One-off debugging when the `pw-chrome` / `pw-firefox` tools are loaded. | tools named `browser_*` |
 | `pnpm browse` | One-off debugging without MCP tools (subagents, non-interactive runs), or anything needing a loop or timing. | `pnpm browse <script.mjs> [--firefox] [--headed] [--stub]`; `BASE_URL` in the environment points it at a dev server on another port |
-| `pnpm e2e` | Rigorous, repeatable checks in both browsers. | `pnpm e2e`, `pnpm e2e --project=firefox`, `pnpm e2e -g "name"` |
+| `pnpm test:e2e` | Rigorous, repeatable checks in both browsers. | `pnpm test:e2e`, `pnpm test:e2e --project=firefox`, `pnpm test:e2e -g "name"` |
 
 ### Playwright MCP
 
@@ -49,9 +49,9 @@ export default async ({ page, hf }) => {
 
 `page` is a Playwright page with the base URL set. `hf` is `e2e/helpers.ts`. `--stub` serves the saved market prices instead of live ones.
 
-### pnpm e2e
+### pnpm test:e2e
 
-Tests live in `e2e/*.spec.ts` and run in both browsers. The config starts `pnpm dev` itself, or reuses one already running. A failure leaves a trace in `test-results/`; open it with `pnpm exec playwright show-trace <trace.zip>`. `pnpm e2e:ui` opens the interactive runner for the user.
+Tests live in `e2e/*.spec.ts` and run in both browsers. The config starts `pnpm dev` itself, or reuses one already running. A failure leaves a trace in `test-results/`; open it with `pnpm exec playwright show-trace <trace.zip>`. `pnpm test:e2e:ui` opens the interactive runner for the user.
 
 Every test should start with `hf.watch_errors` and `hf.stub_market`, as `smoke.spec.ts` does.
 
