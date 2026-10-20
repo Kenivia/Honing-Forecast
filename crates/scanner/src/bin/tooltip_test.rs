@@ -58,14 +58,10 @@ fn main() {
     let mut spent = 0.0;
     let mut brightness = None;
     let mut skipped = 0;
-    // OCR_PX=n reads only so many px of strip a frame, as slow as the browser
-    let mut sim = native::Sim::new();
     loop {
         let more = stdin.read_exact(&mut pixels).is_ok();
         if more {
             // cropper(), with the tooltip step and all OCR timed on their own
-            let ready = sim.take_ready();
-            state.apply_ocr(ready);
             let scan = state.detect_21_9() && state.worth_scanning();
             skipped += !scan as usize;
             if scan {
@@ -106,11 +102,11 @@ fn main() {
             if scan {
                 state.update_tooltip();
             }
-            sim.step(&mut state, index as u64);
+            state.run_ocr_inline();
             spent += clock.elapsed().as_secs_f64() * 1000.0;
         } else {
             // what is still waiting is read before the last hover is printed
-            sim.finish(&mut state, index as u64);
+            native::read_rest(&mut state);
             state.hover = None;
         }
         let moved = match (&previous, &state.hover) {
@@ -149,7 +145,6 @@ fn main() {
         spent / index as f64,
         state.screen_info.brightness.value
     );
-    eprintln!("{}", sim.summary());
     println!("{} chests", state.chests.len());
     for chest in &state.chests {
         println!("  {}", describe_chest(chest));

@@ -4,9 +4,7 @@ import init, {
   cropper_wrapper,
   reserve_buffer_wrapper,
   take_timings,
-  take_capture,
   replay_wrapper,
-  replay_mismatch,
   ocr_init_wrapper,
   ocr_wrapper,
   recorder_buffer,
@@ -86,14 +84,14 @@ export function ocr_job_buffers(job: OcrJob) {
   ];
 }
 
-// a frame's pixels as the scanner worker forwarded them, with its time and edits
-function record({ pixels, time, edits }, memory: WebAssembly.Memory, timings) {
+// a frame's pixels as the scanner worker forwarded them
+function record({ pixels }, memory: WebAssembly.Memory, timings) {
   const pointer = recorder_buffer(pixels.length);
   const copy_start = performance.now();
   new Uint8Array(memory.buffer, pointer, pixels.length).set(pixels);
   timings.copy = performance.now() - copy_start;
   const record_start = performance.now();
-  const out = record_frame(time, edits);
+  const out = record_frame();
   timings.record = performance.now() - record_start;
   take_timings();
   return out;
@@ -128,15 +126,14 @@ self.addEventListener("message", async (ev) => {
     result = to_records(await histogram_wrapper(payload));
   } else if (wasm_op == WasmOp.Cropper) {
     // the main thread reads the frame and transfers it with the op
-    const { frame, replay, trace, forward, ...options } = payload;
+    const { frame, replay, forward, ...options } = payload;
 
     if (replay) {
-      // a capture's input record stands in for the frame; its trace, when given, for the texts
+      // a capture's input record stands in for the frame
       const call_start = performance.now();
-      result = replay_wrapper(replay, trace ?? undefined, options);
+      result = replay_wrapper(replay, options);
       timings.wasm_call = performance.now() - call_start;
       timings.rust = take_timings();
-      timings.replay_mismatch = replay_mismatch();
     } else
       try {
         const requiredSize = frame.allocationSize({ format: "RGBA" });
@@ -168,8 +165,6 @@ self.addEventListener("message", async (ev) => {
         result = await cropper_wrapper(options);
         timings.wasm_call = performance.now() - call_start;
         timings.rust = take_timings();
-        const capture = take_capture();
-        if (capture.length) result.capture = capture;
         if (pixels) result.pixels = pixels;
       } catch (err) {
         console.error("Error processing frame:", err);
@@ -206,7 +201,6 @@ self.addEventListener("message", async (ev) => {
     wasm_op == WasmOp.Cropper && result
       ? [
           ...result.ocr_jobs.flatMap(ocr_job_buffers),
-          ...(result.capture ? [result.capture.buffer] : []),
           ...(result.pixels ? [result.pixels.buffer] : []),
           ...result.slots.flatMap((slot) =>
             slot.image ? [slot.image.data.buffer] : [],

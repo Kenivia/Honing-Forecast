@@ -43,9 +43,10 @@ fn main() {
     state.screen_info.brightness = start.brightness;
 
     let mut looks: HashMap<String, HashMap<u64, Look>> = HashMap::new();
-    for (input, trace) in frames {
-        let index = state.replayed;
-        state.replay(input, Some(trace), vec![]);
+    for (index, input) in frames.into_iter().enumerate() {
+        let index = index as u64;
+        state.replay(input, vec![]);
+        state.run_ocr_inline();
         let scanned = state.scanned;
         state.clear_changed();
         let Some(brightness) = state.screen_info.brightness.value.filter(|_| scanned) else {

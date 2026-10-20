@@ -122,8 +122,6 @@ export interface ScanResult {
   forced_21_9: boolean | null;
   brightness: number | null;
   ocr_jobs: OcrJob[];
-  // this scan's record, while a debug capture is recorded
-  capture?: Uint8Array;
   // the frame scanned, RGBA, for the recorder worker while recording
   pixels?: Uint8Array;
 }

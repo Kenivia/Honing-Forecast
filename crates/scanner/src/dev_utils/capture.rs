@@ -1,18 +1,14 @@
-// A session recorded to be run again. A file is MAGIC, then records of [tag][payload length as
-// u32 LE][payload]: the start, then per frame the scanner was sent an input and a trace, then the
-// end. Start, input and trace payloads are msgpack with field names.
-// The input is what any build can be run on: the frame, lossless, its time and the edits. The trace
-// is what this build made of it, for running the same build again scan for scan.
+// A session recorded to be run again on any build. A file is MAGIC, then records of [tag][payload
+// length as u32 LE][payload]: the start, one input per frame the scanner was sent, then the end.
+// Start and input payloads are msgpack with field names.
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
-use std::hash::{DefaultHasher, Hash, Hasher};
 
-use crate::scanner_state::{Detected, ScannerState, SlotEdit};
+use crate::scanner_state::{Detected, ScannerState};
 
-pub const MAGIC: &[u8] = b"HFCAP004";
+pub const MAGIC: &[u8] = b"HFCAP005";
 pub const START: u8 = b'S';
 pub const INPUT: u8 = b'I';
-pub const TRACE: u8 = b'F';
 // how the session ended on the page, corrections included, as JSON
 pub const END: u8 = b'E';
 
@@ -24,39 +20,20 @@ pub struct Start {
     // as the user gave them: what is detected is detected again on replay
     pub forced_21_9: Detected<bool>,
     pub brightness: Detected<f64>,
-    pub build: Build,
-}
-
-// which build recorded it: a trace is only good for the same wasm
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct Build {
+    // the git commit that recorded it
     pub commit: String,
-    pub wasm: String,
 }
 
 // A frame the scanner was sent: the XOR with the one before it, RGBA, LZ4, nothing when the two
-// are the same. Its timestamp in microseconds, and the edits the scan of it took in.
+// are the same.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Input {
     pub delta: Option<ByteBuf>,
-    pub time: f64,
-    pub edits: Vec<SlotEdit>,
-}
-
-// what the scan of a frame took from elsewhere, and the state it left
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Trace {
-    pub ocr_results: Vec<(u32, String)>,
-    // where the time budget cut the look at the slots, the one thing a scan takes from the clock
-    pub slot_cut: Option<usize>,
-    // of the state after the scan, see digest
-    pub digest: u64,
 }
 
 pub enum Record {
     Start(Start),
     Input(Input),
-    Trace(Trace),
     End(String),
 }
 
@@ -79,7 +56,7 @@ impl InputRecorder {
     }
 
     // the frame just copied in, as a record
-    pub fn record(&mut self, time: f64, edits: Vec<SlotEdit>) -> Vec<u8> {
+    pub fn record(&mut self) -> Vec<u8> {
         let [a, b] = &self.frames;
         let (new, old) = if self.current == 0 { (a, b) } else { (b, a) };
         let mut changed = 0;
@@ -90,7 +67,7 @@ impl InputRecorder {
         self.current ^= 1;
         let delta =
             (changed != 0).then(|| ByteBuf::from(lz4_flex::compress_prepend_size(&self.delta)));
-        record(INPUT, &Input { delta, time, edits })
+        record(INPUT, &Input { delta })
     }
 }
 
@@ -128,23 +105,21 @@ pub fn read_records(file: &[u8]) -> impl Iterator<Item = Record> + '_ {
         Some(match tag {
             START => Record::Start(parse(payload)),
             INPUT => Record::Input(parse(payload)),
-            TRACE => Record::Trace(parse(payload)),
             _ => Record::End(String::from_utf8_lossy(payload).into_owned()),
         })
     })
 }
 
-// a file's frames, each with its trace
-pub fn read_frames(file: &[u8]) -> (Start, Vec<(Input, Trace)>, Option<String>) {
+// a file's start, frames and end
+pub fn read_frames(file: &[u8]) -> (Start, Vec<Input>, Option<String>) {
     let mut records = read_records(file);
     let Some(Record::Start(start)) = records.next() else {
         panic!("no start record")
     };
-    let (mut frames, mut input, mut end) = (vec![], None, None);
+    let (mut frames, mut end) = (vec![], None);
     for record in records {
         match record {
-            Record::Input(x) => input = Some(x),
-            Record::Trace(x) => frames.push((input.take().unwrap(), x)),
+            Record::Input(x) => frames.push(x),
             Record::End(x) => end = Some(x),
             Record::Start(_) => panic!("a second start record"),
         }
@@ -153,78 +128,13 @@ pub fn read_frames(file: &[u8]) -> (Start, Vec<(Input, Trace)>, Option<String>) 
 }
 
 impl ScannerState {
-    // What a scan left behind, to tell that a replay went the same way: every slot as the page
-    // gets it, the hover, the pages, the chests, the currencies and the lines sent to be read. Scores are left
-    // out, they may differ in their last digits between wasm and native.
-    pub fn digest(&self) -> u64 {
-        let result = self.result(false);
-        let mut slots: Vec<String> = result
-            .slots
-            .iter()
-            .map(|x| {
-                let icon = x.icon_name_score.as_ref().map(|x| &x.0);
-                format!(
-                    "{:?}",
-                    (
-                        x.address,
-                        icon,
-                        x.alternatives,
-                        x.amount,
-                        x.tooltip_amount,
-                        x.tradability,
-                        x.label
-                    )
-                ) + &format!("{:?}", (x.status, &x.reason, x.value, &x.variants))
-            })
-            .collect();
-        slots.sort();
-        let mut pages: Vec<String> = result.pages.iter().map(|x| format!("{x:?}")).collect();
-        pages.sort();
-        let hover = result
-            .hover
-            .map(|x| (x.last_read_title, x.title, x.amount, x.tradability));
-        let jobs: Vec<u32> = result.ocr_jobs.iter().map(|x| x.id).collect();
-        let mut hasher = DefaultHasher::new();
-        let currencies = format!("{:?}", result.currencies);
-        format!(
-            "{:?}",
-            (slots, pages, hover, &self.chests, jobs, currencies)
-        )
-        .hash(&mut hasher);
-        hasher.finish()
-    }
-
-    // the scan that just ran, as a record
-    pub fn record_scan(&self, ocr_results: Vec<(u32, String)>) -> Vec<u8> {
-        let trace = Trace {
-            ocr_results,
-            slot_cut: self.slot_cut,
-            digest: self.digest(),
-        };
-        record(TRACE, &trace)
-    }
-
-    // A recorded frame again. With its trace the scan goes as it did, and is checked against it;
-    // without, the texts are the caller's and the time budget is the clock's. The buffer has to
-    // be the state's alone and start out as zeros: it holds the frame before between calls.
-    pub fn replay(&mut self, input: Input, trace: Option<Trace>, ocr_results: Vec<(u32, String)>) {
-        self.apply_edits(input.edits.clone());
+    // A recorded frame again, with the texts back since the last one. Every slot is read at
+    // once, so that a run repeats. The buffer has to be the state's alone and start out as
+    // zeros: it holds the frame before between calls.
+    pub fn replay(&mut self, input: Input, ocr_results: Vec<(u32, String)>) {
         input.apply(self.buffer.data_mut());
-        match trace {
-            Some(trace) => {
-                self.apply_ocr(trace.ocr_results);
-                self.replay_cut = Some(trace.slot_cut);
-                self.cropper();
-                if self.digest() != trace.digest && self.replay_mismatch.is_none() {
-                    self.replay_mismatch = Some(self.replayed);
-                }
-            }
-            None => {
-                self.apply_ocr(ocr_results);
-                self.replay_cut = None;
-                self.cropper();
-            }
-        }
-        self.replayed += 1;
+        self.no_slot_budget = true;
+        self.apply_ocr(ocr_results);
+        self.cropper();
     }
 }

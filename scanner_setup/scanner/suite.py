@@ -1,7 +1,7 @@
 """
 The scanner's native suite: tooltip_test over every recording in ignored/recordings and over the
-stills folders, and capture_replay over every debug capture (.hfcap) there, its lines read again
-and the user's edits left out. Needs opencv. Runs are kept by name in target/scanner-suite/.
+stills folders, and capture_replay over every debug capture (.hfcap) there. Needs opencv. Runs
+are kept by name in target/scanner-suite/.
 
     python scanner_setup/scanner/suite.py run <name> [--seq]   about 5 minutes
     python scanner_setup/scanner/suite.py cmp <a> <b>          what differs between two runs
@@ -69,7 +69,7 @@ def run(name, seq):
             job.wait()
     for path in sorted(RECORDINGS.glob("*.hfcap")):
         capture = path.relative_to(ROOT).as_posix()
-        jobs.append(start([str(REPLAY), capture, "--reread", "--no-edits"], f"cap-{slug(path.stem)}"))
+        jobs.append(start([str(REPLAY), capture], f"cap-{slug(path.stem)}"))
     for folder in STILL_FOLDERS:
         # relative, as the harness prints each still's path
         images = sorted(x.relative_to(ROOT).as_posix() for x in (STILLS / folder).glob("*.png"))

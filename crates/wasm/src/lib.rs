@@ -67,7 +67,6 @@ pub fn histogram_wrapper(input_payload: JsValue) -> JsValue {
 // It lives and dies with the worker's wasm instance.
 thread_local! {
     static SCANNER: RefCell<Option<ScannerState>> = const { RefCell::new(None) };
-    static CAPTURED: RefCell<Vec<u8>> = const { RefCell::new(Vec::new()) };
 }
 
 #[derive(Deserialize)]
@@ -78,12 +77,6 @@ struct CropperOptions {
     // what the user changed by hand since the last scan
     #[serde(default)]
     edits: Vec<SlotEdit>,
-    // write the scan's trace, see capture.rs
-    #[serde(default)]
-    record: bool,
-    // read every slot at once, so that a re-run repeats
-    #[serde(default)]
-    no_budget: bool,
 }
 
 #[wasm_bindgen]
@@ -93,16 +86,12 @@ pub fn cropper_wrapper(options: JsValue) -> JsValue {
     let options: CropperOptions = from_value(options).unwrap();
     SCANNER.with_borrow_mut(|state| {
         let state = state.as_mut().unwrap();
-        let ocr_results = options.record.then(|| options.ocr_results.clone());
         state.apply_edits(options.edits);
         timed("apply_ocr", || state.apply_ocr(options.ocr_results));
         state.cropper();
         let out = timed("to_value", || {
             to_value(&state.result(options.full)).unwrap()
         });
-        if let Some(ocr_results) = ocr_results {
-            CAPTURED.set(timed("capture", || state.record_scan(ocr_results)));
-        }
         state.clear_changed();
         out
     })
@@ -119,47 +108,28 @@ pub fn recorder_buffer(size: usize) -> usize {
     RECORDER.with_borrow_mut(|x| x.buffer(size).as_mut_ptr() as usize)
 }
 
-// the frame copied in, with its timestamp and the edits its scan took in
+// the frame copied in, as a record
 #[wasm_bindgen]
-pub fn record_frame(time: f64, edits: JsValue) -> Vec<u8> {
-    let edits: Vec<SlotEdit> = from_value(edits).unwrap();
-    RECORDER.with_borrow_mut(|x| timed("record", || x.record(time, edits)))
+pub fn record_frame() -> Vec<u8> {
+    RECORDER.with_borrow_mut(|x| timed("record", || x.record()))
 }
 
-// the record of the last scan, empty when it was not recorded
+// A recorded frame run again in place of a live one: an input record's payload.
 #[wasm_bindgen]
-pub fn take_capture() -> Vec<u8> {
-    CAPTURED.take()
-}
-
-// A recorded frame run again in place of a live one: an input record's payload, and its trace's
-// to run as recorded. Without the trace the texts are this run's own.
-#[wasm_bindgen]
-pub fn replay_wrapper(input: &[u8], trace: Option<Vec<u8>>, options: JsValue) -> JsValue {
+pub fn replay_wrapper(input: &[u8], options: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
     let input = parse(input);
-    let trace = trace.map(|x| parse(&x));
     let CropperOptions {
-        full,
-        ocr_results,
-        no_budget,
-        ..
+        full, ocr_results, ..
     } = from_value(options).unwrap();
     SCANNER.with_borrow_mut(|state| {
         let state = state.as_mut().unwrap();
-        state.no_slot_budget = no_budget;
-        state.replay(input, trace, ocr_results);
+        state.replay(input, ocr_results);
         let out = to_value(&state.result(full)).unwrap();
         state.clear_changed();
         out
     })
-}
-
-// the first replayed scan that did not end as recorded
-#[wasm_bindgen]
-pub fn replay_mismatch() -> Option<f64> {
-    SCANNER.with_borrow(|state| state.as_ref().unwrap().replay_mismatch.map(|x| x as f64))
 }
 
 // stage timings of the calls since the last take, as [name, total, calls]

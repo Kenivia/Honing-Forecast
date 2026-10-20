@@ -25,9 +25,7 @@ import {
 import { until, useIntervalFn } from "@vueuse/core";
 import { getModel, getScannerConfig, ScanResult } from "./LoadStorage";
 import {
-  add_trace,
   begin_capture_file,
-  build_stamp,
   CaptureStart,
   CAPTURE_EXTENSION,
   captured_bytes,
@@ -56,24 +54,20 @@ const source = runtime.frame_source;
 
 const error = ref<string | null>(null);
 
-// A capture file being run again in place of a stream, see Capture.ts. A re-run (the default)
-// scans it as this build does, OCR and all, each frame waiting until no line is out for OCR and
-// the slots without a time budget, so a text is back one scan after it was sent and runs repeat,
-// like capture_replay --reread. An exact replay follows the recorded texts and budget cuts and is
-// checked against the trace, which only holds on the build that recorded it.
+// A capture file being run again in place of a stream, see Capture.ts. It is scanned as this
+// build does, OCR and all, each frame waiting until no line is out for OCR and the slots without a
+// time budget, so a text is back one scan after it was sent and runs repeat, like capture_replay.
 let replay:
   | (CaptureStart & {
       file: File;
       first: number;
       offset: number;
-      exact: boolean;
       // scans of the last frame repeated while the last texts come in
       waits: number;
     })
   | null = null;
 const replaying = ref(false);
 const replay_note = ref("");
-const exact_replay = ref(false);
 
 // Edited here and applied with a restart, since everything scanned depends on them.
 const copy_settings = () => structuredClone(toRaw(scan_settings));
@@ -184,7 +178,6 @@ async function start_replay(file: File) {
     file,
     first,
     offset: first,
-    exact: exact_replay.value,
     waits: 0,
     ...start,
   };
@@ -246,14 +239,8 @@ async function start_scanner() {
   };
   if (recording.value && !replay)
     begin_capture_file({ width, height, ...copy_settings() });
-  if (replay?.exact) {
-    const build = await build_stamp();
-    if (replay.build.wasm !== build.wasm)
-      replay_note.value = `Recorded on another build (${replay.build.commit}), so an exact replay will differ. Re-run it instead.`;
-  }
-  // The model only goes to the OCR workers, the templates to them too. An exact replay has its
-  // texts.
-  if (!replay?.exact) start_ocr(toRaw(model), toRaw(config));
+  // the model only goes to the OCR workers, the templates to them too
+  start_ocr(toRaw(model), toRaw(config));
   bundle.value.debounced_start(
     WasmOp.Reserve,
     new_scanner_state,
@@ -334,22 +321,19 @@ async function cropper_loop(id: number, full = false) {
   sent_at.push(performance.now());
   // one result per op, a late reply from an earlier op must not fork the loop
   let done = false;
-  const edits = take_edits();
   bundle.value.debounced_start(
     WasmOp.Cropper,
     {
       frame,
       full,
       ocr_results: take_ocr_results(),
-      edits,
-      record: recording.value,
+      edits: take_edits(),
       forward: recording.value,
     },
     (result: ScanResult, timings) => {
       // the scanner waits for these texts whether or not this reply is used
       queue_ocr(result.ocr_jobs);
-      if (result.capture) add_trace(result.capture);
-      if (result.pixels) record_input(result.pixels, frame_time, edits);
+      if (result.pixels) record_input(result.pixels);
       if (done || id !== loop_id || result.full !== full) return;
       done = true;
       const result_start = performance.now();
@@ -377,19 +361,15 @@ async function cropper_loop(id: number, full = false) {
 const REPLAY_WAITS = 60;
 const ocr_done = () => until(ocr_pending).toBe(0);
 
-// The scan loop over a capture file: each frame's input goes in, with its trace when exact.
+// The scan loop over a capture file: each frame's input goes in once its texts are back.
 async function replay_loop(id: number, full: boolean) {
   const input = await read_record(replay.file, replay.offset);
   if (id !== loop_id) return;
   if (input?.tag !== "I") return end_replay(id, full, input);
-  const trace = await read_record(replay.file, input.next);
-  if (id !== loop_id) return;
-  replay.offset = trace.next;
-  if (replay.exact)
-    return replay_scan(id, full, input.payload, trace.payload, []);
+  replay.offset = input.next;
   await ocr_done();
   if (id !== loop_id) return;
-  replay_scan(id, full, input.payload, null, take_ocr_results());
+  replay_scan(id, full, input.payload, take_ocr_results());
 }
 
 // Past the last frame. A re-run scans it again until the texts it waits for are in.
@@ -398,20 +378,18 @@ async function end_replay(
   full: boolean,
   end: { tag: string; payload: Uint8Array } | null,
 ) {
-  if (!replay.exact && replay.waits < REPLAY_WAITS) {
+  if (replay.waits < REPLAY_WAITS) {
     await ocr_done();
     if (id !== loop_id) return;
     const texts = take_ocr_results();
     if (texts.length || replay.waits === 0) {
       replay.waits++;
       // the buffer is moved to the worker, so the constant is not sent itself
-      return replay_scan(id, full, SAME_FRAME.slice(), null, texts);
+      return replay_scan(id, full, SAME_FRAME.slice(), texts);
     }
   }
   cropper_running.value = false;
-  replay_note.value ||= replay.exact
-    ? "Replay finished, every scan ended as recorded."
-    : "Replay finished, re-run on this build.";
+  replay_note.value = "Replay finished, re-run on this build.";
   // how the recorded session ended on the page
   if (end?.tag === "E") {
     (globalThis as any).__capture_reference = JSON.parse(
@@ -424,26 +402,16 @@ function replay_scan(
   id: number,
   full: boolean,
   input: Uint8Array,
-  trace: Uint8Array | null,
   ocr_results: [number, string][],
 ) {
   let done = false;
   bundle.value.debounced_start(
     WasmOp.Cropper,
-    {
-      replay: input,
-      trace,
-      full,
-      ocr_results,
-      no_budget: !trace,
-    },
-    (result: ScanResult, timings) => {
-      if (!trace) queue_ocr(result.ocr_jobs);
+    { replay: input, full, ocr_results },
+    (result: ScanResult) => {
+      queue_ocr(result.ocr_jobs);
       if (done || id !== loop_id || result.full !== full) return;
       done = true;
-      if (timings.replay_mismatch != null) {
-        replay_note.value = `Replay differs from the recording, first at scan ${timings.replay_mismatch}.`;
-      }
       cropper_loop(id);
       note_detected(result);
       props.process_result(result);
@@ -583,10 +551,6 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
           class="hidden"
           @change="start_upload"
         />
-      </label>
-      <label v-if="DEV" class="flex w-fit items-center gap-1 text-sm">
-        <input v-model="exact_replay" type="checkbox" />
-        Exact replay
       </label>
       <button
         class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"

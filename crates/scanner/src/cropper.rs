@@ -5,7 +5,6 @@ impl ScannerState {
         assert!(self.buffer.pointer.is_some());
         assert!(BASE_ICONS.read().len() != 0);
 
-        self.slot_cut = None;
         // nothing can be placed until the aspect is known
         self.scanned = self.detect_21_9() && timed("changed", || self.worth_scanning());
         if !self.scanned {

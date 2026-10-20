@@ -303,15 +303,8 @@ pub struct ScannerState {
 
     pub resizer: Option<Resizer>,
 
-    // See capture.rs. Whether the last frame was scanned, and after how many slots the budget cut
-    // its look.
+    // whether the last frame was scanned
     pub scanned: bool,
-    pub slot_cut: Option<usize>,
-    // While one is replayed: the recorded cut, followed in place of the clock, the scans so far
-    // and the first whose digest differed.
-    pub replay_cut: Option<Option<usize>>,
-    pub replayed: u64,
-    pub replay_mismatch: Option<u64>,
     // debug only: every hover as it ended, once its last texts were in
     pub hover_log: Option<Vec<Hover>>,
 }

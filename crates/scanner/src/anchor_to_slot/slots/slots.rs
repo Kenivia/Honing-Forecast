@@ -96,7 +96,7 @@ impl ScannerState {
             return;
         }
         let active_page_nums = self.active_page_num();
-        let (start, mut spent, mut matched) = (now(), 0.0, 0);
+        let (start, mut spent) = (now(), 0.0);
         self.slots_left = false;
         for slot_address in SLOT_ORDER.iter() {
             if active_page_nums[&slot_address.inventory_type] != Some(slot_address.page_num)
@@ -140,17 +140,10 @@ impl ScannerState {
                 }
             };
             if !unchanged {
-                // a replay stops where the recording did, whatever the clock says
-                let over = match self.replay_cut {
-                    Some(cut) => cut.is_some_and(|cut| matched >= cut),
-                    None => spent > SLOT_BUDGET && !self.no_slot_budget,
-                };
-                if over {
-                    self.slot_cut.get_or_insert(matched);
+                if spent > SLOT_BUDGET && !self.no_slot_budget {
                     self.slots_left = true;
                     continue;
                 }
-                matched += 1;
                 let (matched, observed_number, observed_icon) = timed("slots/all_icons", || {
                     self.check_through_all_icons(position, seen)
                 });
