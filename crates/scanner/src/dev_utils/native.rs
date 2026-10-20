@@ -164,8 +164,8 @@ pub fn read_rest(state: &mut ScannerState) {
 // The slots set by hand in a capture's end record, the only right answers it has, against what
 // the scanner read there. A slot is right when it is in order (Good, or only its tradability
 // missing, which the page may assume) with the icon, amount and tradability that were set; no
-// amount set is a single item, no tradability set is not checked. Prints each slot and returns
-// how many were right, of how many.
+// amount set is a single item, no tradability set is not checked. A slot set with no item is right
+// when it is irrelevant. Prints each slot and returns how many were right, of how many.
 pub fn check_edits(state: &ScannerState, end: &str) -> (usize, usize) {
     use crate::interface::scan_result::SlotStatus;
     let end: serde_json::Value = serde_json::from_str(end).unwrap();
@@ -193,10 +193,15 @@ pub fn check_edits(state: &ScannerState, end: &str) -> (usize, usize) {
             || slot.alternatives.iter().any(|x| Some(x.as_str()) == item)
             || slot.label.as_deref() == item;
         let read_tradability = slot.tradability.map(|x| format!("{x:?}"));
-        let ok = is_item
-            && slot.value == Some(amount)
-            && (tradability.is_none() || read_tradability.as_deref() == tradability)
-            && matches!(slot.status, SlotStatus::Good | SlotStatus::NeedTradability);
+        let ok = match item {
+            None => matches!(slot.status, SlotStatus::Irrelevant),
+            Some(_) => {
+                is_item
+                    && slot.value == Some(amount)
+                    && (tradability.is_none() || read_tradability.as_deref() == tradability)
+                    && matches!(slot.status, SlotStatus::Good | SlotStatus::NeedTradability)
+            }
+        };
         right += ok as usize;
         println!(
             "  {key}: {} set {set}, read {} x{:?} {:?} {:?} {}",

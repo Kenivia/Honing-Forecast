@@ -4,6 +4,9 @@
 //   cargo run --release --bin capture_edit -- <file.hfcap> list
 //   cargo run --release --bin capture_edit -- <file.hfcap> set "Roster 0 5,1" amount=13 tradability=RosterBound [item=use_11_213@relic]
 //   cargo run --release --bin capture_edit -- <file.hfcap> remove "Roster 0 5,1"
+//   cargo run --release --bin capture_edit -- <file.hfcap> accept
+// accept sets every slot to what the page showed, for a capture whose reading was all checked by
+// hand; an irrelevant slot's edit has no item.
 // A slot is named as the page's edits name it. The item defaults to the icon the page showed in
 // that slot; tradability is Tradable, RosterBound or CharBound.
 use hf_scanner::dev_utils::capture::{END, MAGIC};
@@ -83,11 +86,38 @@ fn main() {
             println!("{key}: {edit}");
             end["edits"][key.as_str()] = edit;
         }
+        // every slot as the page showed it, once that was checked by hand
+        "accept" => {
+            for slot in end["slots"].as_array().unwrap().clone() {
+                let a = &slot["address"];
+                let key = format!(
+                    "{} {} {},{}",
+                    a["inventory_type"].as_str().unwrap(),
+                    a["page_num"],
+                    a["pos_in_inv"][0],
+                    a["pos_in_inv"][1]
+                );
+                let edit = match slot["status"].as_str().unwrap() {
+                    "Irrelevant" => {
+                        json!({"address": a, "item": null, "amount": null, "tradability": null})
+                    }
+                    "Good" => json!({
+                        "address": a,
+                        "item": if slot["label"].is_string() { &slot["label"] } else { &slot["icon_name_score"][0] },
+                        "amount": slot["value"],
+                        "tradability": slot["tradability"],
+                    }),
+                    status => panic!("{key} is {status}, resolve it first"),
+                };
+                end["edits"][key.as_str()] = edit;
+            }
+            println!("{} edits", end["edits"].as_object().unwrap().len());
+        }
         "remove" => {
             let removed = end["edits"].as_object_mut().unwrap().remove(&args[2]);
             assert!(removed.is_some(), "no edit for {}", args[2]);
         }
-        _ => panic!("list, set or remove"),
+        _ => panic!("list, set, remove or accept"),
     }
 
     let payload = serde_json::to_vec(&end).unwrap();

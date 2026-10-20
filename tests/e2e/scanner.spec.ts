@@ -600,14 +600,42 @@ test("a scan moved to another character mid-capture reads the same", async ({
   expect(unordered(await live_pages(page))).toEqual(unordered(straight));
 });
 
-// a native 3440x1440 game, roster storage hovered
-const ULTRAWIDE = new URL(
-  "honing-forecast-2026-10-19T16-29-47-201Z.hfcap",
-  RECORDINGS,
-);
+// Captures whose slots were all set by hand in the end record (capture_edit), and the pages each
+// must read.
+const CHECKED = [
+  {
+    // a native 3440x1440 game, roster storage hovered
+    name: "a native ultrawide capture",
+    file: "2026-10-19T16-29-47-201Z",
+    pages: [
+      "CharCurrency 0",
+      "CharInventory 0",
+      "CharStorage 0",
+      "Currency 0",
+      "Roster 0",
+    ],
+  },
+  {
+    // 1080p, roster storage page 2, every slot checked by hand
+    name: "a 1080p capture",
+    file: "2026-10-20T11-43-25-861Z",
+    pages: [
+      "CharCurrency 0",
+      "CharCurrency 1",
+      "CharCurrency 2",
+      "CharInventory 0",
+      "CharStorage 0",
+      "Currency 0",
+      "Currency 1",
+      "Currency 2",
+      "Roster 1",
+    ],
+  },
+];
 
-// The slots set by hand in the capture's end record (capture_edit), the only right answers it
-// has, that the replay read otherwise, as the native capture_replay --check holds them.
+// The slots set by hand in the capture's end record, the only right answers it has, that the
+// replay read otherwise, as the native capture_replay --check holds them. A slot set with no item
+// has to read as irrelevant.
 async function wrong_edits(page: Page): Promise<string[]> {
   return page.evaluate(async () => {
     const url = performance
@@ -621,13 +649,18 @@ async function wrong_edits(page: Page): Promise<string[]> {
       const slot = slots.value.get(key);
       const amount = edit.amount ?? 1;
       const right =
-        slot &&
-        [slot.icon_name_score?.[0], ...slot.alternatives, slot.label].includes(
-          edit.item,
-        ) &&
-        slot.value === amount &&
-        (edit.tradability == null || slot.tradability === edit.tradability) &&
-        ["Good", "NeedTradability"].includes(slot.status);
+        edit.item == null
+          ? slot?.status === "Irrelevant"
+          : slot &&
+            [
+              slot.icon_name_score?.[0],
+              ...slot.alternatives,
+              slot.label,
+            ].includes(edit.item) &&
+            slot.value === amount &&
+            (edit.tradability == null ||
+              slot.tradability === edit.tradability) &&
+            ["Good", "NeedTradability"].includes(slot.status);
       return right
         ? []
         : [
@@ -637,31 +670,28 @@ async function wrong_edits(page: Page): Promise<string[]> {
   });
 }
 
-test("a native ultrawide capture reads its hand-set slots right", async ({
-  page,
-  browserName,
-}) => {
-  test.skip(
-    !fs.existsSync(ULTRAWIDE) || browserName !== "chromium",
-    "local recordings, replayed in one browser",
-  );
-  test.setTimeout(900_000);
-  await replay(page, "Newchar", ULTRAWIDE);
-  const read = await page.evaluate(async () => {
-    const url = performance
-      .getEntriesByType("resource")
-      .map((entry) => entry.name)
-      .filter((name) => name.includes("InventoryScanner/Manifest.ts"))
-      .pop();
-    const { manifest } = await import(url);
-    return manifest.value.read.map((one) => `${one.window} ${one.page}`);
+for (const checked of CHECKED) {
+  const capture = new URL(`honing-forecast-${checked.file}.hfcap`, RECORDINGS);
+  test(`${checked.name} reads its hand-set slots right`, async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      !fs.existsSync(capture) || browserName !== "chromium",
+      "local recordings, replayed in one browser",
+    );
+    test.setTimeout(900_000);
+    await replay(page, "Newchar", capture);
+    const read = await page.evaluate(async () => {
+      const url = performance
+        .getEntriesByType("resource")
+        .map((entry) => entry.name)
+        .filter((name) => name.includes("InventoryScanner/Manifest.ts"))
+        .pop();
+      const { manifest } = await import(url);
+      return manifest.value.read.map((one) => `${one.window} ${one.page}`);
+    });
+    expect(read.sort()).toEqual(checked.pages);
+    expect(await wrong_edits(page)).toEqual([]);
   });
-  expect(read.sort()).toEqual([
-    "CharCurrency 0",
-    "CharInventory 0",
-    "CharStorage 0",
-    "Currency 0",
-    "Roster 0",
-  ]);
-  expect(await wrong_edits(page)).toEqual([]);
-});
+}
