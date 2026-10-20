@@ -8,7 +8,7 @@ import RosterView from "@/Components/RosterView.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog";
 import ChangeLogsView from "@/Components/ChangeLogsView.vue";
-import SnapshotsView from "@/Components/SnapshotsView.vue";
+import Income from "@/Components/Character/Income/Income.vue";
 import { guard_switch } from "@/Components/Character/InventoryScanner/ScanSwitch";
 
 const router = createRouter({
@@ -32,11 +32,6 @@ const router = createRouter({
       path: "/roster-setup",
       name: "roster",
       component: RosterView,
-    },
-    {
-      path: "/snapshots",
-      name: "snapshots",
-      component: SnapshotsView,
     },
     {
       path: "/change-logs",
@@ -90,6 +85,7 @@ const router = createRouter({
         { path: "calc", name: "calc", component: Calc },
         { path: "guide", name: "char-guide", component: Guide },
         { path: "scanner", name: "char-scanner", component: Scanner },
+        { path: "income", name: "char-income", component: Income },
         {
           path: ":x/guide",
           redirect: (c) => `/${c.params.characterName}/guide`,

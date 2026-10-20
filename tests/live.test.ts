@@ -11,6 +11,7 @@ import {
   bundle_key,
   CONVERTIBLE_MATERIALS,
   effective_unit_prices,
+  linked_labels,
   MATERIALS,
   SHARED_LABELS,
   SPECIAL_LEAP_LABELS,
@@ -103,7 +104,11 @@ function compare_merged(
     if (got[label] !== want.values[label]) {
       bad.push(`${label}: ${got[label]} != ${want.values[label]}`);
     }
-    if (new_col.enabled[label] !== want.enabled[label]) {
+    // a material and its other tier share the tick
+    const want_enabled = !linked_labels(label).some(
+      (linked) => want.enabled[linked] === false,
+    );
+    if (new_col.enabled[label] !== want_enabled) {
       bad_en.push(label);
     }
   }

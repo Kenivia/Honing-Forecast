@@ -9,7 +9,7 @@ import {
   seen_pages,
   slots,
 } from "./ScanStore";
-import { convert, manifest } from "./Manifest";
+import { manifest } from "./Manifest";
 import { Detected, scan_settings } from "./ScanSettings";
 import {
   create_worker_bundle,
@@ -120,7 +120,6 @@ function reference() {
     assume_roster_tradable: assume_roster_tradable.value,
     assume_char_bound: assume_char_bound.value,
     seen_pages: seen_pages.value,
-    convert: convert.value,
     manifest: manifest.value,
   };
 }

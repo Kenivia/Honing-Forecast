@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cssVar, get_icon_path, locale_to_fixed } from "@/Utils/Helpers";
 import { get_modified_cell, InputColumn } from "@/Utils/InputColumn";
+import { linked_labels } from "@/Utils/Constants";
 
 import { computed, ref, watch } from "vue";
 
@@ -51,6 +52,12 @@ const source_value = () =>
 
 const this_data = ref(source_value());
 
+function toggle_enabled(enabled: boolean) {
+  for (const label of linked_labels(props.label))
+    if (label in as_column().enabled) as_column().enabled[label] = enabled;
+  props.callback?.();
+}
+
 watch(source_value, (val) => {
   this_data.value = val;
 });
@@ -68,9 +75,9 @@ watch(source_value, (val) => {
     <input
       v-if="!hide_tick && show_label && 'values' in input_column"
       type="checkbox"
-      v-model="(input_column as InputColumn).enabled[label]"
+      :checked="(input_column as InputColumn).enabled[label]"
       :aria-label="`${aria_name} enabled`"
-      @change="callback"
+      @change="toggle_enabled(($event.target as HTMLInputElement).checked)"
     />
     <label
       v-if="show_label"

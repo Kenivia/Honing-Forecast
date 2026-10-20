@@ -1,5 +1,11 @@
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { ALL_LABELS, NUM_BASE_MATS } from "@/Utils/Constants";
+import {
+  ALL_LABELS,
+  MATERIALS,
+  NUM_BASE_MATS,
+  SPECIAL_LEAP_LABELS,
+} from "@/Utils/Constants";
+import { merge_lower_tier } from "@/WasmInterface/PayloadBuilder";
 import { input_column_to_num, InputColumn } from "@/Utils/InputColumn";
 import { Upgrade, UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
@@ -126,24 +132,100 @@ export function compute_remaininig_materials(
   const bound_owned = input_column_to_num(previous_budgets.bound_budgets);
   const roster_owned = input_column_to_num(previous_budgets.roster_mats);
   const tradable_owned = input_column_to_num(previous_budgets.tradable_mats);
+  const enabled = previous_budgets.bound_budgets.enabled;
   const cost = used_materials;
 
   const bound_budgets: Record<string, number> = {};
   const roster_mats: Record<string, number> = {};
   const tradable_mats: Record<string, number> = {};
   for (const label of ALL_LABELS[tier]) {
-    // spend bound first, then roster-bound, then tradable
-    let remaining_cost = Math.max(0, cost[label] ?? 0);
-    const spend = (owned: number) => {
-      const deduct = Math.min(owned, remaining_cost);
-      remaining_cost -= deduct;
-      return Math.max(0, owned - deduct);
-    };
-    bound_budgets[label] = spend(bound_owned[label]);
-    roster_mats[label] = spend(roster_owned[label]);
-    tradable_mats[label] = spend(tradable_owned[label]);
+    // the lower-tier source Rust counted in the same bands (merge_lower_tier)
+    const from = MATERIALS[label].from;
+    const source =
+      from && enabled[label] !== false && enabled[from.label] !== false
+        ? from
+        : null;
+    const ratio = source?.ratio ?? 1;
+    // bound, then roster-bound (tradable T4 converts roster-bound), then tradable
+    let band = spend_band(
+      bound_owned[label],
+      source ? [bound_owned[source.label]] : [],
+      ratio,
+      Math.max(0, cost[label] ?? 0),
+    );
+    bound_budgets[label] = band.own;
+    if (source) [bound_budgets[source.label]] = band.sources;
+    band = spend_band(
+      roster_owned[label],
+      source ? [roster_owned[source.label], tradable_owned[source.label]] : [],
+      ratio,
+      band.cost,
+    );
+    roster_mats[label] = band.own;
+    if (source)
+      [roster_mats[source.label], tradable_mats[source.label]] = band.sources;
+    tradable_mats[label] = spend_band(
+      tradable_owned[label],
+      [],
+      1,
+      band.cost,
+    ).own;
   }
   return { bound_budgets, roster_mats, tradable_mats };
+}
+
+// Spends a band: the tier's own stock first, as the user sees it in game, then the lower-tier
+// sources at the ratio in whole conversions. What is left of each, and of the cost.
+export function spend_band(
+  own: number,
+  sources: number[],
+  ratio: number,
+  cost: number,
+) {
+  const deduct = Math.min(own, cost);
+  cost -= deduct;
+  const total = sources.reduce((a, b) => a + b, 0);
+  const units = Math.min(Math.floor(total / ratio), cost);
+  cost -= units;
+  let take = units * ratio;
+  return {
+    own: Math.max(0, own - deduct),
+    sources: sources.map((amount) => {
+      const taken = Math.min(amount, take);
+      take -= taken;
+      return amount - taken;
+    }),
+    cost,
+  };
+}
+
+// the character's free taps, a Serca one's T4 special leaps counted
+export function special_total() {
+  const { active_profile } = storeToRefs(useRosterStore());
+  const tier = active_profile.value.tier;
+  return merge_lower_tier(
+    tier,
+    input_column_to_num(active_profile.value.special_budget),
+    {},
+    {},
+  ).bound[SPECIAL_LEAP_LABELS[tier]];
+}
+
+// free taps left after special honing, spent like any other material
+export function set_special_remaining(remaining: number) {
+  const { active_profile } = storeToRefs(useRosterStore());
+  const label = SPECIAL_LEAP_LABELS[active_profile.value.tier];
+  const column = active_profile.value.special_budget;
+  const owned = input_column_to_num(column);
+  const from = MATERIALS[label].from;
+  const left = spend_band(
+    owned[label],
+    from ? [owned[from.label]] : [],
+    from?.ratio ?? 1,
+    Math.max(0, special_total() - remaining),
+  );
+  column.values[label] = left.own.toLocaleString();
+  if (from) column.values[from.label] = left.sources[0].toLocaleString();
 }
 
 export function apply_remaining_mats() {
@@ -174,10 +256,11 @@ export function apply_remaining_mats() {
     runtime.budget_snapshot,
   );
 
+  // the tier's labels and any lower-tier sources spent with them
   const write = (column: InputColumn, values: Record<string, number>) => {
-    for (const label of ALL_LABELS[tier]) {
+    for (const [label, value] of Object.entries(values)) {
       if (column.enabled[label]) {
-        column.values[label] = values[label].toLocaleString();
+        column.values[label] = value.toLocaleString();
       }
     }
   };

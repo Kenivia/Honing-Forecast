@@ -1,14 +1,12 @@
 import {
   ADV_COLS,
   ALL_LABELS,
-  CONVERTIBLE_MATERIALS,
   NORMAL_COLS,
   NUM_ADV_PIECES,
   NUM_PIECES,
   PLUS_TIER_CONVERSION,
 } from "@/Utils/Constants";
 import { check_revert_ilevel_ok } from "@/Utils/Helpers";
-import { input_column_to_num, parse_input } from "@/Utils/InputColumn";
 import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
 
 import { grid_change_callback } from "../CharWorkerUtils";
@@ -28,7 +26,7 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
   )
     return;
   if (ALL_LABELS.length != 2) {
-    // material conversion below is general, but the upgrade-grid remap is not
+    // the upgrade-grid remap assumes two tiers
     throw new Error(
       "grid conversion between more than 2 tiers not implemented",
     );
@@ -39,31 +37,8 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
   target_runtime?.optimizer.cancel_and_clear_prev_result();
   target_runtime?.histogram.cancel_and_clear_prev_result();
 
-  // Convert the character's bound materials into the new tier's currency.
-  //  - a material shared between tiers has one stored value, so there is nothing to do
-  //  - a material that converts from a lower tier scales by its ratio, in whichever
-  //    direction we are moving
-  //  - anything tier-exclusive keeps its own value
-  const columns = [target_profile.bound_budgets, target_profile.special_budget];
-  for (const mat of CONVERTIBLE_MATERIALS) {
-    const [from, to] =
-      new_tier > old_tier
-        ? [mat.from.label, mat.label]
-        : [mat.label, mat.from.label];
-    const scale = new_tier > old_tier ? 1 / mat.from.ratio : mat.from.ratio;
-    for (const column of columns) {
-      if (column.values[from] === undefined) {
-        continue;
-      }
-      const old_value = input_column_to_num(column, true)[from];
-      column.values[to] = parse_input(
-        column,
-        to,
-        String(old_value * scale),
-        true,
-      ).toLocaleString();
-    }
-  }
+  // Budgets are left as they are: a Serca character's T4 stock is counted as Serca when the
+  // payload is built (merge_lower_tier).
 
   if (new_tier == 1) {
     for (let row = 0; row < NUM_ADV_PIECES; row++) {

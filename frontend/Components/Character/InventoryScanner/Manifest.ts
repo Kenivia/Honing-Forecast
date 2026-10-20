@@ -1,7 +1,6 @@
 import { computed, ref } from "vue";
 import {
   ALL_MATERIAL_LABELS,
-  CONVERTIBLE_MATERIALS,
   NUM_BANDS,
   SPECIAL_LEAP_LABELS,
 } from "@/Utils/Constants";
@@ -24,6 +23,7 @@ import {
   take_snapshot,
 } from "@/Utils/Scans";
 import { useRosterStore } from "@/Stores/RosterConfig";
+import { merge_lower_tier } from "@/WasmInterface/PayloadBuilder";
 import { ChestKind, SlotAddress } from "./LoadStorage";
 import {
   assumed_tradability,
@@ -336,19 +336,14 @@ export const live = computed(() => {
   return { pages, seen: [...seen], missing };
 });
 
-// indexed by band; a converted band's T4 materials become Serca ones
-export const convert = ref([false, false, false]);
-// the character and tier the toggles were defaulted for
-export const convert_owner = ref("");
-
 const split_key = (key: string) => {
   const at = key.lastIndexOf(" ");
   return { window: key.slice(0, at), page: Number(key.slice(at + 1)) };
 };
 
 // What an export writes: the pages seen now, this character's and roster's saved pages that were
-// not, and what the roster's other characters hold that is not bound to them. Then conversion;
-// converted tradables come out roster-bound. Chests are passed on whole, with both tiers in them.
+// not, and what the roster's other characters hold that is not bound to them. Nothing is
+// converted; chests are passed on whole, with both tiers in them.
 export const manifest = computed(() => {
   const { roster_config, active_profile } = useRosterStore();
   const { roster_id, id } = active_profile;
@@ -377,24 +372,27 @@ export const manifest = computed(() => {
 
   const bands = [...Array(NUM_BANDS).keys()];
   const materials: Record<string, number[]> = {};
-  // gained from T4, shown beside the amount
-  const incoming: Record<string, number[]> = {};
   for (const label of ALL_MATERIAL_LABELS) {
-    incoming[label] = [0, 0, 0];
     materials[label] = bands.map((band) => all.materials[label]?.[band] ?? 0);
   }
-  for (const mat of CONVERTIBLE_MATERIALS) {
-    for (const band of bands) {
-      if (!convert.value[band]) continue;
-      const have = materials[mat.from.label][band];
-      materials[mat.from.label][band] = have % mat.from.ratio;
-      incoming[mat.label][Math.min(band, 1)] += Math.floor(
-        have / mat.from.ratio,
-      );
-    }
-  }
+  // what the calculator adds from T4 for a Serca character, shown beside the amount
+  const per_band = bands.map((band) =>
+    Object.fromEntries(
+      ALL_MATERIAL_LABELS.map((label) => [label, materials[label][band]]),
+    ),
+  );
+  const merged = merge_lower_tier(
+    active_profile.tier,
+    per_band[0],
+    per_band[1],
+    per_band[2],
+    active_profile.bound_budgets.enabled,
+  );
+  const incoming: Record<string, number[]> = {};
   for (const label of ALL_MATERIAL_LABELS) {
-    for (const band of bands) materials[label][band] += incoming[label][band];
+    incoming[label] = [merged.bound, merged.roster, merged.tradable].map(
+      (owned, band) => owned[label] - per_band[band][label],
+    );
   }
   return {
     materials,

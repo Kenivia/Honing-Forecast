@@ -105,14 +105,6 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region, false, true));
             Market & Mats
           </div>
         </router-link>
-        <router-link to="/snapshots">
-          <div
-            class="header-button header-font"
-            :class="{ selected: route.path == '/snapshots' }"
-          >
-            Snapshots
-          </div>
-        </router-link>
 
         <div class="header-spacer" />
         <div class="contents" v-if="!is900Narrow || all_profiles.length <= 1">

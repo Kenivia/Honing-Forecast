@@ -12,32 +12,15 @@ import { get_icon_path } from "@/Utils/Helpers";
 import ChestPanels from "@/Components/Common/ChestPanels.vue";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import { chest_gains } from "@/Utils/Chest";
-import {
-  BAND_NAMES,
-  convert,
-  convert_owner,
-  export_manifest,
-  manifest,
-  page_place,
-} from "./Manifest";
+import { BAND_NAMES, export_manifest, manifest, page_place } from "./Manifest";
 
 const { active_profile, all_profiles } = storeToRefs(useRosterStore());
 
-// band of each toggle, in the order they are shown
-const TOGGLES = [1, 2, 0];
-
+// the tab follows the character's tier
 const tier = ref(active_profile.value.tier);
-// a T4 character has no use for its own T4 materials as Serca ones
 watch(
   () => `${active_profile.value.id} ${active_profile.value.tier}`,
-  (owner) => {
-    tier.value = active_profile.value.tier;
-    // the toggles survive leaving the page, but not another character or tier
-    if (convert_owner.value === owner) return;
-    convert_owner.value = owner;
-    convert.value = [active_profile.value.tier === 1, false, false];
-  },
-  { immediate: true },
+  () => (tier.value = active_profile.value.tier),
 );
 
 // only chests with no choice add, each as it is, of either tier
@@ -117,19 +100,6 @@ function export_to_calc() {
   </div>
   <div v-else class="flex w-full flex-col gap-3">
     <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-      <label
-        v-for="band in TOGGLES"
-        :key="band"
-        class="flex items-center gap-1"
-        :class="{ 'opacity-50': band === 0 && active_profile.tier === 0 }"
-      >
-        <input
-          v-model="convert[band]"
-          type="checkbox"
-          :disabled="band === 0 && active_profile.tier === 0"
-        />
-        Convert {{ BAND_NAMES[band].toLowerCase() }} T4 to Serca
-      </label>
       <button class="generic-button" @click="export_to_calc">
         Export to calculator
       </button>

@@ -1,5 +1,11 @@
 # Manifest: tried and dropped
 
+## Conversion toggles on the export (October 2026)
+
+Before: the manifest had a "Convert ... T4 to Serca" toggle per band (`convert`, `convert_owner`; the char-bound one on by default for a Serca character). The export wrote the converted amounts: the T4 remainder under the T4 label, `floor(T4 / ratio)` added to the Serca label, tradable coming out roster-bound.
+
+Now the export writes T4 unconverted and the calculator counts it as Serca for a Serca character (`merge_lower_tier` in the payload). The deduction first spent T4 before Serca within a band; it now spends Serca first, since the user may not have converted in game yet and should see the value the game shows. `change_tier` used to convert the bound and free-tap T4 values into Serca ones (and back), which with the payload merge counted them twice; it converts nothing now. Converting at export baked a choice into the budgets that the user then had to undo by hand, and T4 stock of a Serca character was lost to the remainder.
+
 ## Manifest overrides (October 2026)
 
 Before: the manifest's cells and chest counts were inputs behind an "Edit manifest" checkbox (`material_overrides`, `chest_overrides`), chests could be deleted (`deleted_chests`) and added by hand (`added_chests`), all session-only in `ScanStore.ts`.

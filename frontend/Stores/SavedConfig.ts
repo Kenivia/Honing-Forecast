@@ -4,6 +4,7 @@ import {
   BandPlan,
   clamp_band_plan,
   default_selected_bundles,
+  linked_labels,
   MATERIALS,
   NUM_ADV_PIECES,
   NUM_BANDS,
@@ -66,6 +67,8 @@ export interface SavedProfile {
   special_budget: SavedColumn;
   bound_budgets: SavedColumn;
   chests: ManifestChest[];
+  income_manual: boolean;
+  bound_income: Record<string, number>;
 }
 
 export interface SavedConfig {
@@ -79,6 +82,7 @@ export interface SavedConfig {
   roster_chests: Record<string, ManifestChest[]>;
   scan_pages: ScanPage[];
   snapshots: Snapshot[];
+  roster_income: Record<string, Record<string, number>[]>;
   all_regions: Record<string, MarketRegions>;
   // material label -> chosen bundle size, only for materials sold in several sizes
   selected_bundles: Partial<Record<MarketRegions, Record<string, number>>>;
@@ -123,7 +127,9 @@ export function column_from_saved(
     },
     upper_bound: (label) => template.upper_bound[label],
     enabled: (label) =>
-      saved ? !disabled.has(label) : template.enabled[label],
+      saved
+        ? !linked_labels(label).some((linked) => disabled.has(linked))
+        : template.enabled[label],
   });
 }
 
@@ -155,6 +161,8 @@ function profile_to_saved(profile: CharProfile): SavedProfile {
     special_budget: column_to_saved(profile.special_budget),
     bound_budgets: column_to_saved(profile.bound_budgets),
     chests: profile.chests,
+    income_manual: profile.income_manual,
+    bound_income: profile.bound_income,
   };
 }
 
@@ -231,6 +239,8 @@ function profile_from_saved(
       defaults.bound_budgets,
     ),
     chests: Array.isArray(saved.chests) ? saved.chests : [],
+    income_manual: saved.income_manual ?? defaults.income_manual,
+    bound_income: saved.bound_income ?? defaults.bound_income,
   };
 }
 
@@ -317,6 +327,7 @@ export function to_saved(config: RosterConfig): Omit<SavedConfig, "version"> {
     roster_chests: config.roster_chests,
     scan_pages: config.scan_pages,
     snapshots: config.snapshots,
+    roster_income: config.roster_income,
     all_regions: { ...config.all_regions },
     selected_bundles,
     latest_market_data: config.latest_market_data,
@@ -389,6 +400,7 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
   out.roster_chests = saved.roster_chests ?? {};
   out.scan_pages = Array.isArray(saved.scan_pages) ? saved.scan_pages : [];
   out.snapshots = Array.isArray(saved.snapshots) ? saved.snapshots : [];
+  out.roster_income = saved.roster_income ?? {};
   if (
     Array.isArray(saved.enabled_annotations) &&
     saved.enabled_annotations.length === out.enabled_annotations.length

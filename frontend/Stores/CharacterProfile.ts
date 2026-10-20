@@ -44,6 +44,9 @@ export interface CharProfile {
   bound_budgets: InputColumn;
   // chests still to be opened, as the scanner's manifest exported them
   chests: ManifestChest[];
+  // income per week typed by hand, char bound and free taps (under the special leap label)
+  income_manual: boolean;
+  bound_income: Record<string, number>;
 
   auto_start_optimizer: boolean;
   tier: number;
@@ -77,6 +80,8 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
     enabled: (label) => label !== "Shards",
   }),
   chests: [],
+  income_manual: false,
+  bound_income: {},
   tier: 0,
   min_resolution: 1,
   num_threads: 1,

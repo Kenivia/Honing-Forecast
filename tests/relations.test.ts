@@ -1,14 +1,20 @@
-import { check, done } from "./helpers";
+import { check, done, equal } from "./helpers";
 // Covers the generalized cross-tier relations and bundle pricing.
 import { createPinia, setActivePinia } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { change_tier } from "@/Components/Character/StatusInput/StatusInputUtil";
-import { compute_remaininig_materials } from "@/Components/Character/Instructions/Details/NormalDetails/SuccessUtils";
+import {
+  compute_remaininig_materials,
+  set_special_remaining,
+  special_total,
+} from "@/Components/Character/Instructions/Details/NormalDetails/SuccessUtils";
+import { column_from_saved } from "@/Stores/SavedConfig";
 import {
   ALL_LABELS,
   ALL_MATERIAL_LABELS,
   bundle_key,
   cheapest_bundles,
+  linked_labels,
   CONVERTIBLE_MATERIALS,
   MATERIALS,
   SHARED_LABELS,
@@ -21,11 +27,15 @@ import {
   InputType,
   set_cell,
 } from "@/Utils/InputColumn";
+import {
+  build_materials,
+  merge_lower_tier,
+} from "@/WasmInterface/PayloadBuilder";
 
 setActivePinia(createPinia());
 const store = useRosterStore();
 
-console.log("\n=== 1. change_tier converts by relation, not by index ===");
+console.log("\n=== 1. change_tier leaves the budgets alone ===");
 const p = store.active_profile;
 // a distinct value per material so a mix-up is visible
 ALL_MATERIAL_LABELS.forEach((label, i) =>
@@ -37,42 +47,15 @@ const before_leaps = input_column_to_num(p.special_budget, true);
 
 change_tier(p);
 check("tier moved to 1", p.tier === 1);
-const at1 = input_column_to_num(p.bound_budgets, true);
-for (const mat of CONVERTIBLE_MATERIALS) {
-  if (mat.label.includes("Special Leap")) continue;
-  check(
-    `  ${mat.label} = ${mat.from.label} / ${mat.from.ratio}`,
-    at1[mat.label] === Math.floor(before[mat.from.label] / mat.from.ratio),
-    `${at1[mat.label]} vs ${before[mat.from.label] / mat.from.ratio}`,
-  );
-}
-check(
-  "shared materials untouched by a tier change",
-  SHARED_LABELS.every((l) => at1[l] === before[l]),
+equal("bound unchanged", input_column_to_num(p.bound_budgets, true), before);
+equal(
+  "special leaps unchanged",
+  input_column_to_num(p.special_budget, true),
+  before_leaps,
 );
-const leaps1 = input_column_to_num(p.special_budget, true);
-check(
-  "special leaps convert too",
-  leaps1[SPECIAL_LEAP_LABELS[1]] ===
-    Math.floor(before_leaps[SPECIAL_LEAP_LABELS[0]] / 5),
-  `${leaps1[SPECIAL_LEAP_LABELS[1]]}`,
-);
-
 change_tier(p);
 check("tier moved back to 0", p.tier === 0);
-const at0 = input_column_to_num(p.bound_budgets, true);
-for (const mat of CONVERTIBLE_MATERIALS) {
-  if (mat.label.includes("Special Leap")) continue;
-  check(
-    `  ${mat.from.label} restored from ${mat.label}`,
-    at0[mat.from.label] === at1[mat.label] * mat.from.ratio,
-    `${at0[mat.from.label]} vs ${at1[mat.label] * mat.from.ratio}`,
-  );
-}
-check(
-  "shared materials still untouched after the round trip",
-  SHARED_LABELS.every((l) => at0[l] === before[l]),
-);
+equal("still unchanged", input_column_to_num(p.bound_budgets, true), before);
 
 console.log("\n=== 2. bundle pricing ===");
 const prices: Record<string, number> = {};
@@ -141,5 +124,118 @@ check(
       zero.tradable_mats[l] === 10,
   ),
 );
+
+console.log("\n=== 4. a Serca character's T4 stock ===");
+const t4 = (b: number, r: number, t: number, sb = 0, sr = 0, st = 0) =>
+  [
+    { Fusion: b, "Serca Fusion": sb },
+    { Fusion: r, "Serca Fusion": sr },
+    { Fusion: t, "Serca Fusion": st },
+  ] as const;
+const m = merge_lower_tier(1, ...t4(12, 3, 4, 1, 2, 3));
+equal(
+  "bound into bound, roster and tradable pooled into roster, floored",
+  [
+    m.bound["Serca Fusion"],
+    m.roster["Serca Fusion"],
+    m.tradable["Serca Fusion"],
+  ],
+  [1 + 2, 2 + 1, 3],
+);
+equal("T4 itself left as it is", [m.bound.Fusion, m.tradable.Fusion], [12, 4]);
+equal(
+  "tradable T4 alone counts roster-bound",
+  merge_lower_tier(1, ...t4(0, 0, 10)).roster["Serca Fusion"],
+  2,
+);
+equal(
+  "nothing for a T4 character",
+  merge_lower_tier(0, ...t4(12, 3, 4)).bound["Serca Fusion"],
+  0,
+);
+equal(
+  "a disabled source is left out",
+  merge_lower_tier(1, ...t4(12, 3, 4), { Fusion: false }).bound["Serca Fusion"],
+  0,
+);
+
+p.tier = 1;
+const serca = (values: Record<string, number>) =>
+  create_input_column(InputType.Int, ALL_MATERIAL_LABELS, {
+    value: (label) => String(values[label] ?? 0),
+  });
+set_cell(p.bound_budgets, "Fusion", "7");
+set_cell(p.bound_budgets, "Serca Fusion", "1");
+set_cell(store.active_roster_mats_owned, "Fusion", "3");
+set_cell(store.active_roster_mats_owned, "Serca Fusion", "2");
+set_cell(store.active_tradable_mats_owned, "Fusion", "4");
+set_cell(store.active_tradable_mats_owned, "Serca Fusion", "3");
+const sent = build_materials()["Serca Fusion"];
+equal(
+  "payload: T4 bound into bound, roster-bound and tradable into roster",
+  [sent.bound, sent.roster, sent.tradable],
+  [1 + 1, 2 + 1, 3],
+);
+
+const serca_snapshot = {
+  bound_budgets: serca({ Fusion: 7, "Serca Fusion": 1 }),
+  roster_mats: serca({ Fusion: 3, "Serca Fusion": 2 }),
+  tradable_mats: serca({ Fusion: 4, "Serca Fusion": 3 }),
+};
+const left = compute_remaininig_materials(
+  { "Serca Fusion": 6 },
+  serca_snapshot,
+);
+const of = (label: string) => [
+  left.bound_budgets[label],
+  left.roster_mats[label],
+  left.tradable_mats[label],
+];
+// bound band: the 1 Serca, then 1 from T4 (5 Fusion); roster band: the 2 Serca, then 1 from T4
+// roster and tradable pooled (3 + 2 Fusion); the last 1 from Serca tradable
+equal("deduction: T4 after Serca in each band", of("Fusion"), [2, 0, 2]);
+equal("deduction: the Serca stock first", of("Serca Fusion"), [0, 0, 2]);
+const small = compute_remaininig_materials(
+  { "Serca Fusion": 1 },
+  serca_snapshot,
+);
+equal(
+  "a small cost comes out of Serca bound alone",
+  [small.bound_budgets.Fusion, small.bound_budgets["Serca Fusion"]],
+  [7, 0],
+);
+// free taps: Serca first, then T4 special leaps in whole conversions
+p.tier = 1;
+set_cell(p.special_budget, "Serca Special Leap", "2");
+set_cell(p.special_budget, "Special Leap", "12");
+equal("free taps count T4", special_total(), 4);
+set_special_remaining(1);
+equal(
+  "free taps spent Serca first",
+  [
+    input_column_to_num(p.special_budget)["Serca Special Leap"],
+    input_column_to_num(p.special_budget)["Special Leap"],
+  ],
+  [0, 7],
+);
+set_special_remaining(0);
+equal("all failed", special_total(), 0);
+
+// a material and its other tier share the tick, saved or not
+equal("linked labels", linked_labels("Fusion"), ["Fusion", "Serca Fusion"]);
+const saved_column = column_from_saved(
+  { values: {}, disabled: ["Serca Red"] },
+  p.bound_budgets,
+);
+check("loading disables both", !saved_column.enabled.Red);
+
+serca_snapshot.bound_budgets.enabled.Fusion = false;
+const off = compute_remaininig_materials({ "Serca Fusion": 1 }, serca_snapshot);
+check(
+  "a disabled source is not spent",
+  off.bound_budgets.Fusion === undefined &&
+    off.bound_budgets["Serca Fusion"] === 0,
+);
+p.tier = 0;
 
 done();

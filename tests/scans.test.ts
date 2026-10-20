@@ -20,6 +20,7 @@ import {
   manifest,
   roster_covered,
 } from "@/Components/Character/InventoryScanner/Manifest";
+import { build_materials } from "@/WasmInterface/PayloadBuilder";
 
 setActivePinia(createPinia());
 const store = useRosterStore();
@@ -239,6 +240,40 @@ check(
   JSON.stringify(snapshot_of(config, 0, "Manual").tradable) ===
     JSON.stringify(last.tradable),
 );
+
+section("a Serca character's T4 is exported unconverted");
+as(0);
+a.tier = 1;
+see("CharStorage 0", "CharInventory 0");
+put("CharStorage", 0, 0, "Fusion", 12, "CharBound");
+put("CharInventory", 0, 0, "Fusion", 3, "RosterBound");
+put("CharInventory", 0, 1, "Fusion", 4, "Tradable");
+equal(
+  "shown as what it adds on the calculator",
+  manifest.value.incoming["Serca Fusion"],
+  [2, 1, 0],
+);
+export_manifest();
+now = owned();
+equal(
+  "T4 under its own labels",
+  [now.bound.Fusion, now.roster.Fusion, now.tradable.Fusion],
+  [12, 3, 4],
+);
+equal(
+  "nothing written to Serca",
+  [now.bound["Serca Fusion"], now.roster["Serca Fusion"]],
+  [0, 0],
+);
+equal(
+  "the payload merges it",
+  [
+    build_materials()["Serca Fusion"].bound,
+    build_materials()["Serca Fusion"].roster,
+  ],
+  [2, 1],
+);
+a.tier = 0;
 
 section("stacking across pages");
 const chest = (band: number, count: number) => ({

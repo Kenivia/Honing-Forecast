@@ -135,14 +135,25 @@ export function save_pages(config: RosterConfig, pages: ScanPage[]) {
 // Snapshots
 // ============================================================================
 
+// what an optimizer run of a snapshot gave one character, under one payload
+export interface SnapshotResult {
+  // what the chests give opened as the optimizer chose, by label and band
+  gains: Record<string, number[]>;
+  // average tradable gold spent, and what the leftovers are worth
+  gold: number;
+  leftover: number;
+}
+
 export interface CharSnapshot {
   name: string;
   bound: Record<string, number>;
   special: Record<string, number>;
   chests: ManifestChest[];
+  // by payload hash, the latest few only
+  results?: Record<string, SnapshotResult>;
 }
 
-// The budgets of a whole roster at one time.
+// The budgets of a whole roster at one time, and the prices of its region then.
 export interface Snapshot {
   at: number;
   kind: "Before export" | "After export" | "Manual";
@@ -151,6 +162,12 @@ export interface Snapshot {
   tradable: Record<string, number>;
   roster_chests: ManifestChest[];
   chars: Record<string, CharSnapshot>;
+  // per bundle key, and the bundle bought per material
+  prices: Record<string, number>;
+  bundles: Record<string, number>;
+  // left out of the income estimate, or starting a new line in it
+  ignored?: boolean;
+  breaks?: boolean;
 }
 
 const nonzero = (column: InputColumn) =>
@@ -177,6 +194,7 @@ export function snapshot_of(
       chests: copy(profile.chests),
     };
   }
+  const region = config.all_regions[roster_id];
   return {
     at: Date.now(),
     kind,
@@ -185,13 +203,24 @@ export function snapshot_of(
     tradable: nonzero(config.tradable_mats_owned[roster_id]),
     roster_chests: copy(config.roster_chests[roster_id] ?? []),
     chars,
+    prices: nonzero(config.mats_prices[region]),
+    bundles: copy(config.selected_bundles[region]),
   };
 }
 
 export const latest_snapshot = (config: RosterConfig, roster_id: number) =>
   config.snapshots.findLast((snapshot) => snapshot.roster_id === roster_id);
 
-const budgets_of = ({ at, kind, ...rest }: Snapshot) => JSON.stringify(rest);
+// the materials and chests alone
+export const budgets_of = (snapshot: Snapshot) =>
+  JSON.stringify([
+    snapshot.roster_owned,
+    snapshot.tradable,
+    snapshot.roster_chests,
+    Object.entries(snapshot.chars).map(
+      ([id, { results: _results, ...char }]) => [id, char],
+    ),
+  ]);
 
 // added unless it is the same as the roster's latest
 export function take_snapshot(

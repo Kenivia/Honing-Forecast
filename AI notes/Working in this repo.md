@@ -68,7 +68,7 @@ with `tests/shim.mjs` (localStorage, `self`, a stub `Worker`). `tests/helpers.ts
 - `migration.test.ts`: a hand-built V7 payload through the real migration and save path.
 - `live.test.ts`: the same against `tests/V7 config`, a real 27-character save. Skips
   itself if that file is absent.
-- `relations.test.ts`: cross-tier conversion, bundle pricing, material deduction.
+- `relations.test.ts`: cross-tier conversion, bundle pricing, material deduction, a Serca character counting and spending its T4 stock.
 
 Two properties these exist to protect, both of which were real bugs:
 

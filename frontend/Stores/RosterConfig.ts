@@ -37,6 +37,8 @@ export interface RosterConfig {
   // every page the scanner exported, as last exported, and the budget snapshots
   scan_pages: ScanPage[];
   snapshots: Snapshot[];
+  // income per week typed by hand, [roster bound, tradable]
+  roster_income: Record<number, Record<string, number>[]>;
 
   all_regions: Record<number, MarketRegions>;
 
@@ -84,6 +86,7 @@ export function default_roster_config(): RosterConfig {
     roster_chests: {},
     scan_pages: [],
     snapshots: [],
+    roster_income: {},
     all_regions: { 0: "nae" },
     cumulative_graph: true,
     selected_bundles: {

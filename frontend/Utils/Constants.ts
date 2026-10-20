@@ -293,6 +293,18 @@ export const CONVERTIBLE_MATERIALS: Material[] = ALL_MATERIAL_LABELS.map(
   (label) => MATERIALS[label],
 ).filter((mat) => mat.from !== undefined);
 
+// a material and those it converts to or from share whether they are traded
+export function linked_labels(label: string): string[] {
+  const from = MATERIALS[label]?.from?.label;
+  return [
+    label,
+    ...(from ? [from] : []),
+    ...CONVERTIBLE_MATERIALS.filter((mat) => mat.from.label === label).map(
+      (mat) => mat.label,
+    ),
+  ];
+}
+
 // Every (material, bundle size) pair a market price is stored against.
 export const ALL_BUNDLE_KEYS: string[] = ALL_MATERIAL_LABELS.flatMap((label) =>
   MATERIALS[label].bundle_sizes.map((size) => bundle_key(label, size)),

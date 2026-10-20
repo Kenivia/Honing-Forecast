@@ -8,6 +8,10 @@ import {
   NUM_ADV_PIECES,
   SPECIAL_LEAP_LABELS,
   ADV_ALWAYS_DOUBLE_BALLS,
+  CONVERTIBLE_MATERIALS,
+  ALL_BUNDLE_KEYS,
+  unit_prices,
+  effective_unit_prices,
 } from "@/Utils/Constants";
 
 import { toRaw } from "vue";
@@ -21,7 +25,8 @@ import {
 import { input_column_to_num } from "@/Utils/InputColumn";
 import { storeToRefs } from "pinia";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
-import { Bag } from "@/Utils/Chest";
+import { Bag, type Chest } from "@/Utils/Chest";
+import type { CharProfile } from "@/Stores/CharacterProfile";
 
 // I don't think it's possible to directly export this struct from rust to javascript because of all the vectors,
 // so it's copied & pasted here
@@ -100,8 +105,8 @@ function keyed_to_array(
   pretend_30_40: boolean,
   normal_override?: StateOverride,
   adv_override?: AdvStateOverride,
+  juice_info = useRuntimeStore().histogram.result?.juice_info ?? null,
 ): OneUpgradeInput[] {
-  const juice_info = useRuntimeStore().histogram.result?.juice_info ?? null;
   const upgrade_map = get_upgrade_map(upgrade_arr, tier);
   return Object.entries(keyed_upgrades)
     .filter((x) => tier === 0 || x[1].is_normal_honing) // shouldn't really be necessary but apparently it went  wrong once somehow so adding this guard here
@@ -269,6 +274,35 @@ function apply_tax(x: number): number {
   return Math.max(Math.min(1, x), Math.floor(x * 0.95));
 }
 
+// A lower tier's stock counted as the tier's materials it converts to, which is how Rust sees a
+// Serca character's T4: bound into bound, roster-bound and tradable into roster-bound (converting
+// binds it). Floored per band, like the market page's convert button. A disabled material on
+// either side is left out.
+export function merge_lower_tier(
+  tier: number,
+  bound: Record<string, number>,
+  roster: Record<string, number>,
+  tradable: Record<string, number>,
+  enabled: Record<string, boolean> = {},
+) {
+  const out = {
+    bound: { ...bound },
+    roster: { ...roster },
+    tradable: { ...tradable },
+  };
+  for (const mat of CONVERTIBLE_MATERIALS) {
+    const { label, ratio } = mat.from;
+    if (!mat.tiers.includes(tier)) continue;
+    if (enabled[mat.label] === false || enabled[label] === false) continue;
+    const units = (amount: number) => Math.floor(amount / ratio);
+    out.bound[mat.label] = (bound[mat.label] ?? 0) + units(bound[label] ?? 0);
+    out.roster[mat.label] =
+      (roster[mat.label] ?? 0) +
+      units((roster[label] ?? 0) + (tradable[label] ?? 0));
+  }
+  return out;
+}
+
 export function build_materials(): Record<string, OneMaterial> {
   const roster_store = useRosterStore();
   const {
@@ -276,18 +310,35 @@ export function build_materials(): Record<string, OneMaterial> {
     active_roster_mats_owned,
     active_tradable_mats_owned,
   } = storeToRefs(roster_store);
-
-  const tier = active_profile.value.tier;
-  const bound = input_column_to_num(active_profile.value.bound_budgets);
-  const enabled = active_profile.value.bound_budgets.enabled;
-  const roster_owned = input_column_to_num(active_roster_mats_owned.value);
-  const tradable_owned = input_column_to_num(active_tradable_mats_owned.value);
-
   // Prices here are per unit: which bundle a material is sold in, and whether it is
   // cheaper to convert one up from a lower tier, are both resolved by the store.
-  const listed = roster_store.active_unit_prices;
-  const effective = roster_store.active_effective_prices;
+  return materials_of(
+    active_profile.value.tier,
+    input_column_to_num(active_profile.value.bound_budgets),
+    input_column_to_num(active_roster_mats_owned.value),
+    input_column_to_num(active_tradable_mats_owned.value),
+    active_profile.value.bound_budgets.enabled,
+    roster_store.active_unit_prices,
+    roster_store.active_effective_prices,
+  );
+}
 
+function materials_of(
+  tier: number,
+  bound: Record<string, number>,
+  roster_owned: Record<string, number>,
+  tradable_owned: Record<string, number>,
+  enabled: Record<string, boolean>,
+  listed: Record<string, number>,
+  effective: Record<string, number>,
+): Record<string, OneMaterial> {
+  const merged = merge_lower_tier(
+    tier,
+    bound,
+    roster_owned,
+    tradable_owned,
+    enabled,
+  );
   const out: Record<string, OneMaterial> = {};
   for (const label of ALL_LABELS[tier]) {
     // A disabled material is one the user will not trade, which `bound` already models
@@ -295,10 +346,10 @@ export function build_materials(): Record<string, OneMaterial> {
     // what its leftovers are "worth" cannot depend on the plan.
     const traded = enabled[label];
     out[label] = {
-      bound: bound[label],
-      roster: roster_owned[label],
+      bound: merged.bound[label] ?? 0,
+      roster: merged.roster[label] ?? 0,
       // gold is never sold
-      tradable: !traded || label === "Gold" ? 0 : tradable_owned[label],
+      tradable: !traded || label === "Gold" ? 0 : (merged.tradable[label] ?? 0),
       taxed_price: traded ? apply_tax(listed[label]) : 0,
       market_price: traded ? effective[label] : 0,
     };
@@ -328,9 +379,13 @@ export function build_payload(override?: OptimizerOverride): Payload {
       override?.normal,
       override?.advanced,
     ),
-    special_budget: input_column_to_num(active_profile.value.special_budget)[
-      SPECIAL_LEAP_LABELS[active_profile.value.tier]
-    ],
+    // a Serca character's T4 special leaps count too
+    special_budget: merge_lower_tier(
+      tier,
+      input_column_to_num(active_profile.value.special_budget),
+      {},
+      {},
+    ).bound[SPECIAL_LEAP_LABELS[tier]],
     express_event: false, //active_profile.value.express_event, temporary overwrite while event doesn't do anything
     tier,
     min_resolution: active_profile.value.min_resolution,
@@ -351,5 +406,99 @@ export function build_payload(override?: OptimizerOverride): Payload {
     chest_states: toRaw(runtime.optimizer.result?.chest_states),
     special_label: SPECIAL_LEAP_LABELS[tier],
     adv_cache: toRaw(runtime.adv_cache),
+  };
+}
+
+// The payload of a profile's current upgrades and settings over given budgets, chests and prices,
+// with no optimizer state. Plain, so it can be hashed and posted.
+export function payload_for(
+  profile: CharProfile,
+  bound: Record<string, number>,
+  roster: Record<string, number>,
+  tradable: Record<string, number>,
+  special: Record<string, number>,
+  chests: Chest[],
+  prices: Record<string, number>,
+  bundles: Record<string, number>,
+): Payload {
+  const tier = profile.tier;
+  const listed = unit_prices(
+    {
+      ...Object.fromEntries(ALL_BUNDLE_KEYS.map((key) => [key, 0])),
+      ...prices,
+    },
+    bundles ?? {},
+  );
+  const upgrade_info = keyed_to_array(
+    profile.keyed_upgrades,
+    null,
+    tier,
+    profile.express_event,
+    profile.pretend_30_40_x2_grace,
+  ).map(
+    ({
+      expanded: _expanded,
+      used_materials: _used,
+      taps_since_last_input: _taps,
+      ...rest
+    }) => rest,
+  );
+  return JSON.parse(
+    JSON.stringify({
+      material_labels: ALL_LABELS[tier],
+      materials: materials_of(
+        tier,
+        bound,
+        roster,
+        tradable,
+        profile.bound_budgets.enabled,
+        listed,
+        effective_unit_prices(listed),
+      ),
+      plans: [ALL_WORTHLESS, clamp_band_plan(profile.band_values)],
+      optimizer_plan: 1,
+      upgrade_info,
+      special_budget:
+        merge_lower_tier(tier, special, {}, {}).bound[
+          SPECIAL_LEAP_LABELS[tier]
+        ] ?? 0,
+      express_event: false,
+      tier,
+      min_resolution: profile.min_resolution,
+      num_threads: 1,
+      metric_type: 1,
+      chests: Object.fromEntries(
+        chests.map((chest) => [
+          chest.key,
+          { count: chest.count, band: chest.band, options: chest.options },
+        ]),
+      ),
+      special_label: SPECIAL_LEAP_LABELS[tier],
+      adv_cache: null,
+    }),
+  );
+}
+
+// the histogram's payload of what an optimizer run of `payload` chose
+export function states_payload(
+  payload: Payload,
+  profile: CharProfile,
+  state: any,
+): Payload {
+  return {
+    ...payload,
+    upgrade_info: keyed_to_array(
+      profile.keyed_upgrades,
+      state.upgrade_arr,
+      profile.tier,
+      profile.express_event,
+      profile.pretend_30_40_x2_grace,
+      undefined,
+      undefined,
+      state.prep_output.juice_info,
+    ),
+    special_state: state.special_state,
+    chest_states: state.chest_states,
+    adv_cache: state.adv_cache,
   };
 }

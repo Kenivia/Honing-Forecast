@@ -17,7 +17,10 @@ import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { computed, onMounted, ref } from "vue";
-import { build_payload } from "@/WasmInterface/PayloadBuilder";
+import {
+  build_payload,
+  merge_lower_tier,
+} from "@/WasmInterface/PayloadBuilder";
 import { input_column_to_num } from "@/Utils/InputColumn";
 import { start_all_workers } from "@/Components/Character/CharWorkerUtils";
 import { WasmOp } from "@/WasmInterface/WasmWorker";
@@ -56,6 +59,39 @@ const gains = computed(() =>
   ),
 );
 const gain = (label: string, band: number) => gains.value[label]?.[band] ?? 0;
+
+// what a Serca character's T4 adds to each band, as Rust counts it
+const t4_gains = computed(() => {
+  const owned = [
+    active_profile.value.bound_budgets,
+    active_roster_mats_owned.value,
+    active_tradable_mats_owned.value,
+  ].map((column) => input_column_to_num(column));
+  const merged = merge_lower_tier(
+    tier.value,
+    owned[0],
+    owned[1],
+    owned[2],
+    active_profile.value.bound_budgets.enabled,
+  );
+  const out: Record<string, number[]> = {};
+  for (const label of ALL_LABELS[tier.value]) {
+    out[label] = [merged.bound, merged.roster, merged.tradable].map(
+      (m, band) => m[label] - owned[band][label],
+    );
+  }
+  const special = input_column_to_num(active_profile.value.special_budget);
+  const leap = SPECIAL_LEAP_LABELS[tier.value];
+  out[leap] = [
+    merge_lower_tier(tier.value, special, {}, {}).bound[leap] - special[leap],
+  ];
+  return out;
+});
+const t4_gain = (label: string, band: number) =>
+  t4_gains.value[label]?.[band] ?? 0;
+// shown only when there is any
+const t4_line = (amount: number) =>
+  amount > 0 ? [{ amount, text: "from T4" }] : [];
 
 // This is average mats cost (not gold)
 const average_breakdown = computed(
@@ -169,13 +205,13 @@ const annotation_values = computed(() => {
   const trade = input_column_to_num(active_tradable_mats_owned.value);
   const out: Record<string, number[]> = {};
   for (const label of ALL_LABELS[tier.value]) {
-    const b = bound[label] + gain(label, 0);
-    const r = b + roster[label] + gain(label, 1);
+    const b = bound[label] + gain(label, 0) + t4_gain(label, 0);
+    const r = b + roster[label] + gain(label, 1) + t4_gain(label, 1);
     out[label] = [
       average_breakdown.value[label],
       b,
       r,
-      r + trade[label] + gain(label, 2),
+      r + trade[label] + gain(label, 2) + t4_gain(label, 2),
     ].filter((_, i) => enabled_annotations.value[i]);
   }
   return out;
@@ -306,6 +342,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
                 amount: gain(label, active_profile.chance_band),
                 text: 'from chests',
               },
+              ...t4_line(t4_gain(label, active_profile.chance_band)),
             ]"
           />
           <!-- {{ console.log(averages) }} -->
@@ -360,6 +397,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
                 ).reduce((a, b) => a + b, 0),
                 text: 'from chests',
               },
+              ...t4_line(t4_gain(SPECIAL_LEAP_LABELS[active_profile.tier], 0)),
             ]"
           ></MaterialCell>
           <span

@@ -68,6 +68,9 @@ onUnmounted(() => {
         <RouterLink to="scanner" class="side-bar-link" @click="close">
           Scanner
         </RouterLink>
+        <RouterLink to="income" class="side-bar-link" @click="close">
+          Income
+        </RouterLink>
       </div>
 
       <ControlPanel v-if="is_calc" />

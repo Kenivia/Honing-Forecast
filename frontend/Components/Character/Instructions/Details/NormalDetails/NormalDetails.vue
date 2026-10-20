@@ -6,7 +6,7 @@ import {
   clean_percentage_input,
   locale_to_fixed,
 } from "@/Utils/Helpers";
-import { parse_locale_float, parse_locale_int } from "@/Utils/InputColumn";
+import { parse_locale_float } from "@/Utils/InputColumn";
 import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, watch } from "vue";
@@ -22,8 +22,10 @@ import {
   compute_used_materials,
   mark_upgrade_as_done,
   apply_remaining_mats,
+  set_special_remaining,
+  special_total,
 } from "./SuccessUtils";
-import { FLOAT_TOL, SPECIAL_LEAP_LABELS } from "@/Utils/Constants";
+import { FLOAT_TOL } from "@/Utils/Constants";
 import { GridConfig } from "@/Utils/GridStyling";
 import ManualArtisanInput from "@/Components/Character/Instructions/Details/ManualArtisanInput.vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
@@ -370,18 +372,10 @@ watch(
   },
 );
 
-const special_leap_label = computed(
-  () => SPECIAL_LEAP_LABELS[active_profile.value.tier],
-);
-const new_special_leaps = ref(
-  parse_locale_int(
-    active_profile.value.special_budget.values[special_leap_label.value],
-  ),
-);
+const new_special_leaps = ref(special_total());
 
 function special_succeed_click() {
-  active_profile.value.special_budget.values[special_leap_label.value] =
-    new_special_leaps.value.toLocaleString();
+  set_special_remaining(Number(new_special_leaps.value));
   this_keyed.value.used_materials = compute_used_materials(
     props.upgrade,
     0,
@@ -396,7 +390,7 @@ function special_succeed_click() {
 }
 
 function special_fail_click() {
-  active_profile.value.special_budget.values[special_leap_label.value] = "0";
+  set_special_remaining(0);
   start_all_workers();
 }
 
@@ -487,11 +481,7 @@ const special_grid: GridConfig = {
         v-model="new_special_leaps"
         type="number"
         :min="0"
-        :max="
-          parse_locale_int(
-            active_profile.special_budget.values[special_leap_label],
-          )
-        "
+        :max="special_total()"
       />
 
       <button

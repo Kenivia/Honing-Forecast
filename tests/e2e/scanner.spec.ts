@@ -167,28 +167,21 @@ test("exports merge across characters and are snapshotted", async ({
   await expect(manifest_cell(page, "Red", "Tradable")).toHaveText("100");
   await page.waitForTimeout(1000);
 
-  // snapshots: from Newchar's first, before export, to now
-  await hf.open(page, "/snapshots");
-  const list = page.getByRole("group", { name: "Snapshot list" });
+  // snapshots on Bee's income page: Bee's export against Newchar's
+  await hf.open(page, "/Bee/income");
+  const timeline = page.getByRole("group", { name: "Snapshot timeline" });
   // Bee's "before" is Newchar's "after", so it is not added
-  await expect(list.getByRole("button", { name: /^Delete / })).toHaveCount(3);
-  await list
-    .getByRole("radio", { name: /^From .* Before export$/ })
-    .first()
-    .click();
-  // "First" is the newest: pick the oldest
-  await list
-    .getByRole("radio", { name: /^From .* Before export$/ })
+  await expect(timeline.getByRole("button")).toHaveCount(3);
+  await timeline
+    .getByRole("button", { name: /After export$/ })
     .last()
     .click();
-  const changes = page.getByRole("group", { name: "Snapshot changes" });
-  await expect(changes.getByLabel("Blue Roster bound")).toHaveText("+27");
-  await expect(changes.getByLabel("Blue Char bound")).toHaveText("+53");
-  await page.getByLabel("Character").selectOption({ label: "Bee" });
-  await expect(changes.getByLabel("Blue Char bound")).toHaveText("+3");
+  const dashboard = page.getByRole("group", { name: "Snapshot dashboard" });
+  await expect(dashboard.getByLabel("Blue Roster bound")).toHaveText("+7");
+  await expect(dashboard.getByLabel("Blue Char bound")).toHaveText("+3");
   // a manual snapshot equal to the latest is not added
   await page.getByRole("button", { name: "Take snapshot" }).click();
-  await expect(list.getByRole("button", { name: /^Delete / })).toHaveCount(3);
+  await expect(timeline.getByRole("button")).toHaveCount(3);
 });
 
 // how many slots the scan has corrections for, and how many it has read
@@ -519,9 +512,9 @@ test("captures of two characters merge as expected", async ({
   expect(Object.keys(total([four], 2, page_2)).length).toBeGreaterThan(0);
 
   // the snapshots: the empty start, and one after each export that changed something
-  await hf.open(page, "/snapshots");
-  const list = page.getByRole("group", { name: "Snapshot list" });
-  await expect(list.getByRole("button", { name: /^Delete / })).toHaveCount(4);
+  await hf.open(page, "/Newchar/income");
+  const timeline = page.getByRole("group", { name: "Snapshot timeline" });
+  await expect(timeline.getByRole("button")).toHaveCount(4);
 });
 
 // chests as what they give: their order, and that of a joined title, follow the reading
