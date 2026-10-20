@@ -2,7 +2,7 @@ import { ref } from "vue";
 import type { CharProfile } from "@/Stores/CharacterProfile";
 import { states_payload, type Payload } from "./PayloadBuilder";
 import { create_worker_bundle } from "./WorkerBundle";
-import { WasmOp } from "./WasmWorker";
+import { WasmOp } from "./WasmTypes";
 
 // Optimizer runs off the calculator page, each followed by a histogram of what it chose, two at a
 // time. One page queues at a time.
@@ -34,20 +34,25 @@ export function hash(text: string) {
 export const jobs_left = ref(0);
 let queue: Job[] = [];
 const running = new Set<string>();
+// every job of the last queue_jobs by hash: one run serves all jobs with its hash
+let wanted = new Map<string, Job[]>();
 const workers = [create_worker_bundle(), create_worker_bundle()];
 const idle = workers.map(() => true);
 
 const count = () => (jobs_left.value = queue.length + running.size);
 
-// the jobs wanted now, in order; those already running carry on
+// the jobs wanted now, in order, once per hash; those already running carry on
 export function queue_jobs(jobs: Job[]) {
-  queue = jobs.filter((job) => !running.has(job.hash));
+  wanted = Map.groupBy(jobs, (job) => job.hash);
+  const seen = new Set(running);
+  queue = jobs.filter((job) => !seen.has(job.hash) && seen.add(job.hash));
   count();
   workers.forEach((_, at) => next(at));
 }
 
 export function stop_jobs() {
   queue = [];
+  wanted = new Map();
   running.clear();
   workers.forEach((worker, at) => {
     worker.cancel();
@@ -58,28 +63,34 @@ export function stop_jobs() {
 
 function next(at: number) {
   if (!idle[at]) return;
-  const job = queue.shift();
+  let job = queue.shift();
+  while (job && running.has(job.hash)) job = queue.shift();
   if (!job) return;
   const worker = workers[at];
   idle[at] = false;
   running.add(job.hash);
   count();
+  // a failed run is dropped, not retried
+  const done = (out: any, state: any) => {
+    if (!running.delete(job.hash)) return;
+    if (out)
+      for (const one of new Set([job, ...(wanted.get(job.hash) ?? [])]))
+        one.store(out, state);
+    idle[at] = true;
+    count();
+    next(at);
+  };
   worker.debounced_start(
     WasmOp.OptimizeAverage,
     job.payload,
     (state) => {
+      if (!state) return done(null, null);
       // interim states come while it is still busy
       if (worker.status !== "idle") return;
       worker.debounced_start(
         WasmOp.Histogram,
         states_payload(job.payload, job.profile, state),
-        (out) => {
-          if (!running.delete(job.hash)) return;
-          job.store(out, state);
-          idle[at] = true;
-          count();
-          next(at);
-        },
+        (out) => done(out, state),
         0,
       );
     },

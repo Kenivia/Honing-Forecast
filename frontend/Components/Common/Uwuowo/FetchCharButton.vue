@@ -28,7 +28,6 @@ watch(
 
 const char_parsed = ref(structuredClone(DEFAULT_UWUOWO_BUNDLE));
 
-// const roster_
 watch([() => props.region, () => props.char_name], () => {
   reset_uwuowo_bundle(char_parsed);
 });
@@ -36,17 +35,15 @@ watch([() => props.region, () => props.char_name], () => {
 const show_popup = ref(false);
 
 async function click() {
-  // console.log("click triggered");
+  const { region, char_name } = props;
+  if (region === null) return;
   show_popup.value = true;
   const char_result = await fetch_and_parse(
-    {
-      region: props.region,
-      char_name: props.char_name,
-      suffix: "",
-    },
+    { region, char_name, suffix: "" },
     parse_char,
   );
-  // console.log(result, props.region, props.char_name);
+  // dropped if the name or region changed meanwhile
+  if (props.region !== region || props.char_name !== char_name) return;
   if (typeof char_result === "string") {
     char_parsed.value.status = char_result;
     char_parsed.value.result = null;
@@ -61,16 +58,13 @@ async function click() {
   <button
     @click="click"
     class="generic-button w-full text-wrap!"
-    :disabled="
-      // true
-      region === null
-    "
+    :disabled="region === null"
     :style="{
       opacity: region === null ? 0.5 : 1,
       cursor: region === null ? 'not-allowed' : 'pointer',
     }"
   >
-    Fetching not working rn...
+    Fetch from lostark.bible
   </button>
   <Popup :show_popup="show_popup" @close_popup="show_popup = false">
     <span> {{ char_parsed.status }}</span>

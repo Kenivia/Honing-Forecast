@@ -4,3 +4,7 @@ rustflags = ["--cfg", "getrandom_backend=\"wasm_js\"","-C", "target-feature=+sim
 [profile.profiling]
 inherits = "release"
 debug = true
+
+# the repo root, absolute, for paths from it at compile time: env!("HF_ROOT")
+[env]
+HF_ROOT = { value = "", relative = true }

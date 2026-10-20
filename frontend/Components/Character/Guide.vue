@@ -22,7 +22,7 @@ const selected_color = computed(() => {
 });
 </script>
 <template>
-  <div class="change-log-card guide-html card-shell card-body">
+  <div class="guide-html card-shell card-body prose-card">
     <h1>Guide</h1>
     <h2>Step 1: Select your upgrades</h2>
     <img class="mx-auto" src="/Guide/ticks.png" />
@@ -217,50 +217,17 @@ const selected_color = computed(() => {
   </div>
 </template>
 
-<!-- this style cannot be scoped cos it needs to go deep into the html -->
-<style>
-.change-log-card {
-  width: min(100%, 1000px);
-  padding: 18px;
-  height: max-content;
-}
-.guide-html h1 {
-  font-size: 2.5rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-
-.guide-html h2 {
-  margin-top: 1.5rem;
-  margin-bottom: 0.5rem;
-  font-size: x-large;
-  font-weight: 500;
-  border-bottom: 1px solid var(--border-main);
-}
-
-.guide-html h3 {
-  margin-top: 0.5rem;
-  margin-bottom: 0.125rem;
+<style scoped>
+.guide-html h3,
+.guide-html p {
   padding-left: 1.25rem;
-  font-size: large;
-  font-weight: 500;
-}
-
-.guide-html a {
-  color: var(--gold);
-  text-decoration: underline;
 }
 .guide-html ol {
   list-style-type: decimal;
   padding-left: 3.25rem;
 }
-
 .guide-html ul {
   list-style-type: " - ";
   padding-left: 3.25rem;
-}
-
-.guide-html p {
-  padding-left: 1.25rem;
 }
 </style>

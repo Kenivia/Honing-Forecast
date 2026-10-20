@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import { WasmOp } from "@/WasmInterface/WasmWorker";
+import { WasmOp } from "@/WasmInterface/WasmTypes";
 import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
 import { OcrJob, OneIconConfig } from "./LoadStorage";
 
@@ -45,7 +45,9 @@ export function start_ocr(model: Uint8Array, config: OneIconConfig[]) {
     worker.bundle.debounced_start(
       WasmOp.OcrInit,
       { model, config },
-      () => {
+      (out) => {
+        // null when it failed; a success returns nothing
+        if (out === null) return;
         worker.ready = true;
         pump();
       },
@@ -107,6 +109,8 @@ function pump() {
       WasmOp.Ocr,
       batch,
       (texts: [number, string][]) => {
+        // a failed worker stays busy, so it is not used again
+        if (!texts) return;
         // a stopped worker never answers, so this one is still current
         worker.busy = false;
         done.push(...texts);

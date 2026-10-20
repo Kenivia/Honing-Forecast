@@ -269,8 +269,8 @@ check(
     loaded.auto_fetch === false,
 );
 check(
-  "enabled_annotations kept",
-  JSON.stringify(loaded.enabled_annotations) === "[false,true,true,false]",
+  "enabled_annotations dropped (derived from chance_band)",
+  !("enabled_annotations" in loaded),
 );
 check(
   "latest_market_data kept",

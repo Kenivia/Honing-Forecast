@@ -1,4 +1,5 @@
 import LZString from "lz-string";
+import { shallowRef } from "vue";
 import {
   ALL_LABELS,
   bundle_key,
@@ -40,25 +41,89 @@ const MIGRATIONS: Record<number, (data: any) => any> = {
 // Load
 // ============================================================================
 
+// A save that could not be read, until the user downloads or discards it. It is kept under
+// `<key>_BROKEN`; when that does not fit, only here, and saving is paused so the next write does
+// not overwrite the original. Never loaded back by itself: the user imports the download.
+export interface BrokenSave {
+  key: string;
+  version: number;
+  raw: string;
+  kept: boolean;
+}
+export const broken_save = shallowRef<BrokenSave | null>(null);
+
+const ALL_KEYS = [
+  { key: STORAGE_KEY, version: STORAGE_VERSION },
+  ...LEGACY_KEYS,
+];
+
+function keep_broken(key: string, raw: string) {
+  const version =
+    ALL_KEYS.find((k) => k.key === key)?.version ?? STORAGE_VERSION;
+  try {
+    localStorage.setItem(`${key}_BROKEN`, raw);
+    broken_save.value = { key, version, raw, kept: true };
+  } catch {
+    broken_save.value = { key, version, raw, kept: false };
+  }
+}
+
+// one set aside by an earlier load
+function find_kept_broken() {
+  for (const { key, version } of ALL_KEYS) {
+    const raw = localStorage.getItem(`${key}_BROKEN`);
+    if (raw !== null) return { key, version, raw, kept: true };
+  }
+  return null;
+}
+
+// what the download holds: the save as a backup Import reads, or the raw string if unreadable
+export function broken_backup(broken: BrokenSave): string {
+  try {
+    const data = JSON.parse(LZString.decompressFromUTF16(broken.raw));
+    if (data === null || typeof data !== "object") throw new Error();
+    return JSON.stringify({ version: broken.version, ...data }, null, 2);
+  } catch {
+    return broken.raw;
+  }
+}
+
+export function discard_broken(state: { roster_config: RosterConfig }) {
+  const paused = broken_save.value?.kept === false;
+  for (const { key } of ALL_KEYS) localStorage.removeItem(`${key}_BROKEN`);
+  broken_save.value = null;
+  if (paused) write_state(state);
+}
+
 function load_compressed(key: string): any {
   const compressed = localStorage.getItem(key);
   if (compressed === null) {
     return null;
   }
   try {
-    return JSON.parse(LZString.decompressFromUTF16(compressed));
+    const data = JSON.parse(LZString.decompressFromUTF16(compressed));
+    // garbage can decompress to null rather than throw
+    if (data === null || typeof data !== "object") throw new Error();
+    return data;
   } catch {
+    keep_broken(key, compressed);
     return null;
   }
 }
 
-function read_newest_save(): [any, number] | null {
-  const keys = [{ key: STORAGE_KEY, version: STORAGE_VERSION }, ...LEGACY_KEYS];
-  for (const { key, version } of keys) {
+// The newest readable save wins and every legacy key is then deleted.
+function read_newest_save(): {
+  data: any;
+  version: number;
+  key: string;
+  raw: string;
+} | null {
+  for (const { key, version } of ALL_KEYS) {
     const data = load_compressed(key);
     if (data === null) continue;
-    if (key !== STORAGE_KEY) localStorage.removeItem(key);
-    return [data, Number(data.version) || version];
+    const raw = localStorage.getItem(key);
+    for (const legacy of LEGACY_KEYS) localStorage.removeItem(legacy.key);
+    return { data, version: Number(data.version) || version, key, raw };
   }
   return null;
 }
@@ -77,15 +142,16 @@ export function load_roster_config(): RosterConfig {
   for (const key of ABANDONED_KEYS) {
     localStorage.removeItem(key);
   }
+  broken_save.value = find_kept_broken();
   const found = read_newest_save();
   if (found === null) {
     return from_saved({});
   }
-  const [data, version] = found;
   try {
-    return from_saved(migrate_to_current(data, version));
+    return from_saved(migrate_to_current(found.data, found.version));
   } catch (e) {
     console.error("could not load saved config, starting fresh", e);
+    keep_broken(found.key, found.raw);
     return from_saved({});
   }
 }
@@ -99,6 +165,7 @@ function serialize(config: RosterConfig): string {
 }
 
 export function write_state(state: { roster_config: RosterConfig }) {
+  if (broken_save.value?.kept === false) return;
   try {
     localStorage.setItem(
       STORAGE_KEY,
@@ -322,6 +389,5 @@ function migrate_7_to_8(data: any): Partial<SavedConfig> {
     show_all_rows: data.show_all_rows,
     auto_deduct_costs: data.auto_deduct_costs,
     auto_fetch: data.auto_fetch,
-    enabled_annotations: data.enabled_annotations,
   };
 }

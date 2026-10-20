@@ -1,40 +1,29 @@
 <script setup lang="ts">
 import Sidebar from "@/Components/Common/Sidebar.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog";
-import { storeToRefs } from "pinia";
-import { ref, watchEffect } from "vue";
+import {
+  ALL_VERSIONS,
+  LATEST_VERSION,
+  load_change_log,
+} from "@/Utils/Changelog";
+import { computedAsync } from "@vueuse/core";
+import { ref } from "vue";
 import { RouterLink, useRoute } from "vue-router";
-import { marked } from "marked";
 
 const route = useRoute();
 
-const { roster_config } = storeToRefs(useRosterStore());
-roster_config.value.last_seen_version = LATEST_VERSION;
+useRosterStore().roster_config.last_seen_version = LATEST_VERSION;
 
-const html = ref("");
-
-const cache = new Map<string, string>();
+// a stale fetch landing late is dropped by computedAsync; no version while leaving the page
 const loading = ref(false);
-
-watchEffect(async () => {
-  const version = route.params.version as string;
-
-  if (cache.has(version)) {
-    html.value = cache.get(version)!;
-    return;
-  }
-
-  loading.value = true;
-  const res = await fetch(
-    version === "WIP" ? `/WIP.md` : `/change-logs/${version}.md`,
-  );
-  const raw = await res.text();
-  const parsed = await marked.parse(raw);
-  cache.set(version, parsed);
-  html.value = parsed;
-  loading.value = false;
-});
+const html = computedAsync(
+  () => {
+    const version = route.params.version as string | undefined;
+    return version ? load_change_log(version) : "";
+  },
+  "",
+  loading,
+);
 </script>
 
 <template>
@@ -61,90 +50,57 @@ watchEffect(async () => {
     </template>
 
     <template #main>
-      <div class="card-shell change-log-card p-3">
+      <div class="card-shell prose-card">
         <div class="my-20 text-center text-9xl" v-if="loading">Loading...</div>
-        <div v-else class="change-log-html" v-html="html" /></div
-    ></template>
+        <div v-else-if="html === null" class="text-(--warning)">
+          Could not load this change log.
+        </div>
+        <div v-else class="change-log-html" v-html="html" />
+      </div>
+    </template>
   </Sidebar>
 </template>
 
-<!-- this style cannot be scoped cos it needs to go deep into the html -->
-<style>
-.change-log-card {
-  width: min(100%, 1000px);
-  padding: 18px;
-  height: max-content;
-}
-.change-log-html h1 {
-  font-size: 2.5rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-
-.change-log-html h2 {
-  margin-top: 1.5rem;
-  margin-bottom: 0.5rem;
-  font-size: x-large;
-  font-weight: 500;
-  border-bottom: 1px solid var(--border-main);
-}
-
-.guide-html h3 {
-  margin-top: 0.5rem;
-  margin-bottom: 0.125rem;
-  font-size: large;
-  font-weight: 500;
-}
-
-.change-log-html tr {
+<!-- v-html content, so :deep -->
+<style scoped>
+.change-log-html :deep(tr) {
   display: grid;
   grid-template-columns: 100px calc(100% - 100px - 80px - 50px - 30px) 80px 50px;
   border-bottom: 1px solid var(--border-muted);
   align-items: flex-start;
 }
 @media (max-width: 480px) {
-  .change-log-html tr {
+  .change-log-html :deep(tr) {
     display: flex;
     flex-direction: column;
-    border-bottom: 1px solid var(--border-muted);
-    align-items: flex-start;
     justify-content: space-between;
   }
 }
-.change-log-html td {
+.change-log-html :deep(td) {
   align-items: flex-start;
 }
-.change-log-html table {
+.change-log-html :deep(table) {
   display: flex;
   flex-direction: column;
   border-collapse: collapse;
 }
-.change-log-html th {
+.change-log-html :deep(th) {
   text-align: left;
   font-size: small;
   display: grid;
 }
-
-.change-log-html a {
-  color: var(--gold);
-  text-decoration: underline;
-}
-
-.change-log-html ul,
-.change-log-html ol {
+.change-log-html :deep(ul),
+.change-log-html :deep(ol) {
   padding-left: 1.25rem;
   margin-bottom: 0.5rem;
 }
-
-.change-log-html li {
+.change-log-html :deep(li) {
   list-style-type: " - ";
   list-style-position: outside;
   margin-bottom: 0.25rem;
 }
-
-.change-log-html li > ul,
-.change-log-html li > ol {
-  padding-left: 1.25rem;
+.change-log-html :deep(li > ul),
+.change-log-html :deep(li > ol) {
   margin-top: 0.25rem;
   margin-bottom: 0;
 }

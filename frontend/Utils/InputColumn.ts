@@ -92,7 +92,7 @@ function parse_arithmetic(
       consume(); // ')'
       return val;
     }
-    return parseNum(tok);
+    return parseNum(tok ?? "");
   }
 
   return parseExpr();
@@ -127,7 +127,9 @@ export function parse_input(
     column.type === InputType.Int
       ? parse_locale_int(input)
       : parse_locale_float(input);
-  return isFinite(out) ? Math.min(column.upper_bound[label], out) : 0;
+  return isFinite(out)
+    ? Math.max(0, Math.min(column.upper_bound[label], out))
+    : 0;
 }
 
 export function input_column_to_num(
@@ -142,7 +144,12 @@ export function input_column_to_num(
 }
 
 export function set_cell(column: InputColumn, label: string, value: string) {
-  column.values[label] = parse_input(column, label, value, true).toLocaleString();
+  column.values[label] = parse_input(
+    column,
+    label,
+    value,
+    true,
+  ).toLocaleString();
 }
 
 export function get_modified_cell(

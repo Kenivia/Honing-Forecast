@@ -12,21 +12,29 @@ import {
   ALL_BUNDLE_KEYS,
   unit_prices,
   effective_unit_prices,
+  sell_tax,
 } from "@/Utils/Constants";
 
 import { toRaw } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import {
   get_upgrade_map,
-  KeyedUpgrades,
   OneUpgradeInput,
   Upgrade,
 } from "@/Utils/KeyedUpgrades";
 import { input_column_to_num } from "@/Utils/InputColumn";
-import { storeToRefs } from "pinia";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 import { Bag, type Chest } from "@/Utils/Chest";
 import type { CharProfile } from "@/Stores/CharacterProfile";
+import type { Snapshot } from "@/Utils/Scans";
+import {
+  AdvOverride,
+  NormalOverride,
+  type AdvStateOverride,
+  type OptimizerOverride,
+  type SpecialOverride,
+  type StateOverride,
+} from "./Overrides";
 
 // I don't think it's possible to directly export this struct from rust to javascript because of all the vectors,
 // so it's copied & pasted here
@@ -39,6 +47,12 @@ export interface OneMaterial {
   market_price: number;
 }
 
+// an upgrade as Rust takes it, without the fields only the page uses
+export type SentUpgrade = Omit<
+  OneUpgradeInput,
+  "expanded" | "taps_since_last_input" | "used_materials"
+>;
+
 export interface Payload {
   // row order; the one place the order Rust's cost tables assume is declared
   material_labels: string[];
@@ -47,7 +61,7 @@ export interface Payload {
   // reports plain gold spent alongside whatever the user picked.
   plans: BandPlan[];
   optimizer_plan: number;
-  upgrade_info: OneUpgradeInput[];
+  upgrade_info: SentUpgrade[];
   special_budget: number;
   special_state?: number[];
   // every chest stack of process_chests, by its key
@@ -64,145 +78,105 @@ export interface Payload {
   adv_cache: any;
 }
 
-export enum NormalOverride {
-  Full,
-  Empty,
-  Optimizer,
-}
-export enum AdvOverride {
-  Full,
-  Grace,
-  Empty,
-  Optimizer,
-}
-export interface StateOverride {
-  juice: NormalOverride;
-  book: NormalOverride;
+// what of an optimizer result is fed back into the next payload
+interface FedState {
+  upgrade_arr?: Upgrade[];
+  special_state?: number[];
+  chest_states?: Map<string, number[]>;
+  adv_cache?: any;
+  prep_output?: { juice_info: any };
 }
 
-// this kinda of have to work differently from stateoverride because weapon and highsest aren't independent
-export interface SpecialOverride {
-  optimizer: boolean;
-  weapon_first: boolean;
-  highest_first: boolean;
+// the advanced strategy index each override picks
+const ADV_OVERRIDE_INDEX = {
+  [AdvOverride.Empty]: 0,
+  [AdvOverride.Grace]: GRACE_FIRST_N.length - 1,
+  [AdvOverride.Full]: JOINED_ADV_JUICE.length - 1,
+};
+
+// ids 0 and 1 are juices, the rest books; Full takes every id the upgrade can use
+function normal_tap(
+  tap: number[],
+  usable: number[],
+  override?: StateOverride,
+): number[] {
+  if (override === undefined) return tap;
+  const setting = (id: number) => (id <= 1 ? override.juice : override.book);
+  return [
+    ...tap.filter((id) => setting(id) === NormalOverride.Optimizer),
+    ...usable.filter((id) => setting(id) === NormalOverride.Full),
+  ];
 }
 
-export interface AdvStateOverride {
-  juice: AdvOverride;
-  scroll: AdvOverride;
-}
-export interface OptimizerOverride {
-  normal: StateOverride;
-  special: SpecialOverride;
-  advanced: AdvStateOverride;
+function adv_state(state: number[][], override?: AdvStateOverride) {
+  return state.map((one_state, index) => {
+    const setting = index === 0 ? override?.juice : override?.scroll;
+    return [
+      setting === undefined || setting === AdvOverride.Optimizer
+        ? one_state[0]
+        : ADV_OVERRIDE_INDEX[setting],
+    ];
+  });
 }
 
-function keyed_to_array(
-  keyed_upgrades: KeyedUpgrades,
-  upgrade_arr: Upgrade[] | null,
-  tier: number,
-  express: boolean,
-  pretend_30_40: boolean,
-  normal_override?: StateOverride,
-  adv_override?: AdvStateOverride,
-  juice_info = useRuntimeStore().histogram.result?.juice_info ?? null,
-): OneUpgradeInput[] {
-  const upgrade_map = get_upgrade_map(upgrade_arr, tier);
-  return Object.entries(keyed_upgrades)
-    .filter((x) => tier === 0 || x[1].is_normal_honing) // shouldn't really be necessary but apparently it went  wrong once somehow so adding this guard here
-    .filter((x) => tier === 1 || x[1].piece_index < NUM_ADV_PIECES)
-    .map(([key, one_upgrade_input]) => {
-      const upgrade = upgrade_map.get(key) ?? null;
+// The profile's upgrades as Rust takes them, each with the state of `fed` from the taps since the
+// last input on. Pure: the stored upgrades are not written.
+function upgrade_info(
+  profile: CharProfile,
+  fed?: FedState,
+  override?: OptimizerOverride,
+): SentUpgrade[] {
+  const tier = profile.tier;
+  const upgrade_map = get_upgrade_map(fed?.upgrade_arr, tier);
+  const juice_info = fed?.prep_output?.juice_info;
+  return (
+    Object.entries(profile.keyed_upgrades)
+      // shouldn't be necessary, but it went wrong once
+      .filter(([, u]) => tier === 0 || u.is_normal_honing)
+      .filter(([, u]) => tier === 1 || u.piece_index < NUM_ADV_PIECES)
+      .map(([key, keyed]) => {
+        const {
+          expanded: _expanded,
+          used_materials: _used,
+          taps_since_last_input: taps,
+          ...out
+        } = structuredClone(toRaw(keyed));
+        out.double_balls =
+          !out.is_normal_honing &&
+          (ADV_ALWAYS_DOUBLE_BALLS ||
+            (out.upgrade_index < 2 && profile.express_event) ||
+            (out.upgrade_index >= 2 && profile.pretend_30_40_x2_grace));
+        out.unlocked = out.is_normal_honing
+          ? out.starting_artisan > 0 || out.starting_num_taps > 0
+          : out.adv_progress !== null &&
+            (out.adv_progress[0] > 0 || out.adv_progress[1] > 0);
+        const upgrade = upgrade_map.get(key);
+        if (!(upgrade?.state?.length > 0 && juice_info)) return out;
 
-      one_upgrade_input.double_balls =
-        !one_upgrade_input.is_normal_honing &&
-        (ADV_ALWAYS_DOUBLE_BALLS ||
-          (one_upgrade_input.upgrade_index < 2 && express) ||
-          (one_upgrade_input.upgrade_index >= 2 && pretend_30_40));
-      // console.log(one_upgrade_input.double_balls);
-      let out = structuredClone(toRaw(one_upgrade_input));
-      if (
-        !(upgrade && upgrade.state && upgrade.state.length > 0 && juice_info)
-      ) {
+        // a reset upgrade (state []) is sent empty
+        if (out.state?.length === 0) return out;
+        const usable = (
+          upgrade.is_normal_honing
+            ? juice_info.normal_uindex_to_id
+            : juice_info.adv_uindex_to_id
+        )[upgrade.piece_type_usize][upgrade.upgrade_index];
+        out.state = upgrade.is_normal_honing
+          ? upgrade.state
+              .slice(taps)
+              .map((tap) => normal_tap(tap, usable, override?.normal))
+          : adv_state(upgrade.state, override?.advanced);
         return out;
-      }
-
-      let relevant_id_map = upgrade.is_normal_honing
-        ? juice_info.normal_uindex_to_id
-        : juice_info.adv_uindex_to_id;
-
-      let relevant_upgrade =
-        relevant_id_map[upgrade.piece_type_usize][upgrade.upgrade_index];
-      // console.log(adv_override);
-      out.unlocked = out.is_normal_honing
-        ? out.starting_artisan > 0 || out.starting_num_taps > 0
-        : out.adv_progress !== null &&
-          (out.adv_progress[0] > 0 || out.adv_progress[1] > 0);
-
-      if (out.state !== null && out.state.length === 0) {
-        // special cased, reset will wipe it like this, so dont copy from optimizer bundle
-        // console.log("overwritten");
-        one_upgrade_input.state = null; // so the next time it doesn't overwrite
-        return out;
-      }
-      out.state = upgrade.is_normal_honing
-        ? upgrade.state.slice(out.taps_since_last_input).map((one_state) =>
-            normal_override === undefined
-              ? one_state
-              : one_state
-                  .filter((id) =>
-                    normal_override.juice == NormalOverride.Empty && id <= 1
-                      ? false
-                      : true,
-                  )
-                  .concat(
-                    relevant_upgrade.filter(
-                      (id) =>
-                        normal_override.juice == NormalOverride.Full && id <= 1,
-                    ),
-                  )
-                  .filter((id) =>
-                    normal_override.book == NormalOverride.Empty && id > 1
-                      ? false
-                      : true,
-                  )
-                  .concat(
-                    relevant_upgrade.filter(
-                      (id) =>
-                        normal_override.book == NormalOverride.Full && id > 1,
-                    ),
-                  ),
-          )
-        : upgrade.state.map((one_state, index) => [
-            adv_override === undefined ||
-            (index == 0 ? adv_override.juice : adv_override.scroll) ==
-              AdvOverride.Optimizer
-              ? one_state[0]
-              : (index == 0 ? adv_override.juice : adv_override.scroll) ==
-                  AdvOverride.Empty
-                ? 0
-                : (index == 0 ? adv_override.juice : adv_override.scroll) ==
-                    AdvOverride.Grace
-                  ? GRACE_FIRST_N.length - 1
-                  : JOINED_ADV_JUICE.length - 1,
-          ]);
-
-      return out;
-    });
+      })
+  );
 }
 
+// The order the user picked in place of the optimizer's: normal honing first, then (highest first)
+// each piece's top upgrade, then the preferred piece type, then (lowest first) by level.
 export function special_sort_override(
   special_state: number[],
   upgrade_arr: Upgrade[],
   special_override?: SpecialOverride,
 ): number[] {
-  // console.log(
-  //   special_state,
-  //   special_override,
-  //   special_override === undefined,
-  //   special_state === undefined,
-  //   special_override?.optimizer,
-  // );
   if (
     special_override === undefined ||
     special_state === undefined ||
@@ -210,68 +184,29 @@ export function special_sort_override(
   ) {
     return special_state;
   }
-
-  let out = structuredClone(special_state);
-  if (special_override.highest_first) {
-    // For each piece_index, find the max upgrade_index among the indices present
-    // in special_state. Upgrades that are the peak of their piece_index float
-    // to the front; all others sink to the back. weapon_first does not apply.
-    const peak_per_piece = new Map<number, number>();
-    for (const idx of special_state) {
-      const u = upgrade_arr[idx];
-      const current = peak_per_piece.get(u.piece_index);
-      if (current === undefined || u.upgrade_index > current) {
-        peak_per_piece.set(u.piece_index, u.upgrade_index);
-      }
-    }
-
-    const is_peak = (idx: number): boolean => {
-      const u = upgrade_arr[idx];
-      return peak_per_piece.get(u.piece_index) === u.upgrade_index;
-    };
-
-    out.sort((a, b) => {
-      const a_peak = is_peak(a);
-      const b_peak = is_peak(b);
-      const ua = upgrade_arr[a];
-      const ub = upgrade_arr[b];
-
-      const a_preferred =
-        (ua.piece_type_usize === 1) === special_override.weapon_first;
-      const b_preferred =
-        (ub.piece_type_usize === 1) === special_override.weapon_first;
-      if (ua.is_normal_honing !== ub.is_normal_honing) {
-        return ua.is_normal_honing ? -1 : 1;
-      } else if (a_peak !== b_peak) {
-        return a_peak ? -1 : 1;
-      } else if (a_preferred !== b_preferred) {
-        return a_preferred ? -1 : 1;
-      }
-      return 0;
-    });
-  } else {
-    // Sort ascending by upgrade_index, with weapon_first as the primary key.
-    out.sort((a, b) => {
-      const ua = upgrade_arr[a];
-      const ub = upgrade_arr[b];
-      const a_preferred =
-        (ua.piece_type_usize === 1) === special_override.weapon_first;
-      const b_preferred =
-        (ub.piece_type_usize === 1) === special_override.weapon_first;
-      if (ua.is_normal_honing !== ub.is_normal_honing) {
-        return ua.is_normal_honing ? -1 : 1;
-      } else if (a_preferred !== b_preferred) {
-        return a_preferred ? -1 : 1;
-      } else {
-        return ua.upgrade_index - ub.upgrade_index;
-      }
-    });
+  const { weapon_first, highest_first } = special_override;
+  const peak = new Map<number, number>();
+  for (const idx of special_state) {
+    const u = upgrade_arr[idx];
+    peak.set(
+      u.piece_index,
+      Math.max(peak.get(u.piece_index) ?? -1, u.upgrade_index),
+    );
   }
-  // console.log("sorted", out);
-  return out;
-}
-function apply_tax(x: number): number {
-  return Math.max(Math.min(1, x), Math.floor(x * 0.95));
+  const rank = (idx: number) => {
+    const u = upgrade_arr[idx];
+    return [
+      u.is_normal_honing ? 0 : 1,
+      highest_first && peak.get(u.piece_index) !== u.upgrade_index ? 1 : 0,
+      (u.piece_type_usize === 1) === weapon_first ? 0 : 1,
+      highest_first ? 0 : u.upgrade_index,
+    ];
+  };
+  return [...special_state].sort((a, b) => {
+    const [ra, rb] = [rank(a), rank(b)];
+    const at = ra.findIndex((x, i) => x !== rb[i]);
+    return at === -1 ? 0 : ra[at] - rb[at];
+  });
 }
 
 // A lower tier's stock counted as the tier's materials it converts to, which is how Rust sees a
@@ -303,26 +238,6 @@ export function merge_lower_tier(
   return out;
 }
 
-export function build_materials(): Record<string, OneMaterial> {
-  const roster_store = useRosterStore();
-  const {
-    active_profile,
-    active_roster_mats_owned,
-    active_tradable_mats_owned,
-  } = storeToRefs(roster_store);
-  // Prices here are per unit: which bundle a material is sold in, and whether it is
-  // cheaper to convert one up from a lower tier, are both resolved by the store.
-  return materials_of(
-    active_profile.value.tier,
-    input_column_to_num(active_profile.value.bound_budgets),
-    input_column_to_num(active_roster_mats_owned.value),
-    input_column_to_num(active_tradable_mats_owned.value),
-    active_profile.value.bound_budgets.enabled,
-    roster_store.active_unit_prices,
-    roster_store.active_effective_prices,
-  );
-}
-
 function materials_of(
   tier: number,
   bound: Record<string, number>,
@@ -330,7 +245,7 @@ function materials_of(
   tradable_owned: Record<string, number>,
   enabled: Record<string, boolean>,
   listed: Record<string, number>,
-  effective: Record<string, number>,
+  taxed: Record<string, number>,
 ): Record<string, OneMaterial> {
   const merged = merge_lower_tier(
     tier,
@@ -339,6 +254,7 @@ function materials_of(
     tradable_owned,
     enabled,
   );
+  const effective = effective_unit_prices(listed);
   const out: Record<string, OneMaterial> = {};
   for (const label of ALL_LABELS[tier]) {
     // A disabled material is one the user will not trade, which `bound` already models
@@ -350,67 +266,16 @@ function materials_of(
       roster: merged.roster[label] ?? 0,
       // gold is never sold
       tradable: !traded || label === "Gold" ? 0 : (merged.tradable[label] ?? 0),
-      taxed_price: traded ? apply_tax(listed[label]) : 0,
+      taxed_price: traded ? taxed[label] : 0,
       market_price: traded ? effective[label] : 0,
     };
   }
   return out;
 }
 
-export function build_payload(override?: OptimizerOverride): Payload {
-  const runtime = useRuntimeStore();
-  const { active_profile, processed_chests } = storeToRefs(useRosterStore());
-  const tier = active_profile.value.tier;
-  // console.log(runtime.optimizer.result?.adv_cache);
-  return {
-    material_labels: ALL_LABELS[tier],
-    materials: build_materials(),
-    // Rust asserts the plan does not decrease, and the dropdowns only disable the values
-    // that would break that rather than preventing them. Clamping here also copies the
-    // plan out of the reactive proxy, which postMessage cannot clone.
-    plans: [ALL_WORTHLESS, clamp_band_plan(active_profile.value.band_values)],
-    optimizer_plan: 1,
-    upgrade_info: keyed_to_array(
-      active_profile.value.keyed_upgrades,
-      runtime.optimizer.result?.upgrade_arr,
-      tier,
-      active_profile.value.express_event,
-      active_profile.value.pretend_30_40_x2_grace,
-      override?.normal,
-      override?.advanced,
-    ),
-    // a Serca character's T4 special leaps count too
-    special_budget: merge_lower_tier(
-      tier,
-      input_column_to_num(active_profile.value.special_budget),
-      {},
-      {},
-    ).bound[SPECIAL_LEAP_LABELS[tier]],
-    express_event: false, //active_profile.value.express_event, temporary overwrite while event doesn't do anything
-    tier,
-    min_resolution: active_profile.value.min_resolution,
-    num_threads: 1,
-    metric_type: 1,
-    special_state: special_sort_override(
-      toRaw(runtime.optimizer.result?.special_state),
-      runtime.optimizer.result?.upgrade_arr,
-      override?.special,
-    ),
-    // Amounts stay fractional and Rust floors the total.
-    chests: Object.fromEntries(
-      processed_chests.value.map((chest) => [
-        chest.key,
-        { count: chest.count, band: chest.band, options: chest.options },
-      ]),
-    ),
-    chest_states: toRaw(runtime.optimizer.result?.chest_states),
-    special_label: SPECIAL_LEAP_LABELS[tier],
-    adv_cache: toRaw(runtime.adv_cache),
-  };
-}
-
-// The payload of a profile's current upgrades and settings over given budgets, chests and prices,
-// with no optimizer state. Plain, so it can be hashed and posted.
+// The payload of a profile's current upgrades and settings over given budgets, chests and prices
+// (per bundle key, with the bundle bought), with no optimizer state. Plain, so it can be hashed
+// and posted. The calculator's payload is this plus states_payload.
 export function payload_for(
   profile: CharProfile,
   bound: Record<string, number>,
@@ -422,27 +287,10 @@ export function payload_for(
   bundles: Record<string, number>,
 ): Payload {
   const tier = profile.tier;
-  const listed = unit_prices(
-    {
-      ...Object.fromEntries(ALL_BUNDLE_KEYS.map((key) => [key, 0])),
-      ...prices,
-    },
-    bundles ?? {},
-  );
-  const upgrade_info = keyed_to_array(
-    profile.keyed_upgrades,
-    null,
-    tier,
-    profile.express_event,
-    profile.pretend_30_40_x2_grace,
-  ).map(
-    ({
-      expanded: _expanded,
-      used_materials: _used,
-      taps_since_last_input: _taps,
-      ...rest
-    }) => rest,
-  );
+  const bundle_prices = {
+    ...Object.fromEntries(ALL_BUNDLE_KEYS.map((key) => [key, 0])),
+    ...prices,
+  };
   return JSON.parse(
     JSON.stringify({
       material_labels: ALL_LABELS[tier],
@@ -452,21 +300,26 @@ export function payload_for(
         roster,
         tradable,
         profile.bound_budgets.enabled,
-        listed,
-        effective_unit_prices(listed),
+        unit_prices(bundle_prices, bundles ?? {}),
+        // the fee is taken per bundle sold
+        unit_prices(bundle_prices, bundles ?? {}, sell_tax),
       ),
+      // Rust asserts the plan does not decrease, and the dropdowns only disable the values
+      // that would break that rather than preventing them.
       plans: [ALL_WORTHLESS, clamp_band_plan(profile.band_values)],
       optimizer_plan: 1,
-      upgrade_info,
+      upgrade_info: upgrade_info(profile),
+      // a Serca character's T4 special leaps count too
       special_budget:
         merge_lower_tier(tier, special, {}, {}).bound[
           SPECIAL_LEAP_LABELS[tier]
         ] ?? 0,
-      express_event: false,
+      express_event: false, // temporary overwrite while the event does nothing
       tier,
       min_resolution: profile.min_resolution,
       num_threads: 1,
       metric_type: 1,
+      // Amounts stay fractional and Rust floors the total.
       chests: Object.fromEntries(
         chests.map((chest) => [
           chest.key,
@@ -479,26 +332,76 @@ export function payload_for(
   );
 }
 
-// the histogram's payload of what an optimizer run of `payload` chose
+// a snapshot's budgets and prices with the given chests, for one character
+export function snapshot_payload(
+  profile: CharProfile,
+  snapshot: Snapshot,
+  chests: Chest[],
+): Payload {
+  const char = snapshot.chars[profile.id];
+  return payload_for(
+    profile,
+    char?.bound ?? {},
+    snapshot.roster_owned,
+    snapshot.tradable,
+    char?.special ?? {},
+    chests,
+    snapshot.prices,
+    snapshot.bundles,
+  );
+}
+
+// `payload` with what an optimizer result chose, overridden where the user asked
 export function states_payload(
   payload: Payload,
   profile: CharProfile,
-  state: any,
+  state: FedState,
+  override?: OptimizerOverride,
 ): Payload {
   return {
     ...payload,
-    upgrade_info: keyed_to_array(
-      profile.keyed_upgrades,
+    upgrade_info: upgrade_info(profile, state, override),
+    special_state: special_sort_override(
+      state.special_state,
       state.upgrade_arr,
-      profile.tier,
-      profile.express_event,
-      profile.pretend_30_40_x2_grace,
-      undefined,
-      undefined,
-      state.prep_output.juice_info,
+      override?.special,
     ),
-    special_state: state.special_state,
     chest_states: state.chest_states,
     adv_cache: state.adv_cache,
   };
+}
+
+// the active profile over the store's budgets, chests and prices, with no state
+function store_payload(): Payload {
+  const store = useRosterStore();
+  const profile = store.active_profile;
+  return payload_for(
+    profile,
+    input_column_to_num(profile.bound_budgets),
+    input_column_to_num(store.active_roster_mats_owned),
+    input_column_to_num(store.active_tradable_mats_owned),
+    input_column_to_num(profile.special_budget),
+    store.processed_chests,
+    input_column_to_num(store.active_mats_prices),
+    store.active_selected_bundles,
+  );
+}
+
+export const build_materials = () => store_payload().materials;
+
+// The calculator's payload, with the last optimizer result's states fed back so the next run
+// starts from them.
+export function build_payload(override?: OptimizerOverride): Payload {
+  const runtime = useRuntimeStore();
+  const profile = useRosterStore().active_profile;
+  const out = states_payload(
+    store_payload(),
+    profile,
+    { ...runtime.optimizer.result, adv_cache: toRaw(runtime.adv_cache) },
+    override,
+  );
+  // a reset upgrade is sent empty once, then takes the optimizer's state again
+  for (const keyed of Object.values(profile.keyed_upgrades))
+    if (keyed.state?.length === 0) keyed.state = null;
+  return out;
 }

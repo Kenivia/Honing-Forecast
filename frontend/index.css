@@ -23,9 +23,8 @@ optgroup {
   font: inherit;
 }
 html {
-  font-family: "Nunito";
   font-weight: 400;
-  color-scheme: light dark;
+  color-scheme: dark;
   text-rendering: optimizeLegibility;
   color: var(--text-main);
 }

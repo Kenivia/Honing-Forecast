@@ -22,13 +22,6 @@ export const ANNOTATION_LABELS = [
   "+Roster-Bound",
   "+Tradable",
 ];
-export const BUTTON_LABELS = [
-  "Show Average cost",
-  "Show Bound owned",
-  "Show Bound+Roster bound",
-  "Show Bound+Roster+Trade",
-];
-export const CSS_NAMES = ["avg", "bound", "roster-bound", "tradable"];
 
 // ============================================================================
 // Ownership bands
@@ -44,6 +37,8 @@ export const CSS_NAMES = ["avg", "bound", "roster-bound", "tradable"];
 // one band on its own rather than a cumulative threshold.
 export const BAND_LABELS = ["Bound", "Roster", "Tradable"];
 export const BAND_COLORS = ["--bound", "--roster", "--tradable"];
+// the bands in full, for the chest panels
+export const BAND_NAMES = ["Char bound", "Roster bound", "Tradable"];
 export const NUM_BANDS = 3;
 
 // String valued so a payload and a save are both readable, ordered so the index is rank.
@@ -93,35 +88,28 @@ export const JOINED_ADV_JUICE = GRACE_FIRST_N.map((x) => [x, 0]).concat(
   NON_GRACE_FIRST_N.map((x) => [255, x]),
 );
 
-export const NARROW_WIDTH = 900;
-export const BUDGET_NARROW_WIDTH = 1300;
-export const PLUS_TIER_CONVERSION = [
-  // index corresponds to the old tier
-  // this only really works for 2 tiers
-  {
-    // note this is the +n number not the upgrade index (= upgrade_index + 1)
-    "20": 11,
-    "21": 12,
-    "22": 13,
-    "23": 14,
-    "24": 16,
-    "25": 18,
-  },
-  {
-    "11": 20,
-    "12": 21,
-    "13": 22,
-    "14": 23,
-    "16": 24,
-    "18": 25,
-  },
+// +n of one tier as the other's, index is the old tier. Only works for 2 tiers. The +n number
+// is not the upgrade index (= upgrade_index + 1).
+const T4_TO_SERCA: Record<string, number> = {
+  "20": 11,
+  "21": 12,
+  "22": 13,
+  "23": 14,
+  "24": 16,
+  "25": 18,
+};
+export const PLUS_TIER_CONVERSION: Record<string, number>[] = [
+  T4_TO_SERCA,
+  Object.fromEntries(
+    Object.entries(T4_TO_SERCA).map(([t4, serca]) => [
+      String(serca),
+      Number(t4),
+    ]),
+  ),
 ];
+// normal honing levels below this +n are always done
+export const NORMAL_FLOOR = [10, 11];
 export const TIER_LABELS = ["Tier 4", "T4.5 Serca"];
-export const TIER_OPTIONS = TIER_LABELS.map((label, index) => ({
-  label,
-  value: index,
-}));
-export const DEFAULT_TIER = 0;
 
 // ============================================================================
 // Materials
@@ -321,23 +309,29 @@ export const FALLBACK_PRICES: Record<string, number> = Object.fromEntries(
 
 // Which bundle the user buys, per material. The largest is the usual best value, and it
 // is what a market fetch would pick for shards.
+const default_bundle = (label: string) => MATERIALS[label].bundle_sizes.at(-1);
 export const default_selected_bundles = (): Record<string, number> =>
   Object.fromEntries(
-    ALL_MATERIAL_LABELS.map((label) => [
-      label,
-      MATERIALS[label].bundle_sizes[MATERIALS[label].bundle_sizes.length - 1],
-    ]),
+    ALL_MATERIAL_LABELS.map((label) => [label, default_bundle(label)]),
   );
 
-// Price of one unit of each material, from its selected bundle's price.
+// What a bundle sells for after the market's 5% fee.
+export const sell_tax = (price: number) =>
+  Math.max(Math.min(1, price), Math.floor(price * 0.95));
+
+// Price of one unit of each material, from its selected bundle's price (taxed by `of`).
 export function unit_prices(
   bundle_prices: Record<string, number>,
   selected: Record<string, number>,
+  of = (price: number) => price,
 ): Record<string, number> {
   const out: Record<string, number> = {};
   for (const label of ALL_MATERIAL_LABELS) {
-    const size = selected[label] ?? MATERIALS[label].bundle_sizes[0];
-    out[label] = bundle_prices[bundle_key(label, size)] / size;
+    // a missing or stale selection is the default bundle
+    const size = MATERIALS[label].bundle_sizes.includes(selected[label])
+      ? selected[label]
+      : default_bundle(label);
+    out[label] = of(bundle_prices[bundle_key(label, size)]) / size;
   }
   return out;
 }

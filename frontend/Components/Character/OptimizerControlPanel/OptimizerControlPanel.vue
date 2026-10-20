@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { storeToRefs } from "pinia";
-import { AdvOverride, NormalOverride } from "@/WasmInterface/PayloadBuilder";
+import { AdvOverride, NormalOverride } from "@/WasmInterface/Overrides";
 import { start_eval_hist } from "../CharWorkerUtils";
 import { computed, ref } from "vue";
 import { GridConfig } from "@/Utils/GridStyling";
@@ -9,6 +9,7 @@ import { get_optimizer_working } from "../Instructions/InstructionUtils";
 import OptimizerRadioButton from "./OptimizerRadioButton.vue";
 import { locale_to_fixed } from "@/Utils/Helpers";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
+import { DEFAULT_CHAR_PROFILE } from "@/Stores/CharacterProfile";
 const runtime = useRuntimeStore();
 
 const store = useRosterStore();
@@ -18,49 +19,78 @@ const show_override = ref(false);
 
 const optimizer_working = computed(get_optimizer_working);
 
-const juice_options: { value: NormalOverride; label: string }[] = [
-  { value: NormalOverride.Optimizer, label: "Original" },
-  { value: NormalOverride.Full, label: "Full juice" },
-  { value: NormalOverride.Empty, label: "No juice" },
+type Group = "normal" | "special" | "advanced";
+const option = <T,>(value: T, label: string) => ({ value, label });
+
+// one radio column per override; the special one sits between book and adv juice
+const COLUMNS = [
+  {
+    title: "Juice Usage",
+    group: "normal",
+    key: "juice",
+    options: [
+      option(NormalOverride.Optimizer, "Original"),
+      option(NormalOverride.Full, "Full juice"),
+      option(NormalOverride.Empty, "No juice"),
+    ],
+  },
+  {
+    title: "Book Usage",
+    group: "normal",
+    key: "book",
+    options: [
+      option(NormalOverride.Optimizer, "Original"),
+      option(NormalOverride.Full, "Full Book"),
+      option(NormalOverride.Empty, "No Book"),
+    ],
+  },
+  { title: "Special Usage", group: "special" },
+  {
+    title: "Adv Juice Usage",
+    group: "advanced",
+    key: "juice",
+    options: [
+      option(AdvOverride.Optimizer, "Original"),
+      option(AdvOverride.Full, "Full juice"),
+      option(AdvOverride.Grace, "Juice on Grace"),
+      option(AdvOverride.Empty, "No juice"),
+    ],
+  },
+  {
+    title: "Adv Scroll Usage",
+    group: "advanced",
+    key: "scroll",
+    options: [
+      option(AdvOverride.Optimizer, "Original"),
+      option(AdvOverride.Full, "Full Scroll"),
+      option(AdvOverride.Grace, "Scroll on Grace"),
+      option(AdvOverride.Empty, "No Scroll"),
+    ],
+  },
+] as { title: string; group: Group; key?: string; options?: any[] }[];
+
+// the special order, shown once "Original" is unticked
+const SPECIAL = [
+  {
+    key: "weapon_first",
+    options: [option(true, "Weapon First"), option(false, "Armor First")],
+  },
+  {
+    key: "highest_first",
+    options: [option(true, "Highest first"), option(false, "Lowest first")],
+  },
 ];
 
-const book_options: { value: NormalOverride; label: string }[] = [
-  { value: NormalOverride.Optimizer, label: "Original" },
-  { value: NormalOverride.Full, label: "Full Book" },
-  { value: NormalOverride.Empty, label: "No Book" },
-];
-
-const adv_juice_options: { value: AdvOverride; label: string }[] = [
-  { value: AdvOverride.Optimizer, label: "Original" },
-  { value: AdvOverride.Full, label: "Full juice" },
-  { value: AdvOverride.Grace, label: "Juice on Grace" },
-  { value: AdvOverride.Empty, label: "No juice" },
-];
-
-const adv_scroll_options: { value: AdvOverride; label: string }[] = [
-  { value: AdvOverride.Optimizer, label: "Original" },
-  { value: AdvOverride.Full, label: "Full Scroll" },
-  { value: AdvOverride.Grace, label: "Scroll on Grace" },
-  { value: AdvOverride.Empty, label: "No Scroll" },
-];
-
-function on_juice_change(v: NormalOverride) {
-  active_profile.value.optimizer_override.normal.juice = v;
+function set_override(group: Group, key: string, value: unknown) {
+  active_profile.value.optimizer_override[group][key] = value;
   start_eval_hist();
 }
 
-function on_book_change(v: NormalOverride) {
-  active_profile.value.optimizer_override.normal.book = v;
-  start_eval_hist();
-}
-
-function on_adv_juice_change(v: AdvOverride) {
-  active_profile.value.optimizer_override.advanced.juice = v;
-  start_eval_hist();
-}
-
-function on_adv_scroll_change(v: AdvOverride) {
-  active_profile.value.optimizer_override.advanced.scroll = v;
+function toggle_compare() {
+  active_profile.value.optimizer_override = structuredClone(
+    DEFAULT_CHAR_PROFILE.optimizer_override,
+  );
+  show_override.value = !show_override.value;
   start_eval_hist();
 }
 
@@ -87,18 +117,12 @@ const grid: GridConfig = {
         <span
           :style="{
             color:
-              runtime.optimizer.est_progress_percentage ==
-              100
+              runtime.optimizer.est_progress_percentage == 100
                 ? 'var(--gold)'
                 : 'var(--warning-dark)',
           }"
         >
-          {{
-            locale_to_fixed(
-              runtime.optimizer.est_progress_percentage,
-              2,
-            )
-          }}%
+          {{ locale_to_fixed(runtime.optimizer.est_progress_percentage, 2) }}%
         </span>
         <div class="progress-bar">
           <div
@@ -118,21 +142,7 @@ const grid: GridConfig = {
             opacity: optimizer_working ? 0.5 : 1,
             pointerEvents: optimizer_working ? 'none' : 'auto',
           }"
-          @click="
-            () => {
-              active_profile.optimizer_override.normal.juice =
-                NormalOverride.Optimizer;
-              active_profile.optimizer_override.normal.book =
-                NormalOverride.Optimizer;
-              active_profile.optimizer_override.special.optimizer = true;
-              active_profile.optimizer_override.advanced.juice =
-                AdvOverride.Optimizer;
-              active_profile.optimizer_override.advanced.scroll =
-                AdvOverride.Optimizer;
-              show_override = !show_override;
-              start_eval_hist();
-            }
-          "
+          @click="toggle_compare"
         >
           Compare with simple strategies
         </button>
@@ -149,129 +159,54 @@ const grid: GridConfig = {
       >
         <div v-if="show_override" class="contents">
           <div class="mats-row h-fit! items-end!">
-            <span class="h-fit w-full pl-2 text-left">Juice Usage</span>
-            <span class="h-fit w-full pl-2 text-left">Book Usage</span>
-            <span class="h-fit w-full pl-2 text-left">Special Usage</span>
-            <span class="h-fit w-full pl-2 text-left">Adv Juice Usage</span>
-            <span class="h-fit w-full pl-2 text-left">Adv Scroll Usage</span>
+            <span
+              v-for="column in COLUMNS"
+              :key="column.title"
+              class="h-fit w-full pl-2 text-left"
+              >{{ column.title }}</span
+            >
           </div>
 
           <div class="mats-row h-fit! items-start! border-b-0!">
-            <OptimizerRadioButton
-              :options="juice_options"
-              :model-value="active_profile.optimizer_override.normal.juice"
-              :on-change="on_juice_change"
-            />
-
-            <OptimizerRadioButton
-              :options="book_options"
-              :model-value="active_profile.optimizer_override.normal.book"
-              :on-change="on_book_change"
-            />
-
-            <!-- special is a special case (hah) because there's 2 things that needs to be selected, hiding them when not ticked to avoid confusing -->
-            <div class="flex h-full grow flex-col">
-              <label class="control-panel-checkbox-row">
-                <input
-                  type="checkbox"
-                  v-model="active_profile.optimizer_override.special.optimizer"
-                  @change="start_eval_hist"
-                />
-                <span>Original</span>
-              </label>
-              <label
-                class="control-panel-checkbox-row"
-                v-if="!active_profile.optimizer_override.special.optimizer"
+            <template v-for="column in COLUMNS" :key="column.title">
+              <!-- two things to pick, hidden while the optimizer's order is used -->
+              <div
+                v-if="column.group === 'special'"
+                class="flex h-full grow flex-col"
               >
-                <input
-                  type="radio"
-                  :checked="
-                    active_profile.optimizer_override.special.weapon_first ===
-                    true
-                  "
-                  @click="
-                    (e) => {
-                      active_profile.optimizer_override.special.weapon_first = true;
-                      (e.target as HTMLInputElement).checked = true;
-                      start_eval_hist();
-                    }
-                  "
-                />
-                <span>Weapon First</span>
-              </label>
-              <label
-                class="control-panel-checkbox-row"
-                v-if="!active_profile.optimizer_override.special.optimizer"
-              >
-                <input
-                  type="radio"
-                  :checked="
-                    active_profile.optimizer_override.special.weapon_first ===
-                    false
-                  "
-                  @click="
-                    (e) => {
-                      active_profile.optimizer_override.special.weapon_first = false;
-                      (e.target as HTMLInputElement).checked = true;
-                      start_eval_hist();
-                    }
-                  "
-                />
-                <span>Armor First</span>
-              </label>
-              <label
-                class="control-panel-checkbox-row"
-                v-if="!active_profile.optimizer_override.special.optimizer"
-              >
-                <input
-                  type="radio"
-                  :checked="
-                    active_profile.optimizer_override.special.highest_first ===
-                    true
-                  "
-                  @click="
-                    (e) => {
-                      active_profile.optimizer_override.special.highest_first = true;
-                      (e.target as HTMLInputElement).checked = true;
-                      start_eval_hist();
-                    }
-                  "
-                />
-                <span>Highest first</span>
-              </label>
-              <label
-                class="control-panel-checkbox-row"
-                v-if="!active_profile.optimizer_override.special.optimizer"
-              >
-                <input
-                  type="radio"
-                  :checked="
-                    active_profile.optimizer_override.special.highest_first ===
-                    false
-                  "
-                  @click="
-                    (e) => {
-                      active_profile.optimizer_override.special.highest_first = false;
-                      (e.target as HTMLInputElement).checked = true;
-                      start_eval_hist();
-                    }
-                  "
-                />
-                <span>Lowest first</span>
-              </label>
-            </div>
-
-            <OptimizerRadioButton
-              :options="adv_juice_options"
-              :model-value="active_profile.optimizer_override.advanced.juice"
-              :on-change="on_adv_juice_change"
-            />
-
-            <OptimizerRadioButton
-              :options="adv_scroll_options"
-              :model-value="active_profile.optimizer_override.advanced.scroll"
-              :on-change="on_adv_scroll_change"
-            />
+                <label class="control-panel-checkbox-row">
+                  <input
+                    type="checkbox"
+                    v-model="
+                      active_profile.optimizer_override.special.optimizer
+                    "
+                    @change="start_eval_hist"
+                  />
+                  <span>Original</span>
+                </label>
+                <template
+                  v-if="!active_profile.optimizer_override.special.optimizer"
+                >
+                  <OptimizerRadioButton
+                    v-for="pick in SPECIAL"
+                    :key="pick.key"
+                    :options="pick.options"
+                    :model-value="
+                      active_profile.optimizer_override.special[pick.key]
+                    "
+                    :on-change="(v) => set_override('special', pick.key, v)"
+                  />
+                </template>
+              </div>
+              <OptimizerRadioButton
+                v-else
+                :options="column.options"
+                :model-value="
+                  active_profile.optimizer_override[column.group][column.key]
+                "
+                :on-change="(v) => set_override(column.group, column.key, v)"
+              />
+            </template>
           </div>
         </div>
       </div>

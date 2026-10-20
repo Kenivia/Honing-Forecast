@@ -74,8 +74,11 @@ export function add_stack<T extends Chest>(
     old.title += ` / ${chest.title}`;
 }
 
+// a gives at least what b does, label for label over both (a cost is negative)
 const covers = (a: Bag, b: Bag) =>
-  Object.entries(b).every(([label, amount]) => (a[label] ?? 0) >= amount);
+  Object.keys({ ...a, ...b }).every(
+    (label) => (a[label] ?? 0) >= (b[label] ?? 0),
+  );
 
 // The stacks as a character of this tier takes them: T4 materials as Serca ones for a Serca
 // character, nothing of the other tier, and no option that another is at least as good as.
@@ -126,6 +129,11 @@ export function process_chests(chests: ManifestChest[], tier: number): Chest[] {
 
 // Per label and band, what the chests give opened as the states say, floored as Rust does. A
 // missing or unfitting state puts every chest on the first option, also as Rust does.
+// a state Rust takes: one count per option, summing to the stack's count
+export const state_fits = (chest: Chest, state?: number[]) =>
+  state?.length === chest.options.length &&
+  state.reduce((a, b) => a + b, 0) === chest.count;
+
 export function chest_gains(
   chests: Chest[],
   states?: Map<string, number[]>,
@@ -133,10 +141,7 @@ export function chest_gains(
   const out: Record<string, number[]> = {};
   for (const chest of chests) {
     let state = states?.get(chest.key);
-    if (
-      state?.length !== chest.options.length ||
-      state.reduce((a, b) => a + b, 0) !== chest.count
-    )
+    if (!state_fits(chest, state))
       state = chest.options.map((_, index) => (index ? 0 : chest.count));
     chest.options.forEach((option, index) => {
       for (const [label, amount] of Object.entries(option)) {

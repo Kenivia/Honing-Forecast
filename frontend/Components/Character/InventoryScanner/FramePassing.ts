@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 import { markRaw } from "vue";
 
-// Owns the capture stream, and so the user's permission. Lives in roster_config, never persisted.
+// Owns the capture stream, and so the user's permission. Lives in the runtime store, never persisted.
 export function create_frame_source() {
   let stream: MediaStream | null = null;
   let reader: ReadableStreamDefaultReader<VideoFrame> | null = null;

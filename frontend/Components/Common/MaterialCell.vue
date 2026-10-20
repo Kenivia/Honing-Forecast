@@ -58,6 +58,12 @@ function toggle_enabled(enabled: boolean) {
   props.callback?.();
 }
 
+function on_change(event: Event) {
+  this_data.value = get_modified_cell(as_column(), props.label, event);
+  props.setter(this_data.value);
+  props.callback?.();
+}
+
 watch(source_value, (val) => {
   this_data.value = val;
 });
@@ -113,15 +119,7 @@ watch(source_value, (val) => {
         minWidth: actual_input_width,
       }"
       v-model="this_data"
-      @change="
-        ((this_data = get_modified_cell(
-          input_column as InputColumn,
-          label,
-          $event,
-        )),
-        setter(get_modified_cell(input_column as InputColumn, label, $event)),
-        callback ? callback() : null)
-      "
+      @change="on_change"
       :disabled="!(input_column as InputColumn).enabled[label]"
     />
     <label

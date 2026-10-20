@@ -11,6 +11,7 @@ import { storeToRefs } from "pinia";
 import { start_all_workers, start_eval_hist } from "./CharWorkerUtils.js";
 import { useRosterStore } from "@/Stores/RosterConfig.js";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
+import { settle_deductions } from "./Instructions/Details/NormalDetails/SuccessUtils";
 const runtime = useRuntimeStore();
 const {
   active_profile,
@@ -34,7 +35,6 @@ watch(
     () => active_region.value,
   ],
   () => {
-    // console.log("start", active_profile.value, roster_config.value)
     if (active_profile.value.auto_start_optimizer) {
       start_all_workers();
     } else {
@@ -43,9 +43,14 @@ watch(
   },
   { deep: true, immediate: true },
 );
+// A character switch remounts this page (CharView keys it), and this runs after the next
+// character's page has started, so it only touches its own character.
+const own = active_profile.value;
 onUnmounted(() => {
-  // kill workers when going to market / roster view
-  runtime.cancel_active();
+  const bundles = runtime.for_char(own.id);
+  bundles?.optimizer.cancel();
+  bundles?.histogram.cancel();
+  settle_deductions(own);
 });
 </script>
 <template>

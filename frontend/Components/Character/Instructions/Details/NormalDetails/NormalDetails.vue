@@ -15,13 +15,18 @@ import {
   start_all_workers,
   start_eval_hist,
 } from "@/Components/Character/CharWorkerUtils";
-import { artisan_number, artisan_string } from "@/Utils/HoningUtil";
-import "@/Components/Character/Instructions/Details/details.css";
-import { get_optimizer_working } from "@/Components/Character/Instructions/InstructionUtils";
 import {
+  artisan_number,
+  artisan_string,
+  chance_percent,
+  chance_to_taps,
+} from "@/Utils/HoningUtil";
+import "@/Components/Character/Instructions/Details/details.css";
+import {
+  clear_snapshot,
   compute_used_materials,
-  mark_upgrade_as_done,
-  apply_remaining_mats,
+  deduct,
+  finish_upgrade,
   set_special_remaining,
   special_total,
 } from "./SuccessUtils";
@@ -29,6 +34,7 @@ import { FLOAT_TOL } from "@/Utils/Constants";
 import { GridConfig } from "@/Utils/GridStyling";
 import ManualArtisanInput from "@/Components/Character/Instructions/Details/ManualArtisanInput.vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
+import { get_optimizer_working } from "@/Components/Character/Instructions/InstructionUtils";
 const runtime = useRuntimeStore();
 
 const { active_profile } = storeToRefs(useRosterStore());
@@ -40,18 +46,9 @@ const props = defineProps<{
   index_in_special_state?: number;
 }>();
 
-const juice_info = computed(() => {
-  return runtime.histogram.result.juice_info;
-});
+const juice_info = computed(() => runtime.histogram.result.juice_info);
 
 const optimizer_working = computed(get_optimizer_working);
-const this_keyed = computed(
-  () => active_profile.value.keyed_upgrades[upgrade_key.value],
-);
-
-const taps_since_last_input = ref(0);
-const using_slider = ref(true);
-
 const upgrade_key = computed(() =>
   to_upgrade_key(
     props.upgrade.piece_index,
@@ -60,105 +57,74 @@ const upgrade_key = computed(() =>
     active_profile.value.tier,
   ),
 );
-
-const starting_artisan_string = ref(
-  locale_to_fixed(props.upgrade.starting_artisan * 100, 2, true) || "0.00",
+const this_keyed = computed(
+  () => active_profile.value.keyed_upgrades[upgrade_key.value],
 );
 
-const starting_artisan_number = ref(props.upgrade.starting_artisan);
+const taps_since_last_input = ref(0);
+const using_slider = ref(true);
+const starting_artisan_string = ref("0.00");
+const starting_artisan_number = ref(0);
+const current_chance_percentage = ref("");
+const chance_string = (failed: number) =>
+  locale_to_fixed(chance_percent(props.upgrade, failed), 2);
 
-const current_chance_percentage = ref(
-  locale_to_fixed(
-    ((Math.min(10, props.upgrade.starting_num_taps) / 10) *
-      props.upgrade.base_chance +
-      props.upgrade.base_chance +
-      props.upgrade.extra_chance) *
-      100,
-    2,
-  ),
-);
-
-const current_chance_to_num_taps = computed(() => {
-  return Math.round(
-    (parse_locale_float(
-      clean_percentage_input(
-        current_chance_percentage.value,
-        props.upgrade.base_chance * 100 + props.upgrade.extra_chance * 100,
-      ),
-    ) -
-      props.upgrade.base_chance * 100 -
-      props.upgrade.extra_chance * 100) /
-      (props.upgrade.base_chance * 10),
-  );
-});
-
+// props.upgrade changes when the optimizer reorders or a tick changes
 watch(
   () => props.upgrade.starting_artisan,
-  () => {
-    starting_artisan_string.value = locale_to_fixed(
-      props.upgrade.starting_artisan * 100,
-      2,
-      true,
-    );
-
-    starting_artisan_number.value = props.upgrade.starting_artisan;
-  }, // This watch is here to watch for when upgrade changes (optimizer shuffled order or tick /untick), in which case props.upgrade changes
+  (artisan) => {
+    starting_artisan_string.value = locale_to_fixed(artisan * 100, 2, true);
+    starting_artisan_number.value = artisan;
+  },
+  { immediate: true },
 );
-
 watch(
   [() => props.upgrade.starting_num_taps, () => props.upgrade.extra_chance],
   () => {
-    current_chance_percentage.value = locale_to_fixed(
-      ((Math.min(10, props.upgrade.starting_num_taps) / 10) *
-        props.upgrade.base_chance +
-        props.upgrade.base_chance +
-        props.upgrade.extra_chance) *
-        100,
-      2,
+    current_chance_percentage.value = chance_string(
+      props.upgrade.starting_num_taps,
     );
-  }, // This watch is here to watch for when upgrade changes (optimizer shuffled order or tick /untick), in which case props.upgrade changes (i think it might not be necesary? idk)
+  },
+  { immediate: true },
 );
 
-///////////////////////////////////////////////////////////////////////////////////////////
-// watchers triggered whenever optimizer runs (to reset)
-///////////////////////////////////////////////////////////////////////////////////////////
+const current_chance_to_num_taps = computed(() =>
+  chance_to_taps(
+    props.upgrade,
+    parse_locale_float(
+      clean_percentage_input(
+        current_chance_percentage.value,
+        chance_percent(props.upgrade, 0),
+      ),
+    ),
+  ),
+);
 
-function clear_used_budget() {
-  this_keyed.value.used_materials = null;
-}
-
+// reset as the optimizer starts, and on a budget edit when auto start is off
 function post_opt_run_reset() {
   taps_since_last_input.value = 0;
   using_slider.value = true;
   this_keyed.value.taps_since_last_input = 0;
-  runtime.budget_snapshot = null;
-  clear_used_budget();
+  this_keyed.value.used_materials = null;
+  clear_snapshot();
 }
-
 watch(
   () => runtime.optimizer.run_counter,
   () => {
-    // only do this as we start the optimizer,  shouldn't really matter but whatever
-    if (optimizer_working.value) {
-      post_opt_run_reset();
-    }
+    if (optimizer_working.value) post_opt_run_reset();
   },
-  { deep: true },
 );
-
-// changes in bound budgets will start the optimizer so it'll be gucci
-// this is for when autostart is turned off only
 watch(
   [
     () => active_profile.value.bound_budgets.values,
     () => active_profile.value.bound_budgets.enabled,
   ],
   () => {
-    if (!active_profile.value.auto_start_optimizer) {
-      if (!runtime.is_details_update) {
-        post_opt_run_reset();
-      }
-    }
+    if (
+      !active_profile.value.auto_start_optimizer &&
+      !runtime.is_details_update
+    )
+      post_opt_run_reset();
   },
   { deep: true },
 );
@@ -175,27 +141,13 @@ function write_normal_progress() {
   );
 
   this_keyed.value.starting_artisan = starting_artisan_number.value;
-
   this_keyed.value.starting_num_taps = using_slider.value
     ? Math.min(
         taps_since_last_input.value + props.upgrade.starting_num_taps,
         10,
       )
     : current_chance_to_num_taps.value;
-
-  this_keyed.value.taps_since_last_input = taps_since_last_input.value; // which is 0 when using_slice is false
-}
-
-function set_used_materials(pretend_zero_no_unlock: boolean) {
-  this_keyed.value.used_materials = compute_used_materials(
-    props.upgrade,
-    taps_since_last_input.value,
-    juice_info.value,
-    0,
-    0,
-    pretend_zero_no_unlock,
-    active_profile.value.tier,
-  );
+  this_keyed.value.taps_since_last_input = taps_since_last_input.value; // 0 off the slider
 }
 
 function change_wrapper(
@@ -204,32 +156,38 @@ function change_wrapper(
   worker_func = start_eval_hist,
 ) {
   runtime.is_details_update = true;
-
+  // non-integer intermediate inputs become 0
   taps_since_last_input.value = slider
     ? clamp(
         0,
         Number(taps_since_last_input.value),
         props.upgrade.normal_dist.length - 1,
-      ) // this kind of disallows any non-integer inputs by instantly setting invalid intermediate inputs to 0, but its like fine i think since it's not a big number or anything
+      )
     : 0;
-
   using_slider.value = slider;
-  if (slider) {
-    set_used_materials(true);
-  } else {
-    clear_used_budget();
-  }
-
-  apply_remaining_mats();
-
+  deduct(
+    this_keyed.value,
+    slider
+      ? compute_used_materials(
+          props.upgrade,
+          taps_since_last_input.value,
+          juice_info.value,
+          true,
+          active_profile.value.tier,
+        )
+      : null,
+  );
   func();
-
   write_normal_progress();
   worker_func();
   nextTick(() => {
     runtime.is_details_update = false;
   });
 }
+
+// the topmost upgrade may still be collapsed, and may get sorted down
+const expand = () => (this_keyed.value.expanded = true);
+
 function manual_artisan_change() {
   change_wrapper(false, () => {
     starting_artisan_string.value = clean_percentage_input(
@@ -239,78 +197,39 @@ function manual_artisan_change() {
     );
     starting_artisan_number.value =
       parse_locale_float(starting_artisan_string.value) / 100;
-    if (starting_artisan_number.value > FLOAT_TOL) {
-      // for the topmost upgrade, which may have expanded false still (and might get sorted down )
-      active_profile.value.keyed_upgrades[upgrade_key.value].expanded = true;
-    }
+    if (starting_artisan_number.value > FLOAT_TOL) expand();
   });
 }
 
 function manual_chance_change() {
   change_wrapper(false, () => {
-    current_chance_percentage.value = clean_percentage_input(
-      locale_to_fixed(
-        clamp(
-          100 * props.upgrade.base_chance + props.upgrade.extra_chance * 100,
-          parse_locale_float(
-            locale_to_fixed(
-              ((current_chance_to_num_taps.value / 10) *
-                props.upgrade.base_chance +
-                props.upgrade.base_chance) *
-                100,
-              2,
-            ),
-          ),
-          100 * props.upgrade.base_chance * 2 +
-            props.upgrade.extra_chance * 100,
-        ),
-        2,
-      ),
-      props.upgrade.base_chance * 100 + props.upgrade.extra_chance * 100,
-    );
-    if (
-      parse_locale_float(current_chance_percentage.value) >
-      props.upgrade.base_chance * 100 + props.upgrade.extra_chance * 100
-    ) {
-      // for the topmost upgrade, which may have expanded false still (and might get sorted down )
-      active_profile.value.keyed_upgrades[upgrade_key.value].expanded = true;
-    }
+    const failed = current_chance_to_num_taps.value;
+    current_chance_percentage.value = chance_string(failed);
+    if (failed > 0) expand();
   });
 }
 
 function confirm() {
   start_all_workers();
-  post_opt_run_reset(); // this is explicitly here because if it's already running then we need to trigger it manunally
+  post_opt_run_reset(); // a run already going would not tick run_counter
 }
 
 function slider_input() {
   change_wrapper(true, () => {
-    if (taps_since_last_input.value > 0) {
-      // for the topmost upgrade, which may have expanded false still (and might get sorted down )
-      active_profile.value.keyed_upgrades[upgrade_key.value].expanded = true;
-    }
+    const taps = taps_since_last_input.value;
+    if (taps > 0) expand();
     starting_artisan_string.value = artisan_string(
       props.upgrade,
-      Number(taps_since_last_input.value),
+      taps,
       juice_info.value,
     );
     starting_artisan_number.value = artisan_number(
       props.upgrade,
-      Number(taps_since_last_input.value),
+      taps,
       juice_info.value,
     );
-
-    current_chance_percentage.value = locale_to_fixed(
-      100 *
-        (props.upgrade.base_chance +
-          props.upgrade.extra_chance +
-          0.1 *
-            props.upgrade.base_chance *
-            Math.min(
-              10,
-              taps_since_last_input.value + props.upgrade.starting_num_taps,
-            )),
-      2,
+    current_chance_percentage.value = chance_string(
+      taps + props.upgrade.starting_num_taps,
     );
   });
 }
@@ -321,12 +240,9 @@ function reset() {
     () => {
       starting_artisan_string.value = "0.00";
       starting_artisan_number.value = 0;
-      current_chance_percentage.value = locale_to_fixed(
-        props.upgrade.base_chance * 100 + props.upgrade.extra_chance * 100,
-        2,
-      );
-
-      active_profile.value.keyed_upgrades[upgrade_key.value].state = []; // clearing state because like the previous entries aren't here anymore, whatever state we have is kinda bogus. keyed_to_array is special cased to not overwrite this
+      current_chance_percentage.value = chance_string(0);
+      // the old state no longer fits; keyed_to_array is special cased to not overwrite this
+      this_keyed.value.state = [];
     },
     () => {
       using_slider.value = true;
@@ -334,7 +250,7 @@ function reset() {
         props.upgrade.starting_artisan > 0 ||
         props.upgrade.starting_num_taps > 0
       ) {
-        start_all_workers(); // starting optimizer cos the instruction needs to change
+        start_all_workers(); // the instructions need to change
       } else {
         start_eval_hist();
       }
@@ -342,51 +258,36 @@ function reset() {
   );
 }
 
-// not gonna use change_wrapper cos its so different
 function succeed_click() {
-  runtime.is_details_update = true;
-  set_used_materials(false); // deduct unlock costs (just like free tap)
-  apply_remaining_mats();
-
-  post_opt_run_reset(); // THIS IS NEEDED BECAUSE this component is deleted when that happens and the watch statement wont catch it
-
-  mark_upgrade_as_done(props.upgrade); // this will call optimizer
-  nextTick(() => {
-    runtime.is_details_update = false;
-  });
+  finish_upgrade(
+    props.upgrade,
+    Number(taps_since_last_input.value),
+    juice_info.value,
+  );
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 // free tap branch
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-const expand_free_tap_artisan = ref(
-  props.upgrade.starting_artisan > 0 || props.upgrade.starting_num_taps > 0,
-);
+const expand_free_tap_artisan = ref(false);
 watch(
   () =>
     props.upgrade.starting_artisan > 0 || props.upgrade.starting_num_taps > 0,
-  () => {
-    expand_free_tap_artisan.value =
-      props.upgrade.starting_artisan > 0 || props.upgrade.starting_num_taps > 0;
-  },
+  (started) => (expand_free_tap_artisan.value = started),
+  { immediate: true },
 );
 
-const new_special_leaps = ref(special_total());
+// an empty input leaves the free taps as they are
+const new_special_leaps = ref<number | "">(0);
+watch(special_total, (total) => (new_special_leaps.value = total), {
+  immediate: true,
+});
 
 function special_succeed_click() {
-  set_special_remaining(Number(new_special_leaps.value));
-  this_keyed.value.used_materials = compute_used_materials(
-    props.upgrade,
-    0,
-    juice_info.value,
-    0,
-    0,
-    false, // so this is just the unlock cost
-    active_profile.value.tier,
-  );
-  apply_remaining_mats();
-  mark_upgrade_as_done(props.upgrade);
+  if (new_special_leaps.value !== "")
+    set_special_remaining(Number(new_special_leaps.value));
+  finish_upgrade(props.upgrade, 0, juice_info.value); // just the unlock
 }
 
 function special_fail_click() {
@@ -460,7 +361,6 @@ const special_grid: GridConfig = {
         v-model:starting_artisan="starting_artisan_string"
         v-model:current_chance_percentage="current_chance_percentage"
         :upgrade="upgrade"
-        :optimizer_working="optimizer_working"
         :taps_since_last_input="Number(taps_since_last_input)"
         :normal_dist_length="upgrade.normal_dist.length"
         :using_slider="using_slider"
@@ -538,7 +438,6 @@ const special_grid: GridConfig = {
           v-model:starting_artisan="starting_artisan_string"
           v-model:current_chance_percentage="current_chance_percentage"
           :upgrade="upgrade"
-          :optimizer_working="optimizer_working"
           :taps_since_last_input="taps_since_last_input"
           :normal_dist_length="upgrade.normal_dist.length"
           :using_slider="using_slider"

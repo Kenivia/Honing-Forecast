@@ -1,10 +1,6 @@
 import { CharProfile } from "@/Stores/CharacterProfile";
-import {
-  DEFAULT_ARTISAN_MULTIPLIER,
-  NUM_ADV_PIECES,
-  NUM_PIECES,
-} from "./Constants";
-import { locale_to_fixed } from "./Helpers";
+import { DEFAULT_ARTISAN_MULTIPLIER, NUM_ADV_PIECES } from "./Constants";
+import { clamp, locale_to_fixed } from "./Helpers";
 import { Upgrade, UpgradeStatus } from "./KeyedUpgrades";
 
 export function ilevel(
@@ -62,7 +58,8 @@ export function artisan_number(
       upgrade.base_chance +
         upgrade.extra_chance +
         min_count * upgrade.base_chance * 0.1 +
-        extra_arr[count],
+        // a tap past the state is unjuiced, as in Rust
+        (extra_arr[count] ?? 0),
     );
     if (artisan >= 1.0) {
       break;
@@ -88,56 +85,19 @@ export function artisan_string(
     true,
   );
 }
-// export function cumulative_chance(
-//   upgrade: Upgrade,
-//   total_count: number,
-//   juice_info: any,
-// ): string {
-//   let extra_arr = upgrade.state.slice(0, total_count).map(([juice, id]) => {
-//     let chance = 0.0;
-//     if (juice) {
-//       chance += juice_info.all_juices[0].data.get(
-//         String(upgrade.upgrade_index),
-//       ).normal_chance;
-//     }
-//     if (id > 1) {
-//       chance += juice_info.all_juices[id].data.get(
-//         String(upgrade.upgrade_index),
-//       ).normal_chance;
-//     }
-//     return chance;
-//   });
-//   let artisan = 0;
-//   let cum_chance = 1.0;
-//   // console.log(upgrade.normal_dist, extra_arr, upgrade.state)
 
-//   for (let count = 0; count < total_count; count++) {
-//     let min_count = Math.min(count, 10);
-
-//     let current_chance = Math.min(
-//       1,
-//       upgrade.base_chance +
-//         upgrade.extra_chance +
-//         min_count * upgrade.base_chance * 0.1 +
-//         extra_arr[count],
-//     );
-//     if (artisan >= 1.0) {
-//       return (100.0).toFixed(2);
-//     }
-//     cum_chance *= 1 - current_chance;
-//     artisan +=
-//       DEFAULT_ARTISAN_MULTIPLIER * current_chance * upgrade.artisan_rate;
-//     if (current_chance == 1.0) {
-//       return (100.0).toFixed(2);
-//     }
-//   }
-//   console.log(
-//     upgrade.base_chance,
-//     total_count,
-//     upgrade.extra_chance,
-//     upgrade.state,
-//     upgrade.normal_dist,
-//     cum_chance,
-//   );
-//   return (Math.max(1 - cum_chance, 0) * 100).toFixed(2);
-// }
+// Base chance in percent after `failed` failed taps: +10% of base per failure, up to 10.
+export function chance_percent(upgrade: Upgrade, failed: number): number {
+  const steps = Math.min(10, failed);
+  return Math.min(
+    100,
+    (upgrade.base_chance * (1 + steps / 10) + upgrade.extra_chance) * 100,
+  );
+}
+// The failed tap count nearest a base chance in percent.
+export function chance_to_taps(upgrade: Upgrade, percent: number): number {
+  const steps =
+    (percent - (upgrade.base_chance + upgrade.extra_chance) * 100) /
+    (upgrade.base_chance * 10);
+  return clamp(0, Math.round(steps), 10);
+}

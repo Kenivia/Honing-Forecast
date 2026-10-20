@@ -19,7 +19,7 @@ const props = withDefaults(
     height?: number;
     materialLabel: string;
     // Generalized Annotations
-    annotations?: number[];
+    annotations?: (number | null)[];
     annotationColors?: string[];
     annotationPositions?: ("top" | "middle" | "bottom" | "graph")[];
     annotationLabels?: string[];
@@ -127,7 +127,7 @@ const maxY = computed(() => {
   return Math.max(1e-9, ...points.value.map((point) => point.y));
 });
 
-const isEmpty = computed(() => points.value.length === 0 && maxX.value <= 0);
+const isEmpty = computed(() => points.value.length === 0);
 
 function scaleX(x: number) {
   if (maxX.value <= 0) return 0;
@@ -253,9 +253,10 @@ function badgeWidth(text: string) {
 const processedAnnotations = computed(() => {
   if (isEmpty.value) return [];
 
+  // a null annotation is not drawn; the others keep their colour and label
   return props.annotations
-    .filter((xVal) => xVal !== null)
     .map((xVal, i) => {
+      if (xVal === null) return null;
       const color = cssVar(props.annotationColors[i] || "white", "white");
       const positionStr = props.annotationPositions[i] || "top";
       const label = props.annotationLabels[i] || "";
@@ -287,7 +288,8 @@ const processedAnnotations = computed(() => {
         textY,
         clampedX,
       };
-    });
+    })
+    .filter((annotation) => annotation !== null);
 });
 
 const resolvedColor = computed(() =>

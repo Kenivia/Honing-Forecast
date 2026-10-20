@@ -6,11 +6,11 @@ import { get_icon_path } from "@/Utils/Helpers";
 import { snapshot_of } from "@/Utils/Scans";
 import {
   affordable,
-  difficulties,
   is_empty,
   PRESET_CHOICES,
-  highest_level,
+  raids_of,
   shown_difficulty,
+  signed_gold,
   take_option,
   type Choice,
 } from "@/Utils/Choices";
@@ -40,17 +40,7 @@ const item_level = computed(
 
 // Every raid with its difficulties, newest first. Difficulties are locked by item level, not tier:
 // a T4 character above Serca's level gets Serca materials it cannot use.
-const raids = computed(() =>
-  [...Map.groupBy(PRESET_CHOICES, (choice) => choice.group)]
-    .map(([name, members]) => ({
-      name,
-      members,
-      difficulties: difficulties(members),
-    }))
-    .sort(
-      (a, b) => highest_level(b.difficulties) - highest_level(a.difficulties),
-    ),
-);
+const raids = computed(() => raids_of(PRESET_CHOICES));
 // the top three, and one more each time the user asks
 const SHOWN = 3;
 const more = ref(0);
@@ -120,20 +110,21 @@ const worth = (metric?: number) =>
   metric === undefined || base.value.metric === undefined
     ? undefined
     : metric - base.value.metric;
-const signed = (amount: number) =>
-  `${amount > 0 ? "+" : amount < 0 ? "−" : ""}${Math.round(Math.abs(amount)).toLocaleString("en-US")}`;
 const worth_text = (metric?: number) =>
   no_upgrades.value
     ? "N/A"
     : worth(metric) === undefined
       ? "…"
-      : signed(worth(metric));
+      : signed_gold(worth(metric));
+// as shown, so what reads 0 is neither
 const worth_color = (amount?: number) =>
   no_upgrades.value || amount === undefined
     ? "var(--text-muted)"
-    : amount > 0
+    : Math.round(amount) > 0
       ? "var(--achieved)"
-      : "var(--warning)";
+      : Math.round(amount) < 0
+        ? "var(--warning)"
+        : "var(--text-main)";
 
 const columns = computed(() => [
   profile.value.bound_budgets,

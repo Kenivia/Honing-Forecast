@@ -6,6 +6,7 @@ import {
 } from "@/WasmInterface/WorkerBundle";
 import { create_frame_source } from "@/Components/Character/InventoryScanner/FramePassing";
 import { useRosterStore } from "./RosterConfig";
+import type { MarketRegions } from "@/Utils/MarketDataFetcher";
 import type { BudgetSnapshot } from "@/Components/Character/Instructions/Details/NormalDetails/SuccessUtils";
 
 export interface CharRuntime {
@@ -32,12 +33,14 @@ export const useRuntimeStore = defineStore("runtime", {
     cropper: null as WorkerBundle | null,
     frame_source: markRaw(create_frame_source()),
 
-    budget_snapshot: null as BudgetSnapshot | null,
+    // the budgets before this run's deductions, by profile id
+    budget_snapshots: {} as Record<string, BudgetSnapshot>,
     adv_cache: null as any,
 
     is_details_update: false,
-    is_fetching: false,
-    market_fetch_failed: true,
+    // per market region
+    is_fetching: {} as Partial<Record<MarketRegions, boolean>>,
+    market_fetch_failed: {} as Partial<Record<MarketRegions, boolean>>,
   }),
 
   getters: {

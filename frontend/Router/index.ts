@@ -46,17 +46,6 @@ const router = createRouter({
           path: ":version",
           name: "change-logs",
           component: ChangeLogsView,
-          beforeEnter: (to) => {
-            if (
-              (to.params.version as string) !== "WIP" &&
-              !ALL_VERSIONS.includes(to.params.version as string)
-            ) {
-              return {
-                name: "change-logs",
-                params: { version: LATEST_VERSION },
-              };
-            }
-          },
         },
         {
           path: ":pathMatch(.*)*",
@@ -69,19 +58,6 @@ const router = createRouter({
       name: "char",
       component: CharView,
       redirect: (c) => `/${c.params.characterName}/calc`,
-      beforeEnter: (to) => {
-        const roster_store = useRosterStore();
-        const name = to.params.characterName as string;
-        const match = roster_store.all_profiles.findIndex(
-          (c) => c.char_name === name,
-        );
-        if (match < 0) {
-          return {
-            name: to.name ?? "char",
-            params: { characterName: roster_store.all_profiles[0].char_name },
-          };
-        }
-      },
       children: [
         { path: "calc", name: "calc", component: Calc },
         { path: "guide", name: "char-guide", component: Guide },
@@ -105,6 +81,26 @@ const router = createRouter({
   ],
 });
 
+// Every navigation, not only route entry, so param-only changes are checked too. Keeps the sub-page.
+router.beforeEach((to) => {
+  const version = to.params.version as string | undefined;
+  if (
+    to.name === "change-logs" &&
+    version !== "WIP" &&
+    !ALL_VERSIONS.includes(version)
+  )
+    return { name: "change-logs", params: { version: LATEST_VERSION } };
+  const name = to.params.characterName as string | undefined;
+  if (name === undefined) return;
+  const store = useRosterStore();
+  if (store.profile_index_by_name(name) < 0)
+    return {
+      name: to.name,
+      params: { ...to.params, characterName: store.all_profiles[0].char_name },
+      query: to.query,
+      hash: to.hash,
+    };
+});
 router.beforeEach(guard_switch);
 
 export default router;

@@ -53,11 +53,9 @@
   --serca-blue-hover: #4520d8;
   --free-tap-bright: #f7c7ff;
   --free-tap: #ed7bff;
-  --free-tap-muted: #ed7bffa4;
 
   --pending: var(--gold);
   --achieved: rgba(133, 219, 116);
-  --font-body: Nunito;
 
   --text-2xs: 0.6rem;
 

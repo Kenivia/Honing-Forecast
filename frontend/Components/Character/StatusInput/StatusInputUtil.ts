@@ -2,8 +2,8 @@ import {
   ADV_COLS,
   ALL_LABELS,
   NORMAL_COLS,
+  NORMAL_FLOOR,
   NUM_ADV_PIECES,
-  NUM_PIECES,
   PLUS_TIER_CONVERSION,
 } from "@/Utils/Constants";
 import { check_revert_ilevel_ok } from "@/Utils/Helpers";
@@ -15,7 +15,7 @@ import { useRuntimeStore } from "@/Stores/RuntimeState";
 
 export function change_tier(target_profile: CharProfile, fetched?: boolean) {
   let old_tier = target_profile.tier;
-  if (check_revert_ilevel_ok() === true || fetched) {
+  if (check_revert_ilevel_ok(target_profile) === true || fetched) {
     target_profile.tier = target_profile.tier == 0 ? 1 : 0;
   }
   let new_tier = target_profile.tier;
@@ -77,6 +77,9 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
   grid_change_callback();
 }
 
+// The row's +n done and wanted in the old tier, as the new tier's. A level with no equal takes
+// the one below it, and below the old floor is the floor. Levels fetched in the old tier stay
+// fetched, and so does the new tier's floor.
 export function convert_apply_done_want(
   old_tier: number,
   new_tier: number,
@@ -85,56 +88,39 @@ export function convert_apply_done_want(
   row: UpgradeStatus[],
   fetched?: boolean,
 ) {
-  let highest_done = Math.max(new_tier == 1 ? 20 : 11, done_plus_n);
-  let highest_want = Math.max(new_tier == 1 ? 20 : 11, want_plus_n);
-
-  let highest_fetched_done =
+  const conv = PLUS_TIER_CONVERSION[old_tier];
+  const floor = Math.min(...Object.keys(conv).map(Number));
+  const to_new = (plus_n: number) => {
+    const n = Math.max(floor, plus_n);
+    return conv[String(n)] ?? conv[String(n - 1)] ?? 25;
+  };
+  const fetched_n =
     row.findLastIndex((value) => value == UpgradeStatus.FetchedDone) + 1;
-
-  let converted_fetched =
-    PLUS_TIER_CONVERSION[old_tier][String(highest_fetched_done)] ??
-    PLUS_TIER_CONVERSION[old_tier][String(highest_fetched_done - 1)] ??
-    25;
-
-  // these ?? should like never actually need to fire if we disallow appropriately? idk i just put them there just in case
-  let converted_done =
-    PLUS_TIER_CONVERSION[old_tier][String(highest_done)] ??
-    PLUS_TIER_CONVERSION[old_tier][String(highest_done - 1)] ??
-    25;
-  let converted_want =
-    highest_want > 0
-      ? (PLUS_TIER_CONVERSION[old_tier][String(highest_want)] ??
-        PLUS_TIER_CONVERSION[old_tier][String(highest_done - 1)] ??
-        25)
-      : converted_done;
-
-  for (let col = 0; col < NORMAL_COLS; col++) {
-    if (col < converted_done) {
-      row[col] =
-        col < converted_fetched || fetched
-          ? UpgradeStatus.FetchedDone
-          : UpgradeStatus.Done;
-    } else if (col < converted_want) {
-      row[col] = UpgradeStatus.Want;
-    } else {
-      row[col] = UpgradeStatus.NotYet;
-    }
-  }
+  apply_done_want(
+    to_new(done_plus_n),
+    to_new(want_plus_n),
+    row,
+    fetched,
+    fetched_n >= floor ? to_new(fetched_n) : NORMAL_FLOOR[new_tier],
+  );
 }
 
+// Done below +done (fetched below +fetched_below, or all if fetched), then Want below +want.
 export function apply_done_want(
-  converted_done: number,
-  converted_want: number,
+  done_plus_n: number,
+  want_plus_n: number,
   row: UpgradeStatus[],
   fetched?: boolean,
+  fetched_below = 0,
 ) {
   for (let col = 0; col < NORMAL_COLS; col++) {
-    if (col < converted_done) {
-      row[col] = fetched ? UpgradeStatus.FetchedDone : UpgradeStatus.Done;
-    } else if (col < converted_want) {
-      row[col] = UpgradeStatus.Want;
-    } else {
-      row[col] = UpgradeStatus.NotYet;
-    }
+    row[col] =
+      col < done_plus_n
+        ? fetched || col < fetched_below
+          ? UpgradeStatus.FetchedDone
+          : UpgradeStatus.Done
+        : col < want_plus_n
+          ? UpgradeStatus.Want
+          : UpgradeStatus.NotYet;
   }
 }

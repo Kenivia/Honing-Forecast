@@ -15,7 +15,7 @@ import {
   create_worker_bundle,
   WorkerBundle,
 } from "@/WasmInterface/WorkerBundle";
-import { WasmOp } from "@/WasmInterface/WasmWorker";
+import { WasmOp } from "@/WasmInterface/WasmTypes";
 
 // A debug capture, to be sent in and run again on any build. Per frame the scanner was sent, its
 // pixels, written by a recorder worker of its own; the page writes the start and the end. The
@@ -90,6 +90,7 @@ export function record_input(pixels: Uint8Array) {
     { pixels },
     (input: Uint8Array, timings) => {
       in_recorder.value--;
+      if (!input) return;
       inputs.push(input);
       add(input.length);
       record_timings.push({ ...timings, bytes: input.length });

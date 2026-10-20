@@ -117,3 +117,74 @@ export function fit(points: Point[]) {
     })),
   };
 }
+
+// Cells that do not exist in game: silver is roster bound only, free taps char bound only
+// (owned_at counts the rare roster-bound chest's special leaps as char bound).
+export const has_band = (label: string, band: number) =>
+  label === "Silver"
+    ? band === 1
+    : SPECIAL_LEAP_LABELS.includes(label)
+      ? band === 0
+      : true;
+
+// what the estimate uses
+export const used = (snapshot: Snapshot) =>
+  snapshot.kind !== "Before export" && !snapshot.ignored;
+
+// What to run, in order, each once and not done: the selected one, now, those the estimate uses
+// newest first, then the "Before export" ones.
+export function queue_order<
+  T extends { snapshot: Snapshot; job: { result?: unknown } },
+>(entries: T[], selected: Snapshot | null, now: T | null): T[] {
+  const newest = [...entries].reverse();
+  const order = [
+    ...entries.filter((entry) => entry.snapshot === selected),
+    ...(now ? [now] : []),
+    ...newest.filter((entry) => used(entry.snapshot)),
+    ...newest.filter((entry) => entry.snapshot.kind === "Before export"),
+  ];
+  return [...new Set(order)].filter((entry) => !entry.job.result);
+}
+
+// the graph's x range: centred on now, the larger of MIN_SPAN and the oldest's age either side
+export function range_of(oldest: number | undefined, now: number) {
+  const half = Math.max(MIN_SPAN, now - (oldest ?? now));
+  return [now - half, now + half] as [number, number];
+}
+
+// steps between consecutive points within runs, and the days they span
+export function steps_of(points: { at: number; breaks?: boolean }[]) {
+  let steps = 0;
+  let days = 0;
+  points.forEach((point, at) => {
+    if (at === 0 || point.breaks) return;
+    steps += 1;
+    days += (point.at - points[at - 1].at) / 864e5;
+  });
+  return steps ? { steps, days } : null;
+}
+
+// The fitted line, each run over its own points and the last on to `end`; runs apart by a null.
+export function estimate_line(points: Point[], end: number) {
+  const runs = fit(points)?.runs ?? [];
+  return runs.flatMap((run, at) => [
+    { x: run.from, y: run.at(run.from) as number | null },
+    ...(at === runs.length - 1
+      ? [{ x: end, y: run.at(end) }]
+      : [
+          { x: run.to, y: run.at(run.to) },
+          { x: run.to, y: null },
+        ]),
+  ]);
+}
+
+// a typed rate per week, from now's value
+export const manual_line = (
+  from: number,
+  rate: number,
+  now: number,
+  end: number,
+) => [
+  { x: now, y: from as number | null },
+  { x: end, y: from + (rate * (end - now)) / WEEK_MS },
+];

@@ -1009,8 +1009,7 @@ mod tests {
     #[test]
     #[ignore]
     fn lone_exact() {
-        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../arena_data/scenarios/tiny");
+        let dir = std::path::Path::new(crate::ROOT).join("arena_data/scenarios/tiny");
         for name in ["lone_022_t4_n1", "lone_029_t4_n1"] {
             let scenario = &crate::scenario::load(&dir, name)[0];
             let payload = &scenario.steps[0];
@@ -1052,8 +1051,7 @@ mod tests {
     #[test]
     #[ignore]
     fn lone_dump() {
-        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../arena_data/scenarios/tiny");
+        let dir = std::path::Path::new(crate::ROOT).join("arena_data/scenarios/tiny");
         let mut out = serde_json::Map::new();
         for name in ["lone_022_t4_n1", "lone_029_t4_n1"] {
             let scenario = &crate::scenario::load(&dir, name)[0];
@@ -1119,8 +1117,7 @@ mod tests {
     #[test]
     #[ignore]
     fn lone_moves() {
-        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../arena_data/scenarios/tiny");
+        let dir = std::path::Path::new(crate::ROOT).join("arena_data/scenarios/tiny");
         let mut out = serde_json::Map::new();
         for name in ["lone_022_t4_n1", "lone_029_t4_n1"] {
             let scenario = &crate::scenario::load(&dir, name)[0];

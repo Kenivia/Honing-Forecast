@@ -34,7 +34,7 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use worker::{Essence, Job, Kind, StepResult};
 
-const ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
+const ROOT: &str = env!("HF_ROOT");
 /// the binary that is running, as opposed to a snapshot
 const CURRENT: &str = "current";
 

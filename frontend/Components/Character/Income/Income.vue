@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import { useNow } from "@vueuse/core";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import {
   ALL_LABELS,
@@ -9,6 +10,7 @@ import {
   SPECIAL_LEAP_LABELS,
 } from "@/Utils/Constants";
 import { get_icon_path, metric_to_text } from "@/Utils/Helpers";
+import { parse_locale_float } from "@/Utils/InputColumn";
 import {
   budgets_of,
   DIFF_COLUMNS,
@@ -18,11 +20,17 @@ import {
   take_snapshot,
 } from "@/Utils/Scans";
 import {
-  MIN_SPAN,
   WEEK_MS,
+  estimate_line,
   fit,
+  has_band,
+  manual_line,
   owned_at,
+  queue_order,
+  range_of,
   resets,
+  steps_of,
+  used,
   value_of,
 } from "@/Utils/Income";
 import IncomeGraph, { type Series } from "./IncomeGraph.vue";
@@ -59,8 +67,8 @@ const color = (label: string) =>
   label === special.value ? "--free-tap" : MATERIALS[label].color;
 
 // the time, a minute at most behind
-const now = ref(Date.now());
-const clock = setInterval(() => (now.value = Date.now()), 60_000);
+const clock = useNow({ interval: 60_000 });
+const now = computed(() => clock.value.getTime());
 
 const snapshots = computed(() =>
   roster_config.value.snapshots.filter(
@@ -77,9 +85,6 @@ const now_differs = computed(() => {
 });
 const include_now = ref(false);
 const with_now = computed(() => include_now.value && now_differs.value);
-
-const used = (snapshot: Snapshot) =>
-  snapshot.kind !== "Before export" && !snapshot.ignored;
 
 // each snapshot with its optimizer run under the current upgrades, if done
 const entries = computed(() =>
@@ -120,44 +125,48 @@ const selected = computed(() => locked.value ?? hovered.value);
 const click = (snapshot: Snapshot) =>
   (locked.value = locked.value === snapshot ? null : snapshot);
 
-// the selected one first, then those the estimate uses, newest first
 watch(
   [entries, now_entry, with_now, selected],
-  () => {
-    const order = [
-      ...entries.value.filter((e) => e.snapshot === selected.value),
-      ...(with_now.value ? [now_entry.value] : []),
-      ...[...entries.value].reverse().filter((e) => used(e.snapshot)),
-      ...[...entries.value]
-        .reverse()
-        .filter((e) => e.snapshot.kind === "Before export"),
-    ];
-    queue_jobs(order.filter((e) => !e.job.result).map((e) => e.job));
-  },
+  () =>
+    queue_jobs(
+      queue_order(
+        entries.value,
+        selected.value,
+        with_now.value ? now_entry.value : null,
+      ).map((entry) => entry.job),
+    ),
   { immediate: true },
 );
-onBeforeUnmount(() => {
-  clearInterval(clock);
-  stop_jobs();
-});
+onBeforeUnmount(stop_jobs);
 
 // ============================================================================
 // Rates
 // ============================================================================
 
-// the record a band's typed income is kept in
-const income_record = (band: number) =>
+// the record a band's typed income is kept in, made only when written
+const income_record = (band: number, create = false) =>
   band === 0
     ? profile.value.bound_income
-    : (roster_config.value.roster_income[profile.value.roster_id] ??= [{}, {}])[
-        band - 1
-      ];
+    : create
+      ? (roster_config.value.roster_income[profile.value.roster_id] ??= [
+          {},
+          {},
+        ])[band - 1]
+      : roster_config.value.roster_income[profile.value.roster_id]?.[band - 1];
 const manual_rate = (label: string, band: number) =>
-  income_record(band)[label] ?? 0;
+  has_band(label, band) ? (income_record(band)?.[label] ?? 0) : 0;
+// the site's parser has no negatives; income can be one
 function set_manual(label: string, band: number, value: string) {
-  const amount = Number(value);
-  income_record(band)[label] = Number.isFinite(amount) ? amount : 0;
+  const text = value.trim();
+  const amount = text.startsWith("-")
+    ? -parse_locale_float(text.slice(1))
+    : parse_locale_float(text);
+  income_record(band, true)[label] = Number.isFinite(amount) ? amount : 0;
 }
+// the table shows only the cells that exist in game
+const band_rows = computed(() =>
+  rows.value.filter((label) => has_band(label, band.value)),
+);
 
 const points = (label: string, band_at: number, cumulative: boolean) =>
   series_entries.value.map((entry) => ({
@@ -172,11 +181,14 @@ const auto_rate = (label: string, band_at: number) => {
   return line ? line.slope * WEEK_MS : null;
 };
 
+// switching to manual fills what was never typed with the estimate
 function set_manual_mode(manual: boolean) {
   if (manual) {
     for (const label of rows.value) {
       for (const at of [0, 1, 2]) {
-        income_record(at)[label] = Math.round(auto_rate(label, at) ?? 0);
+        if (!has_band(label, at) || income_record(at)?.[label] !== undefined)
+          continue;
+        income_record(at, true)[label] = Math.round(auto_rate(label, at) ?? 0);
       }
     }
   }
@@ -187,40 +199,24 @@ function set_manual_mode(manual: boolean) {
 // The graph
 // ============================================================================
 
-const range = computed((): [number, number] => {
-  const oldest = snapshots.value[0]?.at ?? now.value;
-  const half = Math.max(MIN_SPAN, now.value - oldest);
-  return [now.value - half, now.value + half];
-});
+const range = computed(() => range_of(snapshots.value[0]?.at, now.value));
 const series = computed((): Series[] =>
   shown.value
     .filter((label) => rows.value.includes(label))
     .map((label) => {
       const data = points(label, band.value, true);
       const end = range.value[1];
-      let line: { x: number; y: number | null }[] = [];
-      if (profile.value.income_manual) {
-        const rate = [0, 1, 2]
-          .slice(0, band.value + 1)
-          .reduce((sum, at) => sum + manual_rate(label, at), 0);
-        const from = value_of(now_entry.value.owned, label, band.value, true);
-        line = [
-          { x: now.value, y: from },
-          { x: end, y: from + (rate * (end - now.value)) / WEEK_MS },
-        ];
-      } else {
-        // each run over its own points, the last one on to the end
-        const fitted = fit(data);
-        line = (fitted?.runs ?? []).flatMap((run, at, runs) => [
-          { x: run.from, y: run.at(run.from) },
-          ...(at === runs.length - 1
-            ? [{ x: end, y: run.at(end) }]
-            : [
-                { x: run.to, y: run.at(run.to) },
-                { x: run.to, y: null },
-              ]),
-        ]);
-      }
+      const rate = [0, 1, 2]
+        .slice(0, band.value + 1)
+        .reduce((sum, at) => sum + manual_rate(label, at), 0);
+      const line = profile.value.income_manual
+        ? manual_line(
+            value_of(now_entry.value.owned, label, band.value, true),
+            rate,
+            now.value,
+            end,
+          )
+        : estimate_line(data, end);
       return { label: name(label), color: color(label), points: data, line };
     }),
 );
@@ -254,23 +250,15 @@ const diff = computed(() =>
 );
 function remove(snapshot: Snapshot) {
   const list = roster_config.value.snapshots;
-  list.splice(list.indexOf(snapshot), 1);
+  const at = list.indexOf(snapshot);
+  if (at >= 0) list.splice(at, 1);
   if (locked.value === snapshot) locked.value = null;
   if (hovered.value === snapshot) hovered.value = null;
 }
 
-// over every run
-const steps = computed(() => {
-  const list = series_entries.value;
-  let steps = 0;
-  let days = 0;
-  list.forEach((entry, at) => {
-    if (at === 0 || entry.snapshot.breaks) return;
-    steps += 1;
-    days += (entry.snapshot.at - list[at - 1].snapshot.at) / 864e5;
-  });
-  return steps ? { steps, days } : null;
-});
+const steps = computed(() =>
+  steps_of(series_entries.value.map((entry) => entry.snapshot)),
+);
 
 const when = (at: number) => new Date(at).toLocaleString();
 const number = (amount: number | null) =>
@@ -357,13 +345,13 @@ const KIND_COLORS = {
       >
         <div
           v-for="snapshot in snapshots.filter((s) => s.breaks && used(s))"
-          :key="`break ${snapshot.at}`"
+          :key="`break ${snapshot.at} ${snapshot.kind}`"
           class="absolute top-0 h-full w-px bg-(--text-muted)"
           :style="{ left: `${place(snapshot.at) - 10}px` }"
         ></div>
         <button
           v-for="snapshot in snapshots"
-          :key="snapshot.at"
+          :key="`${snapshot.at} ${snapshot.kind}`"
           class="absolute h-3 w-3 -translate-x-1/2 rounded-full border"
           :class="{
             'opacity-30': snapshot.ignored,
@@ -544,7 +532,7 @@ const KIND_COLORS = {
         <span></span>
         <span class="text-(--text-muted)">Owned now</span>
         <span class="text-(--text-muted)">Income / week</span>
-        <template v-for="label in rows" :key="label">
+        <template v-for="label in band_rows" :key="label">
           <span
             class="flex items-center gap-1.5 text-(--text-muted)"
             role="rowheader"

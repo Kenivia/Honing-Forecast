@@ -1,3 +1,5 @@
+import { marked } from "marked";
+
 export const all_change_logs = import.meta.glob(
   "../../public/change-logs/*.md",
 );
@@ -20,16 +22,20 @@ export const ALL_VERSIONS = sort_versions(
 
 export const LATEST_VERSION = ALL_VERSIONS[0];
 
-// as in the user is caught up (dont show on small updates)
+// the user is caught up; any other version, patch included, shows "new!"
 export function version_equal(last_seen: string, now: string) {
-  const a_split = last_seen.replace("v", "").split(".");
-  const b_split = now.replace("v", "").split(".");
-
-  return (
-    (a_split[0] === b_split[0] &&
-      a_split[1] === b_split[1] &&
-      a_split[2] === b_split[2]) ||
-    now === "v1.2.5"
-  );
+  return last_seen.replace(/^v/, "") === now.replace(/^v/, "");
 }
-// const latest_change_log =
+
+// A version's change log as html, cached for the session; null when it could not be fetched.
+const html_cache = new Map<string, string>();
+export async function load_change_log(version: string): Promise<string | null> {
+  if (!html_cache.has(version)) {
+    const res = await fetch(
+      version === "WIP" ? "/WIP.md" : `/change-logs/${version}.md`,
+    ).catch(() => null);
+    if (!res?.ok) return null;
+    html_cache.set(version, await marked.parse(await res.text()));
+  }
+  return html_cache.get(version);
+}

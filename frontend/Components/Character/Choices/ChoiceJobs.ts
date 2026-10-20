@@ -4,7 +4,10 @@ import { as_chest, type Choice } from "@/Utils/Choices";
 import { char_chests } from "@/Utils/Income";
 import type { Snapshot } from "@/Utils/Scans";
 import type { CharProfile } from "@/Stores/CharacterProfile";
-import { payload_for, states_payload } from "@/WasmInterface/PayloadBuilder";
+import {
+  snapshot_payload,
+  states_payload,
+} from "@/WasmInterface/PayloadBuilder";
 import { hash, type Job } from "@/WasmInterface/OptimizerJobs";
 
 // The budgets as they are, and with each option of a choice taken, each optimized; an option's run
@@ -25,19 +28,13 @@ function job_with(
   extra: ManifestChest[],
   seed?: any,
 ): ChoiceJob {
-  const char = snapshot.chars[profile.id];
-  const payload = payload_for(
+  const payload = snapshot_payload(
     profile,
-    char?.bound ?? {},
-    snapshot.roster_owned,
-    snapshot.tradable,
-    char?.special ?? {},
+    snapshot,
     process_chests(
       [...char_chests(snapshot, profile.id), ...extra],
       profile.tier,
     ),
-    snapshot.prices,
-    snapshot.bundles,
   );
   const key = hash(JSON.stringify(payload));
   return {

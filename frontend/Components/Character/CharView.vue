@@ -13,39 +13,25 @@ const route = useRoute();
 const router = useRouter();
 
 const roster_store = useRosterStore();
-const { active_profile, all_profiles } = storeToRefs(roster_store);
+const { active_profile } = storeToRefs(roster_store);
 
-const match = all_profiles.value.findIndex(
-  (c) => c.char_name === (route.params.characterName as string),
+// The router guard has already checked the name; this only maps it to the active index.
+const index = computed(() =>
+  roster_store.profile_index_by_name(route.params.characterName as string),
 );
-if (match >= 0) {
-  roster_store.switch_profile(match);
-} else {
-  router.replace({
-    name: "char",
-    params: { characterName: all_profiles.value[0].char_name },
-  });
-  roster_store.switch_profile(0);
-}
 watch(
-  () => route.params.characterName as string,
-  (name) => {
-    const match = all_profiles.value.findIndex((c) => c.char_name === name);
-    if (match >= 0) {
-      if (roster_store.roster_config.active_profile_index !== match) {
-        // this happens one invalid names (routre param written to by the one-off code, triggering the watcher) i believe, idk how to prevent that but this works
-        runtime.cancel_active();
-        // the scan was wiped or moved by the router guard (ScanSwitch.ts)
-        roster_store.switch_profile(match);
-      }
-    } else {
-      router.replace({
-        name: "char",
-        params: { characterName: all_profiles.value[0].char_name },
-      });
-      roster_store.switch_profile(0);
-    }
+  index,
+  (i) => {
+    if (i < 0 || i === roster_store.roster_config.active_profile_index) return;
+    runtime.cancel_active();
+    roster_store.switch_profile(i);
   },
+  { immediate: true },
+);
+// a rename moves the route along, so a reload finds the character
+watch(
+  () => active_profile.value.char_name,
+  (name) => router.replace({ params: { characterName: name } }),
 );
 
 const is_calc = computed(() => route.name === "calc");
@@ -81,7 +67,13 @@ onUnmounted(() => {
     </template>
 
     <template #main>
-      <RouterView />
+      <!-- the calculator is remounted per character, so nothing of the last one carries over -->
+      <RouterView v-slot="{ Component }">
+        <component
+          :is="Component"
+          :key="is_calc ? active_profile.id : String(route.name)"
+        />
+      </RouterView>
       <div class="min-h-300"></div>
     </template>
   </Sidebar>

@@ -2,8 +2,11 @@
 import { computed, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { SPECIAL_LEAP_LABELS, TIER_MATERIALS } from "@/Utils/Constants";
-import type { ManifestChest } from "@/Utils/Chest";
+import {
+  BAND_NAMES,
+  SPECIAL_LEAP_LABELS,
+  TIER_MATERIALS,
+} from "@/Utils/Constants";
 import ChestPanels from "@/Components/Common/ChestPanels.vue";
 
 // The chests as stored, both tiers in them: this character's own and its roster's. A chest
@@ -11,28 +14,28 @@ import ChestPanels from "@/Components/Common/ChestPanels.vue";
 const { active_profile, active_chests, roster_config } =
   storeToRefs(useRosterStore());
 
-const BANDS = ["Char bound", "Roster bound", "Tradable"];
-
 const roster_list = () =>
   (roster_config.value.roster_chests[active_profile.value.roster_id] ??= []);
-// the list a chest is in
-const list_of = (key: string): ManifestChest[] =>
-  active_profile.value.chests.some((chest) => chest.key === key)
-    ? active_profile.value.chests
-    : roster_list();
+// the list a chest is in and where, if it is in one
+function find(key: string) {
+  for (const list of [
+    active_profile.value.chests,
+    roster_config.value.roster_chests[active_profile.value.roster_id] ?? [],
+  ]) {
+    const index = list.findIndex((chest) => chest.key === key);
+    if (index >= 0) return { list, index };
+  }
+}
 
 function set_count(key: string, event: Event) {
   const value = parseInt((event.target as HTMLInputElement).value);
-  const chest = list_of(key).find((chest) => chest.key === key);
-  if (chest && isFinite(value)) chest.count = Math.max(0, value);
+  const at = find(key);
+  if (at && isFinite(value)) at.list[at.index].count = Math.max(0, value);
 }
 
 function remove(key: string) {
-  const list = list_of(key);
-  list.splice(
-    list.findIndex((chest) => chest.key === key),
-    1,
-  );
+  const at = find(key);
+  at?.list.splice(at.index, 1);
 }
 
 const labels = computed(() => [
@@ -57,7 +60,7 @@ const draft_options = computed(() =>
 function add_chest() {
   const { band } = draft.value;
   (band ? roster_list() : active_profile.value.chests).push({
-    key: `added|${Date.now()}`,
+    key: `added|${crypto.randomUUID()}`,
     title: draft.value.title.trim() || "Added chest",
     band,
     count: Math.max(1, Math.floor(Number(draft.value.count)) || 1),
@@ -100,7 +103,7 @@ function add_chest() {
           class="selector"
           aria-label="New chest ownership"
         >
-          <option v-for="(name, band) in BANDS" :key="band" :value="band">
+          <option v-for="(name, band) in BAND_NAMES" :key="band" :value="band">
             {{ name }}
           </option>
         </select>

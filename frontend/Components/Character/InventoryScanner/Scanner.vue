@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { getScannerConfig, OneIconConfig } from "./LoadStorage.js";
+import { getModel, getScannerConfig, OneIconConfig } from "./LoadStorage.js";
 import { process_result } from "./ScanStore";
 import { SHARED_ICONS } from "./Manifest";
 import CurrencyBar from "./CurrencyBar.vue";
@@ -10,6 +10,8 @@ import Stream from "./Stream.vue";
 
 const config = ref<OneIconConfig[] | null>(null);
 getScannerConfig().then((data) => (config.value = data));
+// fetched on the first visit, not on app load
+getModel();
 
 const status = ref<"idle" | "capturing">("idle");
 // what a slot can be set to by hand

@@ -7,11 +7,17 @@ import {
 } from "@/Utils/Constants";
 import { merge_lower_tier } from "@/WasmInterface/PayloadBuilder";
 import { input_column_to_num, InputColumn } from "@/Utils/InputColumn";
-import { Upgrade, UpgradeStatus } from "@/Utils/KeyedUpgrades";
+import {
+  OneUpgradeInput,
+  to_upgrade_key,
+  Upgrade,
+  UpgradeStatus,
+} from "@/Utils/KeyedUpgrades";
 import { storeToRefs } from "pinia";
-import { toRaw } from "vue";
+import { nextTick, toRaw } from "vue";
 import { grid_change_callback } from "@/Components/Character/CharWorkerUtils";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
+import type { CharProfile } from "@/Stores/CharacterProfile";
 
 export interface BudgetSnapshot {
   bound_budgets: InputColumn;
@@ -37,73 +43,41 @@ export function mark_upgrade_as_done(upgrade: Upgrade) {
   }
   grid_change_callback();
 }
+// What the taps since the last run cost; the unlock too unless already unlocked (Rust's rule).
+// Normal honing only: advanced honing is never deducted.
 export function compute_used_materials(
   upgrade: Upgrade,
-  taps_since_last_run: number,
+  taps: number,
   juice_info: any,
-  adv_juice_used: number,
-  adv_scroll_used: number,
   pretend_zero_no_unlock: boolean,
   tier: number,
 ): Record<string, number> {
-  if (!upgrade.cost_dist) return {};
   const labels = ALL_LABELS[tier];
   const out: Record<string, number> = Object.fromEntries(
     labels.map((label) => [label, 0]),
   );
-
-  for (let cost_type = 0; cost_type < NUM_BASE_MATS; cost_type++) {
-    out[labels[cost_type]] =
-      upgrade.unlock_costs[cost_type] *
-        (pretend_zero_no_unlock && taps_since_last_run === 0
-          ? 0
-          : upgrade.starting_num_taps !== 0
-            ? 0
-            : 1) +
-      upgrade.costs[cost_type] * taps_since_last_run;
+  const unlocked =
+    upgrade.starting_artisan > 0 || upgrade.starting_num_taps > 0;
+  const unlock = (pretend_zero_no_unlock && taps === 0) || unlocked ? 0 : 1;
+  for (let row = 0; row < NUM_BASE_MATS; row++) {
+    out[labels[row]] =
+      upgrade.unlock_costs[row] * unlock + upgrade.costs[row] * taps;
   }
-
-  let relevant_id_map = upgrade.is_normal_honing
-    ? juice_info.normal_uindex_to_id
-    : juice_info.adv_uindex_to_id;
-  // console.log(relevant_id_map[upgrade.upgrade_index])
-  for (const id of relevant_id_map[upgrade.piece_type_usize][
-    upgrade.upgrade_index
-  ]) {
-    let juice_cost = 0;
-
-    let juice_type = juice_info.all_juices[id][upgrade.piece_type_usize].get(
+  // the pity tap takes no juice
+  const juiced = upgrade.state.slice(
+    0,
+    Math.min(taps, upgrade.normal_dist.length - 2),
+  );
+  const ids =
+    juice_info.normal_uindex_to_id[upgrade.piece_type_usize][
+      upgrade.upgrade_index
+    ];
+  for (const id of ids) {
+    const amt = juice_info.all_juices[id][upgrade.piece_type_usize].get(
       upgrade.upgrade_index,
-    );
-    // console.log(juice_info.all_juices);
-    let amt = upgrade.is_normal_honing
-      ? juice_type.normal_amt_used
-      : juice_type.adv_amt_used;
-
-    if (upgrade.is_normal_honing) {
-      for (
-        let index = 0;
-        index < Math.min(taps_since_last_run, upgrade.normal_dist.length - 2);
-        index++
-      ) {
-        if (upgrade.state[index].includes(id)) {
-          juice_cost += amt;
-        }
-        // console.log(
-        //   // juice_cost,
-        //   upgrade.state[index],
-        //   id,
-        //   upgrade.state[index],
-        // );
-      }
-    } else {
-      if (id <= 1) {
-        juice_cost = adv_juice_used * amt;
-      } else {
-        juice_cost = adv_scroll_used * amt;
-      }
-    }
-    out[labels[NUM_BASE_MATS + id]] = juice_cost;
+    ).normal_amt_used;
+    out[labels[NUM_BASE_MATS + id]] =
+      juiced.filter((one) => one.includes(id)).length * amt;
   }
   return out;
 }
@@ -113,14 +87,13 @@ export function make_budget_snapshot(): BudgetSnapshot {
     active_roster_mats_owned,
     active_tradable_mats_owned,
   } = storeToRefs(useRosterStore());
-  // console.log("snap");
   return {
     bound_budgets: structuredClone(toRaw(active_profile.value.bound_budgets)),
     roster_mats: structuredClone(toRaw(active_roster_mats_owned.value)),
     tradable_mats: structuredClone(toRaw(active_tradable_mats_owned.value)),
   };
 }
-export function compute_remaininig_materials(
+export function compute_remaining_materials(
   used_materials: Record<string, number>,
   inp_previous_budget?: BudgetSnapshot,
 ): RemainingMats {
@@ -241,9 +214,8 @@ export function apply_remaining_mats() {
     return;
   }
   const tier = active_profile.value.tier;
-  if (runtime.budget_snapshot === null) {
-    runtime.budget_snapshot = make_budget_snapshot();
-  }
+  const id = active_profile.value.id;
+  runtime.budget_snapshots[id] ??= make_budget_snapshot();
 
   const total_used: Record<string, number> = {};
   for (const label of ALL_LABELS[tier]) {
@@ -251,20 +223,92 @@ export function apply_remaining_mats() {
       .map((u) => u.used_materials?.[label] ?? 0)
       .reduce((acc, cur) => acc + cur, 0);
   }
-  const remaining: RemainingMats = compute_remaininig_materials(
+  const remaining: RemainingMats = compute_remaining_materials(
     total_used,
-    runtime.budget_snapshot,
+    runtime.budget_snapshots[id],
   );
 
-  // the tier's labels and any lower-tier sources spent with them
-  const write = (column: InputColumn, values: Record<string, number>) => {
-    for (const [label, value] of Object.entries(values)) {
-      if (column.enabled[label]) {
-        column.values[label] = value.toLocaleString();
-      }
-    }
-  };
-  write(active_profile.value.bound_budgets, remaining.bound_budgets);
-  write(active_roster_mats_owned.value, remaining.roster_mats);
-  write(active_tradable_mats_owned.value, remaining.tradable_mats);
+  write_remaining(active_profile.value.bound_budgets, remaining.bound_budgets);
+  write_remaining(active_roster_mats_owned.value, remaining.roster_mats);
+  write_remaining(active_tradable_mats_owned.value, remaining.tradable_mats);
+}
+
+// the tier's labels and any lower-tier sources spent with them; disabled cells are left alone
+function write_remaining(column: InputColumn, values: Record<string, number>) {
+  for (const [label, value] of Object.entries(values)) {
+    if (column.enabled[label]) column.values[label] = value.toLocaleString();
+  }
+}
+
+// Deductions so far are final: the next ones start from the budgets as they are now.
+export function clear_snapshot() {
+  delete useRuntimeStore().budget_snapshots[useRosterStore().active_profile.id];
+}
+
+// Leaving a character's calculator settles its deductions as Confirm does: the budgets keep them
+// and the progress is already written, so another page's or character's edits are never reverted.
+export function settle_deductions(profile: CharProfile) {
+  for (const keyed of Object.values(profile.keyed_upgrades)) {
+    keyed.taps_since_last_input = 0;
+    keyed.used_materials = null;
+  }
+  delete useRuntimeStore().budget_snapshots[profile.id];
+}
+
+// Sets one upgrade's usage and deducts. With nothing outstanding the budgets are the truth,
+// so the snapshot is retaken (it may predate an edit or another character's switch).
+export function deduct(
+  keyed: OneUpgradeInput,
+  used: Record<string, number> | null,
+) {
+  const outstanding = Object.values(
+    useRosterStore().active_profile.keyed_upgrades,
+  ).some(
+    (u) => u.used_materials && Object.values(u.used_materials).some((v) => v),
+  );
+  if (!outstanding) clear_snapshot();
+  keyed.used_materials = used;
+  apply_remaining_mats();
+}
+
+// Succeeded after `taps` taps since the last run: deducts them and the unlock, folds that into
+// the snapshot so other upgrades' deductions still count from it, then drops the upgrade.
+export function finish_upgrade(
+  upgrade: Upgrade,
+  taps: number,
+  juice_info: any,
+) {
+  const runtime = useRuntimeStore();
+  const profile = useRosterStore().active_profile;
+  const keyed =
+    profile.keyed_upgrades[
+      to_upgrade_key(
+        upgrade.piece_index,
+        upgrade.upgrade_index,
+        upgrade.is_normal_honing,
+        profile.tier,
+      )
+    ];
+  runtime.is_details_update = true;
+  const used = compute_used_materials(
+    upgrade,
+    taps,
+    juice_info,
+    false,
+    profile.tier,
+  );
+  deduct(keyed, used);
+  const snapshot = runtime.budget_snapshots[profile.id];
+  if (snapshot) {
+    const left = compute_remaining_materials(used, snapshot);
+    write_remaining(snapshot.bound_budgets, left.bound_budgets);
+    write_remaining(snapshot.roster_mats, left.roster_mats);
+    write_remaining(snapshot.tradable_mats, left.tradable_mats);
+  }
+  keyed.used_materials = null;
+  keyed.taps_since_last_input = 0;
+  mark_upgrade_as_done(upgrade);
+  nextTick(() => {
+    runtime.is_details_update = false;
+  });
 }

@@ -6,7 +6,7 @@ import {
   as_chest,
   difficulties,
   PRESET_CHOICES,
-  highest_level,
+  raids_of,
   shown_difficulty,
   take_option,
 } from "@/Utils/Choices";
@@ -136,10 +136,7 @@ equal(
   "Nightmare",
 );
 
-const raids = [...Map.groupBy(PRESET_CHOICES, (x) => x.group)]
-  .map(([name, members]) => ({ name, list: difficulties(members) }))
-  .sort((a, b) => highest_level(b.list) - highest_level(a.list))
-  .map((x) => x.name);
+const raids = raids_of(PRESET_CHOICES).map((x) => x.name);
 equal("raids by their highest difficulty, newest first", raids, [
   "Horizon Cathedral",
   "Witch of Agony, Serca",

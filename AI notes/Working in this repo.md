@@ -29,12 +29,21 @@ runner also builds into `.tmp/tests/` and wipes it on each run.
 Do **not** invent another scratch directory in the repo root. A previous `.wip/` folder
 was picked up by a commit because it was not ignored.
 
+## Paths from the repo root in Rust
+
+`.cargo/config.toml` sets `HF_ROOT` (`[env]`, `relative = true`) to the repo root, absolute and
+with a trailing separator, for every crate Cargo builds here, wasm-pack included. Write paths from
+the root as `concat!(env!("HF_ROOT"), "/scanner_setup/...")` for `include_str!`, or through the
+arena's and scanner's `ROOT` (`env!("HF_ROOT")`) at runtime, never with chains of `../`. A build
+outside the repo (an archived copy) needs `.cargo/config.toml` with it.
+
 ## Checks
 
 | Command              | What it covers                                                           |
 | -------------------- | ------------------------------------------------------------------------ |
 | `pnpm check`         | `vue-tsc --noEmit`: the `.ts` layer **and** `.vue` template expressions. |
 | `pnpm test:frontend` | The node-side suites in `tests/`. See `tests/` below.                    |
+| `pnpm test:unit`     | Vitest unit and component tests in `tests/unit/`. See `tests/` below.   |
 | `pnpm e2e`           | Playwright browser tests.                                                |
 | `pnpm test`          | Rust unit tests for the core, and the arena's short checks.              |
 | `pnpm arena`         | The core's test harness. See `Calculator core/Arena.md`.                 |
@@ -70,7 +79,17 @@ with `tests/shim.mjs` (localStorage, `self`, a stub `Worker`). `tests/helpers.ts
   itself if that file is absent.
 - `relations.test.ts`: cross-tier conversion, bundle pricing, material deduction, a Serca character counting and spending its T4 stock.
 
-Two properties these exist to protect, both of which were real bugs:
+`pnpm test:unit` runs Vitest (`vitest.config.ts`, merged over `vite.config.ts`) with jsdom
+and `@vue/test-utils`, over `tests/unit/**/*.test.ts`, one folder per frontend module. Unlike
+the node suites it can mount `.vue` files. `tests/unit/setup.ts` stubs `Worker` and the
+`v-tooltip` directive and clears localStorage before each test; `tests/unit/mount.ts`
+mounts with a fresh pinia and a memory router carrying the app's route names. Outside the dev
+server plugin-vue turns `<img src="/x.png">` into an import; an alias in `vitest.config.ts` points
+those at `public/`, so components with absolute image paths mount without mocks. A test
+written as `it.fails` pins a suspected bug: it passes while the bug is there. `npx vitest
+run tests/unit/<folder>` runs one folder.
+
+Two properties the node suites exist to protect, both of which were real bugs:
 
 - **Values must land on the right label, not the right index.** Real pre-V8 saves carry a
   `keys` array that drifted out of order while `data` stayed positional, so the migration

@@ -31,7 +31,6 @@ defineEmits<{ close_popup: [] }>();
   border: 1px solid var(--border-muted);
   border-radius: 8px;
   padding: 1.5rem;
-  width: 100%;
   max-width: 930px;
   max-height: 90vh;
   display: flex;
@@ -39,14 +38,5 @@ defineEmits<{ close_popup: [] }>();
   box-shadow: 0 10px 30px var(--backdrop);
   width: fit-content;
   overflow-y: auto;
-}
-
-.popup-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid var(--border-muted);
-  padding-bottom: 0.5rem;
 }
 </style>

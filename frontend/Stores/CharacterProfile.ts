@@ -19,7 +19,7 @@ import {
   OptimizerOverride,
   AdvOverride,
   NormalOverride,
-} from "@/WasmInterface/PayloadBuilder";
+} from "@/WasmInterface/Overrides";
 
 export interface CharProfile {
   // stable and unique, what everything but the route identifies a character by
@@ -53,8 +53,6 @@ export interface CharProfile {
   auto_start_optimizer: boolean;
   tier: number;
   min_resolution: number; // currently not used (always 1)
-  num_threads: number; // currently not used (always 1)
-  metric_type: number; // currently not used (always 1)
   optimizer_override: OptimizerOverride;
 
   lock_fetched_done: boolean;
@@ -87,8 +85,6 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
   choice_levels: {},
   tier: 0,
   min_resolution: 1,
-  num_threads: 1,
-  metric_type: 1,
 
   roster_id: 0,
   optimizer_override: {

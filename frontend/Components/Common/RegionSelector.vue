@@ -15,7 +15,7 @@ defineProps<{
       :value="region"
       @change="region_change"
       class="selector"
-      :disabled="runtime.is_fetching"
+      :disabled="runtime.is_fetching[region]"
     >
       <option value="nae">NA</option>
       <option value="euc">EU</option>

@@ -40,8 +40,25 @@ export const difficulties = (choices: Choice[]): Difficulty[] =>
   ].sort((a, b) => a.item_level - b.item_level);
 
 // a raid's highest difficulty, which sorts raids by release, newest first
-export const highest_level = (list: Difficulty[]) =>
-  list.at(-1)?.item_level ?? 0;
+const highest_level = (list: Difficulty[]) => list.at(-1)?.item_level ?? 0;
+
+// the choices by group with their difficulties, newest raid first; ties keep the data's order
+export const raids_of = (choices: Choice[]) =>
+  [...Map.groupBy(choices, (choice) => choice.group)]
+    .map(([name, members]) => ({
+      name,
+      members,
+      difficulties: difficulties(members),
+    }))
+    .sort(
+      (a, b) => highest_level(b.difficulties) - highest_level(a.difficulties),
+    );
+
+// a worth rounded to whole gold, signed
+export function signed_gold(amount: number) {
+  const rounded = Math.round(amount);
+  return `${rounded > 0 ? "+" : rounded < 0 ? "−" : ""}${Math.abs(rounded).toLocaleString("en-US")}`;
+}
 
 // The one picked by hand if it is still there, else the highest the item level reaches, else the
 // lowest.

@@ -1,20 +1,12 @@
 <script setup lang="ts">
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { LATEST_VERSION, version_equal } from "@/Utils/Changelog";
-import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
+import { computed } from "vue";
 import { RouterLink } from "vue-router";
 
-const { roster_config } = storeToRefs(useRosterStore());
-const show_new_tag = ref(
-  !version_equal(roster_config.value.last_seen_version, LATEST_VERSION),
-);
-
-watch(
-  () => roster_config.value.last_seen_version,
-  () => {
-    show_new_tag.value = false;
-  },
+const store = useRosterStore();
+const show_new_tag = computed(
+  () => !version_equal(store.roster_config.last_seen_version, LATEST_VERSION),
 );
 </script>
 
@@ -25,7 +17,7 @@ watch(
       <span>Discord</span>
     </a>
     <RouterLink :to="{ name: 'change-logs-root' }" class="footer-links">
-      <img src="/Icons/branch.png" alt="Ko-fi" />
+      <img src="/Icons/branch.png" alt="Change logs" />
       <span>{{ LATEST_VERSION }}</span>
       <span class="new-tag" v-if="show_new_tag">new!</span>
     </RouterLink>
@@ -59,11 +51,6 @@ watch(
   padding: 0px 10px;
 }
 
-.footer-note {
-  color: var(--text-very-muted);
-  font-size: 12px;
-  text-align: center;
-}
 .footer-links {
   display: flex;
   gap: 6px;

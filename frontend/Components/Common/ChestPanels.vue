@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { BAND_COLORS } from "@/Utils/Constants";
+import { BAND_COLORS, BAND_NAMES } from "@/Utils/Constants";
 import { get_icon_path } from "@/Utils/Helpers";
 import { amount_text, type Chest } from "@/Utils/Chest";
 import ChestIcon from "./ChestIcon.vue";
@@ -17,8 +17,6 @@ const emit = defineEmits<{
   count: [key: string, event: Event];
   remove: [key: string];
 }>();
-
-const BANDS = ["Char bound", "Roster bound", "Tradable"];
 
 const panels = computed(() => [
   { title: "Selection chests", chests: props.selection },
@@ -62,7 +60,7 @@ const panels = computed(() => [
             class="annotation"
             :style="{ color: `var(${BAND_COLORS[chest.band]})` }"
           >
-            {{ BANDS[chest.band] }}
+            {{ BAND_NAMES[chest.band] }}
           </span>
         </span>
         <template v-for="(option, index) in chest.options" :key="index">

@@ -6,15 +6,16 @@ How the frontend talks to Rust for the calculator. Scanner operations share the 
 
 - The frontend imports the wasm-pack output in `crates/wasm/pkg`. Rust changes need `pnpm run wasm`.
 - There are no generated types. `PayloadBuilder.ts` hand-mirrors Rust's `Payload`, and result types are hand-written or untyped. A field rename on either side is a silent break.
+- `WasmTypes.ts` holds `WasmOp` and the result types, and `Overrides.ts` the strategy override enums. Both are free of side effects: the main thread imports these, never `WasmWorker.ts` (that would pull the wasm glue into the main bundle and put the worker's `message` listener on `window`), and the profile imports the overrides without a cycle through `PayloadBuilder`.
 - Results are the serialised Rust structs. Rust hash maps arrive as JS `Map`s, not plain objects.
 - Extra frontend-only fields on payload objects are tolerated because Rust ignores unknown fields.
 
 ## Building the payload
 
-`build_payload` assembles, from the store (`payload_for` builds the same from a profile and given budgets, chests and prices, with no optimizer state, for the Income page's snapshot runs, and `states_payload` adds an optimizer result's states to it for the histogram):
+There is one assembly. `payload_for` builds a payload from a profile and given budgets, chests and prices (per bundle key, with the bundle bought), with no optimizer state, plain JSON so it can be hashed. `states_payload` adds an optimizer result's states to it, with the user's overrides if given. `build_payload`, the calculator's, is `payload_for` over the store's columns and processed chests, plus `states_payload` of the last optimizer result and `runtime.adv_cache`. Income and Choices build theirs with `snapshot_payload` (`payload_for` of a snapshot's budgets and prices) and run the histogram on `states_payload` of their optimizer run. The payload holds:
 
-- the upgrade list, from keyed upgrades, including each upgrade's state from the previous optimizer result so the next run starts from it;
-- `material_labels`, the row order, and `materials`, a label-keyed map of the three owned amounts plus the taxed sell price and the buy price. For a Serca character each Serca material with a `CONVERTS_FROM` source has the source's stock added at the ratio (`merge_lower_tier`, pure, in `PayloadBuilder.ts`): T4 bound into bound, T4 roster-bound and tradable pooled into roster-bound (converting binds it), each floored like the market page's convert button. A material disabled on either side is left out. The free-tap budget adds the T4 special leaps the same way. Rust sees one stock per band and knows nothing of T4. Prices arrive already per-unit: the store resolves which bundle the user buys and whether converting up from a lower tier is cheaper. A material the user disabled is sent with zero prices, because it is not traded at all and its (effectively infinite) bound stock must not be valued;
+- the upgrade list, from keyed upgrades, without the page-only fields (`expanded`, `taps_since_last_input`, `used_materials`). An upgrade gets the state of the fed-back optimizer result, from the taps since the last input on, only when that result has a state for it and carries its own `prep_output.juice_info`. An upgrade whose stored state is `[]` (reset by the user) is sent empty; `build_payload` then clears that marker to `null`, so the next payload takes the optimizer's state again. Building a payload writes nothing else to the stored upgrades;
+- `material_labels`, the row order, and `materials`, a label-keyed map of the three owned amounts plus the taxed sell price and the buy price. For a Serca character each Serca material with a `CONVERTS_FROM` source has the source's stock added at the ratio (`merge_lower_tier`, pure, in `PayloadBuilder.ts`): T4 bound into bound, T4 roster-bound and tradable pooled into roster-bound (converting binds it), each floored like the market page's convert button. A material disabled on either side is left out. The free-tap budget adds the T4 special leaps the same way. Rust sees one stock per band and knows nothing of T4. Prices are sent per unit, of the bundle the user buys, the buy price the cheaper of buying and converting up from a lower tier (`effective_unit_prices`). The taxed price is the bundle's after the market's 5% fee (`sell_tax`, floored), divided by its size. A material the user disabled is sent with zero prices and no tradable stock, because it is not traded at all and its bound stock must not be valued. The calculator's bound stock of it is `parse_input`'s 999999999 sentinel; a snapshot's payload has the snapshot's own amount;
 - `plans`, every valuation plan to evaluate, and `optimizer_plan`, an index into it. Index 0 is always the all-worthless plan, so the histogram always reports the gross spend alongside the user's plan. The user's plan is clamped here, because the control panel's dropdowns only *disable* the values that would make it decrease, and Rust asserts it does not;
 - tier, event flags and free-tap budget;
 - `chests`, the profile's chest stacks after `process_chests` (`Screen scanner/Manifest.md`, "On the calculator page"), as a record of count, band and options by the stack's key, and `special_label`, the tier's special leap label. Amounts are unrounded and Rust floors the total. Every label is of the tier: Rust panics on any other;
@@ -35,19 +36,25 @@ How the frontend talks to Rust for the calculator. Scanner operations share the 
 
 ## Workers
 
-Each character owns two worker bundles (`WorkerBundle.ts`), held in `useRuntimeStore` and keyed by character name, one per operation:
+Each character owns two worker bundles (`WorkerBundle.ts`), held in `useRuntimeStore` and keyed by profile id, one per operation:
 
 - **Optimizer**: debounced. Starting a run terminates any run in progress, and the worker is terminated again when the result arrives, so every run uses a fresh worker.
 - **Histogram**: throttled. The latest payload wins, runs are never cancelled midway, and the worker is reused.
 
-Messages: the page sends an operation and payload; the worker replies with a result. During optimization, Rust also posts intermediate results with a progress estimate directly, bypassing the TypeScript worker code.
+Messages: the page sends an operation and payload; the worker replies with a result. During optimization, Rust also posts intermediate results with a progress estimate directly, bypassing the TypeScript worker code. Their `adv_cache` is emptied on purpose, so the page keeps the cache it has until a final result brings one.
+
+The histogram's result carries the `state_bundle` it evaluated (with `chest_states`), which the chest panel, the instructions and the graphs read.
+
+**Errors**: the worker catches anything an op throws, a wasm panic included, and posts `{type: "error"}`. The bundle treats that like the worker's `onerror`: it logs it, sets `error`, terminates the worker (a panicked wasm instance is not reused) and calls back with `null`. Every callback returns on `null`; the throttled histogram goes on with the next pending payload.
+
+**Off the calculator page**, `OptimizerJobs.ts` runs Income's and Choices' jobs two at a time on two bundles of its own. A hash is queued once, and a job already running is not queued again. A result depends only on the hash, so a finished run is stored into every job of the last `queue_jobs` with that hash, not just the one that ran: two snapshots, or now and a snapshot, with the same payload for the character (an export that did not change it, another character's mats moving) cost one run, not two. A run that fails is dropped and frees its slot.
 
 ## Flow on an input change
 
 1. An input callback starts both workers (the optimizer only if auto-start is on).
 2. The histogram runs immediately against the current state so the graphs update.
 3. Each optimizer message, intermediate or final, stores the new state and triggers another histogram run.
-4. When the user overrides part of the plan ("compare with simple strategies"), only the histogram reruns, and the instructions display the histogram's state instead of the optimizer's. Whether anything is overridden is read off the override controls alone (`get_any_overwritten`).
+4. When the user overrides part of the plan ("compare with simple strategies"), only the histogram reruns, and the instructions display the histogram's state instead of the optimizer's (`get_relevant_result`; the in-game order is `sort_upgrades` in `InstructionUtils.ts`). Whether anything is overridden is read off the override controls alone (`get_any_overwritten`).
 
 **Every gold number shown is the histogram's** (`metric_per_plan`), scored with `Tuning::reference()`, not the optimizer's `metric`, which is of a cheaper evaluator and never displayed (`Calculator core/Evaluation pipeline.md`). The two differ by about 1e-5 of the metric, so they cannot be compared to tell anything.
 

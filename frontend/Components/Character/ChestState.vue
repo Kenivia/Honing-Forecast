@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 import { get_icon_path } from "@/Utils/Helpers";
-import { amount_text, type Chest } from "@/Utils/Chest";
+import { amount_text, state_fits, type Chest } from "@/Utils/Chest";
 import ChestIcon from "@/Components/Common/ChestIcon.vue";
 
 // Provisional: how each chest stack is opened in what the histogram last evaluated, which is
@@ -10,13 +10,13 @@ import ChestIcon from "@/Components/Common/ChestIcon.vue";
 const props = defineProps<{ chests: Chest[] }>();
 const runtime = useRuntimeStore();
 
-// a state is found by its chest's key, so one from before the chests changed still fits
+// a state is found by its chest's key; one that no longer fits it (a count edited since) is not shown
 const rows = computed(() => {
   const states: Map<string, number[]> | undefined =
     runtime.histogram.result?.state_bundle.chest_states;
   return props.chests
     .map((chest) => ({ chest, state: states?.get(chest.key) }))
-    .filter((row) => row.state?.length === row.chest.options.length);
+    .filter((row) => state_fits(row.chest, row.state));
 });
 </script>
 

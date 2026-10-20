@@ -68,9 +68,10 @@ export async function wait_for_optimizer(page: Page, timeout = 60_000) {
   await expect(body).toContainText(done, { timeout });
 }
 
+// NaN until the number is on the page
 async function read_number(page: Page, pattern: RegExp) {
-  const text = await page.locator("body").textContent();
-  return Number(text.match(pattern)[1].replaceAll(",", ""));
+  const match = (await page.locator("body").textContent()).match(pattern);
+  return match ? Number(match[1].replaceAll(",", "")) : NaN;
 }
 
 export const read_gold = (page: Page) =>

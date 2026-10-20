@@ -11,7 +11,8 @@ test.afterEach(() => expect(errors).toEqual([]));
 test("selecting upgrades runs the optimizer", async ({ page }) => {
   await hf.open(page);
   await expect(page).toHaveURL(/\/calc$/);
-  expect(await hf.read_gold(page)).toBe(0);
+  // the first histogram lands just after the page renders
+  await expect.poll(() => hf.read_gold(page)).toBe(0);
 
   await hf.toggle_column(page, "normal", 15);
   await hf.wait_for_optimizer(page);

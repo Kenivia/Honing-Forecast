@@ -1,5 +1,5 @@
 import { shallowReactive } from "vue";
-import { ocr_job_buffers, WasmOp } from "./WasmWorker";
+import { ocr_job_buffers, WasmOp } from "./WasmTypes";
 
 const createWorker = () =>
   new Worker(new URL("./WasmWorker.ts", import.meta.url), { type: "module" });
@@ -13,6 +13,7 @@ export interface WorkerBundle {
   debounced_start: (
     wasm_op: WasmOp,
     payload: any,
+    // null when the run failed
     callback?: (result: any, timings?: any) => void,
     debounce?: number,
     cancel?: boolean,
@@ -27,7 +28,7 @@ export interface WorkerBundle {
 // deep-wrapped.
 export function create_worker_bundle(): WorkerBundle {
   let worker: Worker | null = null;
-  let debounceTimer = null;
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
   let throttle_timer: ReturnType<typeof setTimeout> | null = null;
   let throttle_pending: {
     wasm_op: WasmOp;
@@ -106,6 +107,8 @@ export function create_worker_bundle(): WorkerBundle {
         if (callback) {
           callback(bundle.result, timings);
         }
+      } else if (e.data.type === "error") {
+        fail(e.data.message);
       } else {
         // 1 sec interval from rust's side
         if (e.data.state_bundle) {
@@ -118,14 +121,16 @@ export function create_worker_bundle(): WorkerBundle {
       }
     };
 
-    worker.onerror = (e) => {
-      bundle.error = e.message;
-      bundle.status = "idle";
-      worker = null;
-    };
+    worker.onerror = (e) => fail(e.message);
 
-    // scanner ops run many times a second and are not logged, see WasmWorker
-    if (wasm_op <= WasmOp.Histogram) console.log(WasmOp[wasm_op], payload);
+    // a failed worker may hold a broken wasm instance, so it is never reused
+    function fail(message: string) {
+      console.error(WasmOp[wasm_op], "failed:", message);
+      bundle.error = message;
+      cancel_worker();
+      callback?.(null);
+    }
+
     const post_start = performance.now();
     worker.postMessage(
       { type: "message", wasm_op, payload, posted_at: abs_now() },

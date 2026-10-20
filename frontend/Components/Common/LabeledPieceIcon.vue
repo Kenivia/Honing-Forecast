@@ -5,7 +5,7 @@ defineProps<{ piece: string }>();
 </script>
 <template>
   <div
-    class="inline-flex w-full items-center justify-end gap-1.5 text-right text-sm text-(--text-secondary)"
+    class="inline-flex w-full items-center justify-end gap-1.5 text-right text-sm text-(--text-muted)"
   >
     <span class="text-(--text-muted)">{{ piece }}</span>
     <img

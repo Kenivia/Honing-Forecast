@@ -25,7 +25,6 @@ const { all_profiles, roster_ids } = storeToRefs(useRosterStore());
 
 const roster_parsed = ref(structuredClone(DEFAULT_UWUOWO_BUNDLE));
 
-// const roster_
 watch([() => props.region, () => props.any_char_name], () => {
   reset_uwuowo_bundle(roster_parsed);
 });
@@ -35,47 +34,37 @@ const show_popup = ref(false);
 const parsed_chars = ref<Record<string, UwuowoResultBundle>>({});
 const fetching_chars = ref(false);
 async function click() {
-  // console.log("click triggered");
+  const { region, any_char_name } = props;
+  // dropped if the name or region changed meanwhile
+  const stale = () =>
+    props.region !== region || props.any_char_name !== any_char_name;
   show_popup.value = true;
   const roster_result = await fetch_and_parse(
-    {
-      region: props.region,
-      char_name: props.any_char_name,
-      suffix: "roster",
-    },
+    { region, char_name: any_char_name, suffix: "roster" },
     parse_roster,
   );
-  // console.log(result, props.region, props.char_name);
+  if (stale()) return;
   if (typeof roster_result === "string") {
     roster_parsed.value.status = roster_result;
     roster_parsed.value.result = null;
-  } else {
-    roster_parsed.value.status = "";
-    roster_parsed.value.result = roster_result;
-    parsed_chars.value = {};
-    fetching_chars.value = true;
-    for (const char of roster_parsed.value.result.filter((x) =>
-      all_names.value.every((y) => y !== x),
-    )) {
-      setTimeout(() => {}, 500);
-      parsed_chars.value[char] = {
-        result: await fetch_and_parse(
-          {
-            region: props.region,
-            char_name: char,
-            suffix: "",
-          },
-          parse_char,
-        ),
-        status: "",
-      };
-      // console.log(typeof parsed_chars.value[char].result);
-      // doing these one by one to avoid like spamming uwuowo too fast
-    }
-    // console.log(parsed_chars.value)
-    fetching_chars.value = false;
+    return;
   }
-  // console.log(parsed_chars.value);
+  roster_parsed.value.status = "";
+  roster_parsed.value.result = roster_result;
+  parsed_chars.value = {};
+  fetching_chars.value = true;
+  // one at a time; fetch_uwuowo's rate limit spaces them
+  for (const char of roster_result.filter(
+    (x) => !all_names.value.includes(x),
+  )) {
+    const result = await fetch_and_parse(
+      { region, char_name: char, suffix: "" },
+      parse_char,
+    );
+    if (stale()) break;
+    parsed_chars.value[char] = { result, status: "" };
+  }
+  fetching_chars.value = false;
 }
 
 const all_names = computed(() => all_profiles.value.map((x) => x.char_name));

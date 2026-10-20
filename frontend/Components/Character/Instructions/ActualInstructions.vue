@@ -2,11 +2,15 @@
 import { computed } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { storeToRefs } from "pinia";
-import { ALL_LABELS, JOINED_ADV_JUICE, NUM_BASE_MATS } from "@/Utils/Constants";
-import { get_icon_path, toOrdinal } from "@/Utils/Helpers";
-import { OneState, Upgrade } from "@/Utils/KeyedUpgrades";
-import { artisan_string } from "@/Utils/HoningUtil";
-import { get_optimizer_working } from "./InstructionUtils";
+import { ALL_LABELS, NUM_BASE_MATS } from "@/Utils/Constants";
+import { get_icon_path } from "@/Utils/Helpers";
+import { Upgrade } from "@/Utils/KeyedUpgrades";
+import {
+  adv_streaks,
+  get_optimizer_working,
+  normal_streaks,
+  streak_lines,
+} from "./InstructionUtils";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 const runtime = useRuntimeStore();
 
@@ -15,217 +19,33 @@ const props = defineProps<{
   upgrade: Upgrade;
 }>();
 
-const juice_info = computed(() => {
-  return runtime.histogram.result.juice_info;
-});
+const juice_info = computed(() => runtime.histogram.result.juice_info);
 
-const relevant_ids = computed(() => {
-  let relevant_id_map = props.upgrade.is_normal_honing
+const relevant_ids = computed((): number[] => {
+  const map = props.upgrade.is_normal_honing
     ? juice_info.value.normal_uindex_to_id
     : juice_info.value.adv_uindex_to_id;
-
-  let ids: number[] =
-    relevant_id_map[props.upgrade.piece_type_usize][
-      props.upgrade.upgrade_index
-    ];
-
-  return ids;
+  return map[props.upgrade.piece_type_usize][props.upgrade.upgrade_index];
 });
-
-function icon_path_for_id(id: number) {
-  // console.log(id);
-  return get_icon_path(
-    ALL_LABELS[active_profile.value.tier][id + NUM_BASE_MATS],
-  );
-}
-
-interface NormalStreak {
-  ids: number[];
-  count: number;
-  grace: boolean | null;
-  pity: boolean;
-}
-
-function same_one_state(a: OneState, b: OneState) {
-  const setA = new Set(a);
-  const setB = new Set(b);
-  if (setA.size !== setB.size) return false;
-  return [...setA].every((val) => setB.has(val));
-}
-
-const streaks = computed(() => {
-  if (props.upgrade.state.length === 0) return [];
-
-  if (props.upgrade.is_normal_honing) {
-    const streaks: NormalStreak[] = [];
-    let current: NormalStreak | null = null;
-    let index = 0;
-    for (const one_state of props.upgrade.state.slice(
-      0,
-      props.upgrade.normal_dist.length,
-    )) {
-      if (
-        index == props.upgrade.normal_dist.length - 2 &&
-        artisan_string(props.upgrade, index, juice_info.value) === "100.00"
-      ) {
-        // this corresponds to not showing the pity tap
-        // Rust side does not enforce that the pity tap is unjuiced (it just ignores the state after that index)
-        // so we need to hide it from the user
-        // however for props.upgrades that naturally has a 100% success rate (below like +5) we don't want to skip (it won't have 100% artisan)
-        // just a weird edge case
-        streaks.push({ pity: true, ids: [], count: 1, grace: null });
-        break;
-        // continue;
-      }
-
-      if (current && same_one_state(one_state, current.ids)) {
-        current.count++;
-      } else {
-        // console.log(one_state);
-        current = { ids: one_state, count: 1, pity: false, grace: null };
-        streaks.push(current);
-      }
-      index += 1;
-    }
-    // console.log(streaks);
-    return streaks;
-  } else {
-    const raw_streaks: NormalStreak[] = [];
-    const juice_id = relevant_ids.value[0];
-    const scroll_id = relevant_ids.value[1];
-    let [juice_grace, juice_non_grace] =
-      JOINED_ADV_JUICE[props.upgrade.state[0][0]];
-    let [scroll_grace, scroll_non_grace] =
-      JOINED_ADV_JUICE[props.upgrade.state[1][0]];
-    // These 4 numbers correspond to how many taps to perform on the respective conditions
-    // They range from 0 to 255, with 255 considered infinite, see rust advanced_honing/utils for what numbers they can actually take
-
-    let both_grace = Math.min(juice_grace, scroll_grace);
-    if (both_grace > 0)
-      raw_streaks.push({
-        ids: [juice_id, scroll_id],
-        count: both_grace,
-        grace: true,
-        pity: false,
-      });
-    // console.log(streaks)
-    let one_grace =
-      juice_grace === scroll_grace
-        ? 0
-        : Math.max(juice_grace, scroll_grace) == 255
-          ? 255
-          : Math.max(juice_grace, scroll_grace) - both_grace;
-    if (one_grace > 0)
-      raw_streaks.push({
-        ids: juice_grace > scroll_grace ? [juice_id] : [scroll_id],
-        count: one_grace,
-        grace: true,
-        pity: false,
-      });
-    // console.log(streaks)
-    let both_non_grace = Math.min(juice_non_grace, scroll_non_grace);
-    if (both_non_grace > 0)
-      raw_streaks.push({
-        ids: [juice_id, scroll_id],
-        count: both_non_grace,
-        grace: false,
-        pity: false,
-      });
-    // console.log(streaks)
-    let one_non_grace =
-      juice_non_grace === scroll_non_grace
-        ? 0
-        : Math.max(juice_non_grace, scroll_non_grace) == 255
-          ? 255
-          : Math.max(juice_non_grace, scroll_non_grace) - both_non_grace;
-    if (one_non_grace > 0)
-      raw_streaks.push({
-        ids: juice_non_grace > scroll_non_grace ? [juice_id] : [scroll_id],
-        count: one_non_grace,
-        grace: false,
-        pity: false,
-      });
-    // console.log(streaks)
-    if (raw_streaks.length == 0) {
-      raw_streaks.push({
-        ids: [],
-        count: 255,
-        grace: true,
-        pity: false,
-      });
-    }
-    // console.log(
-    //   one_grace,
-    //   both_grace,
-    //   juice_grace,
-    //   juice_non_grace,
-    //   scroll_grace,
-    //   scroll_non_grace,
-    //   props.upgrade.state,
-    //   raw_streaks,
-    // );
-    return raw_streaks;
-  }
-});
-
-interface ParsedIcon {
-  id: number;
-  active: boolean;
-  path: string;
-}
 
 const parsed_streaks = computed(() => {
-  // console.log("parsed recalc");
-  let out = [];
-  let taps = 0;
-  for (let index = 0; index < streaks.value.length; index++) {
-    let streak: NormalStreak = streaks.value[index];
-
-    let is_normal = props.upgrade.is_normal_honing;
-
-    let icons: ParsedIcon[] = streak.pity
-      ? []
-      : relevant_ids.value.map((id) => ({
-          id,
-          active: streak.ids.includes(id),
-          path: icon_path_for_id(id),
-        }));
-
-    let line1: string;
-    let line2: string;
-
-    if (is_normal) {
-      taps += streak.count;
-      if (streak.pity) {
-        line1 = `Pity`;
-        line2 = `occurs on the ${toOrdinal(taps)} tap`;
-      } else {
-        line1 = `x${streak.count} taps`;
-        line2 = `until ${artisan_string(props.upgrade, taps, juice_info.value)}% artisan`;
-      }
-    } else {
-      let graceText = streak.grace ? "Grace" : "non-Grace";
-      if (streak.ids.length === 0) {
-        line1 = "Nothing";
-        line2 = `on ${graceText}`;
-      } else {
-        line1 =
-          streak.count < 255
-            ? `${streak.grace ? "First" : "Any"} ${streak.count}`
-            : "All";
-        line2 = graceText;
-      }
-    }
-
-    out.push({
-      icons,
-      line1,
-      line2,
-      pity: streak.pity,
-    });
-  }
-  // console.log("parsed", out);
-  return out;
+  const u = props.upgrade;
+  if (u.state.length === 0) return [];
+  const streaks = u.is_normal_honing
+    ? normal_streaks(u, juice_info.value)
+    : adv_streaks(u, relevant_ids.value);
+  const lines = streak_lines(u, streaks, juice_info.value);
+  return streaks.map((streak, i) => ({
+    pity: streak.pity,
+    line1: lines[i][0],
+    line2: lines[i][1],
+    icons: relevant_ids.value.map((id) => ({
+      active: streak.ids.includes(id),
+      path: get_icon_path(
+        ALL_LABELS[active_profile.value.tier][id + NUM_BASE_MATS],
+      ),
+    })),
+  }));
 });
 const optimizer_working = computed(get_optimizer_working);
 </script>

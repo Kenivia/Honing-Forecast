@@ -41,7 +41,7 @@ function handleClick() {
             ? 'var(--text-very-muted)'
             : 'inherit',
       backgroundColor: 'var(--serca-blue)',
-      cursor: !eligible ? 'not-allowed!' : 'pointer',
+      cursor: !eligible ? 'not-allowed' : 'pointer',
     }"
     @click="handleClick"
   >
@@ -52,6 +52,5 @@ function handleClick() {
 <style scoped>
 .tier-button:hover {
   background-color: var(--serca-blue-hover);
-  cursor: not-allowed;
 }
 </style>

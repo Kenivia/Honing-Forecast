@@ -10,7 +10,7 @@ use crate::{
     tooltip::{chest::Chest, hover::Hover},
 };
 
-pub const ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
+pub const ROOT: &str = env!("HF_ROOT");
 
 pub fn load() {
     static LOADED: Once = Once::new();

@@ -35,7 +35,7 @@ export function guard_switch(to: RouteLocationNormalized) {
   const name = to.params.characterName as string | undefined;
   if (!name) return;
   const store = useRosterStore();
-  const target = store.all_profiles.find((p) => p.char_name === name);
+  const target = store.all_profiles[store.profile_index_by_name(name)];
   if (!target || target.id === store.active_profile.id) return;
   if (moving) {
     moving = false;

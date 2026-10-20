@@ -2,13 +2,17 @@
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { get_icon_path } from "@/Utils/Helpers";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { useMediaIsNarrow } from "@/Utils/WindowSize";
+import { useMediaQuery } from "@vueuse/core";
 import { computed, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { FETCHABLE_REGIONS, start_fetch } from "./Utils/MarketDataFetcher";
-import { debounced_write_roster_config } from "./Stores/ConfigStorage";
+import {
+  debounced_write_roster_config,
+  write_state,
+} from "./Stores/ConfigStorage";
 import { useRuntimeStore } from "./Stores/RuntimeState";
 import ScanSwitchDialog from "./Components/Character/InventoryScanner/ScanSwitchDialog.vue";
+import BrokenSaveBanner from "./Components/Common/BrokenSaveBanner.vue";
 
 const roster_store = useRosterStore();
 roster_store.init();
@@ -18,6 +22,8 @@ const { all_profiles, roster_ids } = storeToRefs(roster_store);
 roster_store.$subscribe((_mutation, state) => {
   debounced_write_roster_config(state);
 });
+// the debounced write may not have landed when the tab closes
+window.addEventListener("pagehide", () => write_state(roster_store.$state));
 
 // The only place runtime state is kept in step with the character list, so adds and
 // deletes all land here. Keyed by id, so a rename keeps its workers.
@@ -28,7 +34,7 @@ watch(
   { immediate: true },
 );
 
-const is900Narrow = useMediaIsNarrow(900);
+const is900Narrow = useMediaQuery("(max-width: 900px)");
 
 const route = useRoute();
 const router = useRouter();
@@ -43,29 +49,14 @@ function on_char_select(e: Event) {
       .then(() => (select.value = char_name_from_route.value));
 }
 const char_name_from_route = computed(
-  () => route.path.split("/")[route.path.split("/").length - 2],
+  () => (route.params.characterName as string | undefined) ?? "",
 );
-FETCHABLE_REGIONS.forEach((region) => start_fetch(region, false, true));
+FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
 </script>
 
 <template>
   <div class="flex min-h-lvh max-w-full flex-col">
     <header>
-      <!-- <div v-if="!is500Narrow" class="page-header-row" style="width: 100%; justify-content: space-around">
-                <span>
-                    <span style="font-weight: 600">Happy Serca porg!&nbsp;</span>
-                    <a
-                        style="text-decoration: underline"
-                        href="https://docs.google.com/spreadsheets/d/1UWJ5TCNZ2kIZxXQwR839c-P1rlivkwdW3fOCMDMXZZo/edit?usp=sharing"
-                        >Data on this site</a
-                    >
-                    came from Korean API, if something is different in-game, plz let me know via
-                    <a style="text-decoration: underline" href="https://github.com/Kenivia/Honing-Forecast/issues">a GitHub issue</a>
-                    or
-                    <a style="text-decoration: underline" href="https://discord.gg/KWDpQyvgzc">on Discord</a>!
-                </span>
-            </div> -->
-
       <nav
         class="relative z-50 flex scrollbar-thin flex-row items-center justify-start overflow-x-auto border-b border-(--border-muted) bg-(--bg-muted) whitespace-nowrap"
       >
@@ -81,13 +72,11 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region, false, true));
                 class="h-9 w-9"
               /></div
           ></router-link>
-          <div v-if="!is900Narrow">
-            <h1
-              class="color-(--text-main) flex flex-row items-center font-semibold"
-            >
-              Honing Forecast
-            </h1>
-          </div>
+          <h1
+            class="color-(--text-main) flex flex-row items-center font-semibold"
+          >
+            Honing Forecast
+          </h1>
         </div>
         <router-link to="/roster-setup">
           <div
@@ -154,6 +143,7 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region, false, true));
         </select>
       </nav>
     </header>
+    <BrokenSaveBanner />
 
     <RouterView />
     <ScanSwitchDialog />

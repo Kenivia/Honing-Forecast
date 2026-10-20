@@ -10,40 +10,12 @@ import init, {
   recorder_buffer,
   record_frame,
 } from "@/../crates/wasm/pkg/hf_wasm.js";
-import { Payload } from "./PayloadBuilder";
-import { Upgrade } from "@/Utils/KeyedUpgrades";
-import {
+import type { Payload } from "./PayloadBuilder";
+import { ocr_job_buffers, WasmOp } from "./WasmTypes";
+import type {
   OcrJob,
   OneIconConfig,
 } from "@/Components/Character/InventoryScanner/LoadStorage";
-
-export enum WasmOp {
-  OptimizeAverage,
-  Histogram,
-  Cropper,
-  Reserve,
-  OcrInit,
-  Ocr,
-  Record,
-}
-
-// THESE BELOW DIRECTLY CORRESPOND TO A RUST STRUCT
-export type HistogramPair = [number, number];
-// Rust's label keyed maps, flattened to records by to_records below.
-export type ByLabel<T> = Record<string, T>;
-export interface HistogramOutputs {
-  cum_percentiles: ByLabel<HistogramPair[]>;
-
-  // chance the first k ownership bands cover every upgrade, as [bound, +roster, +tradable]
-  chance_within: ByLabel<[number, number, number]>;
-  avg_used: ByLabel<number>;
-
-  // one entry per plan in the payload, in payload order
-  gold_per_plan: ByLabel<number>[];
-  metric_per_plan: number[];
-
-  juice_info: any;
-}
 
 // Rust hash maps arrive as JS Maps. Every label keyed field becomes a plain record here,
 // so nothing downstream has to know which is which.
@@ -61,29 +33,6 @@ function to_records(result: any): any {
   }
   return result;
 }
-export interface StateBundle {
-  upgrade_arr: Upgrade[];
-  special_state: number[];
-  chest_states: Map<string, number[]>;
-  special_invalid_index?: number;
-  latest_special_probs?: number[];
-  min_resolution: number;
-  gold_breakdown?: number[];
-  prep_output: any;
-  special_cache: any;
-  adv_cache: any;
-  metric?: number;
-}
-
-// what an OCR job can hand over instead of copying
-export function ocr_job_buffers(job: OcrJob) {
-  const kind = job.line.kind;
-  return [
-    job.line.crop.data.buffer,
-    ...(typeof kind === "object" ? [kind.Number.icon.data.buffer] : []),
-  ];
-}
-
 // a frame's pixels as the scanner worker forwarded them
 function record({ pixels }, memory: WebAssembly.Memory, timings) {
   const pointer = recorder_buffer(pixels.length);
@@ -104,8 +53,17 @@ let scanner_buffer: { pointer: number; size: number } | null = null;
 // recorder gets frames back to back) must wait for that one, not load another.
 let wasm_ready: ReturnType<typeof init> | null = null;
 
+// a throw, a wasm panic included, is reported rather than left as an unhandled rejection
 self.addEventListener("message", async (ev) => {
-  const msg = ev.data;
+  try {
+    await handle(ev.data);
+  } catch (err) {
+    console.error(err);
+    self.postMessage({ type: "error", message: String(err) });
+  }
+});
+
+async function handle(msg) {
   const start_time = performance.now();
   // scan timings in ms, see Stream.vue
   const timings: Record<string, any> = { to_worker: abs_now() - msg.posted_at };
@@ -183,7 +141,7 @@ self.addEventListener("message", async (ev) => {
     result = payload.map((job) => [job.id, ocr_wrapper(job)]);
     take_timings();
   } else {
-    return; // react dev tool shenanigans
+    return; // not an op
   }
   if (loggable) {
     console.log(
@@ -210,7 +168,7 @@ self.addEventListener("message", async (ev) => {
         ? [result.buffer]
         : [];
   self.postMessage({ type: "result", result, timings }, { transfer });
-});
+}
 
 // comparable between the main thread and the worker
 function abs_now() {

@@ -3,7 +3,6 @@ import {
   ALL_LABELS,
   JUICE_RANGES,
   MATERIALS,
-  NUM_BANDS,
   NUM_BASE_MATS,
   ANNOTATION_COLORS,
   ANNOTATION_POSITIONS,
@@ -16,19 +15,23 @@ import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { computed, onMounted, ref } from "vue";
-import {
-  build_payload,
-  merge_lower_tier,
-} from "@/WasmInterface/PayloadBuilder";
+import { computed, ref } from "vue";
 import { input_column_to_num } from "@/Utils/InputColumn";
-import { start_all_workers } from "@/Components/Character/CharWorkerUtils";
-import { WasmOp } from "@/WasmInterface/WasmWorker";
+import {
+  start_all_workers,
+  start_eval_hist,
+} from "@/Components/Character/CharWorkerUtils";
 import { GridConfig } from "@/Utils/GridStyling";
-import { useMediaIsNarrow } from "@/Utils/WindowSize";
+import { useMediaQuery } from "@vueuse/core";
 import Popup from "@/Components/Common/Popup.vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 import { chest_gains } from "@/Utils/Chest";
+import {
+  annotations_shown,
+  owned_lines,
+  special_graph_data,
+  t4_gains as t4_gains_of,
+} from "./DistLines";
 const runtime = useRuntimeStore();
 
 const { active_profile } = storeToRefs(useRosterStore());
@@ -36,7 +39,6 @@ const {
   roster_config,
   active_roster_mats_owned,
   active_tradable_mats_owned,
-  enabled_annotations,
   processed_chests,
 } = storeToRefs(useRosterStore());
 const histogram_result = computed(() => runtime.histogram.result);
@@ -60,33 +62,28 @@ const gains = computed(() =>
 );
 const gain = (label: string, band: number) => gains.value[label]?.[band] ?? 0;
 
+// the three owned columns, as numbers
+const owned = computed(
+  () =>
+    [
+      active_profile.value.bound_budgets,
+      active_roster_mats_owned.value,
+      active_tradable_mats_owned.value,
+    ].map((column) => input_column_to_num(column)) as [
+      Record<string, number>,
+      Record<string, number>,
+      Record<string, number>,
+    ],
+);
 // what a Serca character's T4 adds to each band, as Rust counts it
-const t4_gains = computed(() => {
-  const owned = [
-    active_profile.value.bound_budgets,
-    active_roster_mats_owned.value,
-    active_tradable_mats_owned.value,
-  ].map((column) => input_column_to_num(column));
-  const merged = merge_lower_tier(
+const t4_gains = computed(() =>
+  t4_gains_of(
     tier.value,
-    owned[0],
-    owned[1],
-    owned[2],
+    owned.value,
     active_profile.value.bound_budgets.enabled,
-  );
-  const out: Record<string, number[]> = {};
-  for (const label of ALL_LABELS[tier.value]) {
-    out[label] = [merged.bound, merged.roster, merged.tradable].map(
-      (m, band) => m[label] - owned[band][label],
-    );
-  }
-  const special = input_column_to_num(active_profile.value.special_budget);
-  const leap = SPECIAL_LEAP_LABELS[tier.value];
-  out[leap] = [
-    merge_lower_tier(tier.value, special, {}, {}).bound[leap] - special[leap],
-  ];
-  return out;
-});
+    input_column_to_num(active_profile.value.special_budget),
+  ),
+);
 const t4_gain = (label: string, band: number) =>
   t4_gains.value[label]?.[band] ?? 0;
 // shown only when there is any
@@ -132,7 +129,7 @@ const visibleRows = computed(() =>
       return (
         active_profile.value.tier === 0 &&
         range !== undefined &&
-        has_upgrades_in_range(...range)
+        has_upgrades_in_range(active_profile.value, ...range)
       );
     }),
 );
@@ -157,64 +154,48 @@ const any_credited = computed(() =>
   active_profile.value.band_values.some((v) => v !== "Worthless"),
 );
 
-const bound_chance_text =
-  "Chance to succeed all upgrades within Char-Bound material";
-const roster_chance_text =
-  "Chance to succeed all upgrades within Roster-Bound material";
-const tradable_chance_text =
-  "Chance to succeed all upgrades within Tradable material";
 // parallel to chance_band
-const CHANCE_TEXTS = [
-  bound_chance_text,
-  roster_chance_text,
-  tradable_chance_text,
-];
+const CHANCE_TEXTS = ["Char-Bound", "Roster-Bound", "Tradable"].map(
+  (band) => `Chance to succeed all upgrades within ${band} material`,
+);
 const CHANCE_COLORS = ["var(--bound)", "var(--roster)", "var(--tradable)"];
 
-const selected_chance_band = ref(
-  CHANCE_TEXTS[active_profile.value.chance_band],
-);
-// initialize here otherwise it'll be null until we change it
-const selected_chance_color = ref(
-  CHANCE_COLORS[active_profile.value.chance_band],
+const selected_chance_color = computed(
+  () => CHANCE_COLORS[active_profile.value.chance_band],
 );
 
-function change_chance_band(event) {
-  const band = CHANCE_TEXTS.indexOf(event.target.value);
-  if (band < 0) {
-    return;
-  }
-  active_profile.value.chance_band = band;
-  set_enabled();
-  selected_chance_color.value = CHANCE_COLORS[band];
-  runtime.histogram.throttled_start(WasmOp.Histogram, build_payload());
+function change_chance_band(event: Event) {
+  active_profile.value.chance_band = Number(
+    (event.target as HTMLSelectElement).value,
+  );
+  start_eval_hist();
 }
 
-// annotation 0 is the average line, the rest are the ownership bands
-function set_enabled() {
-  for (let band = 0; band < NUM_BANDS; band++) {
-    enabled_annotations.value[band + 1] =
-      band === active_profile.value.chance_band;
-  }
-}
-onMounted(set_enabled); // overwrite the graph control options on load, which lowkey shouldn't even be there but whatever
+const enabled_annotations = computed(() =>
+  annotations_shown(active_profile.value.chance_band),
+);
 
 const annotation_values = computed(() => {
-  const bound = input_column_to_num(active_profile.value.bound_budgets);
-  const roster = input_column_to_num(active_roster_mats_owned.value);
-  const trade = input_column_to_num(active_tradable_mats_owned.value);
-  const out: Record<string, number[]> = {};
+  const traded = [
+    active_profile.value.bound_budgets,
+    active_roster_mats_owned.value,
+    active_tradable_mats_owned.value,
+  ].map((column) => column.enabled);
+  const out: Record<string, (number | null)[]> = {};
   for (const label of ALL_LABELS[tier.value]) {
-    const b = bound[label] + gain(label, 0) + t4_gain(label, 0);
-    const r = b + roster[label] + gain(label, 1) + t4_gain(label, 1);
-    out[label] = [
+    out[label] = owned_lines(
       average_breakdown.value[label],
-      b,
-      r,
-      r + trade[label] + gain(label, 2) + t4_gain(label, 2),
-    ].filter((_, i) => enabled_annotations.value[i]);
+      owned.value.map((column) => column[label]),
+      [0, 1, 2].map((band) => gain(label, band) + t4_gain(label, band)),
+      traded.map((enabled) => enabled[label]),
+    ).filter((_, i) => enabled_annotations.value[i]);
   }
   return out;
+});
+
+const special_data = computed(() => {
+  const bundle = runtime.histogram.result?.state_bundle;
+  return bundle ? special_graph_data(bundle) : null;
 });
 
 function hover_annotation(x, _y, cy, material_type, color, is_last): string {
@@ -256,7 +237,7 @@ const grid: GridConfig = {
     "minmax(260px, 320px) minmax(70px, 90px) minmax(110px, 120px) minmax(110px, 120px) 350px",
 };
 
-const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width where the checkboxes overlap the labels
+const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be the width where the checkboxes overlap the labels
 </script>
 
 <template>
@@ -278,20 +259,19 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
         <select
           aria-label="Chance column"
           class="selector -mr-4! ml-4!"
-          v-model="selected_chance_band"
+          :value="active_profile.chance_band"
           :style="{
             color: selected_chance_color,
           }"
           @change="change_chance_band"
         >
-          <option>{{ bound_chance_text }}</option>
-          <option>{{ roster_chance_text }}</option>
-          <option>{{ tradable_chance_text }}</option>
-          <!-- <Select :options="items" optionLabel="name">
-  <template #option="{ option }">
-    <span style="font-family: 'Your Font', sans-serif;">{{ option.name }}</span>
-  </template>
-</Select> -->
+          <option
+            v-for="(text, band) in CHANCE_TEXTS"
+            :key="band"
+            :value="band"
+          >
+            {{ text }}
+          </option>
         </select>
         <span class="text-right text-(--average)">Average</span>
         <div class="flex flex-row content-end">
@@ -406,28 +386,7 @@ const is924Narrow = useMediaIsNarrow(924); // this turns out to be the width whe
             >Should I use in T4 or convert?</span
           >
           <MaterialGraph
-            :data="
-              runtime.histogram.result.state_bundle?.latest_special_probs
-                .concat(
-                  new Array(
-                    Math.max(
-                      0,
-                      runtime.histogram.result.state_bundle.upgrade_arr.filter(
-                        (x) => x.is_normal_honing,
-                      ).length -
-                        runtime.histogram.result.state_bundle
-                          ?.latest_special_probs.length,
-                    ),
-                  ).fill(0),
-                )
-                .slice(
-                  0,
-                  runtime.histogram.result.state_bundle.upgrade_arr.filter(
-                    (x) => x.is_normal_honing,
-                  ).length,
-                )
-                .map((x, index) => [index, x]) ?? null
-            "
+            :data="special_data"
             :material-label="'Special'"
             :graph-color="'--free-tap'"
             :cumulative="roster_config.cumulative_graph"

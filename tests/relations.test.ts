@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { change_tier } from "@/Components/Character/StatusInput/StatusInputUtil";
 import {
-  compute_remaininig_materials,
+  compute_remaining_materials,
   set_special_remaining,
   special_total,
 } from "@/Components/Character/Instructions/Details/NormalDetails/SuccessUtils";
@@ -102,7 +102,7 @@ const snapshot = {
 } as any;
 const used = (v: number): Record<string, number> =>
   Object.fromEntries(labels.map((l) => [l, v]));
-const out = compute_remaininig_materials(used(25), snapshot);
+const out = compute_remaining_materials(used(25), snapshot);
 const wrong = labels.filter(
   (l) =>
     out.bound_budgets[l] !== 0 ||
@@ -114,7 +114,7 @@ check(
   wrong.length === 0,
   wrong.slice(0, 4).join(","),
 );
-const zero = compute_remaininig_materials(used(0), snapshot);
+const zero = compute_remaining_materials(used(0), snapshot);
 check(
   "zero cost leaves every pool untouched",
   labels.every(
@@ -182,7 +182,7 @@ const serca_snapshot = {
   roster_mats: serca({ Fusion: 3, "Serca Fusion": 2 }),
   tradable_mats: serca({ Fusion: 4, "Serca Fusion": 3 }),
 };
-const left = compute_remaininig_materials(
+const left = compute_remaining_materials(
   { "Serca Fusion": 6 },
   serca_snapshot,
 );
@@ -195,7 +195,7 @@ const of = (label: string) => [
 // roster and tradable pooled (3 + 2 Fusion); the last 1 from Serca tradable
 equal("deduction: T4 after Serca in each band", of("Fusion"), [2, 0, 2]);
 equal("deduction: the Serca stock first", of("Serca Fusion"), [0, 0, 2]);
-const small = compute_remaininig_materials(
+const small = compute_remaining_materials(
   { "Serca Fusion": 1 },
   serca_snapshot,
 );
@@ -230,7 +230,7 @@ const saved_column = column_from_saved(
 check("loading disables both", !saved_column.enabled.Red);
 
 serca_snapshot.bound_budgets.enabled.Fusion = false;
-const off = compute_remaininig_materials({ "Serca Fusion": 1 }, serca_snapshot);
+const off = compute_remaining_materials({ "Serca Fusion": 1 }, serca_snapshot);
 check(
   "a disabled source is not spent",
   off.bound_budgets.Fusion === undefined &&

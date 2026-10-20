@@ -51,23 +51,10 @@ export enum UpgradeStatus {
   FetchedDone,
 }
 
-export type BoolGrid = boolean[][];
 export type StatusGrid = UpgradeStatus[][];
 
 // ========================================================================================
 // These are to interface between UI and rust
-
-//                        piece type, upgrade index, is_normal_honing, normal_progress, state, unlocked, succeeded, adv_progress
-export type OldOneUpgrade = [
-  number,
-  number,
-  boolean,
-  number | null,
-  OneState[] | null,
-  boolean,
-  boolean,
-  AdvProgress | null,
-];
 
 // an array of this is passed into rust
 export interface OneUpgradeInput {
@@ -121,60 +108,24 @@ export function grids_to_keyed(
   all_keyed: KeyedUpgrades,
   tier: number,
 ) {
-  let new_keyed: KeyedUpgrades = {};
-
-  const grid_configs = [
-    { grid: normal_grid, is_normal_honing: true, default_adv_progress: null },
-    {
-      grid: adv_grid,
-      is_normal_honing: false,
-      default_adv_progress: [0, 0, false, false] as AdvProgress,
-    },
-  ];
-
-  for (const { grid, is_normal_honing, default_adv_progress } of grid_configs) {
+  const new_keyed: KeyedUpgrades = {};
+  for (const [grid, is_normal_honing] of [
+    [normal_grid, true],
+    [adv_grid, false],
+  ] as const) {
     for (const [piece_index, row] of grid.entries()) {
       for (const [upgrade_index, upgrade_status] of row.entries()) {
+        // non-want ones are discarded
+        if (upgrade_status !== UpgradeStatus.Want) continue;
         const key = to_upgrade_key(
           piece_index,
           upgrade_index,
           is_normal_honing,
           tier,
         );
-
-        // non-want ones are discarded
-        if (upgrade_status === UpgradeStatus.Want) {
-          if (key in all_keyed && is_one_upgrade(all_keyed[key])) {
-            new_keyed[key] = all_keyed[key];
-            // console.log("a", all_keyed[key]);
-          } else if (key in all_keyed && is_old_one_upgrade(all_keyed[key])) {
-            const [
-              piece_index,
-              upgrade_index,
-              is_normal_honing,
-              _normal_progress,
-              state,
-              unlocked,
-              _succeeded,
-              adv_progress,
-            ] = all_keyed[key] as OldOneUpgrade;
-            new_keyed[key] = {
-              piece_index: piece_index,
-              upgrade_index: upgrade_index,
-              is_normal_honing: is_normal_honing,
-              starting_artisan: 0, // technically can reverse-engineer a artisan / num taps here, but that'll need thet actual parsed Upgrade object (unless I re-implement all the logic in typescript) so maybe its not worth the hassle
-              starting_num_taps: 0,
-              state: state,
-              unlocked: unlocked,
-              adv_progress: adv_progress,
-              expanded: false,
-              taps_since_last_input: 0,
-              used_materials: null,
-              double_balls: true,
-            };
-            // console.log("b", all_keyed[key]);
-          } else {
-            new_keyed[key] = {
+        new_keyed[key] = is_one_upgrade(all_keyed[key])
+          ? all_keyed[key]
+          : {
               piece_index,
               upgrade_index,
               is_normal_honing,
@@ -182,19 +133,16 @@ export function grids_to_keyed(
               starting_num_taps: 0,
               state: null,
               unlocked: false,
-              adv_progress: default_adv_progress,
+              // a fresh array each, as the import writes into it
+              adv_progress: is_normal_honing ? null : [0, 0, false, false],
               expanded: false,
               taps_since_last_input: 0,
               used_materials: null,
               double_balls: true,
             };
-            // console.log("c", all_keyed[key]);
-          }
-        }
       }
     }
   }
-
   return new_keyed;
 }
 function is_one_upgrade(obj: unknown): obj is OneUpgradeInput {
@@ -242,35 +190,5 @@ function is_one_upgrade(obj: unknown): obj is OneUpgradeInput {
       return false;
   }
 
-  if (o.double_balls !== undefined && typeof o.unlocked !== "boolean") {
-    return false;
-  }
-  return true;
-}
-function is_old_one_upgrade(foo: unknown): foo is OldOneUpgrade {
-  if (!Array.isArray(foo) || foo.length !== 8) return false;
-
-  const [f0, f1, f2, f3, f4, f5, f6, f7] = foo;
-
-  return (
-    typeof f0 === "number" &&
-    typeof f1 === "number" &&
-    typeof f2 === "boolean" &&
-    (f3 === null || typeof f3 === "number") &&
-    (f4 === null || Array.isArray(f4)) &&
-    (f4 === null ||
-      f4.every(
-        (x) =>
-          x.length == 2 &&
-          typeof x[0] === "boolean" &&
-          typeof x[1] === "number",
-      )) &&
-    typeof f5 === "boolean" &&
-    typeof f6 === "boolean" &&
-    (f7 === null ||
-      (typeof f7[0] === "number" &&
-        typeof f7[1] === "number" &&
-        typeof f7[2] === "boolean" &&
-        typeof f7[3] === "boolean"))
-  );
+  return o.double_balls === undefined || typeof o.double_balls === "boolean";
 }

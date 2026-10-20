@@ -12,7 +12,7 @@ import {
 } from "./OcrRelay";
 import { has_progress, reset_scan, scan_wipes, take_edits } from "./ScanStore";
 import { wipe_scan } from "./ScanSwitch";
-import { WasmOp } from "@/WasmInterface/WasmWorker";
+import { WasmOp } from "@/WasmInterface/WasmTypes";
 import {
   ref,
   reactive,
@@ -244,7 +244,7 @@ async function start_scanner() {
   bundle.value.debounced_start(
     WasmOp.Reserve,
     new_scanner_state,
-    toggle_cropper,
+    (result) => result && toggle_cropper(),
     0,
     false,
   );
@@ -331,6 +331,7 @@ async function cropper_loop(id: number, full = false) {
       forward: recording.value,
     },
     (result: ScanResult, timings) => {
+      if (!result) return;
       // the scanner waits for these texts whether or not this reply is used
       queue_ocr(result.ocr_jobs);
       if (result.pixels) record_input(result.pixels);
@@ -409,6 +410,7 @@ function replay_scan(
     WasmOp.Cropper,
     { replay: input, full, ocr_results },
     (result: ScanResult) => {
+      if (!result) return;
       queue_ocr(result.ocr_jobs);
       if (done || id !== loop_id || result.full !== full) return;
       done = true;

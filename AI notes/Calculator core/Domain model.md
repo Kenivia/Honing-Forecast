@@ -19,7 +19,7 @@ How `crates/core` represents the problem. Field names on these structs are effec
 
 These orderings are shared with the frontend and with the constants JSON. Nothing enforces them at compile time.
 
-- **Pieces**: indices 0 to 4 are armour pieces, 5 is the weapon, 6 is the vambrace (Serca only). Piece *type* is a separate three-value index: armour, weapon, vambrace.
+- **Pieces**: indices 0 to 4 are armour pieces, 5 is the weapon, 6 is the vambrace. Both tiers have it: the T4 JSON is "Vambrace padded", with vambrace costs but a free-tap cost of 9999999. Piece *type* is a separate three-value index: armour, weapon, vambrace.
 - **Upgrade index**: the target level minus one for normal honing; the block number for advanced honing.
 - **Materials** (`support_index`): `NUM_BASE_MATS` base materials in a fixed order (Red, Blue, Leapstones, Shards, Fusion, Gold, Silver), then one row per juice id, so juice id `k` lives at `table.juice_row(k)`. The order comes from the payload's `material_labels` and the base prefix must match the cost tables, which carry no labels. Ask `MaterialTable` rather than comparing an index against a literal.
 - **Juice ids**: defined by the order of rows in the tier's constants JSON. The first two ids are the juices; higher ids are books and scrolls. Several places rely on that split.

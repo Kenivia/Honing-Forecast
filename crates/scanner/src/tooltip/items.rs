@@ -25,9 +25,10 @@ pub struct Item {
 
 // the materials: scanner_setup/templates/items.json
 pub static ITEMS: LazyLock<Vec<Item>> = LazyLock::new(|| {
-    serde_json::from_str(include_str!(
-        "../../../../scanner_setup/templates/items.json"
-    ))
+    serde_json::from_str(include_str!(concat!(
+        env!("HF_ROOT"),
+        "/scanner_setup/templates/items.json"
+    )))
     .unwrap()
 });
 
@@ -90,9 +91,10 @@ pub enum Described {
 }
 
 pub static VARIANTS: LazyLock<Vec<Variant>> = LazyLock::new(|| {
-    let mut variants: Vec<Variant> = serde_json::from_str(include_str!(
-        "../../../../scanner_setup/templates/chests.json"
-    ))
+    let mut variants: Vec<Variant> = serde_json::from_str(include_str!(concat!(
+        env!("HF_ROOT"),
+        "/scanner_setup/templates/chests.json"
+    )))
     .unwrap();
     for variant in &mut variants {
         variant.sorted = variant.contents.clone();

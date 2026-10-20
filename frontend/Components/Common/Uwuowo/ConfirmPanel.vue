@@ -30,13 +30,12 @@ function confirm(force_t4: boolean) {
   props.apply(props.char_parsed.result.pieces, force_t4, props.char_name);
 }
 const have_both = computed(() => {
-  //   console.log(toRaw(props.char_parsed));
   return (
     props.char_parsed &&
     props.char_parsed.result &&
     props.char_parsed.result.pieces.some((x) => x.tier === 1) &&
     props.char_parsed.result.pieces.some(
-      (x) => x.tier === 0 //  && (x.plus_n < 20 || x.adv < 40),
+      (x) => x.tier === 0, //  && (x.plus_n < 20 || x.adv < 40),
     )
   );
 });
@@ -96,66 +95,44 @@ const link = computed(
 
     <div v-if="have_both" class="flex w-full flex-col flex-wrap">
       <span>
-        You seem to have both Serca gear and T4 gear. We cannot calculate the cost of upgrades from different tiers
-        at the same time.
+        You seem to have both Serca gear and T4 gear. We cannot calculate the
+        cost of upgrades from different tiers at the same time.
       </span>
       <span> Pick what tier you want to calculate: </span>
     </div>
-    <div v-if="!have_both" class="flex w-full flex-row justify-around pt-2">
+    <div
+      class="flex w-full pt-2"
+      :class="have_both ? 'flex-col items-center' : 'flex-row justify-around'"
+    >
+      <button
+        v-if="have_both"
+        class="generic-button text-(--achieved)!"
+        @click="() => confirm(true)"
+      >
+        Confirm (T4)
+      </button>
+      <div
+        v-if="char_parsed.result && char_parsed.status !== FETCH_MSG"
+        class="flex flex-row content-end"
+      >
+        <button
+          class="generic-button text-(--achieved)!"
+          @click="() => confirm(false)"
+        >
+          Confirm {{ have_both ? "(Serca)" : "" }}</button
+        ><span
+          v-if="have_both"
+          class="w-0 basis-0 origin-right transform-[translateY(8px)] pl-px text-left text-xs text-(--text-very-muted)"
+          >(default)</span
+        >
+      </div>
       <button
         @click="emit('show_popup', false)"
         class="generic-button bg-(--warning-dark)! text-(--text-bright)!"
+        :class="{ 'order-first': !have_both }"
       >
         Cancel
       </button>
-
-      <button
-        class="generic-button text-(--achieved)!"
-        v-if="
-          char_parsed.result && char_parsed.status !== FETCH_MSG && have_both
-        "
-        @click="() => confirm(true)"
-      >
-        Confirm {{ have_both ? "(T4)" : "" }}
-      </button>
-      <button
-        class="generic-button text-(--achieved)!"
-        v-if="char_parsed.result && char_parsed.status !== FETCH_MSG"
-        @click="() => confirm(false)"
-      >
-        Confirm {{ have_both ? "(Serca)" : "" }}
-      </button>
-    </div>
-    <div v-else>
-      <div class="flex flex-col items-center">
-        <button
-          class="generic-button text-(--achieved)!"
-          v-if="
-            char_parsed.result && char_parsed.status !== FETCH_MSG && have_both
-          "
-          @click="() => confirm(true)"
-        >
-          Confirm {{ have_both ? "(T4)" : "" }}
-        </button>
-        <div class="flex flex-row content-end">
-          <button
-            class="generic-button text-(--achieved)!"
-            v-if="char_parsed.result && char_parsed.status !== FETCH_MSG"
-            @click="() => confirm(false)"
-          >
-            Confirm {{ have_both ? "(Serca)" : "" }}</button
-          ><span
-            class="w-0 basis-0 origin-right transform-[translateY(8px)] pl-px text-left text-xs text-(--text-very-muted)"
-            >(default)</span
-          >
-        </div>
-        <button
-          @click="emit('show_popup', false)"
-          class="generic-button bg-(--warning-dark)! text-(--text-bright)!"
-        >
-          Cancel
-        </button>
-      </div>
     </div>
   </div>
 </template>

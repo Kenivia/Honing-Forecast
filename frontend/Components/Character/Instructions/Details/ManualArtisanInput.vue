@@ -16,7 +16,6 @@ const current_chance_percentage = defineModel<string>(
 
 const props = defineProps<{
   upgrade: Upgrade;
-  optimizer_working: boolean;
   taps_since_last_input: number;
   normal_dist_length: number;
   using_slider: boolean;
@@ -90,8 +89,6 @@ const upgrade_key = computed(() =>
     <input
       class="generic-input number-border w-10 pr-0!"
       v-model="current_chance_percentage"
-      :min="upgrade.base_chance * 100 + upgrade.extra_chance"
-      :max="upgrade.base_chance * 100 * 2 + upgrade.extra_chance"
       @change="emit('manual_chance_change')"
       inputmode="decimal"
       :style="{

@@ -3,7 +3,7 @@ import { chest_gains, process_chests } from "@/Utils/Chest";
 import { char_chests } from "@/Utils/Income";
 import type { Snapshot, SnapshotResult } from "@/Utils/Scans";
 import type { CharProfile } from "@/Stores/CharacterProfile";
-import { payload_for } from "@/WasmInterface/PayloadBuilder";
+import { snapshot_payload } from "@/WasmInterface/PayloadBuilder";
 import { hash, type Job } from "@/WasmInterface/OptimizerJobs";
 
 // Optimizer runs of snapshots under the current upgrades. A snapshot's results are kept in it by
@@ -27,16 +27,7 @@ export function job_for(
     char_chests(snapshot, profile.id),
     profile.tier,
   );
-  const payload = payload_for(
-    profile,
-    char?.bound ?? {},
-    snapshot.roster_owned,
-    snapshot.tradable,
-    char?.special ?? {},
-    chests,
-    snapshot.prices,
-    snapshot.bundles,
-  );
+  const payload = snapshot_payload(profile, snapshot, chests);
   const key = hash(JSON.stringify(payload));
   return {
     hash: key,
@@ -59,7 +50,10 @@ export function job_for(
         special: {},
         chests: [],
       });
-      const kept = Object.entries(entry.results ?? {}).slice(1 - KEEP);
+      // a run can be stored twice (an older job object of the same snapshot)
+      const kept = Object.entries(entry.results ?? {})
+        .filter(([at]) => at !== key)
+        .slice(1 - KEEP);
       entry.results = Object.fromEntries([...kept, [key, result]]);
     },
   };

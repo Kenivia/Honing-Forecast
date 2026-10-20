@@ -61,7 +61,9 @@ async function acquire_rate_limit_slot(): Promise<void> {
   }
 }
 
-export async function fetch_uwuowo(fetch_request): Promise<string> {
+export async function fetch_uwuowo(
+  fetch_request: UwuowoFetchRequest,
+): Promise<string> {
   await acquire_rate_limit_slot();
 
   const address = `${WORKER_URL}/character/${fetch_request.region}/${fetch_request.char_name}/${fetch_request.suffix}`;
@@ -195,7 +197,7 @@ export function parse_char(
       .textContent.trim();
     // console.log(container.parentElement.children, achieved_ilevel);
   } catch (e) {
-    return `Parsing class name failed with message ${e}`;
+    return `Parsing item level failed with message ${e}`;
   }
   return { pieces, class_name, achieved_ilevel };
 }

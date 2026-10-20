@@ -46,8 +46,8 @@ export interface SavedColumn {
   disabled?: string[]; // complete list of disabled labels; absent means all enabled
 }
 
-// used_materials is left out: it is indexed by material row, and it is meaningless
-// without budget_snapshot, which is session-only.
+// used_materials is left out: it is meaningless without budget_snapshots, which is
+// session-only.
 export type SavedUpgrade = Omit<OneUpgradeInput, "used_materials">;
 
 export interface SavedProfile {
@@ -92,7 +92,6 @@ export interface SavedConfig {
   show_all_rows: boolean;
   auto_deduct_costs: boolean;
   auto_fetch: boolean;
-  enabled_annotations: boolean[];
 }
 
 // ============================================================================
@@ -338,7 +337,6 @@ export function to_saved(config: RosterConfig): Omit<SavedConfig, "version"> {
     show_all_rows: config.show_all_rows,
     auto_deduct_costs: config.auto_deduct_costs,
     auto_fetch: config.auto_fetch,
-    enabled_annotations: config.enabled_annotations,
   };
 }
 
@@ -404,12 +402,6 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
   out.scan_pages = Array.isArray(saved.scan_pages) ? saved.scan_pages : [];
   out.snapshots = Array.isArray(saved.snapshots) ? saved.snapshots : [];
   out.roster_income = saved.roster_income ?? {};
-  if (
-    Array.isArray(saved.enabled_annotations) &&
-    saved.enabled_annotations.length === out.enabled_annotations.length
-  ) {
-    out.enabled_annotations = saved.enabled_annotations;
-  }
 
   return out;
 }

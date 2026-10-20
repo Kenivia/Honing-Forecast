@@ -51,11 +51,6 @@ async function load_backup(event: Event) {
   }
 }
 
-// function copyPayload() {
-//   const payload = JSON.stringify(build_payload(), null, 2);
-//   navigator.clipboard?.writeText(payload).catch(() => undefined);
-// }
-
 // What a material the character owns but does not end up spending is worth. Calc.vue
 // watches band_values and restarts the workers.
 const leftover_tooltip = `We consider every possible outcome. In the event that you have material leftover, they are converted to gold according to the settings below. 
@@ -75,13 +70,6 @@ function set_band(band: number, event: Event) {
     <div class="control-panel-title">Controls</div>
 
     <div class="py-1 text-sm">
-      <!-- This is for producing payloads to feed into Rust -->
-      <!-- <button
-        class="generic-button ml-5"
-        @click="copyPayload"
-      >
-        Copy Payload
-      </button> -->
       <label class="control-panel-checkbox-row">
         <input v-model="roster_config.show_all_rows" type="checkbox" />
         <span>Show all mats (this tier)</span>

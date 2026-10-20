@@ -3,7 +3,7 @@ import { useRuntimeStore } from "@/Stores/RuntimeState";
 
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades";
 import { build_payload } from "@/WasmInterface/PayloadBuilder";
-import { WasmOp } from "@/WasmInterface/WasmWorker";
+import { WasmOp } from "@/WasmInterface/WasmTypes";
 
 export function grid_change_callback(dont_run?: boolean) {
   const profile = useRosterStore().active_profile;
@@ -39,8 +39,10 @@ export function start_all_workers() {
       WasmOp.OptimizeAverage,
       build_payload(),
       (result) => {
+        if (!result) return;
         const { adv_cache, ...rest } = result;
-        runtime.adv_cache = adv_cache;
+        // interim states come with the cache emptied
+        if (adv_cache?.size) runtime.adv_cache = adv_cache;
         runtime.optimizer.result = rest;
         start_eval_hist();
       },

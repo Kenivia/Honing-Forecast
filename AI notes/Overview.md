@@ -19,7 +19,7 @@ These notes are high-level. They cover what is hard to work out from reading one
 | `public/` | Static assets, changelogs, `WIP.md` (the author's roadmap), scanner config and OCR model. |
 | `scanner_setup/` | Everything that builds or calibrates the scanner config: source icons (`templates/`), game-file extraction, brightness calibration, anchor setup, the browser profiling scripts. |
 | `scripts/` | Changelog helper and the pre-deploy check; everything scanner-specific lives in `scanner_setup/` instead. |
-| `tests/` | Playwright e2e tests (`e2e/`), node-side frontend tests (migrations, the real-save fixture, cross-tier relations, `pnpm test:frontend`), and test fixtures (the V7 save, `test-results/`). |
+| `tests/` | Playwright e2e tests (`e2e/`), node-side frontend tests (migrations, the real-save fixture, cross-tier relations, `pnpm test:frontend`), Vitest unit and component tests (`unit/`, `pnpm test:unit`), and test fixtures (the V7 save, `test-results/`). |
 | `arena_data/` | Arena scenarios and its gitignored results database, plus the Python report scripts that read it. |
 
 Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-pack output), and `ignored/` (untracked: `junkyard/`, `data_fetcher/`, `game_file_reader/`, old saddlepoint reference PDF, the overnight evaluator experiments, scanner recordings).
@@ -28,7 +28,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 
 - `pnpm dev` builds the wasm package with wasm-pack, then starts Vite. Vite does not watch `crates/`, so **Rust changes need `pnpm run wasm` again**.
 - `pnpm e2e` runs the browser tests; `pnpm browse` runs a one-off browser script. See `Browser harness/Overview.md`.
-- `pnpm check` runs `vue-tsc --noEmit` over the `.ts` layer and `.vue` templates. `pnpm test:frontend` runs the node-side suites in `tests/`. Both are fast; run them after a frontend change.
+- `pnpm check` runs `vue-tsc --noEmit` over the `.ts` layer and `.vue` templates. `pnpm test:frontend` runs the node-side suites in `tests/`, `pnpm test:unit` the Vitest unit and component tests in `tests/unit/`. All are fast; run them after a frontend change.
 - `pnpm test` runs `cargo test -p hf-core -p hf-arena`: the valuation unit tests in `materials.rs`, plus a short Monte Carlo check and a seed-repeats check from the arena.
 - `pnpm arena <command>` runs the core's test harness. See `Calculator core/Arena.md`.
 - `pnpm build` chains `pnpm test` before the wasm and Vite builds and an unused-dependency check that needs nightly. `pnpm no-test-build` skips the test.

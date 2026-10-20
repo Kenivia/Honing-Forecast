@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMediaIsNarrow } from "@/Utils/WindowSize";
+import { useMediaQuery } from "@vueuse/core";
 import { ref } from "vue";
 import Footer from "./Footer.vue";
 
@@ -7,7 +7,7 @@ const props = withDefaults(defineProps<{ header?: string; width: number }>(), {
   header: "",
 });
 
-const isNarrow = useMediaIsNarrow(() => props.width);
+const isNarrow = useMediaQuery(() => `(max-width: ${props.width}px)`);
 
 const sidebarOpen = ref(false);
 const open = () => (sidebarOpen.value = true);
@@ -37,9 +37,7 @@ const close = () => (sidebarOpen.value = false);
           'side-bar--open': isNarrow && sidebarOpen,
         }"
         :style="{
-          height: isNarrow ? '100vh' : '',
           paddingTop: isNarrow ? '56px' : '',
-          top: isNarrow ? '0px' : '',
         }"
       >
         <span
@@ -100,9 +98,6 @@ const close = () => (sidebarOpen.value = false);
   flex-direction: column;
   overflow-x: hidden;
   overflow-y: auto;
-}
-.side-bar:nth-child(2) {
-  margin-top: 100px;
 }
 
 .side-bar--narrow {

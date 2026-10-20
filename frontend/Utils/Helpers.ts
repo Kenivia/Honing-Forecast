@@ -14,16 +14,12 @@ import { LOCALE_DECIMAL, parse_locale_float } from "./InputColumn";
 
 export function locale_to_fixed(
   inp: number,
-  place?: number,
+  place = 0,
   round_down?: boolean, // used for artisan (to match in-game)
 ) {
-  // console.log(inp, Math.floor(inp * Math.pow(10, place ? place : 0)));
-  return (
-    round_down
-      ? Math.floor(inp * Math.pow(10, place ? place : 0)) /
-        Math.pow(10, place ? place : 0)
-      : inp
-  )
+  const scale = Math.pow(10, place);
+  // the epsilon undoes float error, e.g. 0.29 * 100 = 28.999...
+  return (round_down ? Math.floor(inp * scale + 1e-9) / scale : inp)
     .toFixed(place)
     .replace(".", LOCALE_DECIMAL);
 }
@@ -53,31 +49,23 @@ export function clamp(min: number, input: number, max: number): number {
 }
 
 export function has_upgrades_in_range(
+  profile: CharProfile,
   low: number,
   high: number,
   is_weapon: boolean,
   is_adv: boolean,
 ) {
   // inclusive
-
-  const { active_profile } = storeToRefs(useRosterStore());
-
+  const grid = is_adv ? profile.adv_grid : profile.normal_grid;
   for (
     let row = is_weapon ? NUM_ADV_PIECES - 1 : 0;
     row < (is_weapon ? NUM_ADV_PIECES : NUM_ADV_PIECES - 1);
     row++
   ) {
     for (let col = low - 1; col < high; col++) {
-      if (
-        (is_adv
-          ? active_profile.value.adv_grid
-          : active_profile.value.normal_grid)[row][col] === UpgradeStatus.Want
-      ) {
-        return true;
-      }
+      if (grid[row][col] === UpgradeStatus.Want) return true;
     }
   }
-
   return false;
 }
 export function format_char_name(
@@ -113,77 +101,37 @@ export function format_char_name(
   return result;
 }
 
-export function check_adv_all_done() {
-  const { active_profile } = storeToRefs(useRosterStore());
+const is_done = (value: UpgradeStatus) =>
+  value === UpgradeStatus.Done || value === UpgradeStatus.FetchedDone;
+// the highest +n done, or done and wanted, per armour and weapon row
+const highest = (profile: CharProfile, row: number, want: boolean) =>
+  profile.normal_grid[row].findLastIndex(
+    (value) => is_done(value) || (want && value === UpgradeStatus.Want),
+  ) + 1;
+
+export function check_adv_all_done(profile: CharProfile) {
+  return profile.adv_grid
+    .slice(0, NUM_ADV_PIECES)
+    .every((row) => row.slice(0, ADV_COLS).every(is_done));
+}
+export function check_all_plus_20(profile: CharProfile): boolean {
   for (let row = 0; row < NUM_ADV_PIECES; row++) {
-    for (let col = 0; col < ADV_COLS; col++) {
-      if (
-        active_profile.value.adv_grid[row][col] != UpgradeStatus.Done &&
-        active_profile.value.adv_grid[row][col] != UpgradeStatus.FetchedDone
-      ) {
-        return false;
-      }
+    if (highest(profile, row, false) < 20) return false;
+  }
+  return true;
+}
+// true, or the first +n with no T4 equal
+export function check_revert_ilevel_ok(profile: CharProfile): number | true {
+  if (profile.tier == 0) return true;
+  for (let row = 0; row < NUM_ADV_PIECES; row++) {
+    for (const want of [false, true]) {
+      const plus_n = highest(profile, row, want);
+      if (!Object.hasOwn(PLUS_TIER_CONVERSION[profile.tier], String(plus_n)))
+        return plus_n;
     }
   }
   return true;
 }
-export function check_all_plus_20(): number | boolean {
-  const { active_profile } = storeToRefs(useRosterStore());
-  for (let row = 0; row < NUM_ADV_PIECES; row++) {
-    let highest_done =
-      active_profile.value.normal_grid[row].findLastIndex(
-        (value) =>
-          value == UpgradeStatus.Done || value == UpgradeStatus.FetchedDone,
-      ) + 1;
-
-    if (!(highest_done >= 20)) {
-      return false;
-    }
-  }
-  return true;
-}
-export function check_revert_ilevel_ok(): number | boolean {
-  const { active_profile } = storeToRefs(useRosterStore());
-  if (active_profile.value.tier == 0) {
-    return true;
-  }
-  for (let row = 0; row < NUM_ADV_PIECES; row++) {
-    let highest_done =
-      active_profile.value.normal_grid[row].findLastIndex(
-        (value) =>
-          value == UpgradeStatus.Done || value == UpgradeStatus.FetchedDone,
-      ) + 1;
-
-    if (
-      !Object.hasOwn(
-        PLUS_TIER_CONVERSION[active_profile.value.tier],
-        String(highest_done),
-      )
-    ) {
-      return highest_done;
-    }
-    let highest_want =
-      active_profile.value.normal_grid[row].findLastIndex(
-        (value) =>
-          value == UpgradeStatus.Done ||
-          value == UpgradeStatus.FetchedDone ||
-          value == UpgradeStatus.Want,
-      ) + 1;
-
-    if (
-      !Object.hasOwn(
-        PLUS_TIER_CONVERSION[active_profile.value.tier],
-        String(highest_want),
-      )
-    ) {
-      return highest_want;
-    }
-  }
-  return true;
-}
-// export function check_revert_eligibility(): boolean {
-//     return check_adv_all_done() && check_revert_ilevel_ok() === true
-// }
 
 export function cssVar(name: string, fallback: string) {
   if (typeof window === "undefined") return fallback;

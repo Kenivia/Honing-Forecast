@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import { CharProfile, new_char_profile } from "@/Stores/CharacterProfile.js";
-import {
-  create_default_owned_input_column,
-  useRosterStore,
-} from "@/Stores/RosterConfig";
-import { format_char_name } from "@/Utils/Helpers";
+import { useRosterStore } from "@/Stores/RosterConfig";
 import { storeToRefs } from "pinia";
 import { RouterLink } from "vue-router";
 import Sidebar from "@/Components/Common/Sidebar.vue";
@@ -14,61 +9,11 @@ import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher.js";
 import { ilevel } from "@/Utils/HoningUtil.js";
 import { apply_results } from "./Common/Uwuowo/ApplyResults.js";
 import FetchRosterButton from "./Common/Uwuowo/FetchRosterButton.vue";
-import { computed, toRaw } from "vue";
+import { market_to_uwuowo_region } from "./Common/Uwuowo/UwuowoUtils";
+import { computed } from "vue";
 
 const roster_store = useRosterStore();
-const { roster_config, roster_ids, all_profiles } = storeToRefs(roster_store);
-
-function add_new_char(roster_id: number) {
-  let new_char = new_char_profile();
-  new_char.char_name = format_char_name(
-    "Newchar",
-    roster_config.value.profiles.length,
-  );
-  new_char.roster_id = roster_id;
-  roster_store.add_profile(new_char);
-}
-function add_new_roster(roster_id: number) {
-  add_new_char(roster_id);
-
-  roster_config.value.roster_mats_owned[roster_id] =
-    create_default_owned_input_column();
-  roster_config.value.tradable_mats_owned[roster_id] =
-    create_default_owned_input_column();
-  roster_config.value.all_regions[roster_id] = "nae";
-}
-
-function duplicate(index) {
-  let new_char = {
-    ...new_char_profile(),
-    ...structuredClone(toRaw(roster_config.value.profiles[index])),
-    id: crypto.randomUUID(),
-  };
-  new_char.char_name = format_char_name(
-    "Newchar",
-    roster_config.value.profiles.length,
-  );
-  roster_store.add_profile(new_char);
-}
-
-function delete_profile(index, roster_id) {
-  // console.log(this_roster_profiles.length)
-  if (roster_config.value.active_profile_index >= index) {
-    roster_store.switch_profile(Math.max(index - 1, 0));
-  }
-  roster_config.value.profiles.splice(index, 1);
-
-  if (
-    roster_config.value.profiles.filter((x) => x.roster_id == roster_id)
-      .length === 0
-  ) {
-    delete roster_config.value.roster_mats_owned[roster_id];
-    delete roster_config.value.tradable_mats_owned[roster_id];
-    delete roster_config.value.all_regions[roster_id];
-  }
-
-  // console.log(this_roster_profiles.length)
-}
+const { roster_config, roster_ids } = storeToRefs(roster_store);
 
 const filtered_rosters_lists = computed(() =>
   roster_ids.value.map((roster_id) =>
@@ -79,13 +24,6 @@ const filtered_rosters_lists = computed(() =>
       .filter((y) => y.profile.roster_id === roster_id),
   ),
 );
-
-function swap_profiles(i: number, j: number) {
-  [all_profiles.value[i], all_profiles.value[j]] = [
-    all_profiles.value[j],
-    all_profiles.value[i],
-  ];
-}
 </script>
 
 <template>
@@ -93,12 +31,7 @@ function swap_profiles(i: number, j: number) {
     <template #sidebar>
       <button
         class="side-bar-item header-button h-max w-max self-center"
-        @click="
-          () =>
-            add_new_roster(
-              Math.max(...roster_config.profiles.map((x) => x.roster_id)) + 1,
-            )
-        "
+        @click="roster_store.add_roster()"
       >
         Add new roster
       </button></template
@@ -178,7 +111,7 @@ function swap_profiles(i: number, j: number) {
                           filtered_rosters_lists[roster_index][
                             index_in_filtered - 1
                           ].profile_index;
-                        swap_profiles(
+                        roster_store.move_profile(
                           above_profile_index,
                           profile_pair.profile_index,
                         );
@@ -203,7 +136,7 @@ function swap_profiles(i: number, j: number) {
                           filtered_rosters_lists[roster_index][
                             index_in_filtered + 1
                           ].profile_index;
-                        swap_profiles(
+                        roster_store.move_profile(
                           above_profile_index,
                           profile_pair.profile_index,
                         );
@@ -229,7 +162,9 @@ function swap_profiles(i: number, j: number) {
                 </RouterLink>
                 <button
                   class="generic-button"
-                  @click="() => duplicate(profile_pair.profile_index)"
+                  @click="
+                    roster_store.duplicate_profile(profile_pair.profile_index)
+                  "
                 >
                   Make a copy
                 </button>
@@ -237,7 +172,7 @@ function swap_profiles(i: number, j: number) {
                   v-if="roster_config.profiles.length > 1"
                   class="generic-button btn-cancel"
                   @click="
-                    () => delete_profile(profile_pair.profile_index, roster_id)
+                    roster_store.delete_profile(profile_pair.profile_index)
                   "
                 >
                   Delete
@@ -248,28 +183,22 @@ function swap_profiles(i: number, j: number) {
             <FetchRosterButton
               v-if="roster_config.all_regions[roster_id] !== 'Custom'"
               :region="
-                roster_config.all_regions[roster_id] === 'nae' ? 'NA' : 'CE'
+                market_to_uwuowo_region(roster_config.all_regions[roster_id])
               "
               :any_char_name="
                 filtered_rosters_lists[roster_index][0].profile.char_name
               "
               :apply="
                 (result, force_t4, char_name) => {
-                  add_new_char(roster_id);
-                  all_profiles[all_profiles.length - 1].char_name = char_name;
-                  // console.log(char_name);
-                  apply_results(
-                    all_profiles[all_profiles.length - 1],
-                    result,
-                    force_t4,
-                    true,
-                  );
+                  const added = roster_store.add_char(roster_id);
+                  added.char_name = char_name;
+                  apply_results(added, result, force_t4, true);
                 }
               "
             />
             <button
               class="generic-button w-full"
-              @click="() => add_new_char(roster_id)"
+              @click="roster_store.add_char(roster_id)"
             >
               Add new character
             </button>
@@ -278,13 +207,7 @@ function swap_profiles(i: number, j: number) {
         <div class="w-111">
           <button
             class="side-bar-item header-button h-max w-full"
-            @click="
-              () =>
-                add_new_roster(
-                  Math.max(...roster_config.profiles.map((x) => x.roster_id)) +
-                    1,
-                )
-            "
+            @click="roster_store.add_roster()"
           >
             Add new roster
           </button>

@@ -6,14 +6,7 @@ import {
   check_all_plus_20,
   check_revert_ilevel_ok,
 } from "@/Utils/Helpers";
-import { computed, ref } from "vue";
-import {
-  ADV_COLS,
-  ALL_LABELS,
-  NORMAL_COLS,
-  NUM_PIECES,
-  PLUS_TIER_CONVERSION,
-} from "@/Utils/Constants";
+import { computed } from "vue";
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import Uwuowo from "@/Components/Common/Uwuowo/Uwuowo.vue";
@@ -27,19 +20,24 @@ const { active_profile, all_profiles, active_region } =
 
 const tooltip_text = computed(() => {
   return active_profile.value.tier == 0
-    ? check_all_plus_20() && check_adv_all_done()
+    ? check_all_plus_20(active_profile.value) &&
+      check_adv_all_done(active_profile.value)
       ? "Eligible for conversion to T4.5 Serca gear"
       : "Warning! " +
         [
-          !check_adv_all_done() ? "All Adv honing will be set to +40" : null,
-          !check_all_plus_20() ? "All Gear will be set to +11 (Serca)" : null,
+          !check_adv_all_done(active_profile.value)
+            ? "All Adv honing will be set to +40"
+            : null,
+          !check_all_plus_20(active_profile.value)
+            ? "All Gear will be set to +11 (Serca)"
+            : null,
         ]
           .filter((x) => x !== null)
           .join(", \n")
-    : check_revert_ilevel_ok() === true
+    : check_revert_ilevel_ok(active_profile.value) === true
       ? "Can go back to T4"
       : "Cannot convert back to T4 because +" +
-        String(check_revert_ilevel_ok()) +
+        String(check_revert_ilevel_ok(active_profile.value)) +
         " cannot be mapped directly to a T4 upgrade";
 });
 const tier_label_text = computed(() => {
@@ -47,7 +45,6 @@ const tier_label_text = computed(() => {
     ? "Convert to T4.5 Serca"
     : "Revert back to T4";
 });
-const dummy = ref(true);
 </script>
 
 <template>
@@ -97,12 +94,17 @@ const dummy = ref(true);
         <TierConvertButton
           :labelText="tier_label_text"
           :tooltipText="tooltip_text"
-          :checkEligibility="() => check_revert_ilevel_ok() === true"
+          :checkEligibility="
+            () => check_revert_ilevel_ok(active_profile) === true
+          "
           @change-tier="() => change_tier(active_profile)"
           :show-tooltip-only-on-disabled="false"
           :warning="
             active_profile.tier == 0 &&
-            !(check_all_plus_20() && check_adv_all_done())
+            !(
+              check_all_plus_20(active_profile) &&
+              check_adv_all_done(active_profile)
+            )
           "
         />
         <label class="control-panel-checkbox-row border-0!">
@@ -115,20 +117,7 @@ const dummy = ref(true);
           v-if="active_profile.tier == 0"
           class="control-panel-checkbox-row border-0!"
         >
-          <!-- <input
-            v-model="active_profile.pretend_30_40_x2_grace"
-            type="checkbox"
-          /> -->
-          <input
-            v-model="dummy"
-            @click="
-              ($event) => {
-                $event.preventDefault();
-              }
-            "
-            type="checkbox"
-            class="cursor-not-allowed"
-          />
+          <input disabled checked type="checkbox" class="cursor-not-allowed" />
           <span class="text-(--text-muted)"
             >All adv honing now have x2 grace</span
           >

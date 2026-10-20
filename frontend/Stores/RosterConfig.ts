@@ -15,7 +15,9 @@ import {
 } from "@/Utils/InputColumn";
 
 import { defineStore } from "pinia";
+import { toRaw } from "vue";
 import { CharProfile, new_char_profile } from "./CharacterProfile";
+import { format_char_name } from "@/Utils/Helpers";
 
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
 
@@ -50,7 +52,6 @@ export interface RosterConfig {
   active_profile_index: number;
   last_seen_version: string;
 
-  enabled_annotations: boolean[];
   show_all_rows: boolean;
 
   auto_deduct_costs: boolean;
@@ -98,7 +99,6 @@ export function default_roster_config(): RosterConfig {
     profiles: [new_char_profile()],
     active_profile_index: 0,
     last_seen_version: "v0.0.0",
-    enabled_annotations: [true, true, false, false],
     show_all_rows: false,
     auto_deduct_costs: true,
     auto_fetch: true,
@@ -143,12 +143,15 @@ export const useRosterStore = defineStore("roster", {
     },
 
     all_profiles: (state): CharProfile[] => state.roster_config.profiles,
+    // -1 when no character has that name
+    profile_index_by_name:
+      (state) =>
+      (name: string): number =>
+        state.roster_config.profiles.findIndex((p) => p.char_name === name),
     roster_ids: (state): number[] =>
       [...new Set(state.roster_config.profiles.map((x) => x.roster_id))].sort(
         (a, b) => a - b,
       ),
-    enabled_annotations: (state): boolean[] =>
-      state.roster_config.enabled_annotations,
 
     active_selected_bundles(state): Record<string, number> {
       return state.roster_config.selected_bundles[this.active_region];
@@ -173,11 +176,81 @@ export const useRosterStore = defineStore("roster", {
     replace_config(config: RosterConfig) {
       this.roster_config = config;
     },
-    switch_profile(id: number) {
-      this.roster_config.active_profile_index = id;
+    switch_profile(index: number) {
+      this.roster_config.active_profile_index = index;
     },
     add_profile(profile: CharProfile) {
       this.roster_config.profiles.push(profile);
+    },
+    // points the active index at the character with `id`, wherever it now is
+    point_active_at(id: string) {
+      const index = this.roster_config.profiles.findIndex((p) => p.id === id);
+      if (index >= 0) this.roster_config.active_profile_index = index;
+    },
+
+    // returns the store's (reactive) copy
+    add_char(roster_id: number): CharProfile {
+      const profiles = this.roster_config.profiles;
+      this.add_profile({
+        ...new_char_profile(),
+        roster_id,
+        char_name: format_char_name("Newchar", profiles.length, profiles),
+      });
+      return profiles.at(-1);
+    },
+    add_roster() {
+      const config = this.roster_config;
+      const roster_id =
+        Math.max(...config.profiles.map((p) => p.roster_id)) + 1;
+      config.roster_mats_owned[roster_id] = create_default_owned_input_column();
+      config.tradable_mats_owned[roster_id] =
+        create_default_owned_input_column();
+      config.all_regions[roster_id] = "nae";
+      this.add_char(roster_id);
+    },
+    // a separate, identical character: chests and income settings are copied too
+    duplicate_profile(index: number) {
+      const profiles = this.roster_config.profiles;
+      this.add_profile({
+        ...structuredClone(toRaw(profiles[index])),
+        id: crypto.randomUUID(),
+        char_name: format_char_name("Newchar", profiles.length, profiles),
+      });
+    },
+    move_profile(i: number, j: number) {
+      const profiles = this.roster_config.profiles;
+      const id = this.active_profile.id;
+      [profiles[i], profiles[j]] = [profiles[j], profiles[i]];
+      this.point_active_at(id);
+    },
+    // Deleting the active character moves to the one before it. A roster's last character
+    // takes the roster's data with it, so a new roster reusing the id starts empty.
+    delete_profile(index: number) {
+      const config = this.roster_config;
+      const active = config.active_profile_index;
+      const keep =
+        index === active
+          ? (config.profiles[index - 1] ?? config.profiles[index + 1])
+          : config.profiles[active];
+      const [gone] = config.profiles.splice(index, 1);
+      this.point_active_at(keep.id);
+
+      config.scan_pages = config.scan_pages.filter(
+        (p) => p.char_id !== gone.id,
+      );
+      const roster_id = gone.roster_id;
+      if (config.profiles.some((p) => p.roster_id === roster_id)) return;
+      delete config.roster_mats_owned[roster_id];
+      delete config.tradable_mats_owned[roster_id];
+      delete config.all_regions[roster_id];
+      delete config.roster_chests[roster_id];
+      delete config.roster_income[roster_id];
+      config.scan_pages = config.scan_pages.filter(
+        (p) => p.roster_id !== roster_id,
+      );
+      config.snapshots = config.snapshots.filter(
+        (s) => s.roster_id !== roster_id,
+      );
     },
 
     reset_active_profile() {

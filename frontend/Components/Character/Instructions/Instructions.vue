@@ -2,9 +2,14 @@
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { to_upgrade_key, Upgrade } from "@/Utils/KeyedUpgrades";
+import { to_upgrade_key } from "@/Utils/KeyedUpgrades";
 import { GridConfig } from "@/Utils/GridStyling";
-import { get_any_overwritten, get_optimizer_working } from "./InstructionUtils";
+import {
+  get_any_overwritten,
+  get_optimizer_working,
+  get_relevant_result,
+  instruction_rows,
+} from "./InstructionUtils";
 import InstructionRow from "./InstructionRow.vue";
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { locale_to_fixed } from "@/Utils/Helpers";
@@ -17,114 +22,9 @@ const props = defineProps<{
 
 const { active_profile } = storeToRefs(useRosterStore());
 const any_overwritten = computed(get_any_overwritten);
-const relevant_result = computed(() => {
-  // console.log("relevant", any_overwritten.value);
-  return any_overwritten.value
-    ? runtime.histogram.result.state_bundle
-    : runtime.optimizer.result;
-});
-// This sorts the upgrades into an order that can actually be performed in game
-// special_state is already guaranteed to be valid on the rust side, but it doesn't tell us how to do the non-special taps
-// this gives a suggestion
-function sort_upgrades(): [Upgrade, number, number][] {
-  if (!relevant_result.value) {
-    return [];
-  }
-
-  let output: number[] = [];
-  let indices_in_special_state: number[] = [];
-  let upgrade_arr: Upgrade[] = relevant_result.value.upgrade_arr;
-  // let copy = upgrade_arr.slice()
-  let special_state: number[] = structuredClone(
-    relevant_result.value.special_state,
-  );
-  const special_chance_map = new Map();
-  for (let index = 0; index < special_state.length; index++) {
-    special_chance_map.set(
-      special_state[index],
-      relevant_result.value.latest_special_probs[index],
-    );
-  }
-
-  let special_invalid_index = relevant_result.value.special_invalid_index;
-  for (const [
-    index_in_special_state,
-    index_in_upgrade_arr,
-  ] of special_state.entries()) {
-    // console.log(original_index, u_index, output)
-    if (index_in_special_state >= special_invalid_index) {
-      // console.log(output.slice(), u_index, u_index in output)
-      if (!output.includes(index_in_upgrade_arr)) {
-        output.push(index_in_upgrade_arr);
-      }
-    } else {
-      let this_upgrade = upgrade_arr[index_in_upgrade_arr];
-      for (const [index, upgrade] of upgrade_arr.entries()) {
-        if (
-          upgrade.upgrade_index <= this_upgrade.upgrade_index &&
-          upgrade.is_normal_honing &&
-          upgrade.piece_index == this_upgrade.piece_index &&
-          !upgrade.succeeded &&
-          !output.includes(index)
-        ) {
-          output.push(index);
-          indices_in_special_state.push(
-            special_state.findIndex((x) => x == index),
-          );
-        }
-      }
-    }
-  }
-
-  let out = output.map((x, perform_order) => {
-    const upgrade = upgrade_arr[x];
-    const index_in_special = special_state.findIndex((y) => y == x);
-    return [
-      { ...upgrade, this_special_chance: special_chance_map.get(x) }, // Shallow clone
-      index_in_special,
-      perform_order,
-    ] as [Upgrade, number, number];
-  });
-
-  // const special_override =
-  //   active_profile.value.optimizer_override.special_state;
-  // if (
-  //   active_profile.value.optimizer_override === undefined ||
-  //   special_override.optimizer
-  // ) {
-  //   return out;
-  // }
-
-  // const compare_function = (ua: Upgrade, ub: Upgrade): number => {
-  //   // Primary: preferred type goes first
-  //   const a_preferred = ua.is_weapon === special_override.weapon_first;
-  //   const b_preferred = ub.is_weapon === special_override.weapon_first;
-  //   if (a_preferred !== b_preferred) {
-  //     return a_preferred ? -1 : 1;
-  //   }
-
-  //   // Tiebreak: by upgrade_index direction
-  //   return special_override.highest_first
-  //     ? ub.upgrade_index - ua.upgrade_index
-  //     : ua.upgrade_index - ub.upgrade_index;
-  // };
-
-  // out.sort((A, B) => compare_function(A[0], B[0]));
-  return out;
-}
-
-function get_relevant_upgrade_arr() {
-  let out = sort_upgrades().filter(
-    ([x]) => x.is_normal_honing === props.is_normal,
-  );
-  if (!props.is_normal) {
-    out.sort(([a], [b]) => a.upgrade_index - b.upgrade_index);
-  }
-  return out;
-}
-
-const relevant_upgrade_arr = computed(get_relevant_upgrade_arr);
-//  i dont really understand why using computed for this doesn't update correctly but whatever
+const relevant_upgrade_arr = computed(() =>
+  instruction_rows(get_relevant_result(any_overwritten.value), props.is_normal),
+);
 
 const grid: GridConfig = props.is_normal
   ? {
@@ -152,10 +52,7 @@ const optimizer_working = computed(get_optimizer_working);
 
         <span v-if="optimizer_working" class="text-(--text-main)">
           ({{
-            locale_to_fixed(
-              runtime.optimizer.est_progress_percentage,
-              2,
-            )
+            locale_to_fixed(runtime.optimizer.est_progress_percentage, 2)
           }}%)</span
         >
       </div>
@@ -200,10 +97,7 @@ const optimizer_working = computed(get_optimizer_working);
         </div>
       </div>
       <div
-        v-if="
-          runtime.optimizer.result &&
-          runtime.histogram.result
-        "
+        v-if="runtime.optimizer.result && runtime.histogram.result"
         class="contents"
       >
         <div
@@ -229,8 +123,7 @@ const optimizer_working = computed(get_optimizer_working);
             :upgrade="upgrade"
             :perform_order="perform_order"
             :special_invalid_index="
-              runtime.histogram.result.state_bundle
-                .special_invalid_index
+              runtime.histogram.result.state_bundle.special_invalid_index
             "
             :index_in_special_state="index_in_special_state"
           />

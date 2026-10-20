@@ -71,7 +71,8 @@ export function apply_results(
         want_adv.push({
           row,
           upgrade_index: upper,
-          diff: results[row].adv - Math.floor(results[row].adv / 10),
+          // in-block progress as AdvancedDetails writes it: levels * 10 (+ xp / 10)
+          diff: (results[row].adv % 10) * 10,
         });
         non_done_start += 1;
       }
@@ -106,7 +107,10 @@ export function apply_results(
         false,
         0,
       );
-      target_profile.keyed_upgrades[key].adv_progress[0] = want_adv[index].diff;
+      // a fresh array: default progress may be shared between upgrades
+      const upgrade = target_profile.keyed_upgrades[key];
+      const [, ...rest] = upgrade.adv_progress;
+      upgrade.adv_progress = [want_adv[index].diff, ...rest];
     }
   }
 
