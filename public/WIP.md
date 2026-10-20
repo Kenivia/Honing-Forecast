@@ -11,12 +11,6 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## OCR
 
-### HARD
-
-- ~~startup time or at least a loading icon~~
-- SOMEHOW indicate the amount coming from chests
-- ~~determine tradability of (content of) gold chests from tooltip~~
-
 ### LOW PRIO
 
 - save where a chest was detected from? (there'll be multiple tho?) and show it with hover?
@@ -73,6 +67,11 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Done / cancelled
 
+~~### HARD~~
+
+- ~~startup time or at least a loading icon~~
+- ~~SOMEHOW indicate the amount coming from chests~~
+- ~~determine tradability of (content of) gold chests from tooltip~~
 - ~~reset button~~
 
 - ~~CRLF~~

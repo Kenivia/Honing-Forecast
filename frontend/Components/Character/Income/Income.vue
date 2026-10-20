@@ -26,7 +26,12 @@ import {
   value_of,
 } from "@/Utils/Income";
 import IncomeGraph, { type Series } from "./IncomeGraph.vue";
-import { jobs_left, job_for, queue_jobs, stop_jobs } from "./IncomeJobs";
+import { job_for } from "./IncomeJobs";
+import {
+  jobs_left,
+  queue_jobs,
+  stop_jobs,
+} from "@/WasmInterface/OptimizerJobs";
 
 // The roster's budget snapshots as this character has them over time, and its income per week.
 const { roster_config, active_profile } = storeToRefs(useRosterStore());

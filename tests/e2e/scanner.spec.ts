@@ -184,6 +184,43 @@ test("exports merge across characters and are snapshotted", async ({
   await expect(timeline.getByRole("button")).toHaveCount(3);
 });
 
+test("a roster page never exported is not covered", async ({ page }) => {
+  test.setTimeout(180_000);
+  await open_scanner(page, "Newchar");
+  await add_bee(page);
+  await scan(page, [["Roster", 0, 0, "Red", 100, "Tradable"]], ["Roster 0"]);
+  await page.getByRole("button", { name: "Export to calculator" }).click();
+  await page.waitForTimeout(1000);
+
+  // Bee: only page 1 was exported, so covered until page 2 is open in game
+  await open_scanner(page, "Bee");
+  const cover = page.getByRole("group", { name: "Roster storage covered" });
+  const roster = page.getByRole("group", { name: "Roster storage" });
+  const use_saved = page.getByRole("button", { name: "Use saved" });
+  await expect(cover).toBeVisible();
+  await scan(page, [["Roster", 1, 0, "Red", 30, "Tradable"]], ["Roster 1"]);
+  await expect(cover).toHaveCount(0);
+  await expect(manifest_cell(page, "Red", "Tradable")).toHaveText("130");
+
+  // "Use saved" only while the page shown has been exported
+  await expect(use_saved).toBeEnabled();
+  await roster.getByRole("button", { name: "2", exact: true }).click();
+  await expect(use_saved).toBeDisabled();
+  await roster.getByRole("button", { name: "1 saved" }).click();
+  await expect(use_saved).toBeEnabled();
+  await use_saved.click();
+  await expect(cover).toBeVisible();
+  await expect(manifest_cell(page, "Red", "Tradable")).toHaveText("100");
+  await page.getByRole("button", { name: "Scan roster storage" }).click();
+  await expect(cover).toHaveCount(0);
+
+  // once exported, page 2 is saved too and the cover is back
+  await page.getByRole("button", { name: "Export to calculator" }).click();
+  await expect(cover).toBeVisible();
+  await expect(roster.getByRole("button", { name: "2 saved" })).toBeVisible();
+  await page.waitForTimeout(1000);
+});
+
 // how many slots the scan has corrections for, and how many it has read
 async function scan_store(page: Page) {
   return page.evaluate(async () => {
@@ -485,16 +522,18 @@ test("captures of two characters merge as expected", async ({
   now = await export_now(page);
   expect(now).toEqual(after_two);
 
-  // everything, roster storage page 2 too: covered, it is ignored; uncovered, it counts
+  // everything, roster storage page 2 too: never exported, so not covered; covered by hand, it
+  // is ignored; uncovered, it counts
   let four = await replay(page, "Bee", CAPTURES[3]);
-  await expect(cover).toBeVisible();
-  await expect(
-    page
-      .getByRole("group", { name: "Roster storage" })
-      .getByRole("button", { name: "1 saved" }),
-  ).toBeVisible();
+  await expect(cover).toHaveCount(0);
   await expect(storage.getByRole("img", { name: "saved" })).toHaveCount(0);
+  const roster = page.getByRole("group", { name: "Roster storage" });
+  await roster.getByRole("button", { name: /^1( saved)?$/ }).click();
+  await page.getByRole("button", { name: "Use saved" }).click();
+  await expect(cover).toBeVisible();
+  await expect(roster.getByRole("button", { name: "1 saved" })).toBeVisible();
   // covered, what is read there is left out
+  four = await live_pages(page);
   expect(Object.keys(four).some((key) => key.startsWith("Roster"))).toBe(false);
   await page.getByRole("button", { name: "Scan roster storage" }).click();
   await expect(cover).toHaveCount(0);

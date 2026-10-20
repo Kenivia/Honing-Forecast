@@ -47,6 +47,8 @@ export interface CharProfile {
   // income per week typed by hand, char bound and free taps (under the special leap label)
   income_manual: boolean;
   bound_income: Record<string, number>;
+  // the difficulty picked by hand per raid on the Choices page
+  choice_levels: Record<string, string>;
 
   auto_start_optimizer: boolean;
   tier: number;
@@ -82,6 +84,7 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
   chests: [],
   income_manual: false,
   bound_income: {},
+  choice_levels: {},
   tier: 0,
   min_resolution: 1,
   num_threads: 1,

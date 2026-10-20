@@ -9,6 +9,7 @@ import { useRosterStore } from "@/Stores/RosterConfig";
 import { ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog";
 import ChangeLogsView from "@/Components/ChangeLogsView.vue";
 import Income from "@/Components/Character/Income/Income.vue";
+import Choices from "@/Components/Character/Choices/Choices.vue";
 import { guard_switch } from "@/Components/Character/InventoryScanner/ScanSwitch";
 
 const router = createRouter({
@@ -86,6 +87,7 @@ const router = createRouter({
         { path: "guide", name: "char-guide", component: Guide },
         { path: "scanner", name: "char-scanner", component: Scanner },
         { path: "income", name: "char-income", component: Income },
+        { path: "choices", name: "char-choices", component: Choices },
         {
           path: ":x/guide",
           redirect: (c) => `/${c.params.characterName}/guide`,

@@ -1,0 +1,1121 @@
+[
+ {
+  "id": "bonus 223014 1",
+  "group": "Witch of Agony, Serca",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -4160,
+    "Shards": 13650,
+    "Red": 1610,
+    "Blue": 3220,
+    "Leaps": 50
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x10",
+   "Great Stone of Soaring x8",
+   "Radiant Savior Bracelet x3",
+   "Ark Grid Core x2",
+   "Fragmented Agony Thorn x100"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Normal / Solo",
+  "item_level": 1710
+ },
+ {
+  "id": "bonus 223014 2",
+  "group": "Witch of Agony, Serca",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -6080,
+    "Shards": 20880,
+    "Red": 2480,
+    "Blue": 4960,
+    "Leaps": 82,
+    "Special Leap": 12
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x12",
+   "Great Stone of Soaring x9",
+   "Radiant Savior Bracelet x5",
+   "Fragmented Agony Thorn x100",
+   "Ark Grid Core x2",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Normal / Solo",
+  "item_level": 1710
+ },
+ {
+  "id": "bonus 223013 1",
+  "group": "Witch of Agony, Serca",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -6720,
+    "Shards": 19000,
+    "Serca Red": 860,
+    "Serca Blue": 1720,
+    "Serca Leaps": 36
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x14",
+   "Great Stone of Soaring x10",
+   "Radiant Savior Bracelet x3",
+   "Agony Thorn x10",
+   "Ark Grid Core x3"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Nightmare",
+  "item_level": 1740
+ },
+ {
+  "id": "bonus 223013 2",
+  "group": "Witch of Agony, Serca",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -10560,
+    "Shards": 32200,
+    "Serca Red": 1430,
+    "Serca Blue": 2860,
+    "Serca Leaps": 60,
+    "Serca Special Leap": 5
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x16",
+   "Great Stone of Soaring x10",
+   "Radiant Savior Bracelet x4",
+   "Agony Thorn x15",
+   "Ark Grid Core x3",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Nightmare",
+  "item_level": 1740
+ },
+ {
+  "id": "bonus 223012 1",
+  "group": "Witch of Agony, Serca",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -5600,
+    "Shards": 17500,
+    "Serca Red": 750,
+    "Serca Blue": 1500,
+    "Serca Leaps": 30
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x13",
+   "Great Stone of Soaring x10",
+   "Radiant Savior Bracelet x2",
+   "Agony Thorn x10",
+   "Ark Grid Core x2"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Hard",
+  "item_level": 1730
+ },
+ {
+  "id": "bonus 223012 2",
+  "group": "Witch of Agony, Serca",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -8480,
+    "Shards": 26820,
+    "Serca Red": 1130,
+    "Serca Blue": 2260,
+    "Serca Leaps": 45,
+    "Serca Special Leap": 4
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x14",
+   "Great Stone of Soaring x10",
+   "Radiant Savior Bracelet x3",
+   "Agony Thorn x15",
+   "Ark Grid Core x2",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Hard",
+  "item_level": 1730
+ },
+ {
+  "id": "bonus 222015 1",
+  "group": "Denouement: Final Day",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -3520,
+    "Shards": 13650,
+    "Red": 1610,
+    "Blue": 3220,
+    "Leaps": 50
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x10",
+   "Great Stone of Soaring x8",
+   "Radiant Savior Bracelet x3",
+   "Ark Grid Core x2"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Normal / Solo",
+  "item_level": 1710
+ },
+ {
+  "id": "bonus 222015 2",
+  "group": "Denouement: Final Day",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -6720,
+    "Shards": 23200,
+    "Red": 2760,
+    "Blue": 5520,
+    "Leaps": 90,
+    "Special Leap": 12
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x12",
+   "Great Stone of Soaring x9",
+   "Radiant Savior Bracelet x5",
+   "Ark Grid Core x2",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Normal / Solo",
+  "item_level": 1710
+ },
+ {
+  "id": "bonus 222012 1",
+  "group": "Denouement: Final Day",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -5120,
+    "Shards": 17500,
+    "Serca Red": 750,
+    "Serca Blue": 1500,
+    "Serca Leaps": 30
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x13",
+   "Great Stone of Soaring x10",
+   "Radiant Savior Bracelet x2",
+   "Ark Grid Core x2"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Hard",
+  "item_level": 1730
+ },
+ {
+  "id": "bonus 222012 2",
+  "group": "Denouement: Final Day",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -10240,
+    "Shards": 29800,
+    "Serca Red": 1320,
+    "Serca Blue": 2640,
+    "Serca Leaps": 50,
+    "Serca Special Leap": 4
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x14",
+   "Great Stone of Soaring x10",
+   "Radiant Savior Bracelet x3",
+   "Ark Grid Core x2",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Hard",
+  "item_level": 1730
+ },
+ {
+  "id": "bonus 221013 1",
+  "group": "Act 4: Fortress of Destruction",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -3200,
+    "Shards": 11880,
+    "Red": 1400,
+    "Blue": 2800,
+    "Leaps": 44
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x9",
+   "Great Stone of Soaring x7",
+   "Radiant Savior Bracelet x2",
+   "Ark Grid Core x1"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Normal / Solo",
+  "item_level": 1700
+ },
+ {
+  "id": "bonus 221013 2",
+  "group": "Act 4: Fortress of Destruction",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -5440,
+    "Shards": 20160,
+    "Red": 2400,
+    "Blue": 4800,
+    "Leaps": 78,
+    "Special Leap": 10
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x10",
+   "Great Stone of Soaring x8",
+   "Radiant Savior Bracelet x4",
+   "Ark Grid Core x1",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Normal / Solo",
+  "item_level": 1700
+ },
+ {
+  "id": "bonus 221012 1",
+  "group": "Act 4: Fortress of Destruction",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -4320,
+    "Shards": 14250,
+    "Red": 1680,
+    "Blue": 3360,
+    "Leaps": 53
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x11",
+   "Great Stone of Soaring x8",
+   "Radiant Savior Bracelet x1",
+   "Ark Grid Core x1"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Hard",
+  "item_level": 1720
+ },
+ {
+  "id": "bonus 221012 2",
+  "group": "Act 4: Fortress of Destruction",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -7840,
+    "Shards": 24200,
+    "Red": 2880,
+    "Blue": 5760,
+    "Leaps": 94,
+    "Special Leap": 13
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x12",
+   "Great Stone of Soaring x9",
+   "Radiant Savior Bracelet x2",
+   "Ark Grid Core x1",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Hard",
+  "item_level": 1720
+ },
+ {
+  "id": "bonus 220013 1",
+  "group": "Act 3: Night of Storms and Darkness",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -1300,
+    "Shards": 3680,
+    "Red": 390,
+    "Blue": 780,
+    "Leaps": 12
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x3",
+   "Great Stone of Soaring x4",
+   "Radiant Savior Bracelet x1",
+   "Tempering: Thundercrack Horn x3"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Normal / Solo",
+  "item_level": 1680
+ },
+ {
+  "id": "bonus 220013 2",
+  "group": "Act 3: Night of Storms and Darkness",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -2350,
+    "Shards": 4750,
+    "Red": 530,
+    "Blue": 1060,
+    "Leaps": 15
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x3",
+   "Great Stone of Soaring x5",
+   "Radiant Savior Bracelet x1",
+   "Tempering: Thundercrack Horn x5"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Normal / Solo",
+  "item_level": 1680
+ },
+ {
+  "id": "bonus 220013 3",
+  "group": "Act 3: Night of Storms and Darkness",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -3360,
+    "Shards": 6810,
+    "Red": 780,
+    "Blue": 1560,
+    "Leaps": 21,
+    "Special Leap": 7
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x5",
+   "Great Stone of Soaring x6",
+   "Radiant Savior Bracelet x2",
+   "Tempering: Thundercrack Horn x10",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 3",
+  "difficulty": "Normal / Solo",
+  "item_level": 1680
+ },
+ {
+  "id": "bonus 220012 1",
+  "group": "Act 3: Night of Storms and Darkness",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -1650,
+    "Shards": 5000,
+    "Red": 600,
+    "Blue": 1200,
+    "Leaps": 23
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x6",
+   "Great Stone of Soaring x6",
+   "Radiant Savior Bracelet x2",
+   "Tempering: Thunder Globe x3"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Hard",
+  "item_level": 1700
+ },
+ {
+  "id": "bonus 220012 2",
+  "group": "Act 3: Night of Storms and Darkness",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -2640,
+    "Shards": 7200,
+    "Red": 830,
+    "Blue": 1660,
+    "Leaps": 27
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x8",
+   "Great Stone of Soaring x7",
+   "Radiant Savior Bracelet x2",
+   "Tempering: Thunder Globe x5"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Hard",
+  "item_level": 1700
+ },
+ {
+  "id": "bonus 220012 3",
+  "group": "Act 3: Night of Storms and Darkness",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -4060,
+    "Shards": 11760,
+    "Red": 1460,
+    "Blue": 2920,
+    "Leaps": 45,
+    "Special Leap": 10
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x10",
+   "Great Stone of Soaring x8",
+   "Radiant Savior Bracelet x4",
+   "Tempering: Thunder Globe x10",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 3",
+  "difficulty": "Hard",
+  "item_level": 1700
+ },
+ {
+  "id": "bonus 219014 1",
+  "group": "Act 2: Requiem of the Floating Nightmare",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -1820,
+    "Shards": 5220,
+    "Red": 610,
+    "Blue": 1220,
+    "Leaps": 13
+   }
+  ],
+  "others": [
+   "Solemn Resolution Necklace / Solemn Resolution Earrings / Solemn Resolution Ring x3",
+   "Great Stone of Soaring x6",
+   "Noble Savior's Bracelet x3",
+   "Shadow of Karma x4",
+   "Act 2 Solo/Normal Growth Event Chest x1"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Normal / Solo",
+  "item_level": 1670
+ },
+ {
+  "id": "bonus 219014 2",
+  "group": "Act 2: Requiem of the Floating Nightmare",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -3720,
+    "Shards": 8060,
+    "Red": 810,
+    "Blue": 1620,
+    "Leaps": 21,
+    "Special Leap": 7
+   }
+  ],
+  "others": [
+   "Solemn Resolution Necklace / Solemn Resolution Earrings / Solemn Resolution Ring x5",
+   "Great Stone of Soaring x7",
+   "Noble Savior's Bracelet x4",
+   "Shadow of Karma x6",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1",
+   "Act 2 Solo/Normal Growth Event Chest x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Normal / Solo",
+  "item_level": 1670
+ },
+ {
+  "id": "bonus 219012 1",
+  "group": "Act 2: Requiem of the Floating Nightmare",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -2400,
+    "Shards": 6000,
+    "Red": 720,
+    "Blue": 1440,
+    "Leaps": 30
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x6",
+   "Great Stone of Soaring x7",
+   "Radiant Savior Bracelet x2",
+   "Shadow of Karma x8",
+   "Act 2 Hard Growth Event Chest x1"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Hard",
+  "item_level": 1690
+ },
+ {
+  "id": "bonus 219012 2",
+  "group": "Act 2: Requiem of the Floating Nightmare",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -5100,
+    "Shards": 10590,
+    "Red": 1320,
+    "Blue": 2640,
+    "Leaps": 50,
+    "Special Leap": 9
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x8",
+   "Great Stone of Soaring x8",
+   "Radiant Savior Bracelet x4",
+   "Shadow of Karma x12",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1",
+   "Act 2 Hard Growth Event Chest x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Hard",
+  "item_level": 1690
+ },
+ {
+  "id": "bonus 218013 1",
+  "group": "Act 1: Earth-Shattering Hellfire",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -750,
+    "Shards": 2800,
+    "Red": 310,
+    "Blue": 620,
+    "Leaps": 8
+   }
+  ],
+  "others": [
+   "Solemn Resolution Necklace / Solemn Resolution Earrings / Solemn Resolution Ring x3",
+   "Great Stone of Soaring x6",
+   "Noble Savior's Bracelet x3",
+   "Hellfire Keystone x4",
+   "Act 1 Solo/Normal Growth Event Chest x1"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Normal / Solo",
+  "item_level": 1660
+ },
+ {
+  "id": "bonus 218013 2",
+  "group": "Act 1: Earth-Shattering Hellfire",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -1780,
+    "Shards": 4480,
+    "Red": 460,
+    "Blue": 920,
+    "Leaps": 15,
+    "Special Leap": 7
+   }
+  ],
+  "others": [
+   "Solemn Resolution Necklace / Solemn Resolution Earrings / Solemn Resolution Ring x5",
+   "Great Stone of Soaring x7",
+   "Noble Savior's Bracelet x4",
+   "Hellfire Keystone x6",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1",
+   "Act 1 Solo/Normal Growth Event Chest x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Normal / Solo",
+  "item_level": 1660
+ },
+ {
+  "id": "bonus 218012 1",
+  "group": "Act 1: Earth-Shattering Hellfire",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -1820,
+    "Shards": 5280,
+    "Red": 610,
+    "Blue": 1220,
+    "Leaps": 18
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x5",
+   "Great Stone of Soaring x7",
+   "Radiant Savior Bracelet x2",
+   "Hellfire Keystone x8",
+   "Act 1 Hard Growth Event Chest x1"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Hard",
+  "item_level": 1680
+ },
+ {
+  "id": "bonus 218012 2",
+  "group": "Act 1: Earth-Shattering Hellfire",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -4150,
+    "Shards": 8930,
+    "Red": 940,
+    "Blue": 1880,
+    "Leaps": 31,
+    "Special Leap": 9
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x7",
+   "Great Stone of Soaring x8",
+   "Radiant Savior Bracelet x2",
+   "Hellfire Keystone x12",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1",
+   "Act 1 Hard Growth Event Chest x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Hard",
+  "item_level": 1680
+ },
+ {
+  "id": "bonus 217013 1",
+  "group": "Overture: Spiral of the Crimson Midnight Sun",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -310,
+    "Shards": 1320,
+    "Red": 90,
+    "Blue": 180,
+    "Leaps": 2
+   }
+  ],
+  "others": [
+   "Solemn Resolution Necklace / Solemn Resolution Earrings / Solemn Resolution Ring x1",
+   "Great Stone of Soaring x3",
+   "Noble Savior's Bracelet x1",
+   "Tempering: Agris's Scale x3",
+   "Overture Solo/Normal Growth Event Chest x1"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Normal / Solo",
+  "item_level": 1620
+ },
+ {
+  "id": "bonus 217013 2",
+  "group": "Overture: Spiral of the Crimson Midnight Sun",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -700,
+    "Shards": 1900,
+    "Red": 160,
+    "Blue": 320,
+    "Leaps": 3,
+    "Special Leap": 1
+   }
+  ],
+  "others": [
+   "Solemn Resolution Necklace / Solemn Resolution Earrings / Solemn Resolution Ring x2",
+   "Great Stone of Soaring x4",
+   "Noble Savior's Bracelet x2",
+   "Tempering: Agris's Scale x6",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1",
+   "Overture Solo/Normal Growth Event Chest x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Normal / Solo",
+  "item_level": 1620
+ },
+ {
+  "id": "bonus 217012 1",
+  "group": "Overture: Spiral of the Crimson Midnight Sun",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -720,
+    "Shards": 1620,
+    "Red": 240,
+    "Blue": 480,
+    "Leaps": 7
+   }
+  ],
+  "others": [
+   "Solemn Resolution Necklace / Solemn Resolution Earrings / Solemn Resolution Ring x2",
+   "Great Stone of Soaring x4",
+   "Noble Savior's Bracelet x2",
+   "Tempering: Alcaone's Eye x3",
+   "Overture Hard Growth Event Chest x1"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Hard",
+  "item_level": 1630
+ },
+ {
+  "id": "bonus 217012 2",
+  "group": "Overture: Spiral of the Crimson Midnight Sun",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -1630,
+    "Shards": 2990,
+    "Red": 460,
+    "Blue": 920,
+    "Leaps": 20,
+    "Special Leap": 6
+   }
+  ],
+  "others": [
+   "Solemn Resolution Necklace / Solemn Resolution Earrings / Solemn Resolution Ring x4",
+   "Great Stone of Soaring x5",
+   "Noble Savior's Bracelet x3",
+   "Tempering: Alcaone's Eye x6",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1",
+   "Mount: Wings of Charm x1",
+   "Overture Hard Growth Event Chest x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Hard",
+  "item_level": 1630
+ },
+ {
+  "id": "bonus 216012 1",
+  "group": "Darkness Legion Commander",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -500,
+    "Shards": 920,
+    "Red": 90,
+    "Blue": 180,
+    "Leaps": 1
+   }
+  ],
+  "others": [
+   "Solemn Resolution Necklace / Solemn Resolution Earrings / Solemn Resolution Ring x1",
+   "Great Stone of Soaring x4",
+   "Noble Savior's Bracelet x1"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Hard",
+  "item_level": 1620
+ },
+ {
+  "id": "bonus 216012 2",
+  "group": "Darkness Legion Commander",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -600,
+    "Shards": 1060,
+    "Red": 100,
+    "Blue": 200,
+    "Leaps": 2
+   }
+  ],
+  "others": [
+   "Solemn Resolution Necklace / Solemn Resolution Earrings / Solemn Resolution Ring x1",
+   "Great Stone of Soaring x4",
+   "Noble Savior's Bracelet x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Hard",
+  "item_level": 1620
+ },
+ {
+  "id": "bonus 216012 3",
+  "group": "Darkness Legion Commander",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -900,
+    "Shards": 1360,
+    "Red": 130,
+    "Blue": 260,
+    "Leaps": 3,
+    "Special Leap": 1
+   }
+  ],
+  "others": [
+   "Solemn Resolution Necklace / Solemn Resolution Earrings / Solemn Resolution Ring x2",
+   "Great Stone of Soaring x5",
+   "Noble Savior's Bracelet x2",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 3",
+  "difficulty": "Hard",
+  "item_level": 1620
+ },
+ {
+  "id": "bonus 216012 4",
+  "group": "Darkness Legion Commander",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -1250,
+    "Shards": 1910,
+    "Red": 180,
+    "Blue": 360,
+    "Leaps": 4,
+    "Special Leap": 1
+   }
+  ],
+  "others": [
+   "Solemn Resolution Necklace / Solemn Resolution Earrings / Solemn Resolution Ring x4",
+   "Great Stone of Soaring x7",
+   "Noble Savior's Bracelet x2",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 4",
+  "difficulty": "Hard",
+  "item_level": 1620
+ },
+ {
+  "id": "bonus 202126 1",
+  "group": "Horizon Cathedral",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -6400,
+    "Shards": 19000,
+    "Serca Red": 860,
+    "Serca Blue": 1720,
+    "Serca Leaps": 36
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x14",
+   "Great Stone of Soaring x10",
+   "Radiant Savior Bracelet x3",
+   "Graced Shard x24",
+   "Ark Grid Core x3"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Level 3",
+  "item_level": 1750
+ },
+ {
+  "id": "bonus 202126 2",
+  "group": "Horizon Cathedral",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -9600,
+    "Shards": 32200,
+    "Serca Red": 1430,
+    "Serca Blue": 2860,
+    "Serca Leaps": 60,
+    "Serca Special Leap": 5
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x16",
+   "Great Stone of Soaring x10",
+   "Radiant Savior Bracelet x4",
+   "Graced Shard x36",
+   "Ark Grid Core x3",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Level 3",
+  "item_level": 1750
+ },
+ {
+  "id": "bonus 202125 1",
+  "group": "Horizon Cathedral",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -5120,
+    "Shards": 14250,
+    "Red": 1680,
+    "Blue": 3360,
+    "Leaps": 53
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x11",
+   "Great Stone of Soaring x8",
+   "Radiant Savior Bracelet x1",
+   "Graced Shard x12",
+   "Ark Grid Core x2"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Level 2",
+  "item_level": 1720
+ },
+ {
+  "id": "bonus 202125 2",
+  "group": "Horizon Cathedral",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -7680,
+    "Shards": 24200,
+    "Red": 2880,
+    "Blue": 5760,
+    "Leaps": 94,
+    "Special Leap": 13
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x12",
+   "Great Stone of Soaring x9",
+   "Radiant Savior Bracelet x2",
+   "Graced Shard x18",
+   "Ark Grid Core x2",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Level 2",
+  "item_level": 1720
+ },
+ {
+  "id": "bonus 202124 1",
+  "group": "Horizon Cathedral",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -4320,
+    "Shards": 11880,
+    "Red": 1400,
+    "Blue": 2800,
+    "Leaps": 44
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x9",
+   "Great Stone of Soaring x7",
+   "Radiant Savior Bracelet x2",
+   "Ark Grid Core x2",
+   "Graced Shard x4"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Level 1",
+  "item_level": 1700
+ },
+ {
+  "id": "bonus 202124 2",
+  "group": "Horizon Cathedral",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -5280,
+    "Shards": 20160,
+    "Red": 2400,
+    "Blue": 4800,
+    "Leaps": 78,
+    "Special Leap": 10
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x10",
+   "Great Stone of Soaring x8",
+   "Radiant Savior Bracelet x4",
+   "Graced Shard x6",
+   "Ark Grid Core x2",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Level 1",
+  "item_level": 1700
+ },
+ {
+  "id": "bonus 10005 1",
+  "group": "Behemoth, the Storm Commander",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -720,
+    "Shards": 3800,
+    "Red": 550,
+    "Blue": 1100,
+    "Leaps": 12
+   }
+  ],
+  "others": [
+   "Solemn Resolution Necklace / Solemn Resolution Earrings / Solemn Resolution Ring x2",
+   "Great Stone of Soaring x6",
+   "Noble Savior's Bracelet x2",
+   "Behemoth's Scale x10"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Normal",
+  "item_level": 1620
+ },
+ {
+  "id": "bonus 10005 2",
+  "group": "Behemoth, the Storm Commander",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -1630,
+    "Shards": 5800,
+    "Red": 850,
+    "Blue": 1700,
+    "Leaps": 19,
+    "Special Leap": 6
+   }
+  ],
+  "others": [
+   "Solemn Resolution Necklace / Solemn Resolution Earrings / Solemn Resolution Ring x4",
+   "Great Stone of Soaring x7",
+   "Noble Savior's Bracelet x3",
+   "Behemoth's Scale x20",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Normal",
+  "item_level": 1620
+ }
+]

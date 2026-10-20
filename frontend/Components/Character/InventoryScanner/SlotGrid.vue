@@ -13,7 +13,12 @@ import {
   slot_key,
   slots,
 } from "./ScanStore";
-import { manifest, roster_covered, roster_saved } from "./Manifest";
+import {
+  manifest,
+  roster_covered,
+  roster_pages,
+  roster_saved,
+} from "./Manifest";
 import SlotCell from "./SlotCell.vue";
 import SlotDashboard from "./SlotDashboard.vue";
 
@@ -84,6 +89,9 @@ const saved = computed(
 );
 const has_saved = (type: string) =>
   [...saved.value].some((key) => key.startsWith(`${type} `));
+const shown_saved = computed(() =>
+  roster_pages.value.has(page_key("Roster", page.Roster)),
+);
 
 // who exported roster storage last, and when
 const roster_export = computed(() => {
@@ -157,9 +165,12 @@ function toggle_lock(address: SlotAddress) {
             </svg>
             not open yet: last export used
           </span>
+          <!-- greyed out while the page shown was never exported -->
           <button
             v-if="win.type === 'Roster' && roster_saved && !roster_covered"
             class="generic-button ml-auto"
+            :class="{ 'cursor-not-allowed! opacity-50': !shown_saved }"
+            :disabled="!shown_saved"
             @click="roster_cover = true"
           >
             Use saved

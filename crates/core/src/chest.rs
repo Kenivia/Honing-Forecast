@@ -104,11 +104,14 @@ impl StateBundle {
             .base_materials
             .iter()
             .zip(gained)
-            .map(|(base, gain)| OneMaterial {
-                bound: base.bound + whole(gain[0]),
-                roster: base.roster + whole(gain[1]),
-                tradable: base.tradable + whole(gain[2]),
-                ..*base
+            .map(|(base, gain)| {
+                OneMaterial {
+                    bound: base.bound + whole(gain[0]),
+                    roster: base.roster + whole(gain[1]),
+                    tradable: base.tradable + whole(gain[2]),
+                    ..*base
+                }
+                .settled()
             })
             .collect();
         prep.special_budget = prep.base_special_budget + whole(special) as i64;
@@ -179,5 +182,33 @@ mod tests {
         for chest in chests.values() {
             assert!(chest.is_valid(&chest.random_state(&mut rng)));
         }
+    }
+
+    /// a choice to buy: nothing, or several things for gold
+    #[test]
+    fn a_bought_chest_costs_gold() {
+        let labels: Vec<String> = ["Red", "Blue", "Leaps", "Shards", "Fusion", "Gold", "Silver"]
+            .iter()
+            .map(|x| x.to_string())
+            .collect();
+        let table = MaterialTable::new(labels, 0);
+        let buy = Chest {
+            count: 1,
+            band: 0,
+            options: vec![
+                bag(&[]),
+                bag(&[("Gold", -300.0), ("Red", 7.0), ("Special", 2.0)]),
+            ],
+        };
+        let chests: Chests = [("buy".to_string(), buy)].into();
+        let skipped: ChestStates = [("buy".to_string(), vec![1, 0])].into();
+        let (gained, special) = resolve_chests(&chests, &skipped, &table, "Special");
+        assert!(gained.iter().all(|row| *row == [0.0; 3]) && special == 0.0);
+        let bought: ChestStates = [("buy".to_string(), vec![0, 1])].into();
+        let (gained, special) = resolve_chests(&chests, &bought, &table, "Special");
+        assert_eq!(gained[0], [7.0, 0.0, 0.0]);
+        assert_eq!(gained[5], [-300.0, 0.0, 0.0]);
+        assert_eq!(special, 2.0);
+        assert_eq!(whole(-300.0 + 1e-9), -300.0);
     }
 }

@@ -39,7 +39,7 @@ Pages persist (`scan_pages` in the roster config, `ScanPage` in `Scans.ts`): an 
 
 ## Roster storage covered
 
-Roster storage is shared, so it need not be shown again for every character. `roster_covered` says it is taken wholly from its saved pages, and while it is, everything read there is ignored (not counted, not missing, not saved). It is covered by default when a roster page was ever saved and the roster's roster-bound and tradable budgets are as the latest snapshot has them (`roster_unchanged`; the bound budgets are not compared). `roster_cover` in `ScanStore.ts` is the user's say either way, reset by an export and by a wipe; a scan moved to another character of the same roster keeps it. The grid shows it (`Slot grid.md`).
+Roster storage is shared, so it need not be shown again for every character. `roster_covered` says it is taken wholly from its saved pages, and while it is, everything read there is ignored (not counted, not missing, not saved). It is covered by default when a roster page was ever saved (`roster_pages`), no roster page open in game during this capture (`seen_pages`) lacks a saved copy, and the roster's roster-bound and tradable budgets are as the latest snapshot has them (`roster_unchanged`; the bound budgets are not compared). A roster page never saved and never open counts as empty. `roster_cover` in `ScanStore.ts` is the user's say either way, reset by an export and by a wipe; a scan moved to another character of the same roster keeps it. The grid shows it (`Slot grid.md`).
 
 ## Export
 

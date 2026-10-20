@@ -164,21 +164,32 @@ function alternatives(
   return [merge(parts.flatMap((part) => (part.length === 1 ? part : [])))];
 }
 
-// Whether roster storage is taken from the pages saved by an earlier export, its grid covered and
-// whatever is read there ignored. It is unless no roster page was ever saved, or the roster's
-// budgets changed since the last snapshot. The user can flip it either way.
-export const roster_saved = computed(() => {
+// the roster storage pages saved by an earlier export, by `page_key`
+export const roster_pages = computed(() => {
   const { roster_config, active_profile } = useRosterStore();
-  return roster_config.scan_pages.some(
-    (page) =>
-      page.window === "Roster" &&
-      page.char_id === null &&
-      page.roster_id === active_profile.roster_id,
+  return new Set(
+    roster_config.scan_pages
+      .filter(
+        (page) =>
+          page.window === "Roster" &&
+          page.char_id === null &&
+          page.roster_id === active_profile.roster_id,
+      )
+      .map((page) => page_key(page.window, page.page)),
   );
 });
+// Whether roster storage is taken from the pages saved by an earlier export, its grid covered and
+// whatever is read there ignored. It is unless no roster page was ever saved, one open in game
+// never was, or the roster's budgets changed since the last snapshot. The user can flip it either
+// way.
+export const roster_saved = computed(() => roster_pages.value.size > 0);
 export const roster_covered = computed(() => {
   if (!roster_saved.value) return false;
   if (roster_cover.value !== null) return roster_cover.value;
+  const unsaved = Object.keys(seen_pages.value).some(
+    (key) => key.startsWith("Roster ") && !roster_pages.value.has(key),
+  );
+  if (unsaved) return false;
   const { roster_config, active_profile } = useRosterStore();
   return roster_unchanged(roster_config, active_profile.roster_id);
 });

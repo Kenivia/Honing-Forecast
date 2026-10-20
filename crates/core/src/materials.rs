@@ -28,6 +28,22 @@ pub struct OneMaterial {
     pub market_price: f64,
 }
 
+impl OneMaterial {
+    /// A band left negative (a chest bought with gold) is taken from the looser bands above it;
+    /// only the tradable band can stay negative, which is that much bought.
+    pub fn settled(mut self) -> OneMaterial {
+        if self.bound < 0.0 {
+            self.roster += self.bound;
+            self.bound = 0.0;
+        }
+        if self.roster < 0.0 {
+            self.tradable += self.roster;
+            self.roster = 0.0;
+        }
+        self
+    }
+}
+
 impl BandValue {
     fn price(self, mat: &OneMaterial) -> f64 {
         match self {
@@ -48,6 +64,16 @@ impl ValuationPlan {
     /// unit costs to buy; the earlier ones are what an unused unit is worth.
     pub fn bands(&self, mat: &OneMaterial) -> Vec<(f64, f64)> {
         assert!(self.0[0] <= self.0[1] && self.0[1] <= self.0[2]);
+        let mat = &mat.settled();
+        // owing is buying from below zero: the metric is linear in the threshold
+        let total = mat.bound + mat.roster + mat.tradable;
+        if total < 0.0 {
+            return if mat.market_price.abs() < FLOAT_TOL {
+                vec![(0.0, 0.0)]
+            } else {
+                vec![(total, mat.market_price)]
+            };
+        }
         let owned: [f64; 3] = [mat.bound, mat.roster, mat.tradable];
 
         let mut cumulative: f64 = 0.0;
@@ -194,6 +220,33 @@ mod tests {
             vec![(0.0, 0.0), (30.0, 100.0), (60.0, 100.0)]
         );
         assert_eq!(bands([Market; 3]), vec![(0.0, 100.0), (60.0, 100.0)]);
+    }
+
+    /// gold paid for a chest comes out of char bound, then roster bound, then tradable
+    #[test]
+    fn a_negative_band_is_taken_from_the_looser_ones() {
+        let mat = |bound, roster, tradable| OneMaterial {
+            bound,
+            roster,
+            tradable,
+            ..MAT
+        };
+        let settled = mat(-25.0, 20.0, 30.0).settled();
+        assert_eq!(
+            [settled.bound, settled.roster, settled.tradable],
+            [0.0, 0.0, 25.0]
+        );
+        assert_eq!(
+            ValuationPlan([Worthless, Worthless, TaxedSell]).bands(&mat(-25.0, 20.0, 30.0)),
+            vec![(0.0, 95.0), (25.0, 100.0)]
+        );
+        // owing more than is owned is buying it
+        for values in [[Worthless; 3], [Market; 3], [Worthless, TaxedSell, Market]] {
+            assert_eq!(
+                ValuationPlan(values).bands(&mat(-80.0, 20.0, 30.0)),
+                vec![(-30.0, 100.0)]
+            );
+        }
     }
 
     /// owning nothing leaves one entry: everything is bought

@@ -5,7 +5,12 @@ import { useRosterStore } from "@/Stores/RosterConfig";
 import { new_char_profile } from "@/Stores/CharacterProfile";
 import { from_saved } from "@/Stores/SavedConfig";
 import { input_column_to_num, set_cell } from "@/Utils/InputColumn";
-import { snapshot_diff, snapshot_of, sum_pages } from "@/Utils/Scans";
+import {
+  roster_unchanged,
+  snapshot_diff,
+  snapshot_of,
+  sum_pages,
+} from "@/Utils/Scans";
 import {
   currencies,
   edits,
@@ -177,6 +182,35 @@ check(
 check(
   "roster storage not saved again",
   config.scan_pages.filter((page) => page.window === "Roster").length === 1,
+);
+
+section("a roster page open in game that was never saved");
+as(1);
+const roster_read = () =>
+  manifest.value.read
+    .filter((page) => page.window === "Roster")
+    .map((page) => page.page);
+check("only page 1 saved, none open: covered", roster_covered.value);
+see("Roster 0");
+check("the saved page open: still covered", roster_covered.value);
+see("Roster 1");
+check("page 2 open, never saved: not covered", !roster_covered.value);
+put("Roster", 1, 0, "Red", 30, "Tradable");
+equal("both open pages read", roster_read(), [0, 1]);
+roster_cover.value = true;
+check("the user can still cover it", roster_covered.value);
+equal("covered, nothing read there counts", roster_read(), []);
+roster_cover.value = false;
+check("and uncover it", !roster_covered.value);
+roster_cover.value = null;
+reset_scan();
+check("a wipe forgets the page was open", roster_covered.value);
+set_cell(store.active_tradable_mats_owned, "Red", "1");
+check("changed budgets still uncover it", !roster_covered.value);
+set_cell(store.active_tradable_mats_owned, "Red", "105");
+check(
+  "budgets back as snapshotted: covered",
+  roster_unchanged(config, 0) && roster_covered.value,
 );
 
 section("A again, roster budget changed by hand");

@@ -6,6 +6,7 @@
 2. `chests.py` writes `scanner_setup/templates/chests.json` and `scanner_setup/templates/ChestIcons`: every chest that opens to something the scanner counts, and every other chest drawn like one of those.
 3. `decoys.py` writes `scanner_setup/templates/decoys.json` and `scanner_setup/templates/DecoyIcons`: what we do not count that looks like one of our templates.
 4. `python scanner_setup/templates/make_msg_pack.py` and `pnpm run wasm`, as for any change to the tables.
+5. `bonus_chests.py` writes `frontend/Data/bonus_chests.json`, the raids' bonus chests as choices for the Choices page ("Bonus chests" below). It needs only the tables.
 
 `find_icon.py` is for looking: it says which icon a slot in a capture is drawn with.
 
@@ -25,7 +26,7 @@ Claude Code will not run a downloaded exe on its own: `umodel_lostark_v7.exe` is
 
 About 15 s in all.
 
-- **`scanner_setup/game_files/tables/`** (630 MB): seven of the 990 SQLite tables in `EFGame/data2.lpk`, decrypted, and `IconInfo.loa` from `data3.lpk`. The scripts open the `.db` files as they are.
+- **`scanner_setup/game_files/tables/`** (630 MB): ten of the 990 SQLite tables in `EFGame/data2.lpk`, decrypted, and `IconInfo.loa` from `data3.lpk`. The scripts open the `.db` files as they are.
 - **`scanner_setup/game_files/atlas/`** (760 MB): the 1,541 textures of the 22 `EFUI_IconAtlas_*` packages as PNG, in `<package>/Texture2D/<sheet>.png`. umodel takes a package by its real name only with `-nameresolve`; on disk the files have scrambled names.
 
 Vite watches the whole project, and a folder of thousands of files being written had the dev server using two cores. `scanner_setup/game_files` and `ignored/game_file_reader` are in `server.watch.ignored` in `vite.config.ts`.
@@ -104,6 +105,16 @@ A material goes by other titles that are drawn alike: "[Event] Artisan's Metallu
 - **A decoy is not known to be irrelevant, only not in our tables.** A chest that should count and is missing from `chests.json` becomes a decoy, and is then refused where before it was only unrecognised.
 - Most of the pool can never sit in these inventories (mounts, sail glyphs); they do no harm.
 - It reads the icons from `icons.npz`, which `find_icon.py` makes on its first run.
+
+## Bonus chests
+
+After clearing a raid gate the game offers a chest of more of its rewards for gold ("bonus chest"). It is no item: it is a drop, in the tables of every raid from Argos and Valtan to Serca.
+
+- **`StagePerReward`**: a row per gate of one raid at one difficulty (`PrimaryKey`), the gate in `GateIndex`. The bonus chest is `PaidRewardDropIndex` (163 rows have one); its price is the row of **`PaidActionCost`** with `PrimaryKey = PaidRewardType` (80, or 79 for the old legion raids) and `SecondaryKey = PaidRewardCostSecondaryKey`, the gold in `GameMoneyAmount`. `RewardDropIndex` is the free clear reward; `FirstClearRewardDropIndex` the first clear's.
+- **The contents** are `DropBase` and `DropEntity`, read as for chests (amount times `Repetition`). A `DropEntity` group of several rows is one of them per repetition (accessories: necklace, earrings or ring; card packs: Legendary, Epic or Rare), with no odds in the client (`DisplayRatio` 0). A `DropBase` row with `RewardType` 1 and no entity is a smart drop (`SmartDropIndex` into `SmartDrop`, its `DropIndex` and `Fail_DropIndex`), which for these chests are Ark Grid cores of the player's class: one row per core. Every row is gated by a `ClassifyType` 42 key of the raid.
+- **Names**: `ZoneEpicGate.StagePerRewardId` is the `StagePerReward` key. The raid is `EnterUIName`, or `GroupIdTitle` (Horizon Cathedral), on one row of the zone (`PrimaryKey`) only; the old legion raids have neither and are named by the first line of `EnterUIDesc`. Its `SecondaryKey` is the difficulty: 0 Normal, 1 Hard, 2 Nightmare, 4 Solo, 5 Extreme; Horizon Cathedral's levels are in `ZoneLevelDisplayName`.
+- **Item levels**: the `ContentsRequirement` row whose `PrimaryKey` is the gate's `ZoneEpicGate.ClassifyIndex` has the item level a difficulty asks for in `OptimalItemLevelMin` (Serca 1710 / 1730 / 1740, Horizon Cathedral 1700 / 1720 / 1750; all agree with the sheet). Its `Name` is a short title, "Witch of Agony, Serca [Normal]", "Armoche [Hard]".
+- **`bonus_chests.py`** writes one choice per gate whose chest holds a material of `items.json` other than gold and silver (titles with " (Bound)" cut): 44 rows, from Behemoth on. Difficulties that sell the same chest for the same gold are one row, and one difficulty ("Normal / Solo"). A row is `id`, `group` (the raid), `title` ("Gate 1"), `difficulty`, `item_level`, `band` 0, `options` (`{}` and the contents with `Gold` negative, by label) and `others`, what else it holds as text. The materials are taken as char bound; their items are "(Bound)".
 
 ## find_icon.py
 
