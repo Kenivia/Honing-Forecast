@@ -12,18 +12,11 @@ import {
   slots,
 } from "./ScanStore";
 import { item_name, SHARED_ICONS } from "./Manifest";
+import { STATUS_NAMES } from "./ScannerUIutils";
 import SlotCell from "./SlotCell.vue";
 
 const props = defineProps<{ address: SlotAddress | null; items: string[] }>();
 
-const STATUS_NAMES = {
-  Pending: "Reading",
-  Good: "Good",
-  NeedHover: "Needs hover",
-  NeedTradability: "Needs hover",
-  Error: "Error",
-  Irrelevant: "Irrelevant",
-};
 const TRADABILITY = [
   ["Tradable", "Tradable"],
   ["RosterBound", "Roster bound"],

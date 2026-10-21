@@ -2,6 +2,7 @@ import { computed, ref, shallowRef } from "vue";
 import { useThrottleFn } from "@vueuse/core";
 import {
   Chest,
+  Currency,
   CurrencyResult,
   OneIconConfig,
   ScanResult,
@@ -42,6 +43,8 @@ export const game_pages = ref<Record<string, number>>({});
 export const seen_pages = ref<Record<string, true>>({});
 // what the user typed in; the scanner leaves these slots alone
 export const edits = ref<Record<string, SlotEdit>>({});
+// currencies set by hand, as char bound, roster bound, tradable; the scanner is not told
+export const currency_edits = ref<Partial<Record<Currency, number[]>>>({});
 // images only arrive when they change, and the same objects are reused so canvases are not redrawn
 export const slot_images = new Map<string, OneIconConfig>();
 
@@ -100,8 +103,25 @@ export const reset_covers = () =>
 export const scan_wipes = ref(0);
 
 export const has_progress = computed(
-  () => slots.value.size > 0 || Object.keys(edits.value).length > 0,
+  () =>
+    slots.value.size > 0 ||
+    Object.keys(edits.value).length > 0 ||
+    Object.keys(currency_edits.value).length > 0,
 );
+
+// a currency as the page shows it, good with its bands once set by hand; undefined if neither
+export function shown_currency(currency: Currency): CurrencyResult | undefined {
+  const read = currencies.value.find((x) => x.currency === currency);
+  const bands = currency_edits.value[currency];
+  if (!bands) return read;
+  return {
+    ...(read ?? { currency }),
+    status: "Good",
+    reason: "",
+    value: bands.reduce((a, b) => a + b, 0),
+    bands: bands as [number, number, number],
+  };
+}
 
 let latest: ScanResult | null = null;
 // edits the scanner has not been told about yet
@@ -123,6 +143,7 @@ export function reset_scan() {
   game_pages.value = {};
   seen_pages.value = {};
   edits.value = {};
+  currency_edits.value = {};
 }
 
 // addresses come out of reactive state, and a proxy cannot be posted to the worker

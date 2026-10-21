@@ -3,7 +3,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { page_key } from "@/Utils/Scans";
-import { SlotAddress } from "./LoadStorage";
+import { Currency, SlotAddress } from "./LoadStorage";
 import {
   edits,
   game_pages,
@@ -15,6 +15,7 @@ import {
 } from "./ScanStore";
 import { COVERABLE, cover_pages, covered, manifest } from "./Manifest";
 import CurrencyBar from "./CurrencyBar.vue";
+import CurrencyDashboard from "./CurrencyDashboard.vue";
 import SlotCell from "./SlotCell.vue";
 import SlotDashboard from "./SlotDashboard.vue";
 
@@ -103,24 +104,34 @@ function last_export(type: string) {
   return `${name}, ${new Date(last.at).toLocaleString()}`;
 }
 
-const hovered = ref<SlotAddress | null>(null);
-const locked = ref<SlotAddress | null>(null);
-// the dashboard follows the cursor until a slot is clicked, then stays on that one
-const shown = computed(() => locked.value ?? hovered.value);
-const is_active = (address: SlotAddress) =>
-  !!shown.value && slot_key(shown.value) === slot_key(address);
+// a slot, or a currency by name
+type Shown = SlotAddress | Currency;
+const shown_key = (x: Shown) => (typeof x === "string" ? x : slot_key(x));
 
-function toggle_lock(address: SlotAddress) {
-  const same = locked.value && slot_key(locked.value) === slot_key(address);
-  locked.value = same ? null : address;
+const hovered = ref<Shown | null>(null);
+const locked = ref<Shown | null>(null);
+// the dashboard follows the cursor until a slot or currency is clicked, then stays on that one
+const shown = computed(() => locked.value ?? hovered.value);
+const is_active = (x: Shown) =>
+  !!shown.value && shown_key(shown.value) === shown_key(x);
+
+function toggle_lock(x: Shown) {
+  locked.value = is_active(x) && locked.value ? null : x;
 }
 </script>
 
 <template>
   <div class="flex w-full flex-col items-center gap-3">
-    <div class="card-shell card-body flex w-full! flex-col gap-3">
-      <CurrencyBar />
-      <div class="flex w-full flex-wrap gap-3" @mouseleave="hovered = null">
+    <div
+      class="card-shell card-body flex w-full! flex-col gap-3"
+      @mouseleave="hovered = null"
+    >
+      <CurrencyBar
+        :active="typeof shown === 'string' ? shown : null"
+        @hover="hovered = $event"
+        @pick="toggle_lock"
+      />
+      <div class="flex w-full flex-wrap gap-3">
         <div
           v-for="win in WINDOWS"
           :key="win.type"
@@ -228,7 +239,13 @@ function toggle_lock(address: SlotAddress) {
         </div>
       </div>
     </div>
+    <CurrencyDashboard
+      v-if="typeof shown === 'string'"
+      class="w-[1055px]! max-w-full"
+      :currency="shown"
+    />
     <SlotDashboard
+      v-else
       class="w-[1055px]! max-w-full"
       :address="shown"
       :items="items"

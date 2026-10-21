@@ -13,6 +13,15 @@ export const STATUS_COLORS = {
   Irrelevant: "var(--border-very-muted)",
 };
 
+export const STATUS_NAMES = {
+  Pending: "Reading",
+  Good: "Good",
+  NeedHover: "Needs hover",
+  NeedTradability: "Needs hover",
+  Error: "Error",
+  Irrelevant: "Irrelevant",
+};
+
 const BORDER_WIDTHS = {
   Pending: "1px",
   Good: "1px",

@@ -25,16 +25,16 @@ import {
 } from "@/Utils/Scans";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { merge_lower_tier } from "@/WasmInterface/PayloadBuilder";
-import { ChestKind, SlotAddress } from "./LoadStorage";
+import { ChestKind, Currency, SlotAddress } from "./LoadStorage";
 import {
   assumed_tradability,
   chests_for,
-  currencies,
   edits,
   has_progress,
   reset_covers,
   seen_pages,
   set_edit,
+  shown_currency,
   shown_slot,
   slot_place,
   slots,
@@ -50,6 +50,8 @@ import CHESTS from "../../../../scanner_setup/templates/chests.json";
 
 const BAND_OF = { CharBound: 0, RosterBound: 1, Tradable: 2 };
 export const BAND_NAMES = ["Char bound", "Roster bound", "Tradable"];
+// as the game's bar at the top of the screen has them
+export const CURRENCY_ORDER: Currency[] = ["Silver", "Gold", "Shards"];
 export const CURRENCY_LABELS = {
   Silver: "Silver",
   Gold: "Gold",
@@ -338,7 +340,9 @@ export const live = computed(() => {
     open(page, chest, amount, band);
   }
   // currencies sit in no slot, and come with their bands
-  for (const currency of currencies.value) {
+  for (const name of CURRENCY_ORDER) {
+    const currency = shown_currency(name);
+    if (!currency) continue;
     const label = CURRENCY_LABELS[currency.currency];
     if (currency.status !== "Good" || !currency.bands) {
       missing.push({

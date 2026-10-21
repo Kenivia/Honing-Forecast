@@ -131,13 +131,14 @@ const selected_color = computed(() => {
       <a
         href="https://www.reddit.com/r/lostarkgame/comments/1qwskt2/optimize_your_free_tap_juice_usage_with_the_new/"
         >in my reddit post</a
-      >, <a href="https://github.com/Kenivia/Honing-Forecast">Github Readme</a>,
-      or for the more mathematically inclined, I typed up the math in Latex
+      >, <a href="https://github.com/Kenivia/Honing-Forecast">Github Readme</a>.
+      <!-- or for the more mathematically inclined, I typed up the math in Latex
       <a
         href="https://github.com/Kenivia/Honing-Forecast/blob/main/docs/Saddlepoint%20Approximation.pdf"
       >
         here</a
-      >.
+      > -->
+      .
     </p>
 
     <h3>6. The graphs</h3>

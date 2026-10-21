@@ -2,12 +2,12 @@
 import { computed } from "vue";
 import { get_icon_path } from "@/Utils/Helpers";
 import { Currency, CurrencyResult } from "./LoadStorage";
-import { BAND_NAMES, CURRENCY_LABELS } from "./Manifest";
-import { currencies } from "./ScanStore";
+import { BAND_NAMES, CURRENCY_LABELS, CURRENCY_ORDER } from "./Manifest";
+import { currency_edits, shown_currency } from "./ScanStore";
 import { status_border } from "./ScannerUIutils";
 
-// as the game's bar at the top of the screen has them
-const ORDER: Currency[] = ["Silver", "Gold", "Shards"];
+defineProps<{ active: Currency | null }>();
+const emit = defineEmits<{ hover: [Currency]; pick: [Currency] }>();
 
 // what the outlines of currencies and slots mean, as squares as tall as a currency's
 const KEYS = [
@@ -23,9 +23,9 @@ const KEYS = [
 
 // one not seen yet needs a hover of the game's currency bar
 const shown = computed(() =>
-  ORDER.map(
+  CURRENCY_ORDER.map(
     (currency): CurrencyResult =>
-      currencies.value.find((x) => x.currency === currency) ?? {
+      shown_currency(currency) ?? {
         currency,
         status: "NeedHover",
         reason: "Not seen yet.",
@@ -47,9 +47,15 @@ const shown = computed(() =>
       :key="item.currency"
       class="flex max-w-80 flex-col gap-1"
     >
-      <span
-        class="flex w-fit items-center gap-1 px-1.5 py-0.5"
-        :style="status_border(item.status)"
+      <button
+        class="flex w-fit cursor-pointer items-center gap-1 px-1.5 py-0.5"
+        :style="{
+          ...status_border(item.status, !!currency_edits[item.currency]),
+          outline:
+            active === item.currency ? '3px dashed var(--text-bright)' : 'none',
+        }"
+        @mouseenter="emit('hover', item.currency)"
+        @click="emit('pick', item.currency)"
       >
         <span :class="{ 'text-(--text-muted)': item.value == null }">
           {{ item.value?.toLocaleString() ?? "?" }}
@@ -60,7 +66,7 @@ const shown = computed(() =>
           :alt="CURRENCY_LABELS[item.currency]"
           :title="CURRENCY_LABELS[item.currency]"
         />
-      </span>
+      </button>
       <span
         v-if="item.currency === 'Gold' && item.bands"
         class="text-xs whitespace-nowrap text-(--text-muted)"

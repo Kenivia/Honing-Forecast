@@ -45,6 +45,11 @@ A total is the number just left of its currency's icon. The icon is template-mat
 
 The scan result's `currencies` lists each with its status (the slots' `SlotStatus`), a reason, its value and its bands (char bound, roster bound, tradable). They count as missing in the manifest until good. The capture digest includes them, so captures made before them differ from scan 0.
 
+## Set by hand
+
+- Clicking or hovering a currency in the bar shows it in the dashboard (`CurrencyDashboard.vue`), locked and followed like a slot. It has a Read and a "Correct it" column per band: all three for gold, roster bound for silver, char bound for shards.
+- **Save edit** puts the bands in `currency_edits` (`ScanStore.ts`); **Remove edit** drops them. The scanner is not told and keeps reading. `shown_currency` is what the bar and the manifest use: an edited currency is good with its edit's bands, whatever was read.
+
 ## Tools
 
 - `print_statuses` (`tooltip_test`, `capture_replay`) prints each currency and every field's votes.
