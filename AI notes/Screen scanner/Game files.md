@@ -8,6 +8,8 @@
 4. `python scanner_setup/templates/make_msg_pack.py` and `pnpm run wasm`, as for any change to the tables.
 5. `bonus_chests.py` writes `frontend/Data/bonus_chests.json`, the raids' bonus chests as choices for the Choices page ("Bonus chests" below). It needs only the tables.
 
+Two more read the same tables through `game.py` but live in `scripts/game_files/`: `honing.py` (the Serca honing constants, "Honing data in the game files" in `Calculator core/Domain model.md`) and `paradise.py` ("Paradise" below).
+
 `find_icon.py` is for looking: it says which icon a slot in a capture is drawn with.
 
 What the tables were checked against, and what they replaced, is in `Game files tried.md`; read it only when trying something new here.
@@ -26,8 +28,8 @@ Claude Code will not run a downloaded exe on its own: `umodel_lostark_v7.exe` is
 
 About 15 s in all.
 
-- **`scanner_setup/game_files/tables/`** (630 MB): ten of the 990 SQLite tables in `EFGame/data2.lpk`, decrypted, and `IconInfo.loa` from `data3.lpk`. The scripts open the `.db` files as they are.
-- **`scanner_setup/game_files/atlas/`** (760 MB): the 1,541 textures of the 22 `EFUI_IconAtlas_*` packages as PNG, in `<package>/Texture2D/<sheet>.png`. umodel takes a package by its real name only with `-nameresolve`; on disk the files have scrambled names.
+- **`scanner_setup/game_files/tables/`** (630 MB): sixteen of the 992 SQLite tables in `EFGame/data2.lpk`, decrypted, and `IconInfo.loa` from `data3.lpk`. The list is in `extract/Program.cs`. The scripts open the `.db` files as they are.
+- **`scanner_setup/game_files/atlas/`** (760 MB): the 1,547 textures of the 22 `EFUI_IconAtlas_*` packages as PNG, in `<package>/Texture2D/<sheet>.png`. umodel takes a package by its real name only with `-nameresolve`; on disk the files have scrambled names.
 
 Vite watches the whole project, and a folder of thousands of files being written had the dev server using two cores. `scanner_setup/game_files` and `ignored/game_file_reader` are in `server.watch.ignored` in `vite.config.ts`.
 
@@ -45,9 +47,11 @@ Every table has `PrimaryKey` and `SecondaryKey`; text columns hold keys into `Ga
 
 Contents that differ by class sit in one column per class (64 of them, each ending in `Id`) with `NormalId` 0: a filled column is a class that gets the row, and its id is what that class gets. `game.box` returns them apart, each with every title it has. Rows carry `ClassifyType`/`ClassifyIndex`, which gate them on an event or a piece of content; nothing here reads them.
 
-The honing tables are in the same archive and are not extracted yet: see "Honing data in the game files" in `Calculator core/Domain model.md`.
+The honing tables (`ItemEnhanceCommon`, `ItemQualityOption`, `ItemEnhanceMaterial`) are read by `scripts/game_files/honing.py`: see "Honing data in the game files" in `Calculator core/Domain model.md`.
 
-**Pre-update snapshot.** `ignored/pre_oct_2026_update_game_files/` holds the client as of 2026-10-19, before the October 2026 update: raw `.lpk`s, every entry decrypted (all 990 tables), the extracted tables and atlas, and the tooling. Its `README.md` says what is where.
+**Which client.** The tables and atlas are from the client after the October 2026 update (archives dated 2026-10-21). `chests.json`, `decoys.json` and `bonus_chests.json` were written from the client before it and have not been run again since; `honing.py` and `paradise.py` were run on the new one. The update added the Serca vambrace (ItemEnhanceCommon group 411102), the Serca books ("Tremor"), 92 Paradise key rows and the tables `ClassItemMapping` and `ZoneEpicGateBossChallenge*`, and stored juice rates ten times finer (out of 100,000).
+
+**Pre-update snapshot.** `ignored/pre_oct_2026_update_game_files/` holds the client as of 2026-10-19, before the October 2026 update: raw `.lpk`s, every entry decrypted (all 990 tables), the extracted tables and atlas, and the tooling. Its `README.md` says what is where. Its `dump_all` decrypts any archive whole: `data2.lpk` alone (all the tables) takes about 40 s, and is how two clients were compared table by table.
 
 ## The icons
 
@@ -94,6 +98,8 @@ Seven groups of chests list exactly the same rows and still open differently, be
 
 A material goes by other titles that are drawn alike: "[Event] Artisan's Metallurgy: Level 1", "Destiny Leapstone (Roster)", "[Event] Metallurgy: Hellfire [11-14] - Bound". Each has its own row in `scanner_setup/templates/items.json` with the material's icon, rarity and label. They were found by listing the items that share an icon and a rarity with a known material and have another title. "Enhanced Metallurgy: Hellfire [19-20]" shares the book's art too and was left out, not knowing what it is.
 
+The Serca books ("Metallurgy: Tremor [12-15]" and the like, October 2026) are drawn with the Hellfire books' art (`use_12_218` weapon, `use_12_219` armour) on the ancient background, where the Hellfire ones are relic. A template is one icon on one rarity, so they have icons of their own, "Serca Weapon Book" and "Serca Armor Book", cut lossless from the atlas, and a `body` ("Weapon 12-15") like the Hellfire rows. They were new in the update, so no decoy was ever made of them.
+
 ## decoys.py
 
 `python scanner_setup/game_files/decoys.py`, after `chests.py` and after any change to `items.json`: a decoy is whatever is not ours, so the list follows the tables. What the scanner does with it is in `Pipeline.md`, "Slots".
@@ -115,6 +121,16 @@ After clearing a raid gate the game offers a chest of more of its rewards for go
 - **Names**: `ZoneEpicGate.StagePerRewardId` is the `StagePerReward` key. The raid is `EnterUIName`, or `GroupIdTitle` (Horizon Cathedral), on one row of the zone (`PrimaryKey`) only; the old legion raids have neither and are named by the first line of `EnterUIDesc`. Its `SecondaryKey` is the difficulty: 0 Normal, 1 Hard, 2 Nightmare, 4 Solo, 5 Extreme; Horizon Cathedral's levels are in `ZoneLevelDisplayName`.
 - **Item levels**: the `ContentsRequirement` row whose `PrimaryKey` is the gate's `ZoneEpicGate.ClassifyIndex` has the item level a difficulty asks for in `OptimalItemLevelMin` (Serca 1710 / 1730 / 1740, Horizon Cathedral 1700 / 1720 / 1750; all agree with the sheet). Its `Name` is a short title, "Witch of Agony, Serca [Normal]", "Armoche [Hard]".
 - **`bonus_chests.py`** writes one choice per gate whose chest holds a material of `items.json` other than gold and silver (titles with " (Bound)" cut): 44 rows, from Behemoth on. Difficulties that sell the same chest for the same gold are one row, and one difficulty ("Normal / Solo"). A row is `id`, `group` (the raid), `title` ("Gate 1"), `difficulty`, `item_level`, `band` 0, `options` (`{}` and the contents with `Gold` negative, by label) and `others`, what else it holds as text. The materials are taken as char bound; their items are "(Bound)".
+
+## Paradise
+
+Paradise is "Hell" in the client (`TrinityInferno*`), the sekwahar "hell_drops" page's data. A run ends on a reward level, Base or Level 1 to 10; the game offers three of that level's main rewards and the player takes one, with the additional rewards, or the Wealth ones when the run had Wealth.
+
+- **`TrinityInferno`**: a row per key item (`SecondaryKey`) that opens a season's Paradise (`PrimaryKey`: 4003 Destiny and 4004 Netherworld are season 4, 3003/3004 season 3). `InfernoType` is the mode: 1 and 2 Destiny ("Hell Key", "Hell Key of Destiny"), 3 and 4 Netherworld (Flame and Frost keys). The key's `ReUseBalanceLevel` is the item level (1580 to 1750; "Hell Key VI" is 1750). `InfernoRewardId` is the reward set. `ClassifyType` 19 rows are the keys sold all season; 21 and 35 are events.
+- **`TrinityInfernoReward`**: a row per reward set (`PrimaryKey`) and level (`SecondaryKey` 1, 10, 20 ... 100: Base, Level 1 ... 10). `MainDropId1` to `20` are the main rewards with weights `Ratio1` to `20` (all 10, so the three offered are drawn evenly), `SubDropId` the additional rewards and `PlentyDropId` the Wealth ones, about ten times as much, given instead of them. Each is a drop, read as for chests; every row of them has `DropBase.Ratio` 100 and one entity.
+- **Two sets for one item level**: 1730 has 1024 (T4 materials) and 1025 (Serca), both under "Hell Key V". The sekwahar page has 1025, and 1028 for 1750; the newest set of an item level is the highest id.
+- **`paradise.py`** writes one choice per mode, item level and level from the newest season's `ClassifyType` 19 keys: 132 rows. A row is a `Choice` with `names` (what each option is), `options` (the main reward plus the additional rewards, by label) and `wealth` (plus the Wealth ones instead), `difficulty` the item level, `title` the level, `band` 0 (the materials are "(Bound)" and the gold bars, category 34304, character bound). A select-one chest of materials (the stone selection chests, the advanced honing support chests) is one option per material; gold bars are their gold. What is no material is an option that gives only the additional rewards.
+- **No 1770 yet** (2026-10-21): no item asks for more than 1750, and the update left `TrinityInfernoReward` as it was. It added 92 key rows of events whose key items are not in `Item` yet, onto older reward sets (1011 to 1019, 1026, 1027).
 
 ## find_icon.py
 

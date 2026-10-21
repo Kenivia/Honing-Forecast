@@ -36,7 +36,7 @@ pub const DATA: Lazy<Vec<Data>> = Lazy::new(|| {
     ));
 
     out.push(Data::from(
-        serde_json::from_str::<RawData>(include_str!("./Serca Aug 2026 (Vambrace).json")).unwrap(),
+        serde_json::from_str::<RawData>(include_str!("./Serca Oct 2026.json")).unwrap(),
     ));
 
     out

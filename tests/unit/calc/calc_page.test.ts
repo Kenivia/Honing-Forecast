@@ -14,7 +14,6 @@ import Calc from "@/Components/Character/Calc.vue";
 import StatusInput from "@/Components/Character/StatusInput/StatusInput.vue";
 import ChestPanels from "@/Components/Common/ChestPanels.vue";
 import ChestEditor from "@/Components/Character/ChestEditor.vue";
-import ChestState from "@/Components/Character/ChestState.vue";
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue";
 import {
   start_all_workers,
@@ -87,12 +86,7 @@ describe("Calc page", () => {
     const panels = wrapper.findComponent(ChestPanels);
     expect(panels.props("selection").map((c) => c.title)).toEqual(["Choice"]);
     expect(panels.props("obtain_all").map((c) => c.title)).toEqual(["Trivial"]);
-    expect(
-      wrapper
-        .findComponent(ChestState)
-        .props("chests")
-        .map((c) => c.title),
-    ).toEqual(["Choice"]);
+    expect(panels.props("states")).toBeUndefined();
   });
 
   it("Edit chests swaps the panels for the editor", async () => {

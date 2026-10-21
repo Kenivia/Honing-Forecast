@@ -2,11 +2,9 @@
 import { computed, onUnmounted, ref, watch } from "vue";
 import Instructions from "./Instructions/Instructions.vue";
 import MaterialDist from "./MaterialDist/MaterialDist.vue";
-import GoldDist from "./MaterialDist/GoldDist.vue";
 import OptimizerControlPanel from "./OptimizerControlPanel/OptimizerControlPanel.vue";
 import StatusInput from "./StatusInput/StatusInput.vue";
 import ChestPanels from "@/Components/Common/ChestPanels.vue";
-import ChestState from "./ChestState.vue";
 import ChestEditor from "./ChestEditor.vue";
 import { storeToRefs } from "pinia";
 import { start_all_workers, start_eval_hist } from "./CharWorkerUtils.js";
@@ -59,7 +57,6 @@ onUnmounted(() => {
 <template>
   <StatusInput />
   <MaterialDist />
-  <GoldDist />
   <label class="flex w-fit items-center gap-1 text-sm">
     <input v-model="editing_chests" type="checkbox" />
     Edit chests
@@ -70,8 +67,8 @@ onUnmounted(() => {
     :selection="selection"
     :obtain_all="chests.filter((chest) => chest.options.length === 1)"
     obtain_all_title="Obtain-all and trivial selection chests"
+    :states="runtime.histogram.result?.state_bundle.chest_states"
   />
-  <ChestState :chests="selection" />
   <OptimizerControlPanel />
   <Instructions :is_normal="true" />
   <Instructions :is_normal="false" />

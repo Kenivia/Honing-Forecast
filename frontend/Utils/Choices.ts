@@ -1,4 +1,5 @@
 import BONUS_CHESTS from "@/Data/bonus_chests.json";
+import PARADISE from "@/Data/paradise.json";
 import type { Bag, ManifestChest } from "./Chest";
 import { SPECIAL_LEAP_LABELS } from "./Constants";
 import { input_column_to_num, set_cell, type InputColumn } from "./InputColumn";
@@ -17,9 +18,15 @@ export interface Choice {
   // a raid's difficulty and the item level it asks for; a group shows one difficulty at a time
   difficulty?: string;
   item_level?: number;
+  // what each option is, when it is not the choice itself
+  names?: string[];
+  // the options with Paradise's Wealth
+  wealth?: Bag[];
 }
 
 export const PRESET_CHOICES: Choice[] = BONUS_CHESTS;
+// Paradise's rewards (scripts/game_files/paradise.py), one choice per mode, item level and level
+export const PARADISE_CHOICES: Choice[] = PARADISE;
 
 export interface Difficulty {
   name: string;
@@ -59,6 +66,19 @@ export function signed_gold(amount: number) {
   const rounded = Math.round(amount);
   return `${rounded > 0 ? "+" : rounded < 0 ? "−" : ""}${Math.abs(rounded).toLocaleString("en-US")}`;
 }
+
+// an option's worth against the run without: "N/A" with nothing to hone, "…" until run
+export const worth_text = (no_upgrades: boolean, worth?: number) =>
+  no_upgrades ? "N/A" : worth === undefined ? "…" : signed_gold(worth);
+// as shown, so what reads 0 is neither
+export const worth_color = (no_upgrades: boolean, worth?: number) =>
+  no_upgrades || worth === undefined
+    ? "var(--text-muted)"
+    : Math.round(worth) > 0
+      ? "var(--achieved)"
+      : Math.round(worth) < 0
+        ? "var(--warning)"
+        : "var(--text-main)";
 
 // The one picked by hand if it is still there, else the highest the item level reaches, else the
 // lowest.

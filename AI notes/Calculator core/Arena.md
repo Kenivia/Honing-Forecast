@@ -46,6 +46,8 @@ The binary is both driver and worker. The driver (always the current build) load
 
 Every scenario runs **cold** (each step alone) and **chained** (each step is handed a `Previous`: the last payload, the last best `StateBundle`, and the optimizer's own blob, capped at `Tuning::max_blob_bytes`). A step is seeded the same way in both. A chained step starts from the plan of the step before (`Optimizer.md`, "Chained runs"); `carry=false` makes it a cold one again.
 
+A Serca payload's materials have to be the Serca labels of the frontend, the four Serca books included; `python scripts/arena/add_serca_books.py` gave every older one the books (none owned, 15,000 gold), and does nothing to a payload that has them.
+
 `arena_data/scenarios/regressions` holds payloads that broke the evaluator. `pnpm arena run --scenarios arena_data/scenarios/regressions --mode cold --seeds 3` is the check.
 
 ## Generated scenarios

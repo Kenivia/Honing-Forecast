@@ -32,11 +32,11 @@ const cells = (wrapper, label: string) =>
   wrapper
     .findAllComponents(MaterialCell)
     .filter((c) => c.props("label") === label);
-const bound_cell = (wrapper, label: string) =>
-  cells(wrapper, label).find((c) => c.props("aria_name") === "Bound owned")!;
+const owned_cell = (wrapper, label: string) =>
+  cells(wrapper, label).find((c) => c.props("show_label"))!;
 const plus = (wrapper, label: string) =>
   Object.fromEntries(
-    bound_cell(wrapper, label)
+    owned_cell(wrapper, label)
       .props("plus")
       .map((l) => [l.text, l.amount]),
   );
@@ -270,6 +270,19 @@ describe("MaterialDist chance band", () => {
       "Average",
       "+Tradable",
     ]);
+  });
+
+  it("the band picks the owned column; the tick stays the bound one", async () => {
+    const { wrapper, store } = await setup();
+    await pick_band(wrapper, 2);
+    const owned = cells(wrapper, "Red")[0];
+    expect(owned.props("aria_name")).toBe("Tradable owned");
+    expect(owned.props("input_column")).toStrictEqual(
+      store.active_tradable_mats_owned,
+    );
+    await owned.find('input[type="checkbox"]').setValue(false);
+    expect(store.active_profile.bound_budgets.enabled.Red).toBe(false);
+    expect(store.active_tradable_mats_owned.enabled.Red).toBe(true);
   });
 
   it("a chance band change keeps the active strategy override", async () => {

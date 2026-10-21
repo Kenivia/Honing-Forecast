@@ -17,7 +17,7 @@ It holds no application logic. Parsing happens in the frontend.
 
 - Prices are fetched per region on app load. A region set to custom is never fetched, and one global `auto_fetch` flag can turn fetching off (the fetch button still forces one).
 - The raw response is kept in the store (and therefore in localStorage) with its timestamp and reused for a cooldown period, across reloads too. A forced fetch only reuses a response under a second old. A failed fetch applies the saved response, however old.
-- Item slugs from the API are mapped onto bundle keys. A fetch writes only the bundles the response lists, so anything the market does not sell (Silver, Gold, Enhanced books, special leaps) keeps whatever the user typed; fallback prices are only the column's defaults.
+- Item slugs from the API are mapped onto bundle keys. A fetch writes only the bundles the response lists, so anything the market does not sell (Silver, Gold, Enhanced books, special leaps, and the Serca Tremor books, whose slugs are in the map but which the API did not list yet on 2026-10-21) keeps whatever the user typed; fallback prices are only the column's defaults.
 - Shards are sold in bags of several sizes; after each fetch the cheapest per shard is selected.
 - The fetch flags (`is_fetching`, `market_fetch_failed` in the runtime store) are per region, so regions fetch in parallel and the market page shows the selected region's status.
 - Serca prices are not synced with T4: the market page only shows an effective price, the cheaper of buying and converting (`effective_unit_prices`).

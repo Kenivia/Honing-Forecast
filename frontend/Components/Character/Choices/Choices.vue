@@ -10,8 +10,9 @@ import {
   PRESET_CHOICES,
   raids_of,
   shown_difficulty,
-  signed_gold,
   take_option,
+  worth_color,
+  worth_text,
   type Choice,
 } from "@/Utils/Choices";
 import { ilevel } from "@/Utils/HoningUtil";
@@ -22,6 +23,7 @@ import {
   stop_jobs,
 } from "@/WasmInterface/OptimizerJobs";
 import { base_job, option_job } from "./ChoiceJobs";
+import Paradise from "./Paradise.vue";
 
 // What taking each option of a choice is worth to this character, in average gold under its plan.
 const store = useRosterStore();
@@ -90,10 +92,14 @@ const rows = computed(() => groups.value.flatMap((group) => group.rows));
 const pick = (group: string, difficulty: string) =>
   (profile.value.choice_levels[group] = difficulty);
 
-// the run without any choice first, then the options it seeds, top to bottom
+const TABS = ["Bonus chests", "Paradise", "Coming soon"];
+const tab = ref(TABS[0]);
+
+// the run without any choice first, then the options it seeds, top to bottom; Paradise queues its own
 watch(
-  [base, rows],
+  [base, rows, tab],
   () => {
+    if (tab.value === "Paradise") return;
     if (no_upgrades.value) return queue_jobs([]);
     if (base.value.metric === undefined) return queue_jobs([base.value]);
     queue_jobs(
@@ -110,21 +116,6 @@ const worth = (metric?: number) =>
   metric === undefined || base.value.metric === undefined
     ? undefined
     : metric - base.value.metric;
-const worth_text = (metric?: number) =>
-  no_upgrades.value
-    ? "N/A"
-    : worth(metric) === undefined
-      ? "…"
-      : signed_gold(worth(metric));
-// as shown, so what reads 0 is neither
-const worth_color = (amount?: number) =>
-  no_upgrades.value || amount === undefined
-    ? "var(--text-muted)"
-    : Math.round(amount) > 0
-      ? "var(--achieved)"
-      : Math.round(amount) < 0
-        ? "var(--warning)"
-        : "var(--text-main)";
 
 const baseline_text = computed(() =>
   no_upgrades.value
@@ -133,9 +124,6 @@ const baseline_text = computed(() =>
       ? "…"
       : Math.round(base.value.metric).toLocaleString("en-US"),
 );
-
-const TABS = ["Bonus chests", "Coming soon"];
-const tab = ref(TABS[0]);
 
 const columns = computed(() => [
   profile.value.bound_budgets,
@@ -167,6 +155,15 @@ const take = (choice: Choice, option: Record<string, number>) =>
     >
       Coming soon.
     </div>
+    <Paradise
+      v-else-if="tab === 'Paradise'"
+      :base="base"
+      :now="now"
+      :no_upgrades="no_upgrades"
+      :item_level="item_level"
+      :baseline_text="baseline_text"
+      @take="take"
+    />
     <div v-else class="card-shell card-body flex w-full flex-col gap-2 text-sm">
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div class="card-title">Choices</div>
@@ -258,9 +255,9 @@ const take = (choice: Choice, option: Record<string, number>) =>
             </span>
             <span
               :aria-label="`${choice.group} ${choice.title} worth`"
-              :style="{ color: worth_color(worth(job.metric)) }"
+              :style="{ color: worth_color(no_upgrades, worth(job.metric)) }"
             >
-              {{ worth_text(job.metric) }}
+              {{ worth_text(no_upgrades, worth(job.metric)) }}
             </span>
             <button
               class="generic-button w-fit"

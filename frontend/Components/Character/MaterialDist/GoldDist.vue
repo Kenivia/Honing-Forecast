@@ -8,6 +8,9 @@ import { input_column_to_num } from "@/Utils/InputColumn";
 import { metric_to_text } from "@/Utils/Helpers";
 import type { GoldDist } from "@/WasmInterface/WasmTypes";
 
+// The total gold row of MaterialDist's grid: label, then the average under the gold column,
+// then the distribution under the material graphs.
+defineProps<{ metric: number | undefined }>();
 const runtime = useRuntimeStore();
 const { roster_config, active_tradable_mats_owned } =
   storeToRefs(useRosterStore());
@@ -79,42 +82,33 @@ function hover_annotation(x, _y, cy, _material, color, is_last): string {
   const percent = Math.round(cy * 100);
   return `<b style="color: white;">${percent === 100 ? "~100" : percent}% </b> chance to spend <br> ≤ ${gold}`;
 }
-
-// MaterialDist's columns, so the graph lines up under the material graphs
-const GRID_COLS =
-  "minmax(260px, 320px) minmax(70px, 90px) minmax(110px, 120px) minmax(110px, 120px) 350px";
 </script>
 
 <template>
-  <div class="card-shell">
-    <div class="card-header">
-      <div class="card-title">Tradable gold distribution</div>
+  <div class="mats-row h-auto! min-h-10.5 border-b-0!">
+    <div class="col-span-4 flex items-baseline justify-end gap-2 pr-2">
+      <span class="annotation text-(--text-very-muted)">
+        (raw + buying needed mats & juice)
+      </span>
+      <span class="text-lg text-nowrap text-(--gold)">
+        Average tradable gold spent:
+      </span>
     </div>
-    <div
-      class="card-body outer-grid pt-0! pb-2!"
-      :style="{ '--grid-cols': GRID_COLS }"
-    >
-      <div class="mats-row border-b-0!" role="group" aria-label="Gold spent">
-        <span class="col-span-3 text-left text-(--gold)">
-          Average tradable gold spent:
-        </span>
-        <span class="text-right text-(--gold)">
-          {{ metric_to_text(no_upgrades ? null : shown?.metric) }}
-        </span>
-        <MaterialGraph
-          :class="{ 'opacity-50': !fresh }"
-          :data="spread ? dist.cdf : null"
-          material-label="Gold"
-          graph-color="--gold"
-          :cumulative="roster_config.cumulative_graph"
-          :annotations="annotations"
-          :annotation-colors="['--average', '--tradable']"
-          :annotation-positions="['graph', 'top']"
-          :annotation-labels="['Average', 'Tradable gold']"
-          :tooltip-text-fn="hover_annotation"
-          :empty_message="empty_message"
-        />
-      </div>
-    </div>
+    <span class="metric-result text-right text-lg text-(--gold)">
+      {{ metric_to_text(metric) }}
+    </span>
+    <MaterialGraph
+      :class="{ 'opacity-50': !fresh }"
+      :data="spread ? dist.cdf : null"
+      material-label="Gold"
+      graph-color="--gold"
+      :cumulative="roster_config.cumulative_graph"
+      :annotations="annotations"
+      :annotation-colors="['--average', '--tradable']"
+      :annotation-positions="['graph', 'top']"
+      :annotation-labels="['Average', 'Tradable gold']"
+      :tooltip-text-fn="hover_annotation"
+      :empty_message="empty_message"
+    />
   </div>
 </template>

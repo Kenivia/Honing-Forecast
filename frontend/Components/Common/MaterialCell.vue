@@ -25,7 +25,10 @@ const props = defineProps<{
   hide_label?: boolean;
   justify_left?: boolean;
   disabled?: boolean;
-  bound_label?: boolean;
+  // shown as "(text)" under the label
+  band_label?: string;
+  // the column the tickbox reads and sets, when not this one
+  tick_column?: InputColumn;
   aria_name?: string;
   // "+N <text>" lines on the right, taking plus_width whether shown or not
   plus?: { amount: number; text: string }[];
@@ -52,9 +55,11 @@ const source_value = () =>
 
 const this_data = ref(source_value());
 
+const tick_column = () => props.tick_column ?? as_column();
+
 function toggle_enabled(enabled: boolean) {
   for (const label of linked_labels(props.label))
-    if (label in as_column().enabled) as_column().enabled[label] = enabled;
+    if (label in tick_column().enabled) tick_column().enabled[label] = enabled;
   props.callback?.();
 }
 
@@ -81,7 +86,7 @@ watch(source_value, (val) => {
     <input
       v-if="!hide_tick && show_label && 'values' in input_column"
       type="checkbox"
-      :checked="(input_column as InputColumn).enabled[label]"
+      :checked="tick_column().enabled[label]"
       :aria-label="`${aria_name} enabled`"
       @change="toggle_enabled(($event.target as HTMLInputElement).checked)"
     />
@@ -95,7 +100,9 @@ watch(source_value, (val) => {
       <span v-if="!hide_label" class="flex flex-row flex-wrap justify-end"
         >{{ label }}
 
-        <span v-if="bound_label" class="annotation basis-full">(bound)</span>
+        <span v-if="band_label" class="annotation basis-full"
+          >({{ band_label }})</span
+        >
       </span>
       <img
         :src="get_icon_path(label)"

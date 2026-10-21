@@ -61,19 +61,19 @@ A `Chest` is a count, the band it is owned in and its options, each a `label -> 
 
 ## Game data
 
-Costs and chances come from JSON embedded in the binary, under `constants/`, generated from a Google Sheet. Only two of the JSON files are wired in, one per tier. Vambrace support is partial: it exists for normal honing and is absent from the advanced tables.
+Costs and chances come from JSON embedded in the binary, under `constants/`. Only two of the JSON files are wired in, one per tier: `T4 July 2026 (Vambrace padded).json`, from a Google Sheet, and `Serca Oct 2026.json`, whose normal honing is the game's (below) and the rest the sheet's. Vambrace support is partial: it exists for normal honing and is absent from the advanced tables. Serca's juice ids are Glacier's 0, Lava's 1, then the Tremor books 2 to 5 (12-15 armour, 12-15 weapon, 16-19 armour, 16-19 weapon), the order of their labels in the frontend's `MATERIAL_TABLE`.
 
-### Honing data in the game files (open problem)
+### Honing data in the game files
 
-The same numbers are in the installed game, in the SQLite tables of `EFGame/data2.lpk` (`Screen scanner/Game files.md` has how they are read). The JSON is not generated from them yet. What was checked by hand against the JSON, on the NA client of October 2026:
+The same numbers are in the installed game, in the SQLite tables of `EFGame/data2.lpk` (`Screen scanner/Game files.md` has how they are read). **`python scripts/game_files/honing.py`** rebuilds the normal honing of the Serca JSON from them (chances, costs, unlocks, free-tap leapstones, juice and book rows), keeps the advanced and `EVENT_*` fields of the JSON it starts from, prints which fields changed and writes `Serca Oct 2026.json`. On the client of 2026-10-21 everything it rebuilds equalled `Serca Aug 2026 (Vambrace).json`, the sheet's vambrace included, but the 16 book rows, which are new. T4 is not generated (the discount layer below).
 
-- **Normal honing, all there.** `ItemEnhanceCommon`, one group per gear set and piece type (411100 Serca weapon, 411101 Serca armour, 410500 and 410501 for T4), `SecondaryKey` 100 plus the level:
-  - `LevelUpSuccessRate`, `LevelUpFailureBonusRate` and the juice (`LevelUpAdditiveId00`, rate, max), all out of 10,000;
+- **Normal honing, all there.** `ItemEnhanceCommon`, one group per gear set and piece type (411100 Serca weapon, 411101 Serca armour, 411102 Serca vambrace, 410500 and 410501 for T4; T4 has no vambrace), `SecondaryKey` 100 plus the level:
+  - `LevelUpSuccessRate` and `LevelUpFailureBonusRate` out of 10,000; the juice (`LevelUpAdditiveId0k`, `Rate0k` a unit, `Max0k` units, `MaxRate` the cap over all) out of 100,000 since the October 2026 update (10,000 before). The vambrace takes both juices, up to its max each;
   - shards, silver and gold in `LevelUpCostType/Amount` (type 18 shards, 1 silver, 2 gold);
   - unlock shards as the difference of `AccExp` between levels, unlock silver as that times `FeedSubCost`;
   - free-tap leapstones in `SpecialEnhanceMaterialAmount`.
-  - Stones, leapstones and fusion are in `ItemQualityOption`, the rows whose `EnhanceCommonId` is the group. Books are in `ItemEnhanceMaterial` under the level's `SpecialMaterialGroupId`.
-- Serca came out equal to `Serca March 2026.json` in every row. The client has no Serca books and no vambrace: it only holds what the installed version has.
+  - Stones, leapstones and fusion are in `ItemQualityOption`, the rows whose `EnhanceCommonId` is the group (many items per group, all alike). Books are in `ItemEnhanceMaterial` under the level's `SpecialMaterialGroupId`, one row per book item (event, bound and tradable copies), `EffectType00` 1 and the chance in `EffectArg00` out of 10,000.
+- The client only holds what the installed version has: the Serca books and vambrace came with the October 2026 update.
 - **Advanced honing** is in `ItemAmplificationBase` (the unlocks per ten levels) and `ItemAmplificationMaterial` (costs, success and great-success rates, juice, scrolls). Only armour was looked at.
 
 **The open part is the discount layer.** The base tables are the undiscounted costs, and the JSON has the discounted ones:
@@ -82,4 +82,4 @@ The same numbers are in the installed game, in the SQLite tables of `EFGame/data
 - T4 advanced honing stages 1 and 2 are undiscounted in the base table (500 Guardian Stones against 250, 3,000 shards against 2,400). `ItemAmplificationBoost` has discount rates per material and `ItemAmplificationBase` names boost ids, but which row gives the JSON's numbers was not traced.
 - Rows are gated by `ClassifyType`/`ClassifyIndex`, and the client tables alone do not say which gates are open. With no event running there is nothing live to compare an event discount against, so the `EVENT_*` rows cannot be checked now.
 
-Until that is understood, generating the JSON from the game would get the permanent discounts wrong.
+Until that is understood, generating the T4 JSON from the game would get the permanent discounts wrong. Serca has no `WelcomeBoostId` and the game's numbers are the JSON's.

@@ -89,6 +89,10 @@ describe("MATERIAL_TABLE projections", () => {
     expect(ALL_LABELS[1].slice(NUM_BASE_MATS)).toEqual([
       "Glacier's Breath",
       "Lava's Breath",
+      "12-15 Armor",
+      "12-15 Weapon",
+      "16-19 Armor",
+      "16-19 Weapon",
     ]);
   });
 
@@ -144,11 +148,12 @@ describe("alignment with the wired Rust constants", () => {
   });
 
   it("JUICE_RANGES match each juice id's levels, piece type and kind", () => {
-    const data = wired[0];
     for (const [label, [low, high, is_weapon, is_adv]] of Object.entries(
       JUICE_RANGES,
     )) {
-      const id = ALL_LABELS[0].indexOf(label) - NUM_BASE_MATS;
+      const tier = MATERIALS[label].tiers[0];
+      const data = wired[tier];
+      const id = ALL_LABELS[tier].indexOf(label) - NUM_BASE_MATS;
       expect(id, label).toBeGreaterThan(1);
       const rows = data.JUICE_BOOKS_AVAIL.filter((r) => r[0] === id);
       expect(new Set(rows.map((r) => r[1])), label).toEqual(
@@ -162,7 +167,7 @@ describe("alignment with the wired Rust constants", () => {
     }
     // every book and scroll has a range; the two juices always show
     expect(Object.keys(JUICE_RANGES).sort()).toEqual(
-      ALL_LABELS[0].slice(NUM_BASE_MATS + 2).sort(),
+      ALL_LABELS.flatMap((labels) => labels.slice(NUM_BASE_MATS + 2)).sort(),
     );
   });
 

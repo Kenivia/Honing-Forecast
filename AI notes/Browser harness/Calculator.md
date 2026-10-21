@@ -29,7 +29,7 @@ These accessible names are what MCP snapshots show and what the helpers use.
 - Calc page: the row holds a `Bound owned` textbox and a `Bound owned enabled` checkbox, then three read-only values in order: chance, average amount, average gold. Read those by position within the row.
 - Market page: rows sit inside a `T4 materials` or `Serca materials` group, with `Roster bound owned`, `Tradable owned` and `Market price` textboxes. `Shards`, `Gold`, `Silver` and the breaths appear in both tiers, so scope to the tier group.
 - Inputs commit on change, not per keystroke: fill, then blur. They accept arithmetic (`100+50`).
-- The `Chance column` select switches which ownership class the chance column describes.
+- The `Chance column` select (the first column's header) switches which ownership class the owned column shows and the chance column describes. The owned textbox is `Bound owned`, `Roster bound owned` or `Tradable owned` to match; its tickbox is always `<name> enabled` of the bound column.
 
 **Results** have no labels and are read from text: `Pending ilevel:`, `Achieved ilevel:`, the gold line ending in `gold spent:`, and `Optimizer progress:`.
 

@@ -4,10 +4,8 @@ import "./helpers";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import ChestEditor from "@/Components/Character/ChestEditor.vue";
-import ChestState from "@/Components/Character/ChestState.vue";
 import ChestPanels from "@/Components/Common/ChestPanels.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { useRuntimeStore } from "@/Stores/RuntimeState";
 import type { Chest, ManifestChest } from "@/Utils/Chest";
 import { ALL_LABELS, SPECIAL_LEAP_LABELS } from "@/Utils/Constants";
 
@@ -158,14 +156,15 @@ describe("ChestEditor", () => {
   });
 });
 
+// the selection panel, split by the states
 function state_panel(chests: Chest[], states?: [string, number[]][]) {
-  setActivePinia(createPinia());
-  const runtime = useRuntimeStore();
-  if (states)
-    runtime.histogram.result = {
-      state_bundle: { chest_states: new Map(states) },
-    };
-  return mount(ChestState, { props: { chests } });
+  return mount(ChestPanels, {
+    props: {
+      selection: chests,
+      obtain_all: [],
+      states: states ? new Map(states) : new Map(),
+    },
+  }).find('[role="group"][aria-label="Selection chests"]');
 }
 const choice: Chest = {
   key: "k",
@@ -176,41 +175,29 @@ const choice: Chest = {
   icons: [],
 };
 
-describe("ChestState", () => {
-  it("says so when no state is known", () => {
-    expect(state_panel([choice]).text()).toContain(
-      "No chests with a choice to make.",
-    );
+describe("ChestPanels opening split", () => {
+  it("shows the options joined by or when no state is known", () => {
+    const text = state_panel([choice]).text().replace(/\s+/g, "");
+    expect(text).toContain("PickoneRosterbound:x10.3orx20x2");
+    expect(text).not.toContain("as");
   });
 
   it("shows how many of each stack go to each option", () => {
     const text = state_panel([choice], [["k", [1000, 500]]])
       .text()
       .replace(/\s+/g, "");
-    expect(text).toContain("Pickonex1,500:1,000asx10.3,500asx20x2");
-  });
-
-  it("skips a stack whose state does not fit its options", () => {
-    const other = { ...choice, key: "j", title: "Other" };
-    const w = state_panel(
-      [choice, other],
-      [
-        ["k", [1, 2, 3]],
-        ["j", [1, 1499]],
-      ],
-    );
-    expect(w.text()).not.toContain("Pick one");
-    expect(w.text()).toContain("Other");
-    expect(w.findAll("img").map((i) => i.attributes("alt"))).toEqual([
-      "Red",
-      "Blue",
-      "Leaps",
-    ]);
+    expect(text).toContain("PickoneRosterbound:1,000asx10.3,500asx20x2");
   });
 
   // the same rule as chest_gains, the "+n from chests" beside it
-  it("skips a state whose sum no longer matches the count", () => {
-    const w = state_panel([{ ...choice, count: 10 }], [["k", [6, 6]]]);
-    expect(w.text()).toContain("No chests with a choice to make.");
+  it("shows no split for a state that does not fit", () => {
+    for (const state of [
+      [1, 2, 3],
+      [6, 6],
+    ]) {
+      const text = state_panel([choice], [["k", state]]).text();
+      expect(text).not.toContain(" as");
+      expect(text).toContain("or");
+    }
   });
 });

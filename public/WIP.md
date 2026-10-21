@@ -9,8 +9,8 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
   - code review
 - ~~x10 streak frontend~~
 
-- change tradabiltiy selector to the mats column
-- estimated gold value
+- ~~change tradabiltiy selector to the mats column~~
+- ~~estimated gold value~~
 
 - ~~show baseline in choices~~
 

@@ -69,7 +69,7 @@ describe("fetch_market_data", () => {
     expect(init.method).toBe("POST");
     expect(body.region_slug).toBe("nae");
     expect(body.item_slugs).toContain("destiny-shard-pouch-l");
-    expect(body.item_slugs).toHaveLength(27);
+    expect(body.item_slugs).toHaveLength(31);
   });
 });
 

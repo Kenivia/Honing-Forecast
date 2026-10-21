@@ -8,10 +8,12 @@ import {
   ANNOTATION_POSITIONS,
   ANNOTATION_LABELS,
   SPECIAL_LEAP_LABELS,
+  cheapest_bundles,
 } from "@/Utils/Constants";
 import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue";
+import GoldDist from "@/Components/Character/MaterialDist/GoldDist.vue";
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
@@ -40,6 +42,7 @@ const {
   active_roster_mats_owned,
   active_tradable_mats_owned,
   processed_chests,
+  active_mats_prices,
 } = storeToRefs(useRosterStore());
 const histogram_result = computed(() => runtime.histogram.result);
 
@@ -135,22 +138,31 @@ const visibleRows = computed(() =>
 );
 
 const tickbox_tooltip = `Untick the box if you don't plan on buying that material from market.`;
-const marginal_tooltip = `Average tradable gold saved per extra Char-Bound unit, for one more tap's worth of it (ten with x10 streak length).`;
+const marginal_tooltip = `Average tradable gold saved per extra Char-Bound market bundle, for one more tap's worth of it (ten with x10 streak length).`;
 
 // from the last finished optimizer result; faded while a newer one is on its way
 const marginal = computed<Record<string, number>>(
   () => runtime.marginal.result ?? {},
 );
+// per market bundle, using whichever bundle is currently cheapest per unit
+const marginal_bundle = computed(() =>
+  cheapest_bundles(input_column_to_num(active_mats_prices.value)),
+);
+// integers, but at least 2 significant figures
+const marginal_text = (label: string) => {
+  const x = marginal.value[label] * marginal_bundle.value[label];
+  const digits =
+    x === 0 ? 0 : Math.max(0, 1 - Math.floor(Math.log10(Math.abs(x))));
+  return x.toLocaleString("en-US", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+};
 const marginal_stale = computed(
   () =>
     runtime.marginal.status === "busy" || runtime.optimizer.status === "busy",
 );
 // <span style="color:var(--text-muted)">(it also disable selling this mat)</span>`
-
-const total_market_gold_text = "Average tradable gold spent:";
-const total_market_gold_suffix = "(raw  +  buying needed mats & juice)";
-const total_tradable_gold_text = "Avg value of leftover mats:";
-const total_tradable_gold_suffix = "";
 
 // Plan 0 credits nothing, so it is the gross spend; plan 1 is the user's, which is what
 // the optimizer minimises. The gap between them is what the leftovers are worth.
@@ -164,14 +176,25 @@ const any_credited = computed(() =>
   active_profile.value.band_values.some((v) => v !== "Worthless"),
 );
 
-// parallel to chance_band
+// parallel to chance_band, which also picks the owned column shown
 const CHANCE_TEXTS = ["Char-Bound", "Roster-Bound", "Tradable"].map(
   (band) => `Chance to succeed all upgrades within ${band} material`,
 );
 const CHANCE_COLORS = ["var(--bound)", "var(--roster)", "var(--tradable)"];
+const OWNED_TITLES = ["Bound mats", "Roster mats", "Tradable"];
+const OWNED_LABELS = ["bound", "roster", "tradable"];
+const OWNED_ARIA = ["Bound owned", "Roster bound owned", "Tradable owned"];
 
 const selected_chance_color = computed(
   () => CHANCE_COLORS[active_profile.value.chance_band],
+);
+const owned_column = computed(
+  () =>
+    [
+      active_profile.value.bound_budgets,
+      active_roster_mats_owned.value,
+      active_tradable_mats_owned.value,
+    ][active_profile.value.chance_band],
 );
 
 function change_chance_band(event: Event) {
@@ -264,29 +287,39 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
       <div class="mats-row h-fit! items-end! border-b-(--border-main)!">
         <div class="flex flex-row justify-between">
           <QuestionMark :text="tickbox_tooltip" class="mb-1" />
-          <span class="mr-17.5 w-25 text-left text-(--bound)">Bound Mats</span>
+          <select
+            aria-label="Chance column"
+            class="selector mr-19 w-fit"
+            :value="active_profile.chance_band"
+            :style="{ color: selected_chance_color }"
+            @change="change_chance_band"
+          >
+            <option
+              v-for="(text, band) in OWNED_TITLES"
+              :key="band"
+              :value="band"
+              :style="{ color: CHANCE_COLORS[band] }"
+            >
+              {{ text }}
+            </option>
+          </select>
+        </div>
+        <div class="flex flex-col items-end text-(--gold)">
+          <span>Est. gold</span>
+          <div class="flex flex-row items-end gap-1">
+            <span>value</span>
+            <QuestionMark :text="marginal_tooltip" class="mb-1" />
+          </div>
         </div>
         <div class="flex flex-row items-end justify-end gap-1">
-          <QuestionMark :text="marginal_tooltip" class="mb-1" />
-          <span class="text-right text-(--gold)">Est. gold value</span>
-        </div>
-        <select
-          aria-label="Chance column"
-          class="selector -mr-4! ml-4!"
-          :value="active_profile.chance_band"
-          :style="{
-            color: selected_chance_color,
-          }"
-          @change="change_chance_band"
-        >
-          <option
-            v-for="(text, band) in CHANCE_TEXTS"
-            :key="band"
-            :value="band"
+          <span class="text-right" :style="{ color: selected_chance_color }"
+            >Chance</span
           >
-            {{ text }}
-          </option>
-        </select>
+          <QuestionMark
+            :text="CHANCE_TEXTS[active_profile.chance_band]"
+            class="mb-1"
+          />
+        </div>
         <span class="text-right text-(--average)">Average</span>
         <div class="flex flex-row content-end">
           <span class="w-full basis-full text-right text-nowrap text-(--gold)"
@@ -317,20 +350,21 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
           }"
         >
           <MaterialCell
-            :input_column="active_profile.bound_budgets"
+            :input_column="owned_column"
+            :tick_column="active_profile.bound_budgets"
             :label="label"
             :show_label="true"
-            aria_name="Bound owned"
-            :input_color="'--bound'"
+            :aria_name="OWNED_ARIA[active_profile.chance_band]"
+            :input_color="selected_chance_color"
             :setter="
               (val) => {
-                active_profile.bound_budgets.values[label] = val;
+                owned_column.values[label] = val;
               }
             "
             :hide_tick="row >= NUM_BASE_MATS"
             :callback="() => start_all_workers()"
             :hide_label="is924Narrow && row < NUM_BASE_MATS"
-            :bound_label="true"
+            :band_label="OWNED_LABELS[active_profile.chance_band]"
             :plus="[
               {
                 amount: gain(label, active_profile.chance_band),
@@ -339,13 +373,18 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
               ...t4_line(t4_gain(label, active_profile.chance_band)),
             ]"
           />
-          <MaterialCell
+          <div
             v-if="marginal[label] !== undefined"
-            :input_column="marginal"
-            :label="label"
-            :input_color="'--gold'"
+            class="flex flex-col items-end justify-center text-(--gold)"
             :class="{ 'opacity-50': marginal_stale }"
-          />
+          >
+            <span>{{ marginal_text(label) }}</span>
+            <span
+              v-if="marginal_bundle[label] > 1"
+              class="annotation leading-none"
+              >(x{{ marginal_bundle[label].toLocaleString("en-US") }})</span
+            >
+          </div>
           <div v-else></div>
           <MaterialCell
             :input_column="histogram_chances"
@@ -419,30 +458,13 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
           />
         </div>
       </div>
-    </div>
-    <div class="metric-container">
-      <div class="metric-label text-(--gold)">
-        {{ total_market_gold_text }}
-      </div>
-      <div class="metric-result-container">
-        <span class="metric-result text-(--gold)">
-          {{ metric_to_text(total_gold) }}
+      <GoldDist :metric="total_gold" />
+      <div v-if="any_credited" class="mats-row border-b-0!">
+        <span class="col-span-4 pr-2 text-right text-lg text-(--text-muted)">
+          Avg value of leftover mats:
         </span>
-        <span class="metric-result-suffix">
-          {{ total_market_gold_suffix }}
-        </span>
-      </div>
-    </div>
-    <div v-if="any_credited" class="metric-container">
-      <div class="metric-label text-(--text-muted)">
-        {{ total_tradable_gold_text }}
-      </div>
-      <div class="metric-result-container">
-        <span class="metric-result text-(--text-muted)">
+        <span class="metric-result text-right text-lg text-(--text-muted)">
           {{ metric_to_text(leftover_credit) }}
-        </span>
-        <span class="metric-result-suffix">
-          {{ total_tradable_gold_suffix }}
         </span>
       </div>
     </div>
@@ -474,56 +496,3 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
     </RouterLink>
   </span> -->
 </template>
-<style scoped>
-.metric-container {
-  margin-left: auto;
-  margin-right: auto;
-  display: flex;
-  width: 100%;
-  min-width: 100%;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-content: center;
-  gap: 0.25rem;
-  margin-bottom: 0.5rem;
-}
-
-/* trying to align the gold value with the gold breadown column, kinda scuffed but works i tihnk*/
-.metric-label {
-  flex-shrink: 1;
-  flex-basis: 52.9%; /* (320+90+120+16)/1032  */
-  text-align: right;
-  font-size: 1.25rem;
-  line-height: 1.75rem;
-}
-/* aligning for the non-squished cases */
-.metric-result-container {
-  display: flex;
-  min-width: calc(100% - 52.9%);
-  flex-shrink: 1;
-  flex-basis: calc(100% - 52.9%);
-  flex-wrap: wrap;
-  align-content: center;
-}
-
-.metric-result {
-  flex-shrink: 1;
-  font-size: 1.25rem;
-  line-height: 1.75rem;
-  min-width: 120px;
-  text-align: right;
-}
-
-.metric-result-suffix {
-  width: max-content;
-  max-width: 100%;
-  flex-shrink: 1;
-  align-self: flex-end;
-  font-size: 0.75rem;
-  line-height: 1rem;
-  text-wrap: wrap;
-  color: var(--text-very-muted);
-  transform: translateY(-0.25rem);
-  padding-left: 1px;
-}
-</style>

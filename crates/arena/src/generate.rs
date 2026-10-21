@@ -49,7 +49,7 @@ pub fn axis(name: &str) -> usize {
 }
 
 /// label, tiers, gold per unit. The frontend's table order and its fallback prices.
-const MATS: [(&str, &[usize], f64); 29] = [
+const MATS: [(&str, &[usize], f64); 33] = [
     ("Red", &[0], 6.47),
     ("Serca Red", &[1], 34.94),
     ("Blue", &[0], 0.1),
@@ -79,6 +79,10 @@ const MATS: [(&str, &[usize], f64); 29] = [
     ("Scroll 4 Weapon", &[0], 2369.0),
     ("Enhanced 19-20 Armor", &[0], 15000.0),
     ("Enhanced 19-20 Weapon", &[0], 15000.0),
+    ("12-15 Armor", &[1], 15000.0),
+    ("12-15 Weapon", &[1], 15000.0),
+    ("16-19 Armor", &[1], 15000.0),
+    ("16-19 Weapon", &[1], 15000.0),
 ];
 const SPECIAL_LABELS: [&str; 2] = ["Special Leap", "Serca Special Leap"];
 const GOLD: usize = 5;

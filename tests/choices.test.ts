@@ -5,11 +5,13 @@ import {
   affordable,
   as_chest,
   difficulties,
+  PARADISE_CHOICES,
   PRESET_CHOICES,
   raids_of,
   shown_difficulty,
   take_option,
 } from "@/Utils/Choices";
+import { MATERIALS } from "@/Utils/Constants";
 import {
   create_input_column,
   input_column_to_num,
@@ -149,5 +151,60 @@ equal("raids by their highest difficulty, newest first", raids, [
   "Darkness Legion Commander",
   "Behemoth, the Storm Commander",
 ]);
+
+// Paradise: every screen has a name, a plain and a Wealth bag per option, and only material labels
+for (const mode of ["Destiny", "Netherworld"]) {
+  const screens = PARADISE_CHOICES.filter(
+    (x) => x.group === `Paradise: ${mode}`,
+  );
+  equal(
+    `${mode}: item levels`,
+    difficulties(screens).map((x) => x.item_level),
+    [1580, 1640, 1680, 1700, 1730, 1750],
+  );
+  equal(`${mode}: Base and ten levels each`, screens.length, 6 * 11);
+}
+check(
+  "Paradise options line up with their names and Wealth",
+  PARADISE_CHOICES.every(
+    (x) =>
+      x.names.length === x.options.length &&
+      x.wealth.length === x.options.length,
+  ),
+);
+check(
+  "Paradise gives materials only",
+  PARADISE_CHOICES.every((x) =>
+    [...x.options, ...x.wealth].every((bag) =>
+      Object.keys(bag).every((label) => label in MATERIALS),
+    ),
+  ),
+);
+const paradise = PARADISE_CHOICES.find((x) => x.id === "paradise 1028 1");
+const fusion = paradise.names.indexOf("Superior Abidos Fusion Material x75");
+equal(
+  "1750 Destiny Base: a reward and the additional rewards",
+  paradise.options[fusion],
+  {
+    "Serca Fusion": 75,
+    Shards: 5200,
+    "Serca Red": 26,
+    "Serca Blue": 170,
+    "Serca Leaps": 4,
+  },
+);
+equal("with Wealth instead", paradise.wealth[fusion], {
+  "Serca Fusion": 75,
+  Shards: 52000,
+  "Serca Red": 260,
+  "Serca Blue": 1700,
+  "Serca Leaps": 40,
+});
+check(
+  "a stone selection chest is one option per stone",
+  paradise.names.filter((x) =>
+    x.startsWith("Base Level Destruction/Guardian Stone Selection Chest"),
+  ).length === 2,
+);
 
 done();

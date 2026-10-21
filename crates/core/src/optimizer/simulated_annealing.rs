@@ -543,6 +543,19 @@ pub fn solve<R: Rng>(
         .flatten()
         .filter(|_| tuning.carry)
     {
+        // a plan from before the streak length went up keeps to it from here on
+        let block = other.block();
+        if block > 1 {
+            let juice_info = &other.prep_output.juice_info;
+            for upgrade in other.upgrade_arr.iter_mut().filter(|u| u.is_normal_honing) {
+                upgrade.state.snap_to_block(
+                    block,
+                    upgrade.piece_type_usize,
+                    upgrade.upgrade_index,
+                    juice_info,
+                );
+            }
+        }
         let metric = other.metric_router(probe);
         if metric > floor {
             (floor, warm) = (metric, Some(other));

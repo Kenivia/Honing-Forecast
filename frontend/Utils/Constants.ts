@@ -177,6 +177,35 @@ const MATERIAL_TABLE: Record<
     [15000],
     "Enhanced Weapon Book.png",
   ],
+  // Serca books; not on the market yet, so priced like the enhanced ones
+  "12-15 Armor": [
+    [1],
+    "books",
+    [1],
+    [15000],
+    "Serca unique/Serca Armor Book.png",
+  ],
+  "12-15 Weapon": [
+    [1],
+    "books",
+    [1],
+    [15000],
+    "Serca unique/Serca Weapon Book.png",
+  ],
+  "16-19 Armor": [
+    [1],
+    "books",
+    [1],
+    [15000],
+    "Serca unique/Serca Armor Book.png",
+  ],
+  "16-19 Weapon": [
+    [1],
+    "books",
+    [1],
+    [15000],
+    "Serca unique/Serca Weapon Book.png",
+  ],
 };
 
 // Special leaps are budgeted through their own input rather than as a row in the cost
@@ -390,6 +419,10 @@ export const JUICE_RANGES: Record<string, [number, number, boolean, boolean]> =
     "19-20 Weapon": [19, 20, true, false],
     "Enhanced 19-20 Armor": [19, 20, false, false],
     "Enhanced 19-20 Weapon": [19, 20, true, false],
+    "12-15 Armor": [12, 15, false, false],
+    "12-15 Weapon": [12, 15, true, false],
+    "16-19 Armor": [16, 19, false, false],
+    "16-19 Weapon": [16, 19, true, false],
     "Scroll 1 Armor": [1, 1, false, true],
     "Scroll 1 Weapon": [1, 1, true, true],
     "Scroll 2 Armor": [2, 2, false, true],

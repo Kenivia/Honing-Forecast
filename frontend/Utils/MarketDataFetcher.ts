@@ -80,6 +80,11 @@ const ITEM_SLUG_TO_LABEL: Record<string, string | [string, number]> = {
   "tailoring-hellfire-15-18": "15-18 Armor",
   "metallurgy-hellfire-19-20": "19-20 Weapon",
   "tailoring-hellfire-19-20": "19-20 Armor",
+  // not listed by the API yet (October 2026)
+  "metallurgy-tremor-12-15": "12-15 Weapon",
+  "tailoring-tremor-12-15": "12-15 Armor",
+  "metallurgy-tremor-16-19": "16-19 Weapon",
+  "tailoring-tremor-16-19": "16-19 Armor",
 };
 
 // Fetches one region, or reuses its saved response within the cooldown. On failure the

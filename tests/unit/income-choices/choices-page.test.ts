@@ -146,3 +146,64 @@ describe("Choices page", () => {
     wrapper = undefined;
   });
 });
+
+describe("Paradise tab", () => {
+  const tab = (name: string) =>
+    wrapper.findAll('[role="tab"]').find((b) => b.text() === name);
+  const button = (group: string, name: string) =>
+    wrapper
+      .findAll(`[aria-label="${group}"] button`)
+      .find((b) => b.text() === name);
+  // the 1750 Destiny base screen, every option of which gives something
+  const open_paradise = async () => {
+    open();
+    await tab("Paradise").trigger("click");
+    await button("Paradise item level", "1750").trigger("click");
+  };
+
+  it("queues only its own runs, base first, and sorts by worth", async () => {
+    want_upgrade(store.active_profile);
+    await open_paradise();
+    expect(queued()).toHaveLength(1);
+    queued()[0].store(fake_out(0, 1000), fake_state());
+    await wrapper.vm.$nextTick();
+    const options = queued();
+    expect(options).toHaveLength(worth_cells().length);
+    // a T4 character keeps only the shards, juice and gold of Serca rewards, so most read the same
+    const labels = worth_cells().map((c) => c.attributes("aria-label"));
+    const job = (name: string) =>
+      options[labels.findIndex((x) => x.startsWith(name))];
+    job("Ancient Bracelet Chest").store(fake_out(0, 1100), fake_state());
+    job("5,500 Gold Bars").store(fake_out(0, 1300), fake_state());
+    await wrapper.vm.$nextTick();
+    const cells = worth_cells();
+    expect(cells[0].attributes("aria-label")).toMatch(/^5,500 Gold Bars/);
+    expect(cells[0].text()).toBe("+300");
+    expect(cells[1].text()).toBe("+100");
+    expect(cells.at(-1).attributes("aria-label")).toMatch(/^Lava's Breath/);
+    expect(cells.at(-1).text()).toBe("…");
+  });
+
+  it("Wealth runs the Wealth options instead", async () => {
+    want_upgrade(store.active_profile);
+    await open_paradise();
+    queued()[0].store(fake_out(0, 1000), fake_state());
+    await wrapper.vm.$nextTick();
+    const plain = queued().map((job) => job.hash);
+    await wrapper.find('input[type="checkbox"]').setValue(true);
+    const wealth = queued().map((job) => job.hash);
+    expect(wealth).toHaveLength(plain.length);
+    expect(wealth.filter((x) => plain.includes(x))).toEqual([]);
+  });
+
+  it("mode, item level and level are saved per character", async () => {
+    await open_paradise();
+    await button("Paradise mode", "Netherworld").trigger("click");
+    await button("Paradise level", "Level 3").trigger("click");
+    expect(store.active_profile.choice_levels).toMatchObject({
+      "Paradise mode": "Netherworld",
+      "Paradise level": "Level 3",
+      "Paradise: Destiny": "1750",
+    });
+  });
+});

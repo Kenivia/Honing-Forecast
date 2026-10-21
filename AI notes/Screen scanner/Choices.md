@@ -1,12 +1,12 @@
 # Choices
 
-The character's Choices sub-page (`/:char/choices`, under Income in the sidebar): for each choice, what taking an option is worth to this character, in average gold under its plan, and a button that adds the option to the budgets. The only choices yet are the raids' bonus chests: nothing, or the chest's materials for its gold.
+The character's Choices sub-page (`/:char/choices`, under Income in the sidebar): for each choice, what taking an option is worth to this character, in average gold under its plan, and a button that adds the option to the budgets. The choices are the raids' bonus chests (nothing, or the chest's materials for its gold) and Paradise's rewards ("Paradise" below).
 
-Code: `Components/Character/Choices/` (`Choices.vue` the page, `ChoiceJobs.ts` the runs), the choice type and budget writes in `Utils/Choices.ts`, the data in `frontend/Data/bonus_chests.json` (written by `scanner_setup/game_files/bonus_chests.py`, `Game files.md`, "Bonus chests"). `tests/choices.test.ts` covers the gold taken, the chests across tiers (T4 for Serca, special leaps included; Serca for T4), the difficulty shown and the raid order.
+Code: `Components/Character/Choices/` (`Choices.vue` the page, `Paradise.vue` its Paradise tab, `ChoiceJobs.ts` the runs), the choice type, worth text and budget writes in `Utils/Choices.ts`, the data in `frontend/Data/bonus_chests.json` (written by `scanner_setup/game_files/bonus_chests.py`, `Game files.md`, "Bonus chests") and `frontend/Data/paradise.json` (`scripts/game_files/paradise.py`, `Game files.md`, "Paradise"). `tests/choices.test.ts` covers the gold taken, the chests across tiers (T4 for Serca, special leaps included; Serca for T4), the difficulty shown, the raid order and the Paradise data's shape; `tests/unit/income-choices/choices-page.test.ts` the page and the Paradise tab.
 
 ## A choice
 
-`Choice` is a chest without a count: `id`, `group`, `title`, `band` and `options`, each a bag of label to amount, a cost being negative, and optionally `difficulty` and `item_level`. `others` is what else it gives, shown on hover. `PRESET_CHOICES` is the bonus chests; more presets join that list, and a choice the user makes would be the same type stored in the profile (not done yet).
+`Choice` is a chest without a count: `id`, `group`, `title`, `band` and `options`, each a bag of label to amount, a cost being negative, and optionally `difficulty` and `item_level`. `others` is what else it gives, shown on hover. `names` says what each option is where the options are not the choice itself, and `wealth` is Paradise's options with Wealth. `PRESET_CHOICES` is the bonus chests and `PARADISE_CHOICES` Paradise; a choice the user makes would be the same type stored in the profile (not done yet).
 
 **Every character sees every raid, whatever its tier**: difficulties are locked by item level, not tier, and a T4 character can be 1730 or more. The options go through `process_chests` like any chest: a Serca character's T4 materials become Serca ones at the ratio (T4 special leaps a fifth, as Serca special leaps, which Rust adds to the free-tap budget), and a T4 character's Serca materials are dropped, leaving the gold and shards, so such a chest is worth little or less than nothing.
 
@@ -20,7 +20,7 @@ Code: `Components/Character/Choices/` (`Choices.vue` the page, `ChoiceJobs.ts` t
 
 ## The page
 
-A row of tabs on top (local state in `Choices.vue`): "Bonus chests", this card, and "Coming soon", a placeholder. One card: a table of gate, cost, what it gives (icons and amounts, `others` on hover), worth (its header shows "Baseline = " the run without's metric, rounded, "…" until run, "N/A" with no upgrades; every worth is against it) (rounded to whole gold, `signed_gold`; green positive, red negative, the main text colour for 0, "…" until run) and "Add to budget". Rows are grouped by raid, newest first (`raids_of`): by the item level of the raid's highest difficulty, whatever the character's, which is the order of release; ties keep the data's order.
+A row of tabs on top (local state in `Choices.vue`): "Bonus chests", this card, "Paradise" (below) and "Coming soon", a placeholder. One card: a table of gate, cost, what it gives (icons and amounts, `others` on hover), worth (its header shows "Baseline = " the run without's metric, rounded, "…" until run, "N/A" with no upgrades; every worth is against it) (rounded to whole gold, `signed_gold`; green positive, red negative, the main text colour for 0, "…" until run) and "Add to budget". Rows are grouped by raid, newest first (`raids_of`): by the item level of the raid's highest difficulty, whatever the character's, which is the order of release; ties keep the data's order.
 
 **Three raids** are shown and run, the newest; "Show one more raid" adds the next each press, for the visit (back to three on another character). Hidden raids are not run.
 
@@ -31,3 +31,12 @@ A row of tabs on top (local state in `Choices.vue`): "Bonus chests", this card, 
 **A worth of 0 with upgrades** is real: under the default plan unused char-bound and roster-bound leftovers are worthless, gold included, so a chest paid from bound gold the upgrades would not use, giving materials they do not need, changes nothing.
 
 **Add to budget** (`take_option`) adds what the option gives to the band's column (the char-bound budget for the bonus chests; free taps to the free-tap budget), unconverted, and takes a cost from that band, then roster bound, then tradable. It is disabled when the bands together cannot pay (`affordable`). Nothing marks a choice as taken.
+
+## Paradise
+
+The game offers three of a level's rewards and the player takes the best of them, so the tab shows every reward of one screen, best first, for the player to find the three offered in. Buttons pick the mode (Destiny, Netherworld), the item level (the choice's `difficulty`, shown as for raids, under the group "Paradise: Destiny") and the level (Base, Level 1 to 10). All three are saved in `profile.choice_levels`, the mode and level under "Paradise mode" and "Paradise level". A table of reward, what it gives, worth and "Add to budget"; the worth header has the **Wealth** checkbox (session state), which swaps every option for its `wealth` bag, so new runs and a new order.
+
+- Each option is the main reward plus the additional rewards, which every reward comes with; with Wealth, plus the Wealth rewards instead. An option that is no material gives only those, so many options of one screen are the same payload and share one run; one that gives nothing at all (1580, or Netherworld without additional rewards) is worth 0 and not run.
+- Sorted by worth, those not run yet last; rows move as runs come in.
+- `Paradise.vue` queues its own runs (the run without first, then every option of the screen) and `Choices.vue` queues nothing while it is shown, since `queue_jobs` replaces the queue. It does not stop the jobs when it closes: `Choices.vue` does on leaving the page.
+- A T4 character's Serca rewards keep only their shards, juice and gold (as for the raids).

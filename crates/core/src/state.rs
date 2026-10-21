@@ -164,6 +164,37 @@ impl State {
         StreakInfo { front, back }
     }
 
+    /// Rounds each streak to the nearest whole block, the back one never crossing the front.
+    pub fn snap_to_block(
+        &mut self,
+        block: usize,
+        piece_type: usize,
+        upgrade_index: usize,
+        juice_info: &JuiceInfo,
+    ) {
+        let len = self.payload.len();
+        let round = |x: usize| ((x + block / 2) / block * block).min(len);
+        let mut streak_info = self.compute_streak_info(piece_type, upgrade_index, juice_info);
+        for p in 0..streak_info.front.len() {
+            let (front_id, front_len) = streak_info.front[p];
+            let front_len = if front_id.is_some() {
+                round(front_len)
+            } else {
+                0
+            };
+            let (back_id, back_len) = streak_info.back[p];
+            let back_len = if back_id.is_some() {
+                len - round(len - back_len).max(front_len)
+            } else {
+                0
+            };
+            streak_info.front[p] = (front_id.filter(|_| front_len > 0), front_len);
+            streak_info.back[p] = (back_id.filter(|_| back_len > 0), back_len);
+        }
+        self.apply_new_streak_info(&streak_info, piece_type, upgrade_index, juice_info);
+        self.streak_cache = None;
+    }
+
     pub fn apply_new_streak_info(
         &mut self,
         streak_info: &StreakInfo,

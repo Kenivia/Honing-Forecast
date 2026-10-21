@@ -106,3 +106,7 @@ An experiment that could put the same id twice on a tap was scored well above an
 ## What re-planning is worth
 
 Session 8: the `replan` set, 36 singles of 5 to 14 upgrades, 30 paths, every upgrade, 24000 iterations. The gain averaged 0.12% of flow over scenarios, median 0.02%, the largest scenario 0.64% and the largest single path 3.7%. As a share of what the optimizer gains over the default state: mean 4%, median 0.3%. The control was zero everywhere and the exact gain was 0.99 of the approximate one. A third of the scenarios had no gain at all; the gain was near zero where most is owned (wealth above 0.75) and did not go to zero where little is.
+
+## Serca books in the scenarios (2026-10-21)
+
+The October 2026 update brought Serca books, juice ids 2 to 5 of `Serca Oct 2026.json`, and `MaterialTable::new` asserts one label per juice, so the 755 Serca scenarios (1,857 payloads) no longer loaded. `scripts/arena/add_serca_books.py` added the four labels to each, none owned, market 15,000 and taxed 14,250. Every Serca payload is therefore a new case with no best known; their history before that date is of payloads without books.

@@ -46,5 +46,9 @@
   { "title": "[Event] Tailoring: Hellfire [11-14] - Bound", "icon": "Armor Book", "rarity": "relic", "confidence": 0.93, "label": "11-14 Armor" },
   { "title": "[Event] Tailoring: Hellfire [15-18]", "icon": "Armor Book", "rarity": "relic", "confidence": 0.93, "label": "15-18 Armor" },
   { "title": "[Event] Tailoring: Hellfire [19-20]", "icon": "Armor Book", "rarity": "relic", "confidence": 0.93, "label": "19-20 Armor" },
+  { "title": "Metallurgy: Tremor [12-15]", "icon": "Serca Weapon Book", "rarity": "ancient", "confidence": 0.93, "body": "Weapon 12-15", "label": "12-15 Weapon" },
+  { "title": "Metallurgy: Tremor [16-19]", "icon": "Serca Weapon Book", "rarity": "ancient", "confidence": 0.93, "body": "Weapon 16-19", "label": "16-19 Weapon" },
+  { "title": "Tailoring: Tremor [12-15]", "icon": "Serca Armor Book", "rarity": "ancient", "confidence": 0.93, "body": "Armor 12-15", "label": "12-15 Armor" },
+  { "title": "Tailoring: Tremor [16-19]", "icon": "Serca Armor Book", "rarity": "ancient", "confidence": 0.93, "body": "Armor 16-19", "label": "16-19 Armor" },
   { "title": "Destiny Shard", "label": "Shards" }
 ]

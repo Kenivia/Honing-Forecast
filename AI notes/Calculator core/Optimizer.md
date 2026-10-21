@@ -91,7 +91,7 @@ The game can do ten taps at once, so a plan may be asked to change what it takes
 - **The rule**: from an upgrade's next tap on, the taps go in blocks of that many, and every tap of a block takes the same. So every streak, of taking or of not taking, is a multiple of it but the last before the pity, which the pity cuts.
 - **A random move** rounds its front streak down to a block and starts its back streak where a block does, and changes a streak by two blocks at least, or the rounding would undo it.
 - **A response** chooses once a block and plays the block through, so it is the best of the plans that keep the rule, and its table is only kept where a block starts. `Model::filled` gives a plan cut at its pity its whole last block back: a pool left alone while another moves the pity out would otherwise stop inside a block.
-- **A state that is given off the grid stays so** until a move or a response replaces it.
+- **A plan to go on from is put on the grid first**: `solve` snaps the given state and the carried plan (`State::snap_to_block`, each streak to the nearest whole block, the back one never crossing the front) before comparing them with the empty plan. Otherwise a plan from a run at streak length 1 won as the warm start and was returned off the grid.
 - **What the rule costs is in what is owned**: an owned amount that is not a whole number of blocks is either left over or topped up at the buy price. The search itself still finds the best plan that keeps the rule.
 
 ## What a move costs
