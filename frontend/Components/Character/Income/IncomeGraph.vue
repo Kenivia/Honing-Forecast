@@ -36,6 +36,8 @@ const props = defineProps<{
   range: [number, number];
   resets: number[];
   now: number;
+  // y from 0 to 100%
+  percent?: boolean;
 }>();
 
 const canvas = ref<HTMLCanvasElement | null>(null);
@@ -44,7 +46,9 @@ let chart: Chart | null = null;
 const date = (x: number) =>
   new Date(x).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 const amount = (y: number) =>
-  y.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  props.percent
+    ? `${y.toLocaleString("en-US", { maximumFractionDigits: 1 })}%`
+    : y.toLocaleString("en-US", { maximumFractionDigits: 0 });
 
 function config() {
   const muted = cssVar("--text-muted", "#b7b7b7");
@@ -63,6 +67,9 @@ function config() {
     },
     y: {
       type: "linear",
+      ...(props.percent && { min: 0, max: 100 }),
+      // a fixed width, so graphs stacked on the same range line up
+      afterFit: (scale) => (scale.width = 80),
       ticks: { color: muted, callback: amount },
       grid: { color: border },
     },
@@ -130,7 +137,7 @@ onMounted(() => {
   chart = new Chart(canvas.value, config() as any);
 });
 watch(
-  () => [props.series, props.range, props.resets, props.now],
+  () => [props.series, props.range, props.resets, props.now, props.percent],
   () => {
     const next = config();
     chart.data = next.data;

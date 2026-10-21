@@ -76,6 +76,8 @@ export interface Payload {
   num_threads: number;
   metric_type: number;
   adv_cache: any;
+  // the plan the histogram draws the gold distribution of, none for no distribution
+  dist_plan?: number | null;
 }
 
 // what of an optimizer result is fed back into the next payload

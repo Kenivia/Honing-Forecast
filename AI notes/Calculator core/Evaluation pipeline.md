@@ -7,7 +7,7 @@ How a payload becomes a number. What was measured, tried and dropped on this pat
 Both are in `crates/wasm/src/lib.rs` and both start by turning the `Payload` into a `StateBundle`.
 
 - **Optimize**: runs the optimizer, re-evaluates the best state, and returns the whole `StateBundle`. While running it posts intermediate best states straight to the page from Rust, so it must run inside a Web Worker.
-- **Histogram**: evaluates one fixed state (no search) and returns, keyed by material label, a cumulative distribution of consumption, the chance that each ownership band is enough, and the average gold under every plan in the payload.
+- **Histogram**: evaluates one fixed state (no search) and returns, keyed by material label, a cumulative distribution of consumption, the chance that each ownership band is enough, and the average gold under every plan in the payload. With the payload's `dist_plan` set, also the distribution of the gold that plan spends (`gold_dist.rs`, below).
 
 The optimizer and the histogram share the same evaluation code, so a change to the evaluator affects both the plan chosen and the numbers shown.
 
@@ -88,6 +88,18 @@ These fail silently or panic at a distance, and none is obvious from a single fi
 - **Distributions follow the state hash.** Nothing is rebuilt for an upgrade whose supports carry its state's hash, so whatever else a distribution came to depend on would have to move that hash.
 - **Plans are precomputed.** `PreparationOutput::bands` holds one band list per plan per material, built once per chest state (`Domain model.md`, "Chests"). The evaluator never recomputes them, so a payload with many plans costs extra evaluations, not extra parsing.
 - **A threshold the price does not change at is free.** `one_dimension_average_gold` skips its leftover evaluation, because it is multiplied by the price gap. `ValuationPlan::bands` already merges such entries wherever merging is sound, so in practice this fires only on the top entry, which has to stay for the base term. See `Domain model.md`.
+
+## The gold distribution
+
+`gold_distribution` (`gold_dist.rs`) gives the whole distribution of the gold one plan spends, not just its mean. **The metric's methods cannot give it**: the mean splits into one 1-D problem per material by linearity, but the spend is a sum of piecewise-linear functions of every material's total, and the totals move together (more taps cost more of everything at once), so it needs their joint distribution. It is sampled instead, 100k runs (`GOLD_SAMPLES`, about 0.4% off at worst over the curve, 19 times in 20):
+
+- **What a run uses comes from the evaluator's own supports**: the free-tap outcome k from `special_probs()`, the first k upgrades in the order at `access_min(true)`, a normal upgrade's outcome indexing `cost_dist[row].support`. Each row costs the same per outcome as the metric sees it, and `gold` (`materials.rs`, shared with the arena) is the function the metric takes the mean of.
+- **The free-tap outcome and normal taps are stratified** (`tap_map_generator`): each outcome appears its expected number of times, then shuffled.
+- **Advanced honing is played out** (`advanced_honing/sim.rs`), because the evaluator keeps only the three marginals and the joint matters: taking taps, juice and scroll at one shared quantile is up to 10 points off the CDF on grace-scroll strategies. The runs of each strategy are cached in a thread local for the life of the worker (`ADV_RUNS`), from a seed of their own, and shuffled per use; playing them out is most of the time otherwise.
+- **The ends are deterministic**, as on the material graphs: luckiest is the most free taps with a live chance and every upgrade on its first live outcome, pity the fewest and the last. Their odds are log10 (a product over a hundred upgrades underflows) and the larger of that one run's chance and the sampled fraction, since a whole region can spend the same as an end (0 gold, where the stock covers it). An advanced upgrade's juice and scroll are taken at the same end as its taps there.
+- **Seeded** (`SmallRng`, 0), so the same state draws the same curve.
+
+It costs about 2.5 to 3 ms an upgrade in wasm, so the frontend asks for it only for a final state (`Frontend/Wasm contract.md`). The arena test `gold_distribution_matches_monte_carlo` checks its mean against the metric and its curve against `monte_carlo::simulate`, which plays free taps out by the game rules.
 
 ## Leftovers
 

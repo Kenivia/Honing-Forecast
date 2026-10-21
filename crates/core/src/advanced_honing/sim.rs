@@ -1,4 +1,5 @@
-use hf_core::advanced_honing::utils::AdvConfig;
+//! One advanced upgrade played out at random, by the same rules as the distributions in compute.rs.
+use crate::advanced_honing::utils::AdvConfig;
 use rand::Rng;
 
 const BALL_THRESH_30_40: [f64; 6] = [

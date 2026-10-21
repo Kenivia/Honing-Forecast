@@ -10,7 +10,6 @@ mod carry;
 mod db;
 mod generate;
 mod monte_carlo;
-mod one_adv_sim;
 mod replan;
 mod report;
 mod scenario;

@@ -367,8 +367,8 @@ pub fn report(conn: &Connection, session_id: i64) {
 mod tests {
     use super::*;
     use crate::generate::{normal_used, pay};
-    use crate::monte_carlo::gold;
     use crate::scenario::dummy;
+    use hf_core::materials::gold;
 
     /// what the plan is worth, summed over every way its next upgrade can go
     fn over_outcomes(payload: &Payload, plan: &StateBundle) -> f64 {

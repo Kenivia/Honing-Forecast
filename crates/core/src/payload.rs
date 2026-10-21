@@ -40,6 +40,9 @@ pub struct Payload {
     pub metric_type: i64,
 
     pub adv_cache: Option<AHashMap<AdvConfig, AdvDistTriplet>>,
+    /// the plan the histogram draws the gold distribution of, none for no distribution
+    #[serde(default)]
+    pub dist_plan: Option<usize>,
 }
 fn default_one() -> i64 {
     1

@@ -58,8 +58,9 @@ pub fn histogram_wrapper(input_payload: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
 
     let payload: Payload = from_value(input_payload).unwrap();
+    let dist_plan = payload.dist_plan;
     let mut state_bundle: StateBundle = StateBundle::init_from_payload(payload);
-    let out: HistogramOutputs = histogram(&mut state_bundle);
+    let out: HistogramOutputs = histogram(&mut state_bundle, dist_plan);
     to_value(&out).unwrap()
 }
 

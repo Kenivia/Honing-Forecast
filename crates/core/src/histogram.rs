@@ -1,5 +1,6 @@
 use crate::constants::juice_info::JuiceInfo;
 use crate::constants::*;
+use crate::gold_dist::{GoldDist, gold_distribution};
 use crate::js_interface::remove_adv_cache;
 use crate::probe::Probe;
 use crate::state_bundle::StateBundle;
@@ -20,12 +21,14 @@ pub struct HistogramOutputs {
     /// one entry per plan in the payload
     gold_per_plan: Vec<AHashMap<String, f64>>,
     metric_per_plan: Vec<f64>,
+    /// of the payload's dist_plan, when it has one
+    gold_dist: Option<GoldDist>,
 
     juice_info: JuiceInfo,
     state_bundle: StateBundle,
 }
 
-pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
+pub fn histogram(state_bundle: &mut StateBundle, dist_plan: Option<usize>) -> HistogramOutputs {
     state_bundle.apply_chest_state(true);
     state_bundle.update_prob_dist();
     state_bundle.update_cost_dist();
@@ -70,6 +73,10 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
         state_bundle.ui_average_gold_metric(&mut dummy_probe);
     state_bundle.tuning = tuning;
 
+    let gold_dist = dist_plan
+        .filter(|_| !state_bundle.special_state.is_empty())
+        .map(|plan| gold_distribution(state_bundle, plan));
+
     let table = &state_bundle.prep_output.table;
     HistogramOutputs {
         cum_percentiles: table.keyed(&cum_percentiles),
@@ -77,6 +84,7 @@ pub fn histogram(state_bundle: &mut StateBundle) -> HistogramOutputs {
         avg_used: table.keyed(&avg_used),
         gold_per_plan: gold_breakdown.iter().map(|x| table.keyed(x)).collect(),
         metric_per_plan,
+        gold_dist,
         juice_info: state_bundle.prep_output.juice_info.clone(),
         state_bundle: remove_adv_cache(state_bundle),
     }

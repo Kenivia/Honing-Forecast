@@ -2,6 +2,7 @@
 import { computed, onUnmounted, ref, watch } from "vue";
 import Instructions from "./Instructions/Instructions.vue";
 import MaterialDist from "./MaterialDist/MaterialDist.vue";
+import GoldDist from "./MaterialDist/GoldDist.vue";
 import OptimizerControlPanel from "./OptimizerControlPanel/OptimizerControlPanel.vue";
 import StatusInput from "./StatusInput/StatusInput.vue";
 import ChestPanels from "@/Components/Common/ChestPanels.vue";
@@ -56,6 +57,7 @@ onUnmounted(() => {
 <template>
   <StatusInput />
   <MaterialDist />
+  <GoldDist />
   <label class="flex w-fit items-center gap-1 text-sm">
     <input v-model="editing_chests" type="checkbox" />
     Edit chests

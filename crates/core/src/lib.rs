@@ -2,6 +2,7 @@ pub mod advanced_honing;
 pub mod chest;
 pub mod constants;
 pub mod core;
+pub mod gold_dist;
 pub mod helpers;
 pub mod materials;
 

@@ -2,9 +2,9 @@
 //! payload, and a chain replays a player following the optimizer one update at a time.
 //! See `AI notes/Calculator core/Arena.md`.
 
-use crate::one_adv_sim::one_sim;
 use crate::scenario::{Scenario, upgrade};
 use ahash::AHashMap;
+use hf_core::advanced_honing::sim::one_sim;
 use hf_core::advanced_honing::utils::MAX_ADV_STATE;
 use hf_core::chest::Chest;
 use hf_core::constants::ARTISAN_MULTIPLIER;
@@ -496,6 +496,7 @@ pub fn build_with(a: &[f64], seed: u64, full: bool, given: Option<Vec<OneUpgrade
         num_threads: 0,
         metric_type: 1,
         adv_cache: None,
+        dist_plan: None,
     };
 
     // taps already done

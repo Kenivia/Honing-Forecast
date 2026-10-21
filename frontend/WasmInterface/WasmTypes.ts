@@ -27,9 +27,18 @@ export interface HistogramOutputs {
   // one entry per plan in the payload, in payload order
   gold_per_plan: ByLabel<number>[];
   metric_per_plan: number[];
+  gold_dist: GoldDist | null;
 
   juice_info: any;
   state_bundle: StateBundle;
+}
+
+export interface GoldDist {
+  // (gold spent, chance to spend at most that), from luckiest to pity
+  cdf: HistogramPair[];
+  // (gold spent, log10 chance to spend at most / at least that)
+  luckiest: HistogramPair;
+  pity: HistogramPair;
 }
 
 export interface StateBundle {

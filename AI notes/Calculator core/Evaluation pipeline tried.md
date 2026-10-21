@@ -47,3 +47,16 @@ After the speed-up a solve was 2.8 times faster on the `pilot` set and 5.5 times
 - Of the rest: two fifths cumulant evaluations, an eighth the lattice, and the remainder spread thin over rebuilding supports, the memo's keys, `shape`, brute force and the free-tap probabilities.
 - **The annealer itself, outside the evaluator, was 29% of the `pilot` set** and 19% of `explore` (`decide_s`, `Arena.md`), and 12% of `pilot` after its own clean-up (`Optimizer tried.md`, "What a move costs").
 - The cumulant loop is bound by its chain of running sums, which a compiler cannot vectorise. Plain sums against a table of powers could be, at more work an outcome in scalar code. Not tried.
+
+## The gold distribution
+
+The site once drew a gold graph from a Monte Carlo of its own (removed in October 2025). The distribution came back as `gold_dist.rs`.
+
+- **No exact route.** The lattices are per material and the spend needs the joint of every material's total. The one exact case, every material's price flat over its whole range, is a single sum over the upgrades the lattice could answer; with plan 0 it means every owned amount is outside its range, too rare for a path of its own.
+- **Comonotone advanced honing** (taps, juice and scroll at one shared quantile of their exact marginals, stratifiable and with no simulation) was measured against the simulation on every seventh strategy of both 10/20 and 30/40, with and without double balls, gold at the dummy scenario's prices: up to 0.106 off the CDF, worst on grace scroll strategies. Dropped.
+- **Speed, natively, dummy scenario (12 upgrades, 1 advanced, 14 rows, 100k runs):** 96 ms with `StdRng` and every run played out (54 ms the advanced upgrade), 75 ms with `SmallRng` (37 ms), 37 ms with the advanced runs cached, 32 ms skipping the rows an upgrade never uses.
+- **In wasm** (a fresh character, payloads the page built), histogram alone against with the distribution, cache warm / cold:
+  - normal +16 and advanced +20, 48 upgrades of which 12 advanced: Chromium 24 against 138 / 192 ms, Firefox 38 against 175 / 309 ms;
+  - normal +22 and advanced +40, 96 upgrades of which 24 advanced: Chromium 50 against 290 / 334 ms, Firefox 71 against 330 / 383 ms.
+  - At five to six times a histogram, on every intermediate result, it was made final-state only (`Frontend/Wasm contract.md`) rather than optimised. Not tried: looping over runs on the outside, which would keep a run's totals in cache instead of sweeping an 11 MB array an upgrade; 50k runs (about half the time, 0.6% over the curve).
+- **The pity odds underflowed to 0** on the 96 upgrade setup (the luckiest was 2e-311) while they were plain chances; they are log10 now.

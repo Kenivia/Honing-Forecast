@@ -13,3 +13,7 @@ Before/after of changes to the payload and worker protocol. The current state is
 ## One run per hash serves every job of it (Oct 2026)
 
 Before: once the queue kept one job per hash, two jobs with the same payload (Before and After an export that did not touch the character, or now and a snapshot) ran once, but only the job that ran stored its result; the other stayed hollow, and the re-queue after the store ran the same optimization again. After: `queue_jobs` keeps its jobs by hash and a finished run calls every one's `store`. Covered by `tests/unit/wasm/optimizer_jobs.test.ts` and `tests/unit/income-choices/jobs.test.ts`.
+
+## The gold distribution (October 2026)
+
+- Measured on every histogram, the distribution made each run five to six times as long (`Calculator core/Evaluation pipeline tried.md`). It is asked for only while the optimizer is idle now. `start_eval_hist` takes no argument, because `@change="start_eval_hist"` passes the event in; the flag is in `eval_hist`.

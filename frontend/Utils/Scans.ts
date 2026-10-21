@@ -142,6 +142,8 @@ export interface SnapshotResult {
   // average tradable gold spent, and what the leftovers are worth
   gold: number;
   leftover: number;
+  // now and the weeks ahead only: the histogram's chance_within
+  chance_within?: Record<string, number[]>;
 }
 
 export interface CharSnapshot {

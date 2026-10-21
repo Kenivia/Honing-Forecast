@@ -120,7 +120,7 @@ describe("Income page over the fixture", () => {
   });
 
   it("runs the chain in order, each from the one before, on to the crossing", async () => {
-    expect(graphs()).toHaveLength(1);
+    expect(graphs()).toHaveLength(2);
     const series = () => graphs()[0].props("series");
     expect(series().map((s) => s.points)).toEqual([[], [], []]);
 
@@ -133,7 +133,13 @@ describe("Income page over the fixture", () => {
       if (runs.length)
         expect(next.payload.chest_states).toBe(runs.at(-1).state.chest_states);
       const state = fake_state(runs.length);
-      next.store(fake_out(-1_000_000, -700_000), state);
+      next.store(
+        {
+          ...fake_out(-1_000_000, -700_000),
+          chance_within: { "Serca Red": [0.25, 0.5, 0.75] },
+        },
+        state,
+      );
       runs.push({ next, state });
       await nextTick();
     }
@@ -164,6 +170,33 @@ describe("Income page over the fixture", () => {
     expect(ahead[1] - ahead[0]).toBeCloseTo(40_000, -1);
     expect(ahead[11]).toBeLessThan(1_000_000);
     expect(ahead[12]).toBeGreaterThanOrEqual(1_000_000);
+
+    // the chance graph: enabled base materials, of the bands summed up to the chosen one
+    const chance = (label = "Serca Red") =>
+      graphs()[1]
+        .props("series")
+        .find((s) => s.label === label);
+    const icon = (label: string) =>
+      wrapper.find(`[aria-label="Materials"] [aria-label="${label}"]`);
+    expect(graphs()[1].props("percent")).toBe(true);
+    expect(chance().points.map((p) => p.x)).toEqual(weeks);
+    expect(new Set(chance().points.map((p) => p.y))).toEqual(new Set([75]));
+    await wrapper
+      .findAll('[aria-label="Chance bands"] button')
+      .find((b) => b.text() === "Char bound")
+      .trigger("click");
+    expect(chance().points[0].y).toBe(25);
+    await icon("Serca Red").trigger("click");
+    expect(chance()).toBeUndefined();
+    // snapshots keep no chances
+    expect(job(snapshots()[0]).result.chance_within).toBeUndefined();
+    // juices are not offered, nor what the calculator has disabled
+    expect(icon("Lava's Breath").exists()).toBe(false);
+    expect(icon("Serca Blue").exists()).toBe(true);
+    store.active_profile.bound_budgets.enabled["Serca Blue"] = false;
+    await nextTick();
+    expect(icon("Serca Blue").exists()).toBe(false);
+    expect(chance("Serca Blue")).toBeUndefined();
   });
 
   it("finds every run again after the clock moves and the page is left, until the budgets change", async () => {

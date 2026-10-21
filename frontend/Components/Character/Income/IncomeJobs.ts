@@ -70,7 +70,7 @@ export function job_for(
         profile.income_results = kept(
           profile.income_results,
           key,
-          result,
+          { ...result, chance_within: out.chance_within },
           KEEP_AHEAD,
         );
         return;

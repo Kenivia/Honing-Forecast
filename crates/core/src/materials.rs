@@ -112,6 +112,16 @@ impl ValuationPlan {
     }
 }
 
+/// gold value of having used this much, the function the evaluator takes the mean of
+pub fn gold(used: f64, bands: &[(f64, f64)]) -> f64 {
+    let (last_thresh, last_price) = *bands.last().unwrap();
+    let mut out = last_price * (last_thresh - used);
+    for pair in bands.windows(2) {
+        out += (pair[0].1 - pair[1].1) * (pair[1].0 - used).max(0.0);
+    }
+    out
+}
+
 /// Row order and the label every row is addressed by.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaterialTable {

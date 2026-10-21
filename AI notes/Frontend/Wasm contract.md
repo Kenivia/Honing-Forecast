@@ -20,7 +20,8 @@ There is one assembly. `payload_for` builds a payload from a profile and given b
 - tier, event flags and free-tap budget;
 - `chests`, the profile's chest stacks after `process_chests` (`Screen scanner/Manifest.md`, "On the calculator page"), as a record of count, band and options by the stack's key, and `special_label`, the tier's special leap label. Amounts are unrounded and Rust floors the total. Every label is of the tier: Rust panics on any other;
 - `chest_states`, the last optimizer result's, by the same keys, fed back like the free-tap order so the histogram evaluates what the optimizer chose. It arrives from Rust as a JS Map and goes back as one;
-- the previous free-tap order and the advanced-honing cache, fed back in to avoid recomputation.
+- the previous free-tap order and the advanced-honing cache, fed back in to avoid recomputation;
+- `dist_plan`, the plan the histogram draws the gold distribution of (`Calculator core/Evaluation pipeline.md`), or none. Only the calculator sets it, to 0, and only in `start_eval_hist` (`CharWorkerUtils.ts`), never in `build_payload`, so Income's and Choices' hashes do not see it.
 
 **The wasm carries the advanced-honing distributions of an upgrade not yet started.** `crates/wasm/build.rs` works out every strategy of the two fresh starts with double balls (+10/+20 and +30/+40) with the core's own code at build time, so the table cannot go stale, and `add_fresh_adv` puts it into the optimizer's payload when an upgrade is at its start. It is 0.6 MB of the wasm. An upgrade in progress, or one without double balls, is still worked out in the browser.
 
@@ -54,7 +55,8 @@ The histogram's result carries the `state_bundle` it evaluated (with `chest_stat
 1. An input callback starts both workers (the optimizer only if auto-start is on).
 2. The histogram runs immediately against the current state so the graphs update.
 3. Each optimizer message, intermediate or final, stores the new state and triggers another histogram run.
-4. When the user overrides part of the plan ("compare with simple strategies"), only the histogram reruns, and the instructions display the histogram's state instead of the optimizer's (`get_relevant_result`; the in-game order is `sort_upgrades` in `InstructionUtils.ts`). Whether anything is overridden is read off the override controls alone (`get_any_overwritten`).
+4. **The gold distribution is only asked for while the optimizer is idle**: the histogram of the final optimizer result, and any histogram started while nothing runs (auto start off, an override). Not for intermediate results, nor for the histogram `start_all_workers` starts when the optimizer is about to run. The panel (`MaterialDist/GoldDist.vue`, under the material table, on `MaterialGraph` with its columns) keeps the last one, faded, until the next comes.
+5. When the user overrides part of the plan ("compare with simple strategies"), only the histogram reruns, and the instructions display the histogram's state instead of the optimizer's (`get_relevant_result`; the in-game order is `sort_upgrades` in `InstructionUtils.ts`). Whether anything is overridden is read off the override controls alone (`get_any_overwritten`).
 
 **Every gold number shown is the histogram's** (`metric_per_plan`), scored with `Tuning::reference()`, not the optimizer's `metric`, which is of a cheaper evaluator and never displayed (`Calculator core/Evaluation pipeline.md`). The two differ by about 1e-5 of the metric, so they cannot be compared to tell anything.
 

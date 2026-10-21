@@ -200,6 +200,7 @@ pub fn dummy() -> Scenario {
         num_threads: 0,
         metric_type: 1,
         adv_cache: None,
+        dist_plan: None,
     };
 
     let mut second = first.clone();

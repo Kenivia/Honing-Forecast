@@ -7,6 +7,8 @@ import {
   ALL_LABELS,
   BAND_COLORS,
   BAND_NAMES,
+  MATERIALS,
+  NUM_BASE_MATS,
   SPECIAL_LEAP_LABELS,
 } from "@/Utils/Constants";
 import { get_icon_path, metric_to_text } from "@/Utils/Helpers";
@@ -50,6 +52,20 @@ const band = ref(2);
 // free taps are the special leap row, char bound only
 const rows = computed(() => [...ALL_LABELS[tier.value], special.value]);
 const name = (label: string) => (label === special.value ? "Free taps" : label);
+
+// the chance graph: the bands summed up to the one chosen, of the base materials enabled on
+// the calculator less those toggled off
+const CHANCE_BANDS = ["Char bound", "+ Roster bound", "+ Tradable"];
+const chance_band = ref(2);
+const chance_rows = computed(() =>
+  ALL_LABELS[tier.value]
+    .slice(0, NUM_BASE_MATS)
+    .filter((label) => profile.value.bound_budgets.enabled[label] !== false),
+);
+const hidden = ref(new Set<string>());
+function toggle(label: string) {
+  if (!hidden.value.delete(label)) hidden.value.add(label);
+}
 
 // the time, a minute at most behind
 const clock = useNow({ interval: 60_000 });
@@ -246,12 +262,13 @@ const future = computed(() => {
 const range = computed(() => range_of(now.value, future.value.length));
 const week_lines = computed(() => resets(...range.value));
 
-// now and the weeks ahead, as far as optimized
-const metric_series = computed((): Series[] => {
-  // drawn from the time it is, a week apart
-  const done = [now_entry.value, ...future.value]
+// now and the weeks ahead as far as optimized, drawn from the time it is, a week apart
+const done = computed(() =>
+  [now_entry.value, ...future.value]
     .map((entry, weeks) => ({ entry, x: now.value + weeks * WEEK_MS }))
-    .filter(({ entry }) => entry.job.result);
+    .filter(({ entry }) => entry.job.result),
+);
+const metric_series = computed((): Series[] => {
   const line = (
     label: string,
     color: string,
@@ -261,7 +278,7 @@ const metric_series = computed((): Series[] => {
     label,
     color,
     dashed,
-    points: done.map(({ entry, x }) => ({ x, y: y(entry) })),
+    points: done.value.map(({ entry, x }) => ({ x, y: y(entry) })),
   });
   return [
     line("Avg tradable gold spent", "--gold", cost),
@@ -269,6 +286,21 @@ const metric_series = computed((): Series[] => {
     line("Leftovers + tradable gold", "--gold", covered, true),
   ];
 });
+// chance the bands up to the chosen one cover every upgrade, of runs that have it
+const chance_series = computed((): Series[] =>
+  chance_rows.value
+    .filter((label) => !hidden.value.has(label))
+    .map((label) => ({
+      label,
+      color: MATERIALS[label].color,
+      points: done.value
+        .filter(({ entry }) => entry.job.result.chance_within?.[label])
+        .map(({ entry, x }) => ({
+          x,
+          y: 100 * entry.job.result.chance_within[label][chance_band.value],
+        })),
+    })),
+);
 
 // one run at a time, oldest first, each from the state of the one before
 const chain = computed(() =>
@@ -339,18 +371,6 @@ const KIND_COLORS = {
     <div class="card-shell card-body flex w-full flex-col gap-2 text-sm">
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div class="card-title">Income</div>
-        <div class="flex gap-1" role="group" aria-label="Bands">
-          <button
-            v-for="(name, at) in BAND_NAMES"
-            :key="name"
-            class="generic-button"
-            :class="{ 'bg-(--bg-very-bright)!': band === at }"
-            :style="{ color: `var(${BAND_COLORS[at]})` }"
-            @click="band = at"
-          >
-            {{ name }}
-          </button>
-        </div>
         <button
           class="generic-button"
           @click="take_snapshot(roster_config, profile.roster_id, 'Manual')"
@@ -376,6 +396,48 @@ const KIND_COLORS = {
         :range="range"
         :resets="week_lines"
         :now="now"
+      />
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span class="text-(--text-bright)">
+          Chance to succeed all upgrades within
+        </span>
+        <div class="flex gap-1" role="group" aria-label="Chance bands">
+          <button
+            v-for="(name, at) in CHANCE_BANDS"
+            :key="name"
+            class="generic-button"
+            :class="{ 'bg-(--bg-very-bright)!': chance_band === at }"
+            :style="{ color: `var(${BAND_COLORS[at]})` }"
+            @click="chance_band = at"
+          >
+            {{ name }}
+          </button>
+        </div>
+        <div class="flex flex-wrap gap-1" role="group" aria-label="Materials">
+          <button
+            v-for="label in chance_rows"
+            :key="label"
+            class="barebone-button"
+            :class="{ 'opacity-40': hidden.has(label) }"
+            :aria-pressed="!hidden.has(label)"
+            :aria-label="label"
+            :title="label"
+            @click="toggle(label)"
+          >
+            <img
+              :src="get_icon_path(label)"
+              class="generic-icon h-6 w-6"
+              :alt="label"
+            />
+          </button>
+        </div>
+      </div>
+      <IncomeGraph
+        :series="chance_series"
+        :range="range"
+        :resets="week_lines"
+        :now="now"
+        percent
       />
       <span class="text-(--text-muted)">
         Snapshots are taken by hand, and before and after every scanner export.
@@ -534,8 +596,17 @@ const KIND_COLORS = {
       aria-label="Income table"
     >
       <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-        <div class="card-title" :style="{ color: `var(${BAND_COLORS[band]})` }">
-          {{ BAND_NAMES[band] }}
+        <div class="flex gap-1" role="group" aria-label="Bands">
+          <button
+            v-for="(name, at) in BAND_NAMES"
+            :key="name"
+            class="generic-button"
+            :class="{ 'bg-(--bg-very-bright)!': band === at }"
+            :style="{ color: `var(${BAND_COLORS[at]})` }"
+            @click="band = at"
+          >
+            {{ name }}
+          </button>
         </div>
         <span class="text-(--text-muted)">
           {{

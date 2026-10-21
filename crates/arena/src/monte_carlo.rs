@@ -4,15 +4,15 @@
 //! the upgrade's own tap distribution, so this checks everything built on top of that
 //! distribution, not the distribution itself.
 
-use crate::one_adv_sim::one_sim;
-use hf_core::materials::NUM_BASE_MATS;
+use hf_core::advanced_honing::sim::one_sim;
+use hf_core::gold_dist::tap_map_generator;
+use hf_core::materials::{NUM_BASE_MATS, gold};
 use hf_core::probe::Probe;
 use hf_core::state_bundle::StateBundle;
 use hf_core::tuning::Tuning;
 use hf_core::upgrade::Upgrade;
 use itertools::izip;
 use rand::Rng;
-use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
 const BATCH: usize = 100_000;
@@ -34,30 +34,6 @@ pub struct McRow {
     pub se: f64,
     pub z: f64,
     pub pass: bool,
-}
-
-/// Instead of actually sampling the distribution, we guarantee that every value has exactly the expected number of occurances
-fn tap_map_generator<R: Rng>(count_limit: usize, prob_dist: &[f64], rng: &mut R) -> Vec<usize> {
-    let mut tap_map: Vec<usize> = Vec::with_capacity(count_limit);
-
-    let mut current_point: f64 = rng.random::<f64>();
-    let mut cum_prob: f64 = 0.0;
-
-    for (i, &p) in prob_dist.iter().enumerate() {
-        cum_prob += p;
-        let target_boundary: f64 = cum_prob * (count_limit as f64);
-        while current_point < target_boundary && tap_map.len() < count_limit {
-            tap_map.push(i);
-            current_point += 1.0;
-        }
-    }
-
-    // the distribution may sum to slightly under 1
-    while tap_map.len() < count_limit {
-        tap_map.push(prob_dist.len() - 1);
-    }
-    tap_map.shuffle(rng);
-    tap_map
 }
 
 fn sample_truncated_geometric<R: Rng>(p: f64, max_taps: i64, rng: &mut R) -> i64 {
@@ -210,16 +186,6 @@ pub fn single_outcomes(state_bundle: &StateBundle) -> Vec<(f64, Vec<f64>)> {
         .collect()
 }
 
-/// gold value of having used this much, the function the evaluator takes the mean of
-pub fn gold(used: f64, bands: &[(f64, f64)]) -> f64 {
-    let (last_thresh, last_price) = *bands.last().unwrap();
-    let mut out = last_price * (last_thresh - used);
-    for pair in bands.windows(2) {
-        out += (pair[0].1 - pair[1].1) * (pair[1].0 - used).max(0.0);
-    }
-    out
-}
-
 /// One row per material and one for the total, under the optimizer's plan, against the reference
 /// evaluator, not the one the state was optimized with.
 pub fn check<R: Rng>(state_bundle: &mut StateBundle, spec: &McSpec, rng: &mut R) -> Vec<McRow> {
@@ -271,4 +237,51 @@ pub fn check<R: Rng>(state_bundle: &mut StateBundle, spec: &McSpec, rng: &mut R)
             }
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scenario::dummy;
+    use hf_core::gold_dist::{gold_distribution, gold_samples};
+    use hf_core::optimizer::scramble;
+    use rand::SeedableRng;
+    use rand::rngs::StdRng;
+
+    /// the sampled spend against the metric and against free taps played out by the game rules
+    #[test]
+    fn gold_distribution_matches_monte_carlo() {
+        const N: usize = 100_000;
+        for payload in dummy().steps {
+            let mut rng = StdRng::seed_from_u64(1);
+            let mut sb = scramble(&mut rng, StateBundle::init_from_payload(payload), 20);
+            sb.tuning = Tuning::reference();
+            let (metric_per_plan, _, _) = sb.ui_average_gold_metric(&mut Probe::default());
+            let bands = &sb.prep_output.bands[0];
+            let ours = gold_samples(&sb, 0, N, &mut rng);
+
+            let n = N as f64;
+            let mean = ours.iter().sum::<f64>() / n;
+            let var = ours.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (n - 1.0);
+            let diff = mean + metric_per_plan[0];
+            assert!(
+                diff.abs() <= 4.0 * (var / n).sqrt() + 1e-3 * mean.abs().max(1.0),
+                "{mean} {}",
+                -metric_per_plan[0]
+            );
+
+            let mut theirs: Vec<f64> = simulate(N, &sb, &mut rng)
+                .iter()
+                .map(|row| -row.iter().zip(bands).map(|(u, b)| gold(*u, b)).sum::<f64>())
+                .collect();
+            theirs.sort_by(f64::total_cmp);
+            let dist = gold_distribution(&sb, 0);
+            for &(x, chance) in &dist.cdf[1..dist.cdf.len() - 1] {
+                let sim = theirs.partition_point(|&s| s <= x) as f64 / n;
+                assert!((chance - sim).abs() < 0.01, "{x} {chance} {sim}");
+            }
+            assert!(ours[0] >= dist.luckiest.0 - 1e-6 && ours[N - 1] <= dist.pity.0 + 1e-6);
+            assert!(dist.luckiest.1.is_finite() && dist.pity.1.is_finite());
+        }
+    }
 }
