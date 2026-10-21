@@ -15,39 +15,37 @@ describe("fit", () => {
   });
 
   it("decreases give a negative slope", () => {
-    const line = fit([
+    const slope = fit([
       { x: 0, y: 100 },
       { x: WEEK_MS, y: 70 },
     ]);
-    expect(line.slope * WEEK_MS).toBeCloseTo(-30);
+    expect(slope * WEEK_MS).toBeCloseTo(-30);
   });
 
   it("a gap is just a longer step", () => {
-    const line = fit([
+    const slope = fit([
       { x: 0, y: 0 },
       { x: 10 * WEEK_MS, y: 50 },
     ]);
-    expect(line.slope * WEEK_MS).toBeCloseTo(5);
+    expect(slope * WEEK_MS).toBeCloseTo(5);
   });
 
-  it("a run of equal times adds no slope but keeps its own level", () => {
-    const line = fit([
+  it("a run of equal times adds no slope", () => {
+    const slope = fit([
       { x: 0, y: 0 },
       { x: WEEK_MS, y: 10 },
       { x: 2 * WEEK_MS, y: 500, breaks: true },
       { x: 2 * WEEK_MS, y: 700 },
     ]);
-    expect(line.slope * WEEK_MS).toBeCloseTo(10);
-    expect(line.runs).toHaveLength(2);
-    expect(line.runs[1].at(2 * WEEK_MS)).toBeCloseTo(600);
+    expect(slope * WEEK_MS).toBeCloseTo(10);
   });
 
   it("a break on the first point starts no extra run", () => {
-    const line = fit([
+    const slope = fit([
       { x: 0, y: 0, breaks: true },
       { x: WEEK_MS, y: 10 },
     ]);
-    expect(line.runs).toHaveLength(1);
+    expect(slope * WEEK_MS).toBeCloseTo(10);
   });
 
   it("every run a single point is no line", () => {
@@ -59,13 +57,12 @@ describe("fit", () => {
     ).toBeNull();
   });
 
-  it("a run's ends are its first and last points as given", () => {
-    const line = fit([
+  it("points out of time order fit the same", () => {
+    const slope = fit([
       { x: WEEK_MS, y: 10 },
       { x: 0, y: 0 },
     ]);
-    expect([line.runs[0].from, line.runs[0].to]).toEqual([WEEK_MS, 0]);
-    expect(line.slope * WEEK_MS).toBeCloseTo(10);
+    expect(slope * WEEK_MS).toBeCloseTo(10);
   });
 });
 
@@ -133,8 +130,8 @@ describe("owned_at", () => {
 });
 
 describe("value_of", () => {
-  it("an unknown label is 0 either way", () => {
-    expect(value_of({}, "Red", 2, true)).toBe(0);
-    expect(value_of({}, "Red", 1, false)).toBe(0);
+  it("one band, an unknown label 0", () => {
+    expect(value_of({ Red: [1, 2, 3] }, "Red", 1)).toBe(2);
+    expect(value_of({}, "Red", 1)).toBe(0);
   });
 });

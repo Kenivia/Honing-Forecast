@@ -90,7 +90,7 @@ describe("Income page over the fixture", () => {
     expect(rate("Gold")).toBeCloseTo(60_000, -1);
     expect(rate("Serca Blue")).toBeCloseTo(50_000, -1);
     expect(rate("Free taps")).toBeCloseTo(20, 0);
-    await band("+ Roster bound");
+    await band("Roster bound");
     expect(rate("Silver")).toBeCloseTo(2_000_000, -2);
   });
 
@@ -106,30 +106,10 @@ describe("Income page over the fixture", () => {
     expect(rate("Gold")).toBeGreaterThan(100_000);
   });
 
-  it("the material graph shows one material at a time", async () => {
-    expect(
-      graphs()[0]
-        .props("series")
-        .map((s) => s.label),
-    ).toEqual(["Gold"]);
-    await wrapper.find('[aria-label="Serca Red"]').trigger("click");
-    expect(
-      graphs()[0]
-        .props("series")
-        .map((s) => s.label),
-    ).toEqual(["Serca Red"]);
-    const pressed = wrapper
-      .findAll('[aria-label="Materials"] button')
-      .filter((b) => b.attributes("aria-pressed") === "true");
-    expect(pressed.map((b) => b.attributes("aria-label"))).toEqual([
-      "Serca Red",
-    ]);
-  });
-
   // one test: now's and the weeks' results are kept for the session, across tests
   it("runs the chain in order, each from the one before, then the metrics graph", async () => {
-    const metrics = () => graphs()[1].props("series");
-    expect(graphs()[1].props("shared")).toBe(true);
+    expect(graphs()).toHaveLength(1);
+    const metrics = () => graphs()[0].props("series");
     expect(metrics().map((s) => [s.points, s.line])).toEqual([
       [[], []],
       [[], []],

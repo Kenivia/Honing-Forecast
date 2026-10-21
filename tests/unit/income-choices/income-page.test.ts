@@ -110,7 +110,7 @@ describe("Income page", () => {
     expect(text_of("Red income")).toBe("37.5");
     expect(text_of("Red owned")).toBe("75");
     expect(wrapper.text()).toContain("2 steps over 14.0 days");
-    await band("+ Tradable");
+    await band("Tradable");
     expect(text_of("Red income")).toBe("0");
   });
 
@@ -233,7 +233,7 @@ describe("Income page", () => {
   it("rendering writes nothing to the store", async () => {
     store.active_profile.income_manual = true;
     open();
-    await band("+ Roster bound");
+    await band("Roster bound");
     expect(store.roster_config.roster_income).toEqual({});
   });
 
@@ -244,10 +244,10 @@ describe("Income page", () => {
     await band("Char bound");
     expect(rows()).not.toContain("Silver");
     expect(rows()).toContain("Free taps");
-    await band("+ Roster bound");
+    await band("Roster bound");
     expect(rows()).toContain("Silver");
     expect(rows()).not.toContain("Free taps");
-    await band("+ Tradable");
+    await band("Tradable");
     expect(rows()).not.toContain("Silver");
     expect(rows()).not.toContain("Free taps");
     expect(rows()).toContain("Red");

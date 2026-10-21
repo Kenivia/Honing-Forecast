@@ -23,15 +23,12 @@ Chart.register(
   annotationPlugin,
 );
 
-// Values over time: each series' points and dashed line (a fit, or a projection with points
-// when joined), each on its own y axis unless shared.
+// Values over time on one y axis: each series' points joined, then a dashed projection.
 export interface Series {
   label: string;
   color: string;
-  points: { x: number; y: number; provisional: boolean }[];
-  // runs of a line, apart where y is null
-  line: { x: number; y: number | null }[];
-  joined?: boolean;
+  points: { x: number; y: number }[];
+  line: { x: number; y: number }[];
 }
 
 const props = defineProps<{
@@ -40,7 +37,6 @@ const props = defineProps<{
   resets: number[];
   now: number;
   selected: number | null;
-  shared?: boolean;
 }>();
 // the plot area in px, so the timeline can line up with it
 const emit = defineEmits<{ area: [left: number, right: number] }>();
@@ -68,41 +64,33 @@ function config() {
       ticks: { color: muted, callback: (x: number) => date(x) },
       grid: { color: border },
     },
-  };
-  props.series.forEach((series, at) => {
-    const color = cssVar(series.color, "#f0f0f0");
-    const axis = props.shared ? "y0" : `y${at}`;
-    scales[axis] ??= {
+    y: {
       type: "linear",
-      position: at % 2 ? "right" : "left",
-      ticks: { color, callback: amount },
-      grid: { display: at === 0, color: border },
-    };
+      ticks: { color: muted, callback: amount },
+      grid: { color: border },
+    },
+  };
+  for (const series of props.series) {
+    const color = cssVar(series.color, "#f0f0f0");
     datasets.push({
       label: series.label,
       data: series.points,
-      yAxisID: axis,
-      showLine: !!series.joined,
       borderColor: color,
       borderWidth: 1.5,
-      backgroundColor: series.points.map((p) =>
-        p.provisional ? "transparent" : color,
-      ),
+      backgroundColor: color,
       pointRadius: 4,
       pointHoverRadius: 6,
     });
     datasets.push({
-      label: `${series.label} estimate`,
+      label: `${series.label} projected`,
       data: series.line,
-      yAxisID: axis,
       borderColor: color,
       borderDash: [6, 4],
       borderWidth: 1.5,
       backgroundColor: color,
-      pointRadius: series.joined ? 3 : 0,
-      pointHitRadius: series.joined ? 3 : 0,
+      pointRadius: 3,
     });
-  });
+  }
   const line = (x: number, color: string, label?: string) => ({
     type: "line",
     xMin: x,
@@ -131,15 +119,13 @@ function config() {
       interaction: { mode: "nearest" as const, intersect: true },
       plugins: {
         legend: {
-          display: !!props.shared,
           labels: {
             color: muted,
             boxHeight: 2,
-            filter: (item) => !item.text.endsWith(" estimate"),
+            filter: (item) => !item.text.endsWith(" projected"),
           },
         },
         tooltip: {
-          filter: (item) => item.dataset.pointRadius !== 0,
           callbacks: {
             title: (items) => new Date(items[0].parsed.x).toLocaleString(),
             label: (item) => `${item.dataset.label}: ${amount(item.parsed.y)}`,

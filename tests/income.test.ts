@@ -20,12 +20,12 @@ equal(
 );
 
 section("fit");
-const line = fit([
+const slope = fit([
   { x: 0, y: 10 },
   { x: WEEK_MS, y: 30 },
   { x: 2 * WEEK_MS, y: 50 },
 ]);
-check("slope per week", Math.abs(line.slope * WEEK_MS - 20) < 1e-9);
+check("slope per week", Math.abs(slope * WEEK_MS - 20) < 1e-9);
 check("one point is no line", fit([{ x: 0, y: 1 }]) === null);
 // a spend between the runs: one slope, each run its own intercept
 const runs = fit([
@@ -34,19 +34,14 @@ const runs = fit([
   { x: 2 * WEEK_MS, y: 10, breaks: true },
   { x: 3 * WEEK_MS, y: 30 },
 ]);
-check("one slope over two runs", Math.abs(runs.slope * WEEK_MS - 20) < 1e-9);
-equal(
-  "each run its own line",
-  runs.runs.map((run) => Math.round(run.at(run.from))),
-  [100, 10],
-);
+check("one slope over two runs", Math.abs(runs * WEEK_MS - 20) < 1e-9);
 check(
   "a lone point adds no slope",
   fit([
     { x: 0, y: 0 },
     { x: WEEK_MS, y: 5 },
     { x: 2 * WEEK_MS, y: 999, breaks: true },
-  ]).slope *
+  ]) *
     WEEK_MS ===
     5,
 );
@@ -60,7 +55,7 @@ set_cell(config.tradable_mats_owned[0], "Fusion", "10");
 set_cell(profile.special_budget, "Serca Special Leap", "7");
 const owned = owned_at(snapshot_of(config, 0, "Manual"), profile.id, 1);
 equal("T4 converted, tradable into roster", owned["Serca Fusion"], [5, 2, 0]);
-equal("cumulative", value_of(owned, "Serca Fusion", 1, true), 7);
+equal("one band", value_of(owned, "Serca Fusion", 1), 2);
 equal("free taps are char bound", owned["Serca Special Leap"], [7, 0, 0]);
 
 section("snapshots survive a reload");

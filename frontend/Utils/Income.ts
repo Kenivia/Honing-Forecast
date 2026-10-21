@@ -1,4 +1,4 @@
-import { ALL_LABELS, NUM_BANDS, SPECIAL_LEAP_LABELS } from "./Constants";
+import { ALL_LABELS, SPECIAL_LEAP_LABELS } from "./Constants";
 import { chest_gains, process_chests } from "./Chest";
 import type { Snapshot, SnapshotResult } from "./Scans";
 import { merge_lower_tier } from "@/WasmInterface/PayloadBuilder";
@@ -67,18 +67,8 @@ export function owned_at(
   return out;
 }
 
-// one band, or the bands up to it summed
-export function value_of(
-  owned: Owned,
-  label: string,
-  band: number,
-  cumulative: boolean,
-) {
-  const bands = owned[label] ?? Array(NUM_BANDS).fill(0);
-  return cumulative
-    ? bands.slice(0, band + 1).reduce((a, b) => a + b, 0)
-    : bands[band];
-}
+export const value_of = (owned: Owned, label: string, band: number) =>
+  owned[label]?.[band] ?? 0;
 
 export interface Point {
   x: number;
@@ -97,25 +87,15 @@ export function fit(points: Point[]) {
   }
   let sxx = 0;
   let sxy = 0;
-  const means = runs.map((run) => {
+  for (const run of runs) {
     const mx = run.reduce((a, p) => a + p.x, 0) / run.length;
     const my = run.reduce((a, p) => a + p.y, 0) / run.length;
     for (const p of run) {
       sxx += (p.x - mx) ** 2;
       sxy += (p.x - mx) * (p.y - my);
     }
-    return { mx, my };
-  });
-  if (!sxx) return null;
-  const slope = sxy / sxx;
-  return {
-    slope,
-    runs: runs.map((run, at) => ({
-      from: run[0].x,
-      to: run[run.length - 1].x,
-      at: (x: number) => means[at].my + slope * (x - means[at].mx),
-    })),
-  };
+  }
+  return sxx ? sxy / sxx : null;
 }
 
 // Cells that do not exist in game: silver is roster bound only, free taps char bound only
@@ -201,28 +181,3 @@ export function steps_of(points: { at: number; breaks?: boolean }[]) {
   });
   return steps ? { steps, days } : null;
 }
-
-// The fitted line, each run over its own points and the last on to `end`; runs apart by a null.
-export function estimate_line(points: Point[], end: number) {
-  const runs = fit(points)?.runs ?? [];
-  return runs.flatMap((run, at) => [
-    { x: run.from, y: run.at(run.from) as number | null },
-    ...(at === runs.length - 1
-      ? [{ x: end, y: run.at(end) }]
-      : [
-          { x: run.to, y: run.at(run.to) },
-          { x: run.to, y: null },
-        ]),
-  ]);
-}
-
-// a typed rate per week, from now's value
-export const manual_line = (
-  from: number,
-  rate: number,
-  now: number,
-  end: number,
-) => [
-  { x: now, y: from as number | null },
-  { x: end, y: from + (rate * (end - now)) / WEEK_MS },
-];

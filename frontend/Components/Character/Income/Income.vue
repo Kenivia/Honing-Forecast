@@ -6,7 +6,7 @@ import { useRosterStore } from "@/Stores/RosterConfig";
 import {
   ALL_LABELS,
   BAND_COLORS,
-  MATERIALS,
+  BAND_NAMES,
   SPECIAL_LEAP_LABELS,
 } from "@/Utils/Constants";
 import { get_icon_path, metric_to_text } from "@/Utils/Helpers";
@@ -21,10 +21,8 @@ import {
 } from "@/Utils/Scans";
 import {
   WEEK_MS,
-  estimate_line,
   fit,
   has_band,
-  manual_line,
   chain_of,
   next_in_chain,
   owned_at,
@@ -45,15 +43,10 @@ const profile = active_profile;
 const tier = computed(() => profile.value.tier);
 const special = computed(() => SPECIAL_LEAP_LABELS[tier.value]);
 
-const BAND_NAMES = ["Char bound", "+ Roster bound", "+ Tradable"];
-const TABLE_BANDS = ["Char bound", "Roster bound", "Tradable"];
 const band = ref(2);
 // free taps are the special leap row, char bound only
 const rows = computed(() => [...ALL_LABELS[tier.value], special.value]);
 const name = (label: string) => (label === special.value ? "Free taps" : label);
-const shown = ref("Gold");
-const color = (label: string) =>
-  label === special.value ? "--free-tap" : MATERIALS[label].color;
 
 // the time, a minute at most behind
 const clock = useNow({ interval: 60_000 });
@@ -142,17 +135,16 @@ const band_rows = computed(() =>
   rows.value.filter((label) => has_band(label, band.value)),
 );
 
-const points = (label: string, band_at: number, cumulative: boolean) =>
-  series_entries.value.map((entry) => ({
-    x: entry.snapshot.at,
-    y: value_of(entry.owned, label, band_at, cumulative),
-    breaks: entry.snapshot.breaks,
-    provisional: !entry.job.result,
-  }));
 // per week, of one band
 const auto_rate = (label: string, band_at: number) => {
-  const line = fit(points(label, band_at, false));
-  return line ? line.slope * WEEK_MS : null;
+  const slope = fit(
+    series_entries.value.map((entry) => ({
+      x: entry.snapshot.at,
+      y: value_of(entry.owned, label, band_at),
+      breaks: entry.snapshot.breaks,
+    })),
+  );
+  return slope === null ? null : slope * WEEK_MS;
 };
 
 // switching to manual fills what was never typed with the estimate
@@ -174,23 +166,6 @@ function set_manual_mode(manual: boolean) {
 // ============================================================================
 
 const range = computed(() => range_of(snapshots.value[0]?.at, now.value));
-const series = computed((): Series[] => {
-  const label = shown.value;
-  const data = points(label, band.value, true);
-  const end = range.value[1];
-  const rate = [0, 1, 2]
-    .slice(0, band.value + 1)
-    .reduce((sum, at) => sum + manual_rate(label, at), 0);
-  const line = profile.value.income_manual
-    ? manual_line(
-        value_of(now_entry.value.owned, label, band.value, true),
-        rate,
-        now.value,
-        end,
-      )
-    : estimate_line(data, end);
-  return [{ label: name(label), color: color(label), points: data, line }];
-});
 // the two metrics of each optimized point under the current upgrades, then from now on ahead
 const metric_series = computed((): Series[] => {
   const done = series_entries.value.filter((entry) => entry.job.result);
@@ -200,11 +175,9 @@ const metric_series = computed((): Series[] => {
   const metric = (label: string, color: string, key: "gold" | "leftover") => ({
     label,
     color,
-    joined: true,
     points: done.map((entry) => ({
       x: entry.snapshot.at,
       y: entry.job.result[key],
-      provisional: false,
     })),
     line: ahead.map((entry) => ({
       x: entry.snapshot.at,
@@ -346,30 +319,11 @@ const KIND_COLORS = {
         </button>
         <span v-if="runs_left" class="text-(--text-muted)">
           Optimizing {{ runs_left }} run{{ runs_left > 1 ? "s" : "" }}
-          (hollow points until then)
         </span>
       </div>
-      <div class="flex flex-wrap gap-1" role="group" aria-label="Materials">
-        <button
-          v-for="label in rows"
-          :key="label"
-          class="barebone-button"
-          :class="{ 'opacity-40': shown !== label }"
-          :aria-pressed="shown === label"
-          :aria-label="name(label)"
-          :title="name(label)"
-          @click="shown = label"
-        >
-          <img
-            :src="get_icon_path(label)"
-            class="generic-icon h-6 w-6"
-            :alt="name(label)"
-          />
-        </button>
-      </div>
-
+      <span class="text-(--text-bright)">With the current upgrades</span>
       <IncomeGraph
-        :series="series"
+        :series="metric_series"
         :range="range"
         :resets="week_lines"
         :now="now"
@@ -408,15 +362,6 @@ const KIND_COLORS = {
           @click="click(snapshot)"
         ></button>
       </div>
-      <span class="text-(--text-bright)">With the current upgrades</span>
-      <IncomeGraph
-        :series="metric_series"
-        :range="range"
-        :resets="week_lines"
-        :now="now"
-        :selected="selected?.at ?? null"
-        shared
-      />
       <span class="text-(--text-muted)">
         Snapshots are taken by hand, and before and after every scanner export.
         The estimate uses those after an export and those taken by hand that are
@@ -532,7 +477,7 @@ const KIND_COLORS = {
               <span class="col-span-5 text-(--text-muted)">
                 {{ chest.title }}
                 <span :style="{ color: `var(${BAND_COLORS[chest.band]})` }">
-                  {{ TABLE_BANDS[chest.band] }}
+                  {{ BAND_NAMES[chest.band] }}
                 </span>
                 {{ chest.from.toLocaleString() }} →
                 {{ chest.to.toLocaleString() }}
@@ -550,7 +495,7 @@ const KIND_COLORS = {
     >
       <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
         <div class="card-title" :style="{ color: `var(${BAND_COLORS[band]})` }">
-          {{ TABLE_BANDS[band] }}
+          {{ BAND_NAMES[band] }}
         </div>
         <span class="text-(--text-muted)">
           {{
@@ -588,7 +533,7 @@ const KIND_COLORS = {
             {{ name(label) }}
           </span>
           <span :aria-label="`${name(label)} owned`">
-            {{ number(value_of(now_entry.owned, label, band, false)) }}
+            {{ number(value_of(now_entry.owned, label, band)) }}
           </span>
           <span class="flex items-center gap-2">
             <template v-if="profile.income_manual">

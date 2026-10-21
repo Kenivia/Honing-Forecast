@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   chain_of,
-  estimate_line,
   has_band,
-  manual_line,
   MIN_SPAN,
   next_in_chain,
   projected,
@@ -96,38 +94,6 @@ describe("range_of / steps_of", () => {
         { at: 6 * day },
       ]),
     ).toEqual({ steps: 2, days: 3 });
-  });
-});
-
-describe("lines", () => {
-  it("a run each, apart by a null, the last on to the end", () => {
-    const line = estimate_line(
-      [
-        { x: 0, y: 0 },
-        { x: WEEK_MS, y: 10 },
-        { x: 2 * WEEK_MS, y: 100, breaks: true },
-        { x: 3 * WEEK_MS, y: 110 },
-      ],
-      4 * WEEK_MS,
-    );
-    expect(line.map((p) => [p.x / WEEK_MS, p.y])).toEqual([
-      [0, 0],
-      [1, 10],
-      [1, null],
-      [2, 100],
-      [4, 120],
-    ]);
-  });
-
-  it("no fit, no line", () => {
-    expect(estimate_line([{ x: 0, y: 1 }], WEEK_MS)).toEqual([]);
-  });
-
-  it("manual: from now's value at the typed rate", () => {
-    expect(manual_line(50, 7, 0, 2 * WEEK_MS)).toEqual([
-      { x: 0, y: 50 },
-      { x: 2 * WEEK_MS, y: 64 },
-    ]);
   });
 });
 
