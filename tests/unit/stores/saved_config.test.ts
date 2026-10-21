@@ -37,6 +37,7 @@ describe("to_saved / from_saved: V8-only fields", () => {
     expect(back.scan_pages).toEqual(config.scan_pages);
     expect(back.snapshots).toEqual(config.snapshots);
     expect(back.roster_income).toEqual(config.roster_income);
+    expect(back.custom_choices).toEqual(config.custom_choices);
     expect(back.active_profile_index).toBe(2);
     expect(back.all_regions).toEqual({ 0: "nae", 1: "euc" });
     // fixed point from the first load on (the load normalises grids)
@@ -66,6 +67,7 @@ describe("to_saved / from_saved: V8-only fields", () => {
       "scan_pages",
       "snapshots",
       "roster_income",
+      "custom_choices",
     ])
       delete saved[key];
     for (const p of saved.profiles)
@@ -81,6 +83,7 @@ describe("to_saved / from_saved: V8-only fields", () => {
     expect(back.scan_pages).toEqual([]);
     expect(back.snapshots).toEqual([]);
     expect(back.roster_income).toEqual({});
+    expect(back.custom_choices).toEqual({});
     expect(back.profiles[0].chests).toEqual([]);
     expect(back.profiles[0].income_manual).toBe(false);
     expect(back.profiles[0].bound_income).toEqual({});

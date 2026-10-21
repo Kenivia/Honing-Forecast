@@ -74,6 +74,9 @@ export function rich_config(): RosterConfig {
   config.roster_chests = { 0: [chest("Roster chest", 1, 2)], 1: [] };
   config.scan_pages = [scan_page(0, null), scan_page(1, c.id)];
   config.snapshots = [snapshot(0, a.id), snapshot(1, c.id)];
+  config.custom_choices = {
+    0: { band: 1, names: ["A", "B"], options: [{ Red: 5, Gold: -10 }, {}] },
+  };
   config.roster_income = {
     0: [{ Red: 1000 }, { Blue: 50 }],
     1: [{}, { Leaps: 2 }],

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Sidebar from "@/Components/Common/Sidebar.vue";
+import Spinner from "@/Components/Common/Spinner.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import {
   ALL_VERSIONS,
@@ -51,7 +52,10 @@ const html = computedAsync(
 
     <template #main>
       <div class="card-shell prose-card">
-        <div class="my-20 text-center text-9xl" v-if="loading">Loading...</div>
+        <Spinner
+          v-if="loading"
+          class="mx-auto my-20 h-24 w-24 text-(--text-muted)"
+        />
         <div v-else-if="html === null" class="text-(--warning)">
           Could not load this change log.
         </div>

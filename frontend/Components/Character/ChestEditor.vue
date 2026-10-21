@@ -85,8 +85,9 @@ function add_chest() {
     @count="set_count"
     @remove="remove"
   >
+    <template #controls><slot name="controls" /></template>
     <div class="flex flex-col gap-2 pt-2">
-      <div class="card-title">Add a chest</div>
+      <div class="font-semibold text-(--text-bright)">Add a chest</div>
       <div class="flex flex-wrap items-center gap-2">
         <input
           v-model="draft.count"

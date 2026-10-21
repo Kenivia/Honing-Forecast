@@ -308,22 +308,28 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
       <div class="mats-row h-fit! items-end! border-b-(--border-main)!">
         <div class="flex flex-row justify-between">
           <QuestionMark :text="tickbox_tooltip" class="mb-1" />
-          <select
-            aria-label="Chance column"
-            class="selector mr-19 w-fit"
-            :value="active_profile.chance_band"
-            :style="{ color: selected_chance_color }"
-            @change="change_chance_band"
-          >
-            <option
-              v-for="(text, band) in OWNED_TITLES"
-              :key="band"
-              :value="band"
-              :style="{ color: CHANCE_COLORS[band] }"
+          <div class="relative mr-19 w-fit">
+            <select
+              aria-label="Chance column"
+              class="selector w-fit"
+              :value="active_profile.chance_band"
+              :style="{ color: selected_chance_color }"
+              @change="change_chance_band"
             >
-              {{ text }}
-            </option>
-          </select>
+              <option
+                v-for="(text, band) in OWNED_TITLES"
+                :key="band"
+                :value="band"
+                :style="{ color: CHANCE_COLORS[band] }"
+              >
+                {{ text }}
+              </option>
+            </select>
+            <QuestionMark
+              text="The &quot;+N from ...&quot; amounts are not included in the input box on the left."
+              class="absolute bottom-0 left-full mb-1 ml-1"
+            />
+          </div>
         </div>
         <!-- <div class="flex flex-col items-end text-(--gold)">
           <span>Est. gold</span>
@@ -482,7 +488,8 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
       </div>
       <GoldDist :metric="total_gold" />
       <div v-if="any_credited" class="mats-row border-b-0!">
-        <span class="col-span-4 pr-2 text-right text-lg text-(--text-muted)">
+        <!-- col-span-4 with the Est. gold value column -->
+        <span class="col-span-3 pr-2 text-right text-lg text-(--text-muted)">
           Avg value of leftover mats:
         </span>
         <span class="metric-result text-right text-lg text-(--text-muted)">

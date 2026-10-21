@@ -14,6 +14,7 @@ import {
   type Choice,
 } from "@/Utils/Choices";
 import { jobs_left, queue_jobs } from "@/WasmInterface/OptimizerJobs";
+import Spinner from "@/Components/Common/Spinner.vue";
 import { option_job, type ChoiceJob } from "./ChoiceJobs";
 
 // What each reward of a Paradise run is worth to this character, best first. The game offers three
@@ -174,7 +175,7 @@ watch(
     <!-- scrolls on its own on a narrow screen, so the page does not -->
     <div class="overflow-x-auto">
       <div
-        class="grid w-max min-w-full grid-cols-[minmax(10rem,auto)_auto_8rem_auto] items-center gap-x-4 gap-y-1"
+        class="grid w-max min-w-full grid-cols-[minmax(10rem,auto)_auto_minmax(18rem,auto)_auto] items-center gap-x-4 gap-y-1"
         role="table"
         aria-label="Paradise rewards"
       >
@@ -191,8 +192,16 @@ watch(
               Wealth
             </label>
           </span>
-          <span class="block text-(--text-main)" aria-label="Baseline">
-            Baseline = {{ baseline_text }}
+          <span
+            class="block whitespace-nowrap text-(--text-main)"
+            aria-label="Baseline"
+          >
+            Baseline =
+            <Spinner
+              v-if="!baseline_text"
+              class="inline-block h-4 w-4 align-middle"
+            />
+            {{ baseline_text }}
           </span>
         </span>
         <span></span>
@@ -216,6 +225,10 @@ watch(
             :aria-label="`${row.name} worth`"
             :style="{ color: worth_color(no_upgrades, row.worth) }"
           >
+            <Spinner
+              v-if="!no_upgrades && row.worth === undefined"
+              class="inline-block h-4 w-4 align-middle"
+            />
             {{ worth_text(no_upgrades, row.worth) }}
           </span>
           <button

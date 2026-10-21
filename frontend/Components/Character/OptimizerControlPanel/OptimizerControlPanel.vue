@@ -111,38 +111,36 @@ const grid: GridConfig = {
 
 <template>
   <div class="card-shell max-w-[min(800px,100%)]! min-w-[min(800px,100%)]!">
-    <label class="control-panel-checkbox-row">
-      <input v-model="active_profile.auto_start_optimizer" type="checkbox" />
-      <span>Auto start optimizer </span>
-      <span
-        class="pl-3 text-(--warning)"
-        v-if="!active_profile.auto_start_optimizer"
-        >Optimizer will not re-run on updates, results may not be optimal
-      </span>
-    </label>
-    <label class="control-panel-checkbox-row">
-      <input
-        type="checkbox"
-        :checked="active_profile.min_resolution === 10"
-        @change="
-          active_profile.min_resolution = (
-            $event.target as HTMLInputElement
-          ).checked
-            ? 10
-            : 1
-        "
-      />
-      <span>Force x10 streak length</span>
-    </label>
+    <div class="control-panel-checkbox-row flex-wrap gap-x-6!">
+      <label class="flex items-center gap-2">
+        <input v-model="active_profile.auto_start_optimizer" type="checkbox" />
+        <span>Auto start optimizer </span>
+        <span
+          class="pl-3 text-(--warning)"
+          v-if="!active_profile.auto_start_optimizer"
+          >Optimizer will not re-run on updates, results may not be optimal
+        </span>
+      </label>
+      <label class="flex items-center gap-2">
+        <input
+          type="checkbox"
+          :checked="active_profile.min_resolution === 10"
+          @change="
+            active_profile.min_resolution = ($event.target as HTMLInputElement)
+              .checked
+              ? 10
+              : 1
+          "
+        />
+        <span>Force x10 streak length</span>
+      </label>
+    </div>
     <div>
       <div class="mx-2 flex w-full flex-row items-center gap-3">
         <span class="content-center text-nowrap">Optimizer progress:</span>
         <span
           :style="{
-            color:
-              progress == 100
-                ? 'var(--gold)'
-                : 'var(--warning-dark)',
+            color: progress == 100 ? 'var(--gold)' : 'var(--warning-dark)',
           }"
         >
           {{ locale_to_fixed(progress, 2) }}%

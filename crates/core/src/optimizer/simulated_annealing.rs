@@ -67,8 +67,8 @@ fn compute_upgrade_impact(state_bundle: &mut StateBundle) -> Vec<f64> {
     weights.iter_mut().map(|x| *x / sum).collect()
 }
 
-/// Sends the progress every tenth of a second, with the best state at most once a second and
-/// only once this chain beats the ones before. `last` is when each was last sent.
+/// Sends the progress at most once a second, with the best state on the same tick but only once
+/// this chain beats the ones before. `last` is when each was last sent.
 #[cfg(feature = "wasm")]
 fn maybe_send_wasm_progress(
     done: f64,
@@ -78,7 +78,7 @@ fn maybe_send_wasm_progress(
     last: &mut [f64; 2],
 ) {
     let elapsed = timer.elapsed_sec();
-    if elapsed - last[0] < 0.1 {
+    if elapsed - last[0] < 1.0 {
         return;
     }
     last[0] = elapsed;

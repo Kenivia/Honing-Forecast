@@ -18,7 +18,7 @@ Things worth knowing about its shape:
 - It restarts from the best known state very often.
 - On restart it may copy one upgrade's state onto an identical upgrade, since identical upgrades often want identical plans. Identical means normal honing too (an advanced block shares its index with a low normal level, and its state is not a normal state), and the same artisan and taps done, so a state's length never changes.
 - A move changes two upgrades: that is what moves juice between them.
-- In the browser it posts progress every tenth of a second, and the best state so far at most once a second, once a later chain beats the ones before. The merge, exchange and final polish after the chains post nothing, so a heavy run sits near 100% for that part.
+- In the browser it posts progress at most once a second, with the best state so far on the same tick once a later chain beats the ones before. The merge, exchange and final polish after the chains post nothing, so a heavy run sits near 100% for that part.
 
 ## The shape of a solve
 

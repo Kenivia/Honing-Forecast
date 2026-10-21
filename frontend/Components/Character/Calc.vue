@@ -20,6 +20,8 @@ const {
 } = storeToRefs(useRosterStore());
 // the stored chests are shown in place of these while editing
 const editing_chests = ref(false);
+const chests_open = ref(true);
+const show_obtain_all = ref(false);
 // the only ones with a choice to show
 const selection = computed(() =>
   chests.value.filter((chest) => chest.options.length > 1),
@@ -57,18 +59,34 @@ onUnmounted(() => {
 <template>
   <StatusInput />
   <MaterialDist />
-  <label class="flex w-fit items-center gap-1 text-sm">
-    <input v-model="editing_chests" type="checkbox" />
-    Edit chests
-  </label>
-  <ChestEditor v-if="editing_chests" />
+  <ChestEditor
+    v-if="editing_chests"
+    v-model:open="chests_open"
+    v-model:show_obtain_all="show_obtain_all"
+  >
+    <template #controls>
+      <label class="flex items-center gap-1">
+        <input v-model="editing_chests" type="checkbox" />
+        Edit chests
+      </label>
+    </template>
+  </ChestEditor>
   <ChestPanels
     v-else
+    v-model:open="chests_open"
+    v-model:show_obtain_all="show_obtain_all"
     :selection="selection"
     :obtain_all="chests.filter((chest) => chest.options.length === 1)"
     obtain_all_title="Obtain-all and trivial selection chests"
     :states="runtime.histogram.result?.state_bundle.chest_states"
-  />
+  >
+    <template #controls>
+      <label class="flex items-center gap-1">
+        <input v-model="editing_chests" type="checkbox" />
+        Edit chests
+      </label>
+    </template>
+  </ChestPanels>
   <OptimizerControlPanel />
   <Instructions :is_normal="true" />
   <Instructions :is_normal="false" />

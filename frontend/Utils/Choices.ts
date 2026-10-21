@@ -25,6 +25,29 @@ export interface Choice {
 }
 
 export const PRESET_CHOICES: Choice[] = BONUS_CHESTS;
+
+// the user's own choice, one per roster: what each option gives, by name
+export interface CustomChoice {
+  band: number;
+  names: string[];
+  options: Bag[];
+}
+export const default_custom_choice = (): CustomChoice => ({
+  band: 0,
+  names: ["Option 1", "Option 2"],
+  options: [{}, {}],
+});
+// as a choice, without the amounts left at 0
+export const as_custom = (custom: CustomChoice): Choice => ({
+  id: "custom",
+  group: "Custom",
+  title: "Custom",
+  band: custom.band,
+  names: custom.names,
+  options: custom.options.map((bag) =>
+    Object.fromEntries(Object.entries(bag).filter(([, amount]) => amount)),
+  ),
+});
 // Paradise's rewards (scripts/game_files/paradise.py), one choice per mode, item level and level
 export const PARADISE_CHOICES: Choice[] = PARADISE;
 
@@ -67,9 +90,9 @@ export function signed_gold(amount: number) {
   return `${rounded > 0 ? "+" : rounded < 0 ? "−" : ""}${Math.abs(rounded).toLocaleString("en-US")}`;
 }
 
-// an option's worth against the run without: "N/A" with nothing to hone, "…" until run
+// an option's worth against the run without: "N/A" with nothing to hone, empty until run (a spinner)
 export const worth_text = (no_upgrades: boolean, worth?: number) =>
-  no_upgrades ? "N/A" : worth === undefined ? "…" : signed_gold(worth);
+  no_upgrades ? "N/A" : worth === undefined ? "" : signed_gold(worth);
 // as shown, so what reads 0 is neither
 export const worth_color = (no_upgrades: boolean, worth?: number) =>
   no_upgrades || worth === undefined

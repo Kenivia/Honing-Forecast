@@ -86,7 +86,8 @@ function hover_annotation(x, _y, cy, _material, color, is_last): string {
 
 <template>
   <div class="mats-row h-auto! min-h-10.5 border-b-0!">
-    <div class="col-span-4 flex items-baseline justify-end gap-2 pr-2">
+    <!-- col-span-4 with the Est. gold value column -->
+    <div class="col-span-3 flex items-baseline justify-end gap-2 pr-2">
       <span class="annotation text-(--text-very-muted)">
         (raw + buying needed mats & juice)
       </span>

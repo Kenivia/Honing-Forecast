@@ -12,7 +12,12 @@ const DOTS = Array.from({ length: 12 }, (_, k) => {
 </script>
 
 <template>
-  <svg viewBox="0 0 30 30" fill="currentColor">
+  <svg
+    viewBox="0 0 30 30"
+    fill="currentColor"
+    role="status"
+    aria-label="Loading"
+  >
     <circle
       v-for="(dot, k) in DOTS"
       :key="k"

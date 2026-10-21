@@ -14,11 +14,13 @@ import { hash, type Job } from "@/WasmInterface/OptimizerJobs";
 // goes on from the plan of the run without it. Kept for the session by payload hash.
 
 export interface ChoiceJob extends Job {
-  // the user's plan's metric
+  // the user's plan's metric, and the tradable gold used (plan 0, which credits no leftovers)
   metric?: number;
+  gold?: number;
 }
 
 const metrics = shallowReactive(new Map<string, number>());
+const golds = shallowReactive(new Map<string, number>());
 // the optimizer's state of each run without a choice, by payload hash
 const seeds = new Map<string, any>();
 
@@ -42,8 +44,10 @@ function job_with(
     payload: seed ? states_payload(payload, profile, seed) : payload,
     profile,
     metric: metrics.get(key),
+    gold: golds.get(key),
     store: (out, state) => {
       if (!extra.length) seeds.set(key, state);
+      golds.set(key, out.metric_per_plan[0]);
       metrics.set(key, out.metric_per_plan[1]);
     },
   };

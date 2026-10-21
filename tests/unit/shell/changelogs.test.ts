@@ -89,10 +89,10 @@ describe("ChangeLogsView", () => {
   it("shows loading until the fetch lands", async () => {
     auto = false;
     const { wrapper } = await show("t-load");
-    expect(wrapper.text()).toContain("Loading...");
+    expect(wrapper.find('[aria-label="Loading"]').exists()).toBe(true);
     pending[0].release();
     await flushPromises();
-    expect(wrapper.text()).not.toContain("Loading...");
+    expect(wrapper.find('[aria-label="Loading"]').exists()).toBe(false);
   });
 
   it("fetches each version once, across visits", async () => {

@@ -62,16 +62,21 @@ describe("Choices page", () => {
     want_upgrade(store.active_profile);
     open();
     expect(queued()).toHaveLength(1);
-    expect(worth_cells().every((c) => c.text() === "…")).toBe(true);
+    expect(
+      worth_cells().every((c) => c.find('[aria-label="Loading"]').exists()),
+    ).toBe(true);
 
-    queued()[0].store(fake_out(0, 1000), fake_state());
+    queued()[0].store(fake_out(-5000, -4000), fake_state());
     await wrapper.vm.$nextTick();
+    expect(
+      wrapper.find('[aria-label="Baseline"]').text().replace(/\s+/g, " "),
+    ).toBe("Baseline = 5,000 gold (1,000 leftover value)");
     const options = queued();
     expect(options).toHaveLength(worth_cells().length);
     expect(new Set(options.map((job) => job.hash)).size).toBe(options.length);
 
-    options[0].store(fake_out(0, 1500.4), fake_state());
-    options[1].store(fake_out(0, 400), fake_state());
+    options[0].store(fake_out(0, -3499.6), fake_state());
+    options[1].store(fake_out(0, -4600), fake_state());
     await wrapper.vm.$nextTick();
     expect(worth_cells()[0].text()).toBe("+500");
     expect(worth_cells()[1].text()).toBe("−600");
@@ -208,7 +213,7 @@ describe("Paradise tab", () => {
     expect(cells[0].text()).toBe("+300");
     expect(cells[1].text()).toBe("+100");
     expect(cells.at(-1).attributes("aria-label")).toMatch(/^Lava's Breath/);
-    expect(cells.at(-1).text()).toBe("…");
+    expect(cells.at(-1).find('[aria-label="Loading"]').exists()).toBe(true);
   });
 
   it("Wealth runs the Wealth options instead", async () => {
@@ -239,5 +244,61 @@ describe("Paradise tab", () => {
       "Paradise level": "Level 3",
       "Paradise: Destiny": "1750",
     });
+  });
+});
+
+describe("Custom tab", () => {
+  const open_custom = async () => {
+    open();
+    await wrapper
+      .findAll('[role="tab"]')
+      .find((b) => b.text() === "Custom")
+      .trigger("click");
+  };
+  const add = async (option: string, label: string, amount: number) => {
+    await wrapper.find(`[aria-label="${option} add material"]`).setValue(label);
+    await wrapper.find(`[aria-label="${option} ${label}"]`).setValue(amount);
+  };
+
+  it("runs only options that give something, saved for the roster", async () => {
+    want_upgrade(store.active_profile);
+    await open_custom();
+    expect(queued()).toHaveLength(1);
+    queued()[0].store(fake_out(0, 1000), fake_state());
+    await wrapper.vm.$nextTick();
+    expect(queued()).toEqual([]);
+
+    await add("Option 1", "Red", 500);
+    await add("Option 1", "Gold", -100);
+    await wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Add option")
+      .trigger("click");
+    await add("Option 3", "Blue", 1000);
+    expect(store.roster_config.custom_choices[0].options).toEqual([
+      { Red: 500, Gold: -100 },
+      {},
+      { Blue: 1000 },
+    ]);
+    expect(queued()).toHaveLength(2);
+    queued()[1].store(fake_out(0, 1200), fake_state());
+    await wrapper.vm.$nextTick();
+    // best first
+    expect(worth_cells()[0].attributes("aria-label")).toBe("Option 3 worth");
+    expect(worth_cells()[0].text()).toBe("+200");
+  });
+
+  it("adds an option to the band picked", async () => {
+    await open_custom();
+    await wrapper
+      .findAll('[aria-label="Custom choice band"] button')
+      .find((b) => b.text() === "Roster bound")
+      .trigger("click");
+    await add("Option 1", "Red", 500);
+    // the empty option, worth 0, sorts above the one not run
+    await add_buttons()
+      .find((b) => b.attributes("disabled") === undefined)
+      .trigger("click");
+    expect(input_column_to_num(store.active_roster_mats_owned).Red).toBe(500);
   });
 });

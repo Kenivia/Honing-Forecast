@@ -377,6 +377,7 @@ test("chests are edited on the calculator page", async ({ page }) => {
   await count.fill("5");
   await count.blur();
   await page.getByLabel("Edit chests").uncheck();
+  await page.getByLabel(/Show obtain-all/).check();
   await expect(page.getByRole("group", { name: /Obtain-all/ })).toContainText(
     "Test box",
   );

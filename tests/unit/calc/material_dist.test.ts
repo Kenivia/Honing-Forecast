@@ -200,7 +200,10 @@ describe("MaterialDist chest gains", () => {
     const special = cells(wrapper, "Special Leap")[0];
     expect(special.props("plus")[0].amount).toBe(6);
     await pick_band(wrapper, 2);
-    expect(plus(wrapper, "Red")).toEqual({ "from chests": 14 });
+    expect(plus(wrapper, "Red")).toEqual({
+      "from chests": 14,
+      "from roster-bound": 20,
+    });
     expect(graph(wrapper, "Red").props("annotations")).toEqual([100, 34]);
   });
 
@@ -241,9 +244,13 @@ describe("MaterialDist +c from T4", () => {
     expect(plus(wrapper, "Serca Red")).toEqual({
       "from chests": 0,
       "from T4": 1,
+      "from char-bound": 3,
     });
     await pick_band(wrapper, 2);
-    expect(plus(wrapper, "Serca Red")).toEqual({ "from chests": 0 });
+    expect(plus(wrapper, "Serca Red")).toEqual({
+      "from chests": 0,
+      "from roster-bound": 4,
+    });
     expect(graph(wrapper, "Serca Red").props("annotations")).toEqual([100, 4]);
   });
 

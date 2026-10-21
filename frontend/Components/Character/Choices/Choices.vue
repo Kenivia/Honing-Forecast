@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { get_icon_path } from "@/Utils/Helpers";
+import { get_icon_path, metric_to_text } from "@/Utils/Helpers";
 import { snapshot_of } from "@/Utils/Scans";
 import {
   affordable,
@@ -24,6 +24,8 @@ import {
 } from "@/WasmInterface/OptimizerJobs";
 import { base_job, option_job } from "./ChoiceJobs";
 import Paradise from "./Paradise.vue";
+import Custom from "./Custom.vue";
+import Spinner from "@/Components/Common/Spinner.vue";
 
 // What taking each option of a choice is worth to this character, in average gold under its plan.
 const store = useRosterStore();
@@ -98,14 +100,14 @@ const rows = computed(() => groups.value.flatMap((group) => group.rows));
 const pick = (group: string, difficulty: string) =>
   (profile.value.choice_levels[group] = difficulty);
 
-const TABS = ["Bonus chests", "Paradise", "Coming soon"];
+const TABS = ["Bonus chests", "Paradise", "Custom"];
 const tab = ref(TABS[0]);
 
-// the run without any choice first, then the options it seeds, top to bottom; Paradise queues its own
+// the run without any choice first, then the options it seeds, top to bottom; the other tabs queue their own
 watch(
   [base, rows, tab],
   () => {
-    if (tab.value === "Paradise") return;
+    if (tab.value !== TABS[0]) return;
     if (no_upgrades.value) return queue_jobs([]);
     if (base.value.metric === undefined) return queue_jobs([base.value]);
     queue_jobs(
@@ -127,8 +129,8 @@ const baseline_text = computed(() =>
   no_upgrades.value
     ? "N/A"
     : base.value.metric === undefined
-      ? "…"
-      : Math.round(base.value.metric).toLocaleString("en-US"),
+      ? ""
+      : `${metric_to_text(base.value.gold)} gold (${metric_to_text(base.value.gold - base.value.metric)} leftover value)`,
 );
 
 const columns = computed(() => [
@@ -166,13 +168,20 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
       >
         {{ name }}
       </button>
+      <span class="self-center px-1 text-sm text-(--text-very-muted)">
+        More coming soon...
+      </span>
     </div>
-    <div
-      v-if="tab === 'Coming soon'"
-      class="card-shell card-body text-sm text-(--text-muted)"
-    >
-      Coming soon.
-    </div>
+    <Custom
+      v-if="tab === 'Custom'"
+      :base="base"
+      :now="now"
+      :no_upgrades="no_upgrades"
+      :baseline_text="baseline_text"
+      :columns="columns"
+      :taken="taken"
+      @take="take"
+    />
     <Paradise
       v-else-if="tab === 'Paradise'"
       :base="base"
@@ -203,7 +212,7 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
       <!-- scrolls on its own on a narrow screen, so the page does not -->
       <div class="overflow-x-auto">
         <div
-          class="grid w-max min-w-full grid-cols-[minmax(10rem,auto)_6rem_auto_6rem_auto] items-center gap-x-4 gap-y-1"
+          class="grid w-max min-w-full grid-cols-[minmax(10rem,auto)_6rem_auto_minmax(18rem,auto)_auto] items-center gap-x-4 gap-y-1"
           role="table"
           aria-label="Choices"
         >
@@ -212,8 +221,16 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
           <span class="text-(--text-muted)">Gives</span>
           <span class="text-(--text-muted)">
             Worth
-            <span class="block text-(--text-main)" aria-label="Baseline">
-              Baseline = {{ baseline_text }}
+            <span
+              class="block whitespace-nowrap text-(--text-main)"
+              aria-label="Baseline"
+            >
+              Baseline =
+              <Spinner
+                v-if="!baseline_text"
+                class="inline-block h-4 w-4 align-middle"
+              />
+              {{ baseline_text }}
             </span>
           </span>
           <span></span>
@@ -282,6 +299,10 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
                 :aria-label="`${choice.group} ${choice.title} worth`"
                 :style="{ color: worth_color(no_upgrades, worth(job.metric)) }"
               >
+                <Spinner
+                  v-if="!no_upgrades && worth(job.metric) === undefined"
+                  class="inline-block h-4 w-4 align-middle"
+                />
                 {{ worth_text(no_upgrades, worth(job.metric)) }}
               </span>
               <button

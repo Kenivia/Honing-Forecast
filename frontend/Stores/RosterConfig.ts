@@ -24,6 +24,7 @@ import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
 import { load_roster_config } from "./ConfigStorage";
 import { process_chests, type Chest, type ManifestChest } from "@/Utils/Chest";
 import type { ScanPage, Snapshot } from "@/Utils/Scans";
+import type { CustomChoice } from "@/Utils/Choices";
 
 // Everything in here is persisted. Session-only state lives in RuntimeState.
 export interface RosterConfig {
@@ -41,6 +42,8 @@ export interface RosterConfig {
   snapshots: Snapshot[];
   // income per week typed by hand, [roster bound, tradable]
   roster_income: Record<number, Record<string, number>[]>;
+  // the Choices page's custom choice
+  custom_choices: Record<number, CustomChoice>;
 
   all_regions: Record<number, MarketRegions>;
 
@@ -88,6 +91,7 @@ export function default_roster_config(): RosterConfig {
     scan_pages: [],
     snapshots: [],
     roster_income: {},
+    custom_choices: {},
     all_regions: { 0: "nae" },
     cumulative_graph: true,
     selected_bundles: {
@@ -245,6 +249,7 @@ export const useRosterStore = defineStore("roster", {
       delete config.all_regions[roster_id];
       delete config.roster_chests[roster_id];
       delete config.roster_income[roster_id];
+      delete config.custom_choices[roster_id];
       config.scan_pages = config.scan_pages.filter(
         (p) => p.roster_id !== roster_id,
       );

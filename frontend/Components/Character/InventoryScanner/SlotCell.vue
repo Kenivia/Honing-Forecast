@@ -3,7 +3,7 @@ import { computed, ref, watchPostEffect } from "vue";
 import { OneIconConfig, SlotResult } from "./LoadStorage";
 import { SlotEdit } from "./ScanStore";
 import { STATUS_COLORS, draw_icon } from "./ScannerUIutils";
-import Spinner from "./Spinner.vue";
+import Spinner from "@/Components/Common/Spinner.vue";
 
 const props = defineProps<{
   info?: SlotResult;

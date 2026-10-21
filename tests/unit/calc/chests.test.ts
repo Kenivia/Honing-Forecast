@@ -37,12 +37,20 @@ function editor(tier = 0) {
 }
 const button = (wrapper, text: string) =>
   wrapper.findAll("button").find((b) => b.text() === text)!;
+const show_obtain_all = (wrapper) =>
+  wrapper
+    .findAll("label")
+    .find((l) => l.text().startsWith("Show obtain-all"))!
+    .find("input")
+    .setValue(true);
 const panel = (wrapper, title: string) =>
   wrapper.find(`[role="group"][aria-label="${title}"]`);
 
 describe("ChestEditor", () => {
   it("lists the stored chests unprocessed, split by obtain_all", async () => {
     const { wrapper } = editor(0);
+    expect(panel(wrapper, "Obtain-all chests").exists()).toBe(false);
+    await show_obtain_all(wrapper);
     // a Serca option shows to a T4 character too, and gold is kept
     expect(panel(wrapper, "Obtain-all chests").text()).toContain("Shared box");
     expect(
@@ -59,6 +67,7 @@ describe("ChestEditor", () => {
 
   it("edits the count in whichever list holds the chest", async () => {
     const { wrapper, store } = editor();
+    await show_obtain_all(wrapper);
     await wrapper.find('input[aria-label="Own box count"]').setValue("7");
     await wrapper.find('input[aria-label="Shared box count"]').setValue("-4");
     expect(store.active_profile.chests[0].count).toBe(7);
@@ -70,6 +79,7 @@ describe("ChestEditor", () => {
 
   it("removes from whichever list holds the chest", async () => {
     const { wrapper, store } = editor();
+    await show_obtain_all(wrapper);
     await wrapper
       .find('button[aria-label="Delete Shared box"]')
       .trigger("click");

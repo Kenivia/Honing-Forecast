@@ -158,12 +158,12 @@ function toggle_lock(address: SlotAddress) {
           </button>
           <span
             v-if="has_saved(win.type)"
-            class="annotation flex items-center gap-1"
+            class="annotation ml-2 flex items-center gap-1"
           >
             <svg viewBox="0 0 16 16" class="h-2.5 w-2.5 fill-(--gold-muted)">
               <path d="M2 1h10l3 3v11H1V1h1zm2 1v4h7V2H4zm1 8v4h6v-4H5z" />
             </svg>
-            not open yet: last export used
+            last known scan used
           </span>
           <!-- greyed out while the page shown was never exported -->
           <button
@@ -192,9 +192,9 @@ function toggle_lock(address: SlotAddress) {
             <span class="text-(--text-muted)">
               {{
                 roster_cover === null
-                  ? "The roster's budgets have not changed since. "
+                  ? "You don't need to re-scan if nothing here has changed. "
                   : ""
-              }}Scan it again if anything in it changed.
+              }}
             </span>
             <button class="generic-button" @click="roster_cover = false">
               Scan roster storage

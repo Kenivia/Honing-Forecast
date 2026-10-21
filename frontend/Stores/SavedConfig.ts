@@ -29,6 +29,7 @@ import { get_valid_status_grid } from "@/Utils/StatusGrid";
 import { format_char_name } from "@/Utils/Helpers";
 import type { ManifestChest } from "@/Utils/Chest";
 import type { ScanPage, Snapshot } from "@/Utils/Scans";
+import type { CustomChoice } from "@/Utils/Choices";
 
 // ============================================================================
 // The persisted shape.
@@ -87,6 +88,7 @@ export interface SavedConfig {
   scan_pages: ScanPage[];
   snapshots: Snapshot[];
   roster_income: Record<string, Record<string, number>[]>;
+  custom_choices: Record<string, CustomChoice>;
   all_regions: Record<string, MarketRegions>;
   // material label -> chosen bundle size, only for materials sold in several sizes
   selected_bundles: Partial<Record<MarketRegions, Record<string, number>>>;
@@ -339,6 +341,7 @@ export function to_saved(config: RosterConfig): Omit<SavedConfig, "version"> {
     scan_pages: config.scan_pages,
     snapshots: config.snapshots,
     roster_income: config.roster_income,
+    custom_choices: config.custom_choices,
     all_regions: { ...config.all_regions },
     selected_bundles,
     latest_market_data: config.latest_market_data,
@@ -411,6 +414,7 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
   out.scan_pages = Array.isArray(saved.scan_pages) ? saved.scan_pages : [];
   out.snapshots = Array.isArray(saved.snapshots) ? saved.snapshots : [];
   out.roster_income = saved.roster_income ?? {};
+  out.custom_choices = saved.custom_choices ?? {};
 
   return out;
 }

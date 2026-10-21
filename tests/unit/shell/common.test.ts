@@ -31,8 +31,11 @@ describe("ChestPanels", () => {
       slots: { default: "<i class='foot'>foot</i>" },
     });
 
-  it("two panels, empty one says None, slot under selection", () => {
+  it("two panels, empty one says None, slot under selection", async () => {
     const w = panels({ obtain_all_title: "Opened" });
+    // obtain-all is hidden until asked for
+    expect(w.findAll("[role=group]")).toHaveLength(1);
+    await w.find("label input").setValue(true);
     const groups = w.findAll("[role=group]");
     expect(groups.map((g) => g.attributes("aria-label"))).toEqual([
       "Selection chests",
@@ -41,6 +44,14 @@ describe("ChestPanels", () => {
     expect(groups[1].text()).toContain("None.");
     expect(groups[0].find(".foot").exists()).toBe(true);
     expect(groups[1].find(".foot").exists()).toBe(false);
+  });
+
+  it("collapses from the header", async () => {
+    const w = panels();
+    await w.find("button[aria-expanded]").trigger("click");
+    // kept in the layout so the card keeps its width
+    expect(w.find("[inert]").find("[role=group]").exists()).toBe(true);
+    expect(w.emitted("update:open")).toEqual([[false]]);
   });
 
   it("a chest row: count, band, options joined by or", () => {
@@ -52,14 +63,14 @@ describe("ChestPanels", () => {
 
   it("read-only unless editing", () => {
     const w = panels();
-    expect(w.find("input").attributes("disabled")).toBeDefined();
-    expect(w.find("button").exists()).toBe(false);
+    expect(w.find("[role=group] input").attributes("disabled")).toBeDefined();
+    expect(w.find("[role=group] button").exists()).toBe(false);
   });
 
   it("editing emits count and remove by key", async () => {
     const w = panels({ editing: true });
-    await w.find("input").setValue("5");
-    await w.find("button").trigger("click");
+    await w.find("[role=group] input").setValue("5");
+    await w.find("[role=group] button").trigger("click");
     expect(w.emitted("count")[0][0]).toBe("a");
     expect(w.emitted("remove")).toEqual([["a"]]);
   });
