@@ -131,19 +131,57 @@ export const has_band = (label: string, band: number) =>
 export const used = (snapshot: Snapshot) =>
   snapshot.kind !== "Before export" && !snapshot.ignored;
 
-// What to run, in order, each once and not done: the selected one, now, those the estimate uses
-// newest first, then the "Before export" ones.
-export function queue_order<
-  T extends { snapshot: Snapshot; job: { result?: unknown } },
->(entries: T[], selected: Snapshot | null, now: T | null): T[] {
-  const newest = [...entries].reverse();
-  const order = [
-    ...entries.filter((entry) => entry.snapshot === selected),
-    ...(now ? [now] : []),
-    ...newest.filter((entry) => used(entry.snapshot)),
-    ...newest.filter((entry) => entry.snapshot.kind === "Before export"),
+// What runs, oldest first, each from the state of the one before: every snapshot but the ignored
+// ones (unless selected), then `after` (now and the weeks ahead).
+export function chain_of<T extends { snapshot: Snapshot }>(
+  entries: T[],
+  selected: Snapshot | null,
+  after: T[],
+): T[] {
+  return [
+    ...entries
+      .filter((entry) => !entry.snapshot.ignored || entry.snapshot === selected)
+      .sort((a, b) => a.snapshot.at - b.snapshot.at),
+    ...after,
   ];
-  return [...new Set(order)].filter((entry) => !entry.job.result);
+}
+
+// the first of the chain not done, and the latest state of the session before it
+export function next_in_chain<
+  T extends { job: { hash: string; result?: unknown } },
+>(chain: T[], state_of: (hash: string) => unknown) {
+  const at = chain.findIndex((entry) => !entry.job.result);
+  if (at < 0) return null;
+  const from = chain
+    .slice(0, at)
+    .map((entry) => state_of(entry.job.hash))
+    .findLast(Boolean);
+  return { entry: chain[at], from };
+}
+
+// `now` with `weeks` of income added, rates per band by label; free taps are char bound
+export function projected(
+  now: Snapshot,
+  char_id: string,
+  special: string,
+  rates: Record<string, number>[],
+  weeks: number,
+): Snapshot {
+  const out: Snapshot = JSON.parse(JSON.stringify(now));
+  const char = out.chars[char_id];
+  const add = (record: Record<string, number>, label: string, rate: number) =>
+    (record[label] = Math.max(
+      0,
+      Math.round((record[label] ?? 0) + rate * weeks),
+    ));
+  for (const [label, rate] of Object.entries(rates[0]))
+    add(label === special ? char.special : char.bound, label, rate);
+  for (const [label, rate] of Object.entries(rates[1]))
+    add(out.roster_owned, label, rate);
+  for (const [label, rate] of Object.entries(rates[2]))
+    add(out.tradable, label, rate);
+  out.at = now.at + weeks * WEEK_MS;
+  return out;
 }
 
 // the graph's x range: centred on now, the larger of MIN_SPAN and the oldest's age either side

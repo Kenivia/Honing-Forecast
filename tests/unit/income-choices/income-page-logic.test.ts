@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  chain_of,
   estimate_line,
   has_band,
   manual_line,
   MIN_SPAN,
-  queue_order,
+  next_in_chain,
+  projected,
   range_of,
   steps_of,
   WEEK_MS,
@@ -13,23 +15,65 @@ import { raids_of, signed_gold, type Choice } from "@/Utils/Choices";
 import { snap } from "./helpers";
 
 // The page logic pulled out of Income.vue and Choices.vue.
-describe("queue_order", () => {
+describe("chain_of / next_in_chain", () => {
   const entry = (at: number, extra = {}, result?: object) => ({
     snapshot: snap(at, "me", {}, extra),
-    job: { result },
+    job: { hash: String(at), result },
   });
 
-  it("selected, now, used newest first, then Before export; each once, done ones out", () => {
-    const a = entry(1);
+  it("every snapshot oldest first, ignored only when selected, then what comes after", () => {
     const b = entry(2, { kind: "Before export" });
-    const c = entry(3, { kind: "After export" });
+    const a = entry(1);
     const d = entry(4, { ignored: true });
-    const e = entry(5, {}, { gold: 0 });
+    const c = entry(3, { kind: "After export" });
     const now = entry(6);
-    const entries = [a, b, c, d, e];
-    expect(queue_order(entries, null, null)).toEqual([c, a, b]);
-    expect(queue_order(entries, a.snapshot, now)).toEqual([a, now, c, b]);
-    expect(queue_order(entries, d.snapshot, null)).toEqual([d, c, a, b]);
+    const entries = [b, a, d, c];
+    expect(chain_of(entries, null, [now])).toEqual([a, b, c, now]);
+    expect(chain_of(entries, d.snapshot, [now])).toEqual([a, b, c, d, now]);
+  });
+
+  it("the first not done, from the latest state before it", () => {
+    const chain = [entry(1, {}, {}), entry(2, {}, {}), entry(3), entry(4)];
+    const states = { "1": "one" };
+    expect(next_in_chain(chain, (hash) => states[hash])).toEqual({
+      entry: chain[2],
+      from: "one",
+    });
+    expect(next_in_chain(chain.slice(0, 2), () => null)).toBeNull();
+    expect(next_in_chain(chain.slice(2), () => "x").from).toBeUndefined();
+  });
+});
+
+describe("projected", () => {
+  it("adds weeks of income per band, free taps char bound, never below 0", () => {
+    const now = snap(
+      1000,
+      "me",
+      { Red: 10 },
+      {
+        roster_owned: { Silver: 5 },
+        tradable: { Gold: 3 },
+      },
+    );
+    now.chars.me.special = { "Serca Special Leap": 1 };
+    const out = projected(
+      now,
+      "me",
+      "Serca Special Leap",
+      [{ Red: 2.4, "Serca Special Leap": 1 }, { Silver: 100 }, { Gold: -1 }],
+      2,
+    );
+    expect(out.at).toBe(1000 + 2 * WEEK_MS);
+    expect(out.chars.me.bound).toEqual({ Red: 15 });
+    expect(out.chars.me.special).toEqual({ "Serca Special Leap": 3 });
+    expect(out.roster_owned).toEqual({ Silver: 205 });
+    expect(out.tradable).toEqual({ Gold: 1 });
+    expect(now.chars.me.bound).toEqual({ Red: 10 });
+    expect(
+      projected(now, "me", "x", [{}, {}, { Gold: -5 }], 1).tradable,
+    ).toEqual({
+      Gold: 0,
+    });
   });
 });
 

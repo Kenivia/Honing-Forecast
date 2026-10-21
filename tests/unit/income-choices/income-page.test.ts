@@ -9,7 +9,7 @@ import { snapshot_of, type Snapshot } from "@/Utils/Scans";
 import Income from "@/Components/Character/Income/Income.vue";
 import { job_for } from "@/Components/Character/Income/IncomeJobs";
 import { queue_jobs } from "@/WasmInterface/OptimizerJobs";
-import { want_upgrade } from "./helpers";
+import { fake_out, fake_state, want_upgrade } from "./helpers";
 
 // The Income page: snapshot list, queue order, the table and manual income. Runs are not made.
 vi.mock("@/WasmInterface/OptimizerJobs", async (original) => ({
@@ -73,36 +73,43 @@ describe("Income page", () => {
     expect(markers()).toHaveLength(1);
   });
 
-  it("queues used snapshots newest first, then Before export; ignored only when selected", async () => {
+  it("queues one run at a time, oldest first, each from the state before; ignored only when selected", async () => {
     const a = add(NOW - 3 * WEEK_MS, 1);
     const b = add(NOW - 2 * WEEK_MS, 2, { kind: "Before export" });
+    const d = add(NOW - WEEK_MS - 1000, 4, { ignored: true });
     const c = add(NOW - WEEK_MS, 3, { kind: "After export" });
-    const d = add(NOW - 1000, 4, { ignored: true });
     open();
-    expect(last_queue()).toEqual([c, a, b].map(hash_of));
-    await markers()[3].trigger("click");
-    expect(last_queue()).toEqual([d, c, a, b].map(hash_of));
+    expect(last_queue()).toEqual([hash_of(a)]);
+    const state = fake_state(7);
+    job_for(store.active_profile, a, false).store(fake_out(1, 1), state);
+    await nextTick();
+    expect(last_queue()).toEqual([hash_of(b)]);
+    const queued = vi.mocked(queue_jobs).mock.lastCall[0][0];
+    expect(queued.payload.chest_states).toBe(state.chest_states);
+    for (const done of [b, c])
+      job_for(store.active_profile, done, false).store(
+        fake_out(1, 1),
+        fake_state(),
+      );
+    await nextTick();
+    const now = { ...snapshot_of(store.roster_config, 0, "Manual"), at: NOW };
+    expect(last_queue()).toEqual([
+      job_for(store.active_profile, now, true).hash,
+    ]);
+    await markers()[2].trigger("click");
+    expect(last_queue()).toEqual([hash_of(d)]);
   });
 
-  it("selecting a used snapshot does not queue it twice", async () => {
-    add(NOW - 2 * WEEK_MS, 1);
-    add(NOW - WEEK_MS, 2);
-    open();
-    await markers()[0].trigger("mouseenter");
-    const queued = last_queue();
-    expect(new Set(queued).size).toBe(queued.length);
-  });
-
-  it("estimates per band from used snapshots, steps summed", async () => {
+  it("estimates per band from used snapshots and now, steps summed", async () => {
     add(NOW - 2 * WEEK_MS, 0);
     add(NOW - WEEK_MS - 1000, 999, { kind: "Before export" });
     add(NOW - WEEK_MS, 70, { kind: "After export" });
     set_cell(store.active_profile.bound_budgets, "Red", "75");
     open();
     await band("Char bound");
-    expect(text_of("Red income")).toBe("70");
+    expect(text_of("Red income")).toBe("37.5");
     expect(text_of("Red owned")).toBe("75");
-    expect(wrapper.text()).toContain("1 step over 7.0 days");
+    expect(wrapper.text()).toContain("2 steps over 14.0 days");
     await band("+ Tradable");
     expect(text_of("Red income")).toBe("0");
   });
@@ -162,20 +169,15 @@ describe("Income page", () => {
     expect(text_of("Red Char bound")).toBe("+5");
   });
 
-  it("Include now only while now differs, and then counts it", async () => {
+  it("now counts in the estimate only while it differs", async () => {
     add(NOW - 2 * WEEK_MS, 0);
     add(NOW - WEEK_MS, 10);
     open();
     expect(wrapper.text()).not.toContain("Include now");
+    await band("Char bound");
+    expect(text_of("Red income")).toBe("10");
     set_cell(store.active_profile.bound_budgets, "Red", "30");
     await nextTick();
-    await band("Char bound");
-    const boxes = wrapper
-      .findAll("label")
-      .filter((l) => l.text() === "Include now");
-    expect(boxes).toHaveLength(2);
-    expect(text_of("Red income")).toBe("10");
-    await boxes[0].find("input").setValue(true);
     expect(Number(text_of("Red income"))).toBeGreaterThan(10);
   });
 

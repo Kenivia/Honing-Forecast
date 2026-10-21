@@ -25,8 +25,10 @@ import {
   fit,
   has_band,
   manual_line,
+  chain_of,
+  next_in_chain,
   owned_at,
-  queue_order,
+  projected,
   range_of,
   resets,
   steps_of,
@@ -34,12 +36,8 @@ import {
   value_of,
 } from "@/Utils/Income";
 import IncomeGraph, { type Series } from "./IncomeGraph.vue";
-import { job_for } from "./IncomeJobs";
-import {
-  jobs_left,
-  queue_jobs,
-  stop_jobs,
-} from "@/WasmInterface/OptimizerJobs";
+import { job_for, state_of, warm } from "./IncomeJobs";
+import { queue_jobs, stop_jobs } from "@/WasmInterface/OptimizerJobs";
 
 // The roster's budget snapshots as this character has them over time, and its income per week.
 const { roster_config, active_profile } = storeToRefs(useRosterStore());
@@ -53,16 +51,7 @@ const band = ref(2);
 // free taps are the special leap row, char bound only
 const rows = computed(() => [...ALL_LABELS[tier.value], special.value]);
 const name = (label: string) => (label === special.value ? "Free taps" : label);
-const shown = ref<string[]>([]);
-watch(
-  tier,
-  (tier) => (shown.value = ["Gold", tier ? "Serca Fusion" : "Fusion"]),
-  { immediate: true },
-);
-const toggle_shown = (label: string) =>
-  (shown.value = shown.value.includes(label)
-    ? shown.value.filter((x) => x !== label)
-    : [...shown.value, label]);
+const shown = ref("Gold");
 const color = (label: string) =>
   label === special.value ? "--free-tap" : MATERIALS[label].color;
 
@@ -79,12 +68,11 @@ const now_snapshot = computed(() => ({
   ...snapshot_of(roster_config.value, profile.value.roster_id, "Manual"),
   at: now.value,
 }));
+// now counts in the estimate unless it is the latest snapshot again
 const now_differs = computed(() => {
   const latest = snapshots.value[snapshots.value.length - 1];
   return !latest || budgets_of(latest) !== budgets_of(now_snapshot.value);
 });
-const include_now = ref(false);
-const with_now = computed(() => include_now.value && now_differs.value);
 
 // each snapshot with its optimizer run under the current upgrades, if done
 const entries = computed(() =>
@@ -112,7 +100,7 @@ const now_entry = computed(() => {
 });
 const series_entries = computed(() => [
   ...entries.value.filter((entry) => used(entry.snapshot)),
-  ...(with_now.value ? [now_entry.value] : []),
+  ...(now_differs.value ? [now_entry.value] : []),
 ]);
 
 // ============================================================================
@@ -124,20 +112,6 @@ const locked = ref<Snapshot | null>(null);
 const selected = computed(() => locked.value ?? hovered.value);
 const click = (snapshot: Snapshot) =>
   (locked.value = locked.value === snapshot ? null : snapshot);
-
-watch(
-  [entries, now_entry, with_now, selected],
-  () =>
-    queue_jobs(
-      queue_order(
-        entries.value,
-        selected.value,
-        with_now.value ? now_entry.value : null,
-      ).map((entry) => entry.job),
-    ),
-  { immediate: true },
-);
-onBeforeUnmount(stop_jobs);
 
 // ============================================================================
 // Rates
@@ -200,27 +174,95 @@ function set_manual_mode(manual: boolean) {
 // ============================================================================
 
 const range = computed(() => range_of(snapshots.value[0]?.at, now.value));
-const series = computed((): Series[] =>
-  shown.value
-    .filter((label) => rows.value.includes(label))
-    .map((label) => {
-      const data = points(label, band.value, true);
-      const end = range.value[1];
-      const rate = [0, 1, 2]
-        .slice(0, band.value + 1)
-        .reduce((sum, at) => sum + manual_rate(label, at), 0);
-      const line = profile.value.income_manual
-        ? manual_line(
-            value_of(now_entry.value.owned, label, band.value, true),
-            rate,
-            now.value,
-            end,
-          )
-        : estimate_line(data, end);
-      return { label: name(label), color: color(label), points: data, line };
-    }),
-);
+const series = computed((): Series[] => {
+  const label = shown.value;
+  const data = points(label, band.value, true);
+  const end = range.value[1];
+  const rate = [0, 1, 2]
+    .slice(0, band.value + 1)
+    .reduce((sum, at) => sum + manual_rate(label, at), 0);
+  const line = profile.value.income_manual
+    ? manual_line(
+        value_of(now_entry.value.owned, label, band.value, true),
+        rate,
+        now.value,
+        end,
+      )
+    : estimate_line(data, end);
+  return [{ label: name(label), color: color(label), points: data, line }];
+});
+// the two metrics of each optimized point under the current upgrades, then from now on ahead
+const metric_series = computed((): Series[] => {
+  const done = series_entries.value.filter((entry) => entry.job.result);
+  const ahead = [now_entry.value, ...future.value].filter(
+    (entry) => entry.job.result,
+  );
+  const metric = (label: string, color: string, key: "gold" | "leftover") => ({
+    label,
+    color,
+    joined: true,
+    points: done.map((entry) => ({
+      x: entry.snapshot.at,
+      y: entry.job.result[key],
+      provisional: false,
+    })),
+    line: ahead.map((entry) => ({
+      x: entry.snapshot.at,
+      y: entry.job.result[key],
+    })),
+  });
+  return [
+    metric("Avg tradable gold spent", "--gold", "gold"),
+    metric("Avg value of leftovers", "--average", "leftover"),
+  ];
+});
 const week_lines = computed(() => resets(...range.value));
+
+// now plus a week of income at a time, as the table has it, to the end of the range
+const rates = computed(() =>
+  [0, 1, 2].map((at) =>
+    Object.fromEntries(
+      rows.value
+        .filter((label) => has_band(label, at))
+        .map((label) => [
+          label,
+          profile.value.income_manual
+            ? manual_rate(label, at)
+            : (auto_rate(label, at) ?? 0),
+        ]),
+    ),
+  ),
+);
+const future = computed(() => {
+  const weeks = Math.floor((range.value[1] - now.value) / WEEK_MS);
+  return Array.from({ length: weeks }, (_, at) => {
+    const snapshot = projected(
+      now_snapshot.value,
+      profile.value.id,
+      special.value,
+      rates.value,
+      at + 1,
+    );
+    return { snapshot, job: job_for(profile.value, snapshot, true) };
+  });
+});
+
+// one run at a time, oldest first, each from the state of the one before
+const chain = computed(() =>
+  chain_of(entries.value, selected.value, [now_entry.value, ...future.value]),
+);
+const runs_left = computed(
+  () => chain.value.filter((entry) => !entry.job.result).length,
+);
+watch(
+  chain,
+  (chain) => {
+    const next = next_in_chain(chain, state_of);
+    queue_jobs(next ? [warm(next.entry.job, next.from)] : []);
+  },
+  { immediate: true },
+);
+onBeforeUnmount(stop_jobs);
 
 // the plot area, for the timeline to line up with
 const area = ref<[number, number]>([0, 0]);
@@ -296,18 +338,14 @@ const KIND_COLORS = {
             {{ name }}
           </button>
         </div>
-        <label v-if="now_differs" class="flex items-center gap-1.5">
-          <input v-model="include_now" type="checkbox" />
-          Include now
-        </label>
         <button
           class="generic-button"
           @click="take_snapshot(roster_config, profile.roster_id, 'Manual')"
         >
           Take snapshot
         </button>
-        <span v-if="jobs_left" class="text-(--text-muted)">
-          Optimizing {{ jobs_left }} snapshot{{ jobs_left > 1 ? "s" : "" }}
+        <span v-if="runs_left" class="text-(--text-muted)">
+          Optimizing {{ runs_left }} run{{ runs_left > 1 ? "s" : "" }}
           (hollow points until then)
         </span>
       </div>
@@ -316,11 +354,11 @@ const KIND_COLORS = {
           v-for="label in rows"
           :key="label"
           class="barebone-button"
-          :class="{ 'opacity-40': !shown.includes(label) }"
-          :aria-pressed="shown.includes(label)"
+          :class="{ 'opacity-40': shown !== label }"
+          :aria-pressed="shown === label"
           :aria-label="name(label)"
           :title="name(label)"
-          @click="toggle_shown(label)"
+          @click="shown = label"
         >
           <img
             :src="get_icon_path(label)"
@@ -370,6 +408,15 @@ const KIND_COLORS = {
           @click="click(snapshot)"
         ></button>
       </div>
+      <span class="text-(--text-bright)">With the current upgrades</span>
+      <IncomeGraph
+        :series="metric_series"
+        :range="range"
+        :resets="week_lines"
+        :now="now"
+        :selected="selected?.at ?? null"
+        shared
+      />
       <span class="text-(--text-muted)">
         Snapshots are taken by hand, and before and after every scanner export.
         The estimate uses those after an export and those taken by hand that are
@@ -512,10 +559,6 @@ const KIND_COLORS = {
               : "Not enough snapshots to estimate"
           }}
         </span>
-        <label v-if="now_differs" class="flex items-center gap-1.5">
-          <input v-model="include_now" type="checkbox" />
-          Include now
-        </label>
         <label class="flex items-center gap-1.5">
           <input
             :checked="profile.income_manual"

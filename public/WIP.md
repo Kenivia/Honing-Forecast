@@ -25,6 +25,8 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - replace mats graph st we have 1 mat at any time, show price history , allow adusting bounds
 
+-
+
 ## Misc UI
 
 - need to add the UI for choices and hard code some examples

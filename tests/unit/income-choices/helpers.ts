@@ -46,7 +46,7 @@ export const fake_state = (tag = 0) => ({
   upgrade_arr: [],
   prep_output: { juice_info: null },
   special_state: [tag],
-  chest_states: {},
+  chest_states: new Map(),
   adv_cache: null,
 });
 export const fake_out = (gold: number, plan: number) => ({

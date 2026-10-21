@@ -18,7 +18,7 @@ These notes are high-level. They cover what is hard to work out from reading one
 | `cloudflare/` | A Worker that proxies and caches market prices and character lookups. |
 | `public/` | Static assets, changelogs, `WIP.md` (the author's roadmap), scanner config and OCR model. |
 | `scanner_setup/` | Everything that builds or calibrates the scanner config: source icons (`templates/`), game-file extraction, brightness calibration, anchor setup, the browser profiling scripts. |
-| `scripts/` | Changelog helper and the pre-deploy check; everything scanner-specific lives in `scanner_setup/` instead. |
+| `scripts/` | Changelog helper, the pre-deploy check and the Income page's mock save (`mock income/`); everything scanner-specific lives in `scanner_setup/` instead. |
 | `tests/` | Playwright e2e tests (`e2e/`), node-side frontend tests (migrations, the real-save fixture, cross-tier relations, `pnpm test:node`), Vitest unit and component tests (`unit/`, `pnpm test:unit`), and test fixtures (the V7 save, `test-results/`). |
 | `arena_data/` | Arena scenarios and its gitignored results database, plus the Python report scripts that read it. |
 
