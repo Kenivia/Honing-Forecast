@@ -268,7 +268,7 @@
 .new-tag {
   background-color: var(--text-muted);
   color: var(--bg-void);
-  font-size: 8px;
+  font-size: 10px;
   border-radius: 3px;
   align-self: flex-start;
   top: -3px;

@@ -26,7 +26,7 @@ It holds no application logic. Parsing happens in the frontend.
 
 `Components/Common/Uwuowo`. The name is historical; the source is lostark.bible.
 
-- The Worker returns the site's HTML and the frontend scrapes it by DOM position. This breaks whenever the site changes its markup, and should be assumed fragile.
+- The Worker returns the site's HTML and the frontend scrapes it by DOM position. This breaks whenever the site changes its markup, and should be assumed fragile. Equipment is read from the first 12 cells of the equipment grid (armor alternating with accessories); since 2026-10-21 the grid has extra cells after them (Vambrace, Orb), which are ignored.
 - A successful import marks already-completed upgrades in the tickbox grids as fetched (optionally locked), may switch the character's tier, and seeds advanced-honing progress.
 - Advanced progress is seeded as `adv_progress[0] = (level % 10) * 10`, the unit AdvancedDetails and Rust use (10 per level within a block of 10, 100 when done).
 - Roster import fetches the roster list, then each missing character in turn, under a client-side rate limit of 60 requests per rolling minute (`fetch_uwuowo`). A result that lands after the name or region changed is dropped, and a character fetch never runs without a region (custom).

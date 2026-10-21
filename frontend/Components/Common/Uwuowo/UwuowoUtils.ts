@@ -135,7 +135,9 @@ export function parse_char(
       (el) => el.textContent.trim() === "Equipment",
     ).parentElement.children[1];
 
+    // armor alternates with accessories in the first 12 cells; vambrace etc follow
     pieces = [...container.children]
+      .slice(0, 12)
       .filter((_, i) => i % 2 === 0)
       .map((odd_child) => {
         const target = odd_child.children[1];

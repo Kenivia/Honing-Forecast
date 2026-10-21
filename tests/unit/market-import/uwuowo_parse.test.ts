@@ -46,6 +46,19 @@ describe("lostark.bible scraping", () => {
     });
   });
 
+  it("ignores an equipped vambrace with no quality or item level", async () => {
+    serve(
+      char_t4.replace(
+        "<span>Vambrace</span><span>Not Equipped</span>",
+        "<div><span>Vambrace</span><span>+5</span><span>T4</span></div><div></div>",
+      ),
+    );
+    const out: any = await fetch_and_parse(req(), parse_char);
+    expect(out.pieces).toEqual(
+      Array(6).fill({ plus_n: 20, ilevel: 1710, tier: 0, adv: 25 }),
+    );
+  });
+
   it("tells Serca pieces apart by a missing advanced cell and high ilevel", async () => {
     serve(char_mixed);
     const out: any = await fetch_and_parse(req(), parse_char);

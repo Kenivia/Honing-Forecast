@@ -38,6 +38,9 @@ watch(
 const is900Narrow = useMediaQuery("(max-width: 900px)");
 
 const route = useRoute();
+const on_char_page = computed(() =>
+  route.matched.some((r) => r.name === "char"),
+);
 const router = useRouter();
 
 function on_char_select(e: Event) {
@@ -144,8 +147,11 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
         </select>
       </nav>
     </header>
-    <BrokenSaveBanner />
-    <OtherTabBanner />
+    <!-- character pages show these beside their fixed sidebar instead -->
+    <template v-if="!on_char_page">
+      <BrokenSaveBanner />
+      <OtherTabBanner />
+    </template>
 
     <RouterView />
     <ScanSwitchDialog />
