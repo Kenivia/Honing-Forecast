@@ -69,6 +69,8 @@ export interface SavedProfile {
   chests: ManifestChest[];
   income_manual: boolean;
   bound_income: Record<string, number>;
+  income_now: CharProfile["income_now"];
+  income_results: CharProfile["income_results"];
   choice_levels: Record<string, string>;
 }
 
@@ -163,6 +165,8 @@ function profile_to_saved(profile: CharProfile): SavedProfile {
     chests: profile.chests,
     income_manual: profile.income_manual,
     bound_income: profile.bound_income,
+    income_now: profile.income_now,
+    income_results: profile.income_results,
     choice_levels: profile.choice_levels,
   };
 }
@@ -242,6 +246,8 @@ function profile_from_saved(
     chests: Array.isArray(saved.chests) ? saved.chests : [],
     income_manual: saved.income_manual ?? defaults.income_manual,
     bound_income: saved.bound_income ?? defaults.bound_income,
+    income_now: saved.income_now ?? defaults.income_now,
+    income_results: saved.income_results ?? defaults.income_results,
     choice_levels: saved.choice_levels ?? defaults.choice_levels,
   };
 }

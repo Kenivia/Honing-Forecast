@@ -1,3 +1,4 @@
+import type { SnapshotResult } from "@/Utils/Scans";
 import {
   ADV_COLS,
   ALL_MATERIAL_LABELS,
@@ -47,6 +48,10 @@ export interface CharProfile {
   // income per week typed by hand, char bound and free taps (under the special leap label)
   income_manual: boolean;
   bound_income: Record<string, number>;
+  // the Income page's now: the time its budgets (a hash) were first seen, and the runs of now
+  // and the weeks ahead by payload hash
+  income_now: { budgets: string; at: number } | null;
+  income_results: Record<string, SnapshotResult>;
   // the difficulty picked by hand per raid on the Choices page
   choice_levels: Record<string, string>;
 
@@ -82,6 +87,8 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
   chests: [],
   income_manual: false,
   bound_income: {},
+  income_now: null,
+  income_results: {},
   choice_levels: {},
   tier: 0,
   min_resolution: 1,

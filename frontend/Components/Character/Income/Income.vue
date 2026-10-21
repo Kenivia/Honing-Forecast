@@ -38,7 +38,7 @@ import {
 } from "@/Utils/Income";
 import IncomeGraph, { type Series } from "./IncomeGraph.vue";
 import { job_for, state_of, warm } from "./IncomeJobs";
-import { queue_jobs, stop_jobs } from "@/WasmInterface/OptimizerJobs";
+import { hash, queue_jobs, stop_jobs } from "@/WasmInterface/OptimizerJobs";
 
 // The roster's budget snapshots as this character has them over time, and its income per week.
 const { roster_config, active_profile } = storeToRefs(useRosterStore());
@@ -60,9 +60,23 @@ const snapshots = computed(() =>
     (snapshot) => snapshot.roster_id === profile.value.roster_id,
   ),
 );
+// Now counts in the estimate at the time its budgets were first seen, so the rates, and with them
+// the weeks' payloads, stay as they are (and their runs are found again) while nothing changes.
+const current = computed(() =>
+  snapshot_of(roster_config.value, profile.value.roster_id, "Manual"),
+);
+const now_budgets = computed(() => hash(budgets_of(current.value)));
+watch(
+  [now_budgets, profile],
+  ([budgets]) => {
+    if (profile.value.income_now?.budgets !== budgets)
+      profile.value.income_now = { budgets, at: Date.now() };
+  },
+  { immediate: true },
+);
 const now_snapshot = computed(() => ({
-  ...snapshot_of(roster_config.value, profile.value.roster_id, "Manual"),
-  at: now.value,
+  ...current.value,
+  at: profile.value.income_now?.at ?? now.value,
 }));
 // now counts in the estimate unless it is the latest snapshot again
 const now_differs = computed(() => {
@@ -234,9 +248,10 @@ const week_lines = computed(() => resets(...range.value));
 
 // now and the weeks ahead, as far as optimized
 const metric_series = computed((): Series[] => {
-  const done = [now_entry.value, ...future.value].filter(
-    (entry) => entry.job.result,
-  );
+  // drawn from the time it is, a week apart
+  const done = [now_entry.value, ...future.value]
+    .map((entry, weeks) => ({ entry, x: now.value + weeks * WEEK_MS }))
+    .filter(({ entry }) => entry.job.result);
   const line = (
     label: string,
     color: string,
@@ -246,7 +261,7 @@ const metric_series = computed((): Series[] => {
     label,
     color,
     dashed,
-    points: done.map((entry) => ({ x: entry.snapshot.at, y: y(entry) })),
+    points: done.map(({ entry, x }) => ({ x, y: y(entry) })),
   });
   return [
     line("Avg tradable gold spent", "--gold", cost),

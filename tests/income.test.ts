@@ -63,6 +63,8 @@ take_snapshot(config, 0, "Manual");
 config.snapshots[0].ignored = true;
 profile.income_manual = true;
 profile.bound_income["Serca Fusion"] = 4;
+profile.income_now = { budgets: "abc", at: 5 };
+profile.income_results = { abc: { gains: {}, gold: -1, leftover: -2 } };
 config.roster_income[0] = [{ Gold: 100 }, {}];
 for (let i = 0; i < 2; i++) {
   write_state(store);
@@ -74,6 +76,8 @@ check("prices kept", Object.keys(loaded.snapshots[0].prices).length > 0);
 check("ignored kept", loaded.snapshots[0].ignored === true);
 equal("char income", loaded.profiles[0].bound_income, { "Serca Fusion": 4 });
 check("manual kept", loaded.profiles[0].income_manual);
+equal("now pinned", loaded.profiles[0].income_now, { budgets: "abc", at: 5 });
+equal("now's runs", loaded.profiles[0].income_results.abc.gold, -1);
 equal("roster income", loaded.roster_income[0], [{ Gold: 100 }, {}]);
 
 done();

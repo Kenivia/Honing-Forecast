@@ -8,6 +8,7 @@ import {
 } from "@/Components/Character/Choices/ChoiceJobs";
 import { PRESET_CHOICES } from "@/Utils/Choices";
 import { budgets_of } from "@/Utils/Scans";
+import { MAX_WEEKS } from "@/Utils/Income";
 import { fake_out, fake_state, snap, want_upgrade } from "./helpers";
 
 // IncomeJobs and ChoiceJobs build the jobs; the queue itself is in optimizer-jobs.test.ts.
@@ -92,12 +93,25 @@ describe("IncomeJobs", () => {
     });
   });
 
-  it("now's results are for the session, not in the snapshot", () => {
+  it("now's results are kept in the profile, not in the snapshot", () => {
     const snapshot = snap(1, profile.id, { Red: 4 });
-    job_for(profile, snapshot, true).store(fake_out(9, 1), fake_state());
+    const job = job_for(profile, snapshot, true);
+    job.store(fake_out(9, 1), fake_state());
     expect(snapshot.chars[profile.id].results).toBeUndefined();
+    expect(profile.income_results[job.hash].gold).toBe(9);
     expect(job_for(profile, snapshot, true).result.gold).toBe(9);
     expect(job_for(profile, snapshot, false).result).toBeUndefined();
+  });
+
+  it("the profile keeps a year and a week of them, newest last", () => {
+    const hashes = Array.from({ length: MAX_WEEKS + 5 }, (_, at) => {
+      const job = job_for(profile, snap(1, profile.id, { Red: at }), true);
+      job.store(fake_out(at, 1), fake_state());
+      return job.hash;
+    });
+    expect(Object.keys(profile.income_results)).toEqual(
+      hashes.slice(-(MAX_WEEKS + 1)),
+    );
   });
 
   // characterised: a run of a character the snapshot did not have writes it an empty entry

@@ -11,6 +11,7 @@ import Income from "@/Components/Character/Income/Income.vue";
 import IncomeGraph from "@/Components/Character/Income/IncomeGraph.vue";
 import { job_for } from "@/Components/Character/Income/IncomeJobs";
 import { queue_jobs } from "@/WasmInterface/OptimizerJobs";
+import { set_cell } from "@/Utils/InputColumn";
 import { fake_out, fake_state } from "./helpers";
 
 // The Income page over tests/income-fixture.json (scripts/mock income): the real save with five
@@ -118,7 +119,6 @@ describe("Income page over the fixture", () => {
     }
   });
 
-  // one test: now's and the weeks' results are kept for the session, across tests
   it("runs the chain in order, each from the one before, on to the crossing", async () => {
     expect(graphs()).toHaveLength(1);
     const series = () => graphs()[0].props("series");
@@ -164,5 +164,31 @@ describe("Income page over the fixture", () => {
     expect(ahead[1] - ahead[0]).toBeCloseTo(40_000, -1);
     expect(ahead[11]).toBeLessThan(1_000_000);
     expect(ahead[12]).toBeGreaterThanOrEqual(1_000_000);
+  });
+
+  it("finds every run again after the clock moves and the page is left, until the budgets change", async () => {
+    const pinned = store.active_profile.income_now;
+    expect(pinned.at).toBe(NOW);
+    let runs = 0;
+    while (queued().length) {
+      queued()[0].store(fake_out(-1_000_000, -700_000), fake_state(runs++));
+      await nextTick();
+    }
+    const left = () => wrapper.text().match(/Optimizing \d+ runs?/);
+
+    vi.advanceTimersByTime(2 * 60_000);
+    await nextTick();
+    wrapper.unmount();
+    wrapper = mount(Income, { global: { stubs: { IncomeGraph: true } } });
+    await nextTick();
+    expect(left()).toBeNull();
+    expect(store.active_profile.income_now).toEqual(pinned);
+    // drawn from the time it is, all the same
+    expect(graphs()[0].props("series")[0].points[0].x).toBe(NOW + 2 * 60_000);
+
+    set_cell(store.active_profile.bound_budgets, "Serca Red", "1");
+    await nextTick();
+    expect(store.active_profile.income_now.at).toBe(NOW + 2 * 60_000);
+    expect(left()).not.toBeNull();
   });
 });

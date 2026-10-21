@@ -67,7 +67,7 @@ A profile's `id` is saved and survives load, save, load unchanged. It also arriv
 
 A profile's `chests` are saved as the scanner exported them (title, band, count, options by label, `obtain_all`), with both tiers in them; what the calculator uses is derived on the page. They arrived during V8, which is not released: V7 had none, so the migration writes an empty list and a save without the field loads as empty. Only char-bound chests are a profile's now; the rest are the roster's (`roster_chests`, keyed by roster id). `roster_chests`, `scan_pages` and `snapshots` also arrived during V8 and load empty from a save without them, V7 included (the migration goes through `from_saved`); there is no V9.
 
-`roster_income` and a profile's `income_manual` / `bound_income` / `choice_levels` arrived during V8 too and load empty or off. `scan_pages` and `snapshots` only grow with exports and are rewritten with the rest of the config on every change. If that gets slow, they are the part to move to a key of their own.
+`roster_income` and a profile's `income_manual` / `bound_income` / `income_now` / `income_results` / `choice_levels` arrived during V8 too and load empty or off. `scan_pages` and `snapshots` only grow with exports and are rewritten with the rest of the config on every change. If that gets slow, they are the part to move to a key of their own.
 
 **Do not trust a pre-V8 column's own `keys` array.** Nothing before V8 read it, so it drifted out of order in real saves while `data` stayed positional against `ALL_LABELS`. `migrate_7_to_8` maps by position for that reason.
 
