@@ -75,7 +75,9 @@ function hover_annotation(x, _y, cy, _material, color, is_last): string {
     return `<b style="color: white;">${log_percent(dist.value.pity[1])} </b> chance to hit hard pity <br> ≥ ${gold}`;
   if (x === dist.value.luckiest[0])
     return `<b style="color: white;">${log_percent(dist.value.luckiest[1])} </b> chance to be this lucky <br> ≤ ${gold}`;
-  return `<b style="color: white;">${Math.round(cy * 100)}% </b> chance to spend <br> ≤ ${gold}`;
+  // only full pity is certain
+  const percent = Math.round(cy * 100);
+  return `<b style="color: white;">${percent === 100 ? "~100" : percent}% </b> chance to spend <br> ≤ ${gold}`;
 }
 
 // MaterialDist's columns, so the graph lines up under the material graphs
