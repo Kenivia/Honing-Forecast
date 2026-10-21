@@ -103,6 +103,21 @@ describe("Income page over the fixture", () => {
     expect(rate("Gold")).toBeGreaterThan(100_000);
   });
 
+  it("weeks ahead can be typed, 5 to 52, empty for the default", async () => {
+    const input = wrapper.find('[aria-label="Weeks ahead"]');
+    const end = () => (graphs()[0].props("range")[1] - NOW) / WEEK_MS;
+    expect(input.attributes("placeholder")).toBe("auto (5)");
+    for (const [typed, weeks] of [
+      ["8", 8],
+      ["2", 5],
+      ["99", 52],
+      ["", 5],
+    ] as const) {
+      await input.setValue(typed);
+      expect(end()).toBe(weeks);
+    }
+  });
+
   // one test: now's and the weeks' results are kept for the session, across tests
   it("runs the chain in order, each from the one before, on to the crossing", async () => {
     expect(graphs()).toHaveLength(1);
@@ -110,7 +125,8 @@ describe("Income page over the fixture", () => {
     expect(series().map((s) => s.points)).toEqual([[], [], []]);
 
     // every run a cost of 1M and leftovers worth 300k (Rust's metrics are negative); with
-    // about 238k tradable gold now and 40k a week, leftovers and gold cover it in week 12
+    // about 238k tradable gold now and 40k a week, leftovers and gold cover it in week 12,
+    // and three weeks past it are shown
     const runs = [];
     while (queued().length) {
       const [next] = queued();
@@ -122,9 +138,9 @@ describe("Income page over the fixture", () => {
       await nextTick();
     }
     // the ignored snapshot is left out, then now and the weeks to the crossing
-    expect(runs).toHaveLength(11 + 1 + 12);
+    expect(runs).toHaveLength(11 + 1 + 15);
     expect(runs[0].next.hash).toBe(job(snapshots()[0]).hash);
-    expect(graphs()[0].props("range")).toEqual([NOW, NOW + 12 * WEEK_MS]);
+    expect(graphs()[0].props("range")).toEqual([NOW, NOW + 15 * WEEK_MS]);
 
     // a week of Serca Blue's char bound income on each projected budget
     const blue = (at: number) =>
@@ -138,7 +154,7 @@ describe("Income page over the fixture", () => {
       ["Avg value of leftovers", "--text-muted", false],
       ["Leftovers + tradable gold", "--gold", true],
     ]);
-    const weeks = Array.from({ length: 13 }, (_, k) => NOW + k * WEEK_MS);
+    const weeks = Array.from({ length: 16 }, (_, k) => NOW + k * WEEK_MS);
     expect(cost.points.map((p) => p.x)).toEqual(weeks);
     expect(new Set(cost.points.map((p) => p.y))).toEqual(new Set([1_000_000]));
     expect(new Set(leftover.points.map((p) => p.y))).toEqual(

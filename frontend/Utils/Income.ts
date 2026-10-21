@@ -9,10 +9,11 @@ import { merge_lower_tier } from "@/WasmInterface/PayloadBuilder";
 export const WEEK_MS = 7 * 24 * 3600 * 1000;
 // a weekly reset, Thursday 10:00 UTC; both regions reset together
 const RESET = Date.UTC(2026, 0, 1, 10);
-// the least future the graph shows
+// the least future the graph shows, and the most
 export const MIN_WEEKS = 5;
-// the furthest week projected while looking for the crossing
-export const MAX_WEEKS = 26;
+export const MAX_WEEKS = 52;
+// shown past the crossing
+export const EXTRA_WEEKS = 3;
 
 export function resets(from: number, to: number) {
   const out: number[] = [];

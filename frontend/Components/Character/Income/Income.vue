@@ -27,6 +27,7 @@ import {
   next_in_chain,
   owned_at,
   projected,
+  EXTRA_WEEKS,
   MAX_WEEKS,
   MIN_WEEKS,
   range_of,
@@ -192,12 +193,24 @@ const covered = (entry: Entry) =>
 const crosses = (entry: Entry) =>
   !!entry.job.result && covered(entry) >= cost(entry);
 
-// MIN_WEEKS ahead, then a week more while the last is done and nothing has crossed yet
+// the weeks typed, or by default a week at a time while the last is done until EXTRA_WEEKS past
+// the crossing, MIN_WEEKS at least; not saved
+const weeks_ahead = ref<number | null>(null);
+function set_weeks_ahead(value: string) {
+  const weeks = Math.round(parse_locale_float(value));
+  weeks_ahead.value =
+    value.trim() && Number.isFinite(weeks)
+      ? Math.min(MAX_WEEKS, Math.max(MIN_WEEKS, weeks))
+      : null;
+}
 const future = computed(() => {
   const out: Entry[] = [];
-  let found = crosses(now_entry.value);
-  for (let weeks = 1; weeks <= MAX_WEEKS; weeks++) {
-    if (weeks > MIN_WEEKS && (found || !out.at(-1).job.result)) break;
+  let crossing = crosses(now_entry.value) ? 0 : null;
+  for (let weeks = 1; weeks <= (weeks_ahead.value ?? MAX_WEEKS); weeks++) {
+    if (weeks_ahead.value === null && weeks > MIN_WEEKS) {
+      if (crossing === null && !out.at(-1).job.result) break;
+      if (crossing !== null && weeks > crossing + EXTRA_WEEKS) break;
+    }
     const snapshot = projected(
       now_snapshot.value,
       profile.value.id,
@@ -211,7 +224,7 @@ const future = computed(() => {
       job,
       owned: owned_at(snapshot, profile.value.id, tier.value, job.result),
     };
-    found ||= crosses(entry);
+    if (crossing === null && crosses(entry)) crossing = weeks;
     out.push(entry);
   }
   return out;
@@ -329,6 +342,16 @@ const KIND_COLORS = {
         >
           Take snapshot
         </button>
+        <label class="flex items-center gap-1.5">
+          Weeks ahead
+          <input
+            class="generic-input h-6 w-24"
+            :value="weeks_ahead ?? ''"
+            :placeholder="`auto (${future.length})`"
+            aria-label="Weeks ahead"
+            @change="set_weeks_ahead(($event.target as HTMLInputElement).value)"
+          />
+        </label>
         <span v-if="runs_left" class="text-(--text-muted)">
           Optimizing {{ runs_left }} run{{ runs_left > 1 ? "s" : "" }}
         </span>
