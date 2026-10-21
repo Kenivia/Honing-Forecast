@@ -386,7 +386,7 @@ function migrate_7_to_8(data: any): Partial<SavedConfig> {
     all_regions: data.all_regions,
     selected_bundles,
     latest_market_data: data.latest_market_data,
-    cumulative_graph: data.cumulative_graph,
+    cumulative_graph: false,
     show_all_rows: data.show_all_rows,
     auto_deduct_costs: data.auto_deduct_costs,
     auto_fetch: data.auto_fetch,

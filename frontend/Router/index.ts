@@ -62,7 +62,8 @@ const router = createRouter({
         { path: "calc", name: "calc", component: Calc },
         { path: "guide", name: "char-guide", component: Guide },
         { path: "scanner", name: "char-scanner", component: Scanner },
-        { path: "income", name: "char-income", component: Income },
+        // Income is dev only until released
+        ...(import.meta.env.DEV ? [{ path: "income", name: "char-income", component: Income }] : []),
         { path: "choices", name: "char-choices", component: Choices },
         {
           path: ":x/guide",

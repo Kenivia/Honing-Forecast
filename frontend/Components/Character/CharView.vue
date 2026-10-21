@@ -7,6 +7,7 @@ import ControlPanel from "@/Components/Character/ControlPanel.vue";
 import ScannerControlPanel from "@/Components/Character/InventoryScanner/ScannerControlPanel.vue";
 import Sidebar from "@/Components/Common/Sidebar.vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
+const DEV = import.meta.env.DEV;
 const runtime = useRuntimeStore();
 
 const route = useRoute();
@@ -54,7 +55,7 @@ onUnmounted(() => {
         <RouterLink to="scanner" class="side-bar-link" @click="close">
           Scanner
         </RouterLink>
-        <RouterLink to="income" class="side-bar-link" @click="close">
+        <RouterLink v-if="DEV" to="income" class="side-bar-link" @click="close">
           Income
         </RouterLink>
         <RouterLink to="choices" class="side-bar-link" @click="close">

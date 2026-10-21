@@ -77,7 +77,7 @@ function hover_annotation(x, _y, cy, _material, color, is_last): string {
   if (is_last)
     return `<b style="color: white;">${log_percent(dist.value.pity[1])} </b> chance to pity EVERYTHING <br> ≥ ${gold}`;
   if (x === dist.value.luckiest[0])
-    return `<b style="color: white;">${log_percent(dist.value.luckiest[1])} </b> chance to one tap (or free tap) EVERYTHING <br> ≤ ${gold}`;
+    return `<b style="color: white;">${log_percent(dist.value.luckiest[1])} </b> chance to use ≤ ${gold}`;
   // only full pity is certain
   const percent = Math.round(cy * 100);
   return `<b style="color: white;">${percent === 100 ? "~100" : percent}% </b> chance to spend <br> ≤ ${gold}`;

@@ -188,7 +188,7 @@ function toggle_lock(address: SlotAddress) {
             role="group"
             aria-label="Roster storage covered"
           >
-            <span>Taken from its last export ({{ roster_export }}).</span>
+            <span>Taken from the last export ({{ roster_export }}).</span>
             <span class="text-(--text-muted)">
               {{
                 roster_cover === null
