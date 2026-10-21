@@ -1,6 +1,7 @@
 import init, {
   optimize_average_wrapper,
   histogram_wrapper,
+  marginal_value_wrapper,
   cropper_wrapper,
   reserve_buffer_wrapper,
   take_timings,
@@ -75,13 +76,15 @@ async function handle(msg) {
   const wasm = await (wasm_ready ??= init());
   timings.init = performance.now() - start_time;
   // never log scanner state, Firefox keeps logged objects alive even with devtools closed
-  const loggable = wasm_op <= WasmOp.Histogram;
+  const loggable = wasm_op <= WasmOp.MarginalValue;
   if (loggable) console.log(WasmOp[wasm_op], "Began", payload);
 
   if (wasm_op == WasmOp.OptimizeAverage) {
     result = await optimize_average_wrapper(payload);
   } else if (wasm_op == WasmOp.Histogram) {
     result = to_records(await histogram_wrapper(payload));
+  } else if (wasm_op == WasmOp.MarginalValue) {
+    result = Object.fromEntries(await marginal_value_wrapper(payload));
   } else if (wasm_op == WasmOp.Cropper) {
     // the main thread reads the frame and transfers it with the op
     const { frame, replay, forward, ...options } = payload;

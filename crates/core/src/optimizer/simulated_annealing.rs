@@ -461,6 +461,16 @@ fn polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
     cost
 }
 
+/// The polishes alone, from the given state.
+pub fn polish_only<R: Rng>(
+    rng: &mut R,
+    state_bundle: &mut StateBundle,
+    probe: &mut Probe,
+) -> StateBundle {
+    state_bundle.tuning.max_iters = 0;
+    anneal(rng, state_bundle, probe, 1, 1, f64::NEG_INFINITY)
+}
+
 /// A random valid state some moves away from the given one, for testing the evaluator
 /// away from the optimum.
 pub fn scramble<R: Rng>(rng: &mut R, mut state_bundle: StateBundle, moves: usize) -> StateBundle {

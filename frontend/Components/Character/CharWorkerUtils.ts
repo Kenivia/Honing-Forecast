@@ -4,6 +4,7 @@ import { useRuntimeStore } from "@/Stores/RuntimeState";
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades";
 import { build_payload } from "@/WasmInterface/PayloadBuilder";
 import { WasmOp } from "@/WasmInterface/WasmTypes";
+import { ALL_LABELS } from "@/Utils/Constants";
 
 // plans[0] of every payload
 const ALL_WORTHLESS_PLAN = 0;
@@ -37,12 +38,30 @@ function eval_hist(with_gold: boolean) {
   });
 }
 
+// The gold one more unit of each enabled material saves, from a finished optimizer result.
+function start_marginal() {
+  const profile = useRosterStore().active_profile;
+  const enabled = profile.bound_budgets.enabled;
+  useRuntimeStore().marginal.debounced_start(
+    WasmOp.MarginalValue,
+    {
+      payload: build_payload(),
+      labels: ALL_LABELS[profile.tier].filter(
+        (label) => label !== "Gold" && enabled[label] !== false,
+      ),
+    },
+    undefined,
+    0,
+  );
+}
+
 export function start_all_workers() {
   const runtime = useRuntimeStore();
   const profile = useRosterStore().active_profile;
 
   runtime.optimizer.est_progress_percentage = 0;
   if (profile.auto_start_optimizer) {
+    runtime.marginal.cancel();
     runtime.optimizer.debounced_start(
       WasmOp.OptimizeAverage,
       build_payload(),
@@ -53,6 +72,7 @@ export function start_all_workers() {
         if (adv_cache?.size) runtime.adv_cache = adv_cache;
         runtime.optimizer.result = rest;
         start_eval_hist();
+        if (runtime.optimizer.status === "idle") start_marginal();
       },
     );
   }

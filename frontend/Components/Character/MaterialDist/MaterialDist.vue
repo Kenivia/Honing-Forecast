@@ -135,6 +135,16 @@ const visibleRows = computed(() =>
 );
 
 const tickbox_tooltip = `Untick the box if you don't plan on buying that material from market.`;
+const marginal_tooltip = `Average tradable gold saved per extra Char-Bound unit, for one more tap's worth of it (ten with x10 streak length).`;
+
+// from the last finished optimizer result; faded while a newer one is on its way
+const marginal = computed<Record<string, number>>(
+  () => runtime.marginal.result ?? {},
+);
+const marginal_stale = computed(
+  () =>
+    runtime.marginal.status === "busy" || runtime.optimizer.status === "busy",
+);
 // <span style="color:var(--text-muted)">(it also disable selling this mat)</span>`
 
 const total_market_gold_text = "Average tradable gold spent:";
@@ -234,7 +244,7 @@ const show_special_guide = ref(false);
 
 const grid: GridConfig = {
   grid_template_columns:
-    "minmax(260px, 320px) minmax(70px, 90px) minmax(110px, 120px) minmax(110px, 120px) 350px",
+    "minmax(260px, 320px) minmax(90px, 110px) minmax(70px, 90px) minmax(110px, 120px) minmax(110px, 120px) 350px",
 };
 
 const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be the width where the checkboxes overlap the labels
@@ -255,6 +265,10 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
         <div class="flex flex-row justify-between">
           <QuestionMark :text="tickbox_tooltip" class="mb-1" />
           <span class="mr-17.5 w-25 text-left text-(--bound)">Bound Mats</span>
+        </div>
+        <div class="flex flex-row items-end justify-end gap-1">
+          <QuestionMark :text="marginal_tooltip" class="mb-1" />
+          <span class="text-right text-(--gold)">Est. gold value</span>
         </div>
         <select
           aria-label="Chance column"
@@ -325,7 +339,14 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
               ...t4_line(t4_gain(label, active_profile.chance_band)),
             ]"
           />
-          <!-- {{ console.log(averages) }} -->
+          <MaterialCell
+            v-if="marginal[label] !== undefined"
+            :input_column="marginal"
+            :label="label"
+            :input_color="'--gold'"
+            :class="{ 'opacity-50': marginal_stale }"
+          />
+          <div v-else></div>
           <MaterialCell
             :input_column="histogram_chances"
             :label="label"
@@ -392,7 +413,7 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
             :cumulative="roster_config.cumulative_graph"
             :tooltip-text-fn="special_hover_annotation"
             :max-yoverride="1"
-            style="grid-column: span 3"
+            style="grid-column: span 4"
             :empty_message="'No normal honing available'"
             :upside_down="true"
           />

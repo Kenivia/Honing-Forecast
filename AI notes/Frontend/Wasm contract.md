@@ -37,10 +37,11 @@ There is one assembly. `payload_for` builds a payload from a profile and given b
 
 ## Workers
 
-Each character owns two worker bundles (`WorkerBundle.ts`), held in `useRuntimeStore` and keyed by profile id, one per operation:
+Each character owns three worker bundles (`WorkerBundle.ts`), held in `useRuntimeStore` and keyed by profile id, one per operation:
 
 - **Optimizer**: debounced. Starting a run terminates any run in progress, and the worker is terminated again when the result arrives, so every run uses a fresh worker.
 - **Histogram**: throttled. The latest payload wins, runs are never cancelled midway, and the worker is reused.
+- **Marginal**: `WasmOp.MarginalValue` (`Calculator core/Optimizer.md`, "Marginal value"), started only by a final optimizer result (`start_marginal` in `CharWorkerUtils.ts`) with `{payload: build_payload(), labels}`. The labels are every enabled row but Gold. A new optimizer run cancels it. Its result, a label-keyed record, stays until the next one and is shown faded while either worker is busy.
 
 Messages: the page sends an operation and payload; the worker replies with a result. During optimization, Rust also posts intermediate results with a progress estimate directly, bypassing the TypeScript worker code. Their `adv_cache` is emptied on purpose, so the page keeps the cache it has until a final result brings one.
 
@@ -60,4 +61,4 @@ The histogram's result carries the `state_bundle` it evaluated (with `chest_stat
 
 **Every gold number shown is the histogram's** (`metric_per_plan`), scored with `Tuning::reference()`, not the optimizer's `metric`, which is of a cheaper evaluator and never displayed (`Calculator core/Evaluation pipeline.md`). The two differ by about 1e-5 of the metric, so they cannot be compared to tell anything.
 
-Leaving the calculator page or switching character cancels both workers.
+Leaving the calculator page or switching character cancels every worker.

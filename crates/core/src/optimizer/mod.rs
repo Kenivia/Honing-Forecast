@@ -24,7 +24,7 @@ use crate::payload::Payload;
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
-pub use simulated_annealing::{scramble, solve};
+pub use simulated_annealing::{polish_only, scramble, solve};
 
 /// What a run in a chain knows about the run before it.
 pub struct Previous {

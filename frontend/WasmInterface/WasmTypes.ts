@@ -6,6 +6,7 @@ import type { OcrJob } from "@/Components/Character/InventoryScanner/LoadStorage
 export enum WasmOp {
   OptimizeAverage,
   Histogram,
+  MarginalValue,
   Cropper,
   Reserve,
   OcrInit,

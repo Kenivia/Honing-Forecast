@@ -126,6 +126,17 @@ const worth_color = (amount?: number) =>
         ? "var(--warning)"
         : "var(--text-main)";
 
+const baseline_text = computed(() =>
+  no_upgrades.value
+    ? "N/A"
+    : base.value.metric === undefined
+      ? "…"
+      : Math.round(base.value.metric).toLocaleString("en-US"),
+);
+
+const TABS = ["Bonus chests", "Coming soon"];
+const tab = ref(TABS[0]);
+
 const columns = computed(() => [
   profile.value.bound_budgets,
   store.active_roster_mats_owned,
@@ -137,7 +148,26 @@ const take = (choice: Choice, option: Record<string, number>) =>
 
 <template>
   <div class="flex flex-col gap-3 p-3">
-    <div class="card-shell card-body flex w-full flex-col gap-2 text-sm">
+    <div class="flex gap-1" role="tablist" aria-label="Choices">
+      <button
+        v-for="name in TABS"
+        :key="name"
+        class="generic-button"
+        :class="{ 'bg-(--bg-very-bright)!': tab === name }"
+        role="tab"
+        :aria-selected="tab === name"
+        @click="tab = name"
+      >
+        {{ name }}
+      </button>
+    </div>
+    <div
+      v-if="tab === 'Coming soon'"
+      class="card-shell card-body text-sm text-(--text-muted)"
+    >
+      Coming soon.
+    </div>
+    <div v-else class="card-shell card-body flex w-full flex-col gap-2 text-sm">
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div class="card-title">Choices</div>
         <span v-if="jobs_left" class="text-(--text-muted)">
@@ -162,7 +192,12 @@ const take = (choice: Choice, option: Record<string, number>) =>
         <span class="text-(--text-muted)">Gate</span>
         <span class="text-(--text-muted)">Cost</span>
         <span class="text-(--text-muted)">Gives</span>
-        <span class="text-(--text-muted)">Worth</span>
+        <span class="text-(--text-muted)">
+          Worth
+          <span class="block text-(--text-main)" aria-label="Baseline">
+            Baseline = {{ baseline_text }}
+          </span>
+        </span>
         <span></span>
         <template v-for="group in groups" :key="group.name">
           <div

@@ -120,6 +120,10 @@ What a run does with it (`Tuning::carry`):
 - **A state that comes with the payload is such a plan too**, which is what the frontend sends when the user optimizes again: one chain goes on from it and the rest start fresh.
 - The cost does not go to nothing as the stock grows: a run with mostly empty plans and a metric near zero still takes about half of a full one.
 
+## Marginal value
+
+`marginal.rs` (`marginal_values`) gives the calculator's "Est. gold value" column: what one more char-bound unit of a material saves in gross spend (plan 0, reference tuning), per unit. Each material gets a bump of the largest step any upgrade can take of it (a tap's base cost, or one use of a juice or book, whether the plan uses it or not), times `StateBundle::block`. The plan is then re-planned with `polish_only` (`anneal` with no iterations, under the user's plan), starting from the polished baseline. A full re-solve is not worth it: at first order, re-planning adds nothing, and fresh chains would add noise of their own. A row that no upgrade can take is left out. It costs about 3% of a solve.
+
 ## Testing a change
 
 Use the arena (`Arena.md`): snapshot the variants, run them against each other, and read the gap, hit rate and counters. All randomness must come from the solver's own `rng` so that a seed repeats. `scramble` exposes the neighbour moves for making random valid states.

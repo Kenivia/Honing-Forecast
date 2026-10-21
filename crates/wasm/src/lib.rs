@@ -1,6 +1,7 @@
 use hf_core::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use hf_core::histogram::HistogramOutputs;
 use hf_core::histogram::histogram;
+use hf_core::marginal::marginal_values;
 use hf_core::optimizer::solve;
 use hf_core::payload::Payload;
 use hf_core::probe::Probe;
@@ -62,6 +63,25 @@ pub fn histogram_wrapper(input_payload: JsValue) -> JsValue {
     let mut state_bundle: StateBundle = StateBundle::init_from_payload(payload);
     let out: HistogramOutputs = histogram(&mut state_bundle, dist_plan);
     to_value(&out).unwrap()
+}
+
+#[derive(Deserialize)]
+struct MarginalInput {
+    payload: Payload,
+    labels: Vec<String>,
+}
+
+#[wasm_bindgen]
+pub fn marginal_value_wrapper(input: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
+    let MarginalInput {
+        mut payload,
+        labels,
+    } = from_value(input).unwrap();
+    add_fresh_adv(&mut payload);
+    let mut state_bundle: StateBundle = StateBundle::init_from_payload(payload);
+    let mut rng: ThreadRng = rand::rng();
+    to_value(&marginal_values(&mut rng, &mut state_bundle, &labels)).unwrap()
 }
 
 // The scanner state stays here between calls; only a small result goes to JS.

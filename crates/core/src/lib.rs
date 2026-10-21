@@ -7,6 +7,7 @@ pub mod helpers;
 pub mod materials;
 
 pub mod honing_utils;
+pub mod marginal;
 pub mod optimizer;
 pub mod parser;
 pub mod payload;

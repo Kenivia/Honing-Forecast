@@ -52,6 +52,7 @@ onUnmounted(() => {
   const bundles = runtime.for_char(own.id);
   bundles?.optimizer.cancel();
   bundles?.histogram.cancel();
+  bundles?.marginal.cancel();
   settle_deductions(own);
 });
 </script>

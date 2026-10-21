@@ -12,6 +12,7 @@ import type { BudgetSnapshot } from "@/Components/Character/Instructions/Details
 export interface CharRuntime {
   optimizer: WorkerBundle;
   histogram: WorkerBundle;
+  marginal: WorkerBundle;
 }
 
 // A bundle only spawns a real Worker on its first launch, so idle pairs cost nothing.
@@ -19,6 +20,7 @@ function new_char_runtime(): CharRuntime {
   return {
     optimizer: create_worker_bundle(),
     histogram: create_worker_bundle(),
+    marginal: create_worker_bundle(),
   };
 }
 
@@ -54,6 +56,9 @@ export const useRuntimeStore = defineStore("runtime", {
     histogram(): WorkerBundle {
       return this.active.histogram;
     },
+    marginal(): WorkerBundle {
+      return this.active.marginal;
+    },
   },
 
   actions: {
@@ -72,6 +77,7 @@ export const useRuntimeStore = defineStore("runtime", {
         if (!ids.includes(id)) {
           this.per_char[id].optimizer.cancel();
           this.per_char[id].histogram.cancel();
+          this.per_char[id].marginal.cancel();
           delete this.per_char[id];
         }
       }
@@ -80,6 +86,7 @@ export const useRuntimeStore = defineStore("runtime", {
     cancel_active() {
       this.optimizer.cancel();
       this.histogram.cancel();
+      this.marginal.cancel();
     },
 
     ensure_cropper(): WorkerBundle {

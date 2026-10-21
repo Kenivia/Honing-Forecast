@@ -7,12 +7,12 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - ~~test & decide wtf to do with the core~~
   - code review
-- x10 streak frontend
+- ~~x10 streak frontend~~
 
 - change tradabiltiy selector to the mats column
 - estimated gold value
 
-- show baseline in choices
+- ~~show baseline in choices~~
 
 - paradise rewards from <https://sekwahar.github.io/loa_datamining/pages/hell_drops.html>
 
@@ -21,24 +21,24 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - ~~forecast mode UI~~ this is gonna hvae to be very pervasive
   - optimizer advise & all advises must be set to that time
   - this probably works better with an actual estimated income without having to configure
+- optimizer for n weeks in the future
+  - something happening over n weeks?
+
 - need to sort out the UI:
   - chest display & editing
   - preview manifest
 
 - replace mats graph st we have 1 mat at any time, show price history , allow adusting bounds
 
--
-
 ## Misc UI
 
 - need to add the UI for choices and hard code some examples
   - need to get paradise data from somewhere
   - gold chests
-  - something happening over n weeks?
 
 - save previous optimizer work
 
-- gold distribution graph (using coarse lattice maybe?)
+- ~~gold distribution graph (using coarse lattice maybe?)~~
 
 ### LOW PRIO
 

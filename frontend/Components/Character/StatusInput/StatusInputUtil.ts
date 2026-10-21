@@ -36,6 +36,7 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
   const target_runtime = useRuntimeStore().for_char(target_profile.id);
   target_runtime?.optimizer.cancel_and_clear_prev_result();
   target_runtime?.histogram.cancel_and_clear_prev_result();
+  target_runtime?.marginal.cancel_and_clear_prev_result();
 
   // Budgets are left as they are: a Serca character's T4 stock is counted as Serca when the
   // payload is built (merge_lower_tier).

@@ -20,7 +20,7 @@ Code: `Components/Character/Choices/` (`Choices.vue` the page, `ChoiceJobs.ts` t
 
 ## The page
 
-One card: a table of gate, cost, what it gives (icons and amounts, `others` on hover), worth (rounded to whole gold, `signed_gold`; green positive, red negative, the main text colour for 0, "…" until run) and "Add to budget". Rows are grouped by raid, newest first (`raids_of`): by the item level of the raid's highest difficulty, whatever the character's, which is the order of release; ties keep the data's order.
+A row of tabs on top (local state in `Choices.vue`): "Bonus chests", this card, and "Coming soon", a placeholder. One card: a table of gate, cost, what it gives (icons and amounts, `others` on hover), worth (its header shows "Baseline = " the run without's metric, rounded, "…" until run, "N/A" with no upgrades; every worth is against it) (rounded to whole gold, `signed_gold`; green positive, red negative, the main text colour for 0, "…" until run) and "Add to budget". Rows are grouped by raid, newest first (`raids_of`): by the item level of the raid's highest difficulty, whatever the character's, which is the order of release; ties keep the data's order.
 
 **Three raids** are shown and run, the newest; "Show one more raid" adds the next each press, for the visit (back to three on another character). Hidden raids are not run.
 
