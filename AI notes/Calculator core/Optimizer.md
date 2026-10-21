@@ -122,7 +122,15 @@ What a run does with it (`Tuning::carry`):
 
 ## Marginal value
 
-`marginal.rs` (`marginal_values`) gives the calculator's "Est. gold value" column: what one more char-bound unit of a material saves in gross spend (plan 0, reference tuning), per unit. Each material gets a bump of the largest step any upgrade can take of it (a tap's base cost, or one use of a juice or book, whether the plan uses it or not), times `StateBundle::block`. The plan is then re-planned with `polish_only` (`anneal` with no iterations, under the user's plan), starting from the polished baseline. A full re-solve is not worth it: at first order, re-planning adds nothing, and fresh chains would add noise of their own. A row that no upgrade can take is left out. It costs about 3% of a solve.
+**Shelved since 2026-10-21**: the column is commented out in `MaterialDist.vue` and `start_marginal` is not called, so nothing runs it. The Rust and the wasm op are still there. What was tried, and where to pick it up, is in `Optimizer tried.md`.
+
+`marginal.rs` (`use_more_prices`) gives the calculator's "Est. gold value" column: for each juice or book some upgrade can take (and with a market price), the market price under which the optimizer would use more of it. Base materials are left out. The plan is polished once (`polish_only`, `anneal` with no iterations), then for each row the price is searched downwards from market over a fixed `POLISHES` (6), each a polish of that plan with the row's market and taxed prices scaled to the trial price:
+
+- **Away from market**: steps of a tenth of the price's order of magnitude (`10^(floor(log10 price) - 1)`, about 10 for a juice), doubling, from the last price that did not use more, until one does.
+- **Then bisected** between the two for the polishes left. The answer is the middle of that bracket.
+- **Never found**: the lowest price tried, shown as "<"; if that reached 0, not even for free, shown as "-".
+
+"Uses more" is the row's expected usage (`avg_used`, exact whatever the tuning) rising past a relative 1e-6. Polishing a plan again at its own price never moved it (82 rows). It costs about 14% of a solve, more on small ones (to 40%, under 0.1 s).
 
 ## Testing a change
 

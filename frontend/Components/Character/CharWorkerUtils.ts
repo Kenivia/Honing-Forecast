@@ -38,22 +38,22 @@ function eval_hist(with_gold: boolean) {
   });
 }
 
-// The gold one more unit of each enabled material saves, from a finished optimizer result.
-function start_marginal() {
-  const profile = useRosterStore().active_profile;
-  const enabled = profile.bound_budgets.enabled;
-  useRuntimeStore().marginal.debounced_start(
-    WasmOp.MarginalValue,
-    {
-      payload: build_payload(),
-      labels: ALL_LABELS[profile.tier].filter(
-        (label) => label !== "Gold" && enabled[label] !== false,
-      ),
-    },
-    undefined,
-    0,
-  );
-}
+// // The gold one more unit of each enabled material saves, from a finished optimizer result.
+// function start_marginal() {
+//   const profile = useRosterStore().active_profile;
+//   const enabled = profile.bound_budgets.enabled;
+//   useRuntimeStore().marginal.debounced_start(
+//     WasmOp.MarginalValue,
+//     {
+//       payload: build_payload(),
+//       labels: ALL_LABELS[profile.tier].filter(
+//         (label) => label !== "Gold" && enabled[label] !== false,
+//       ),
+//     },
+//     undefined,
+//     0,
+//   );
+// }
 
 export function start_all_workers() {
   const runtime = useRuntimeStore();
@@ -72,7 +72,8 @@ export function start_all_workers() {
         if (adv_cache?.size) runtime.adv_cache = adv_cache;
         runtime.optimizer.result = rest;
         start_eval_hist();
-        if (runtime.optimizer.status === "idle") start_marginal();
+        // Est. gold value column is shelved
+        // if (runtime.optimizer.status === "idle") start_marginal();
       },
     );
   }

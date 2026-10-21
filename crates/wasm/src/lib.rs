@@ -1,7 +1,7 @@
 use hf_core::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use hf_core::histogram::HistogramOutputs;
 use hf_core::histogram::histogram;
-use hf_core::marginal::marginal_values;
+use hf_core::marginal::use_more_prices;
 use hf_core::optimizer::solve;
 use hf_core::payload::Payload;
 use hf_core::probe::Probe;
@@ -81,7 +81,7 @@ pub fn marginal_value_wrapper(input: JsValue) -> JsValue {
     add_fresh_adv(&mut payload);
     let mut state_bundle: StateBundle = StateBundle::init_from_payload(payload);
     let mut rng: ThreadRng = rand::rng();
-    to_value(&marginal_values(&mut rng, &mut state_bundle, &labels)).unwrap()
+    to_value(&use_more_prices(&mut rng, &mut state_bundle, &labels)).unwrap()
 }
 
 // The scanner state stays here between calls; only a small result goes to JS.

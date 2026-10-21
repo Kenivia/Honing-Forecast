@@ -116,3 +116,21 @@ Sessions 79, 81 and 95. Over `v0`'s time a cold run takes 1.9 and 1.5 times, a c
 - **A given state used to start every chain**, and every chain agreed with it. On `nh_dev` with `v0`'s result as the given state (the `seeded` folder, 4 seeds, session 91), hit 90.8% became 94.0% in the same time, which is what a cold run hits.
 - **The cost does not go to nothing as the stock grows**: in the last ten weeks a run still takes half of what it did in the first weeks.
 - Not tried: telling how much a payload changed, and a blob. The carried `StateBundle` has been all that was needed.
+
+## Marginal value
+
+- **Until 2026-10-21 it was one bump scored in plan 0** (gross spend) for every row: one more step char-bound, re-polished, gold saved per unit. For a juice or book that is about its market price times the chance of running short, never over market (a unit worth more is already bought on demand), so it could not say whether buying is worth it. It also re-polished under the user's plan while scoring in plan 0, which gave negative values (to -10k per book on `single_3048_serca_n37`, whose plan credits tradable leftovers at the taxed price).
+- **An average over purchases** (when the plan buys, re-polish with the row at 1000x market and divide what that costs the other rows by the units bought; otherwise the bump, scored in the optimizer's plan) was built and dropped the same day. With a prohibitive price the fixed plan only uses juice where even the worst case stays within stock, so the comparison credits purchases with what flexible use of the stock saves: as stock grew the value went from about 5% of market to about 3x and back down.
+- **A range both ways** (doubling steps up and down until usage moves): 16% of a solve over 30 `normal` scenarios, most of it upward searches on unused rows that can never move. Only the lower side was wanted.
+
+### Full solves with buying disabled (where it was left)
+
+`crates/arena/examples/no_buy.rs`, kept for picking this up: the row's market price times 1000, a full `solve` at stock x and at x + d (d in uses of one tap, times the block), scored in the optimizer's plan at the reference tuning, (V(x + d) - V(x)) / d. `SWEEP=name:label:points:spacing` sweeps the stock from 0; `ENVELOPE=...` re-solves each point carried from its neighbours' plans; with neither, each row of the first N scenarios at its own stock, d = 1, 2, 4, 8, two seeds.
+
+- **Mostly falls smoothly with stock** (single_3005 Lava 132, 112, 99 ... 11), with a small rise at the very start (single_3000 Glacier 8, 17, 49, then down). The 5% to 3x swing of the average-over-purchases method is gone.
+- **Carrying x's plan into the x + d solve changed nothing**: on these scenarios the cold solve already finds the same plan.
+- **Two kinds of blip.** Real ones, where owning more makes a better plan possible (single_3000 Glacier 320 to 400: usage 33 to 45, no neighbour's plan beats either solve). And optimizer misses (640 to 720: a neighbour's plan was 511 and 915 gold better, which smoothed 0.2, 33 to 10.3, 10.3).
+- **Seed spread falls with d**: about 15 to 45% at d = 1 on the larger scenarios, under 10% for most rows at d = 4, about the same at 8. Small scenarios were the same over seeds at every d. A larger d averages over later units that are worth less (single_3001 Enhanced 19-20 Weapon: 78, 39, 19, 10, as only one more book is used), which flipped buy against market for one row (single_3012 11-14 Armor, market 265: 285 to 407 at d = 1, 2; 182 to 242 at d = 4, 8).
+- single_3003 Glacier stays noisy at every d (26 against 70 at d = 1): the x solve itself varies.
+- Cost: one full solve per row per d plus the baseline; 4 to 5 s a solve on single_3003 and single_3012.
+- **Not yet tried**: d = 4 with a two-way carry (x cold, x + d from x, x again from x + d's plan, keep the better x), which is what removed the misses in the envelope test. Also open: whether the column should mean the next unit (small d, noisier) or the next few on average.

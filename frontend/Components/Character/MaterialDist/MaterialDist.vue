@@ -8,7 +8,7 @@ import {
   ANNOTATION_POSITIONS,
   ANNOTATION_LABELS,
   SPECIAL_LEAP_LABELS,
-  cheapest_bundles,
+  // cheapest_bundles, // Est. gold value column
 } from "@/Utils/Constants";
 import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
@@ -42,7 +42,7 @@ const {
   active_roster_mats_owned,
   active_tradable_mats_owned,
   processed_chests,
-  active_mats_prices,
+  // active_mats_prices, // Est. gold value column
 } = storeToRefs(useRosterStore());
 const histogram_result = computed(() => runtime.histogram.result);
 
@@ -152,30 +152,35 @@ const visibleRows = computed(() =>
 );
 
 const tickbox_tooltip = `Untick the box if you don't plan on buying that material from market.`;
-const marginal_tooltip = `Average tradable gold saved per extra Char-Bound market bundle, for one more tap's worth of it (ten with x10 streak length).`;
+// Est. gold value column, shelved for now (Calculator core/Optimizer.md, "Marginal value")
+// const marginal_tooltip = `The market price per bundle below which the optimizer would use more of this juice or book. "<" means it still didn't at that price, "-" not even for free.`;
 
-// from the last finished optimizer result; faded while a newer one is on its way
-const marginal = computed<Record<string, number>>(
-  () => runtime.marginal.result ?? {},
-);
-// per market bundle, using whichever bundle is currently cheapest per unit
-const marginal_bundle = computed(() =>
-  cheapest_bundles(input_column_to_num(active_mats_prices.value)),
-);
-// integers, but at least 2 significant figures
-const marginal_text = (label: string) => {
-  const x = marginal.value[label] * marginal_bundle.value[label];
-  const digits =
-    x === 0 ? 0 : Math.max(0, 1 - Math.floor(Math.log10(Math.abs(x))));
-  return x.toLocaleString("en-US", {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
-};
-const marginal_stale = computed(
-  () =>
-    runtime.marginal.status === "busy" || runtime.optimizer.status === "busy",
-);
+// // from the last finished optimizer result; faded while a newer one is on its way
+// // [price per unit, found]
+// const marginal = computed<Record<string, [number, boolean]>>(
+//   () => runtime.marginal.result ?? {},
+// );
+// // per market bundle, using whichever bundle is currently cheapest per unit
+// const marginal_bundle = computed(() =>
+//   cheapest_bundles(input_column_to_num(active_mats_prices.value)),
+// );
+// // integers, but at least 2 significant figures
+// const marginal_text = (label: string) => {
+//   const [price, found] = marginal.value[label];
+//   if (!found && price === 0) return "-";
+//   const x = price * marginal_bundle.value[label];
+//   const digits =
+//     x === 0 ? 0 : Math.max(0, 1 - Math.floor(Math.log10(Math.abs(x))));
+//   const text = x.toLocaleString("en-US", {
+//     minimumFractionDigits: digits,
+//     maximumFractionDigits: digits,
+//   });
+//   return (found ? "~" : "<") + text;
+// };
+// const marginal_stale = computed(
+//   () =>
+//     runtime.marginal.status === "busy" || runtime.optimizer.status === "busy",
+// );
 // <span style="color:var(--text-muted)">(it also disable selling this mat)</span>`
 
 // Plan 0 credits nothing, so it is the gross spend; plan 1 is the user's, which is what
@@ -281,7 +286,9 @@ const show_special_guide = ref(false);
 
 const grid: GridConfig = {
   grid_template_columns:
-    "minmax(260px, 320px) minmax(90px, 110px) minmax(70px, 90px) minmax(110px, 120px) minmax(110px, 120px) 350px",
+    "minmax(260px, 320px) minmax(70px, 90px) minmax(110px, 120px) minmax(110px, 120px) 350px",
+  // with the Est. gold value column:
+  // "minmax(260px, 320px) minmax(90px, 110px) minmax(70px, 90px) minmax(110px, 120px) minmax(110px, 120px) 350px",
 };
 
 const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be the width where the checkboxes overlap the labels
@@ -318,13 +325,13 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
             </option>
           </select>
         </div>
-        <div class="flex flex-col items-end text-(--gold)">
+        <!-- <div class="flex flex-col items-end text-(--gold)">
           <span>Est. gold</span>
           <div class="flex flex-row items-end gap-1">
             <span>value</span>
             <QuestionMark :text="marginal_tooltip" class="mb-1" />
           </div>
-        </div>
+        </div> -->
         <div class="flex flex-row items-end justify-end gap-1">
           <span class="text-right" :style="{ color: selected_chance_color }"
             >Chance</span
@@ -388,7 +395,7 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
               ...lower_lines(label, active_profile.chance_band),
             ]"
           />
-          <div
+          <!-- <div
             v-if="marginal[label] !== undefined"
             class="flex flex-col items-end justify-center text-(--gold)"
             :class="{ 'opacity-50': marginal_stale }"
@@ -400,7 +407,7 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
               >(x{{ marginal_bundle[label].toLocaleString("en-US") }})</span
             >
           </div>
-          <div v-else></div>
+          <div v-else></div> -->
           <MaterialCell
             :input_column="histogram_chances"
             :label="label"
@@ -467,7 +474,7 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
             :cumulative="roster_config.cumulative_graph"
             :tooltip-text-fn="special_hover_annotation"
             :max-yoverride="1"
-            style="grid-column: span 4"
+            style="grid-column: span 3"
             :empty_message="'No normal honing available'"
             :upside_down="true"
           />
