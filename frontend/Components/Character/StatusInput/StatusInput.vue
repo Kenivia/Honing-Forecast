@@ -1,50 +1,22 @@
 <script setup lang="ts">
 import TickboxGrid from "./TickboxGrid.vue";
 import { storeToRefs } from "pinia";
-import {
-  check_adv_all_done,
-  check_all_plus_20,
-  check_revert_ilevel_ok,
-} from "@/Utils/Helpers";
-import { computed } from "vue";
+import { check_revert_ilevel_ok } from "@/Utils/Helpers";
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import Uwuowo from "@/Components/Common/Uwuowo/Uwuowo.vue";
 import { ilevel } from "@/Utils/HoningUtil.js";
 import { apply_results } from "@/Components/Common/Uwuowo/ApplyResults.js";
-import { change_tier } from "./StatusInputUtil.js";
+import {
+  change_tier,
+  tier_label,
+  tier_tooltip,
+  tier_warning,
+} from "./StatusInputUtil.js";
 
 const roster_store = useRosterStore();
 const { active_profile, all_profiles, active_region } =
   storeToRefs(roster_store);
-
-const tooltip_text = computed(() => {
-  return active_profile.value.tier == 0
-    ? check_all_plus_20(active_profile.value) &&
-      check_adv_all_done(active_profile.value)
-      ? "Eligible for conversion to T4.5 Serca gear"
-      : "Warning! " +
-        [
-          !check_adv_all_done(active_profile.value)
-            ? "All Adv honing will be set to +40"
-            : null,
-          !check_all_plus_20(active_profile.value)
-            ? "All Gear will be set to +11 (Serca)"
-            : null,
-        ]
-          .filter((x) => x !== null)
-          .join(", \n")
-    : check_revert_ilevel_ok(active_profile.value) === true
-      ? "Can go back to T4"
-      : "Cannot convert back to T4 because +" +
-        String(check_revert_ilevel_ok(active_profile.value)) +
-        " cannot be mapped directly to a T4 upgrade";
-});
-const tier_label_text = computed(() => {
-  return active_profile.value.tier == 0
-    ? "Convert to T4.5 Serca"
-    : "Revert back to T4";
-});
 </script>
 
 <template>
@@ -92,20 +64,14 @@ const tier_label_text = computed(() => {
           >Pending ilevel: {{ ilevel(active_profile, "pending") }}</label
         >
         <TierConvertButton
-          :labelText="tier_label_text"
-          :tooltipText="tooltip_text"
+          :labelText="tier_label(active_profile)"
+          :tooltipText="tier_tooltip(active_profile)"
           :checkEligibility="
             () => check_revert_ilevel_ok(active_profile) === true
           "
           @change-tier="() => change_tier(active_profile)"
           :show-tooltip-only-on-disabled="false"
-          :warning="
-            active_profile.tier == 0 &&
-            !(
-              check_all_plus_20(active_profile) &&
-              check_adv_all_done(active_profile)
-            )
-          "
+          :warning="tier_warning(active_profile)"
         />
         <label class="control-panel-checkbox-row border-0!">
           <input disabled type="checkbox" class="cursor-not-allowed" />

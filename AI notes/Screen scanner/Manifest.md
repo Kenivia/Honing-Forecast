@@ -2,7 +2,7 @@
 
 What the scan amounts to: materials per ownership band, plus the chests still to be opened, merged with the pages saved by earlier exports and with the other characters of the roster. It sits between the scanner and the rest of the site, under the slot grid and dashboard on the scanner page. Nothing in it is opened: every chest is passed on whole, with both tiers in it, and how each stack is opened is a state the calculator core decides (`Calculator core/Domain model.md`, "Chests"). It reaches the calculator only through the export button. It is read-only; corrections are made on the slots before export, or on the budgets and chests of the calculator after it.
 
-Code: `Manifest.ts` (build logic, `live` and `manifest` computeds, the roster cover, `export_manifest`), `Manifest.vue` (the page), both in `InventoryScanner`. Saved pages, their merging and the budget snapshots are in `Utils/Scans.ts`. The chest types, `merge`, `to_serca` and `process_chests` are in `Utils/Chest.ts`, and the two chest panels are `Common/ChestPanels.vue`, shared with the calculator page. What was tried and dropped is in `Manifest tried.md`.
+Code: `Manifest.ts` (build logic, `live` and `manifest` computeds, the window covers, `export_manifest`), `Manifest.vue` (the page), both in `InventoryScanner`. Saved pages, their merging and the budget snapshots are in `Utils/Scans.ts`. The chest types, `merge`, `to_serca` and `process_chests` are in `Utils/Chest.ts`, and the two chest panels are `Common/ChestPanels.vue`, shared with the calculator page. What was tried and dropped is in `Manifest tried.md`.
 
 ## Building it
 
@@ -34,22 +34,22 @@ Pages persist (`scan_pages` in the roster config, `ScanPage` in `Scans.ts`): an 
 
 - **A page not seen now is taken as last exported** (`own_pages`), the roster's and this character's. As soon as its page is open in game, the live one replaces it, complete or not; what it misses is in the missing list.
 - **The other characters of the roster** (`other_pages`) add their saved pages' roster-bound and tradable bands and chests. Their char-bound bands stay theirs.
-- **Accepted:** an item moved to a page not shown again, or to another character, is counted twice. The user is told which pages are saved (the tab marker in `Slot grid.md`, and the "From earlier exports" card) and is expected to show what changed.
+- **Accepted:** an item moved to a page not shown again, or to another character, is counted twice. The user is told which pages are saved (the tab marker and "Using most recent scan" in `Slot grid.md`) and is expected to show what changed.
 - Pages of a deleted character or one moved to another roster are left in the save and ignored.
 
-## Roster storage covered
+## Roster storage and character storage covered
 
-Roster storage is shared, so it need not be shown again for every character. `roster_covered` says it is taken wholly from its saved pages, and while it is, everything read there is ignored (not counted, not missing, not saved). It is covered by default when a roster page was ever saved (`roster_pages`), no roster page open in game during this capture (`seen_pages`) lacks a saved copy, and the roster's roster-bound and tradable budgets are as the latest snapshot has them (`roster_unchanged`; the bound budgets are not compared). A roster page never saved and never open counts as empty. `roster_cover` in `ScanStore.ts` is the user's say either way, reset by an export and by a wipe; a scan moved to another character of the same roster keeps it. The grid shows it (`Slot grid.md`).
+Roster storage and character storage (`COVERABLE`) need not be shown again when nothing there changed: roster storage for every character, character storage for every scan of its own. `covered[window]` says one is taken wholly from its saved pages, and while it is, everything read there is ignored (not counted, not missing, not saved). It is covered by default when a page of it was ever saved (`cover_pages`: the roster's for roster storage, this character's for character storage), no page of it open in game during this capture (`seen_pages`) lacks a saved copy, and the budgets it feeds are as the latest snapshot has them: for roster storage the roster's roster-bound and tradable budgets (`roster_unchanged`), for character storage those and the character's own bound budget and chests (`char_unchanged`), since it holds every band. A page never saved and never open counts as empty. The inventory is never covered. `window_cover` in `ScanStore.ts` is the user's say either way per window, reset by an export and by a wipe (`reset_covers`); a scan moved to another character of the same roster keeps the roster storage one only. The grid shows it (`Slot grid.md`).
 
 ## Export
 
 `export_manifest`, in this order:
 
 1. Every missing slot (one with an address) is set irrelevant by an edit, so it counts as nothing and is saved that way.
-2. The manifest is read, **before** the first snapshot: the snapshot can make roster storage covered by default and drop what was just read there.
+2. The manifest is read, **before** the first snapshot: the snapshot can make a window covered by default and drop what was just read there.
 3. A "Before export" snapshot of the roster (below).
 4. The character's bound budget is overwritten with its own char-bound band; the roster's roster-owned and tradable columns with the merged roster-bound and tradable bands (other characters included); the free-tap budget with the sum of the three; a cell nothing holds is 0. Nothing is converted: a Serca character's T4 materials go under their T4 labels (the columns hold every label, whatever the tier shows), and the calculator counts them as Serca (`Frontend/Wasm contract.md`, "Building the payload"). Char-bound chests go to `profile.chests`, the rest to `roster_chests[roster_id]`, unconverted.
-5. The pages seen are saved, then an "After export" snapshot, and the cover goes back to its default.
+5. The pages seen are saved, then an "After export" snapshot, and the covers go back to their default.
 
 ## Snapshots
 
@@ -57,11 +57,11 @@ Roster storage is shared, so it need not be shown again for every character. `ro
 
 ## The page
 
-- Hidden behind a warning while any slot is missing; the user can open it anyway, and those slots are simply not in it (and set irrelevant by an export). Under the warning is the list "Missing slots": where each one is (`slot_place`), what it holds and the scanner's reason for it.
-- Two tabs, one per tier, for the materials. A material shared between tiers shows on both with one value. The chest panels do not follow the tab: every chest shows, as merged.
-- **Two chest panels side by side**, "Selection chests" (`obtain_all` false, a select-one with one option left included) and "Obtain-all chests" (strictly those), with the same rows: count, icon, band, contents. A stack shows the art of every chest in it (`icons`, from the `icon` of `chests.json`, served by `Common/ChestIcon.vue` straight out of `scanner_setup/templates/ChestIcons`), its titles on hover; one without art (added by hand, or saved before chests had icons) shows its title.
+- The page is a centered column. Two separator lines under the dashboard frame the warning that hides it: hidden behind that warning while any slot is missing; the user can open it anyway, and those slots are simply not in it (and set irrelevant by an export). Under the warning is the list "Missing slots": where each one is (`slot_place`), what it holds and the scanner's reason for it.
+- Two tabs, one per tier, for the materials, in the table's header above the label column, on Serca whenever the manifest holds any Serca-only material, else on the character's tier. A material shared between tiers shows on both with one value.
+- **A T4 character with Serca-only materials** in its own character storage or inventory pages (read or saved; chests not looked at) gets a warning above the export button with the calculator's tier button (`TierConvertButton`, its texts from `StatusInputUtil.ts`). "Export to calculator" has green text, like the calculator's Confirm. The chest panels do not follow the tab: every chest shows, as merged.
+- **The chest panels sit under the materials grid**, then "Not included". Two panels side by side, "Selection chests" (`obtain_all` false, a select-one with one option left included) and "Obtain-all chests" (strictly those), with the same rows: count, icon, band, contents. A stack shows the art of every chest in it (`icons`, from the `icon` of `chests.json`, served by `Common/ChestIcon.vue` straight out of `scanner_setup/templates/ChestIcons`), its titles on hover; one without art (added by hand, or saved before chests had icons) shows its title.
 - **Amounts are read-only text**, what the export writes. There are no overrides.
-- **"From earlier exports"** lists the saved pages in use (who scanned them and when) and the other characters whose roster-bound and tradable things are added.
 - **Nothing is converted.** For a Serca character a Serca row shows "+c from T4", what the calculator will add from the T4 amounts (`merge_lower_tier`: bound into bound, roster-bound and tradable into roster-bound), and under it "+m from chests": what the chests with one option (obtain-all and trivial select-ones) give, as they are, by band (`chest_gains` with no states). Chests with a choice add nothing here. Both lines are `MaterialCell`'s `plus` and neither is in the amount or the export. Chests keep their T4 materials; they are converted on the calculator page, for the character's tier (below).
 
 ## On the calculator page

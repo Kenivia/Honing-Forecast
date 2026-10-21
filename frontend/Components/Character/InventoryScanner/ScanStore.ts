@@ -88,9 +88,14 @@ export function chests_for(address: SlotAddress, icon: string | null) {
   );
 }
 
-// the user's say on covering roster storage, null for the default; kept until the next export
-// or a wipe
-export const roster_cover = ref<boolean | null>(null);
+// the user's say on covering each coverable window, null for the default; kept until the next
+// export or a wipe
+export const window_cover = ref<Record<string, boolean | null>>({
+  Roster: null,
+  CharStorage: null,
+});
+export const reset_covers = () =>
+  (window_cover.value = { Roster: null, CharStorage: null });
 // bumped by `wipe_scan`, so a running capture starts over
 export const scan_wipes = ref(0);
 

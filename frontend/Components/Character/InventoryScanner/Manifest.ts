@@ -16,6 +16,7 @@ import {
   page_key,
   PageContent,
   ROSTER_WINDOWS,
+  char_unchanged,
   roster_unchanged,
   save_pages,
   ScanPage,
@@ -31,12 +32,13 @@ import {
   currencies,
   edits,
   has_progress,
-  roster_cover,
+  reset_covers,
   seen_pages,
   set_edit,
   shown_slot,
   slot_place,
   slots,
+  window_cover,
   WINDOW_NAMES,
 } from "./ScanStore";
 import ITEMS from "../../../../scanner_setup/templates/items.json";
@@ -164,34 +166,48 @@ function alternatives(
   return [merge(parts.flatMap((part) => (part.length === 1 ? part : [])))];
 }
 
-// the roster storage pages saved by an earlier export, by `page_key`
-export const roster_pages = computed(() => {
+// windows the last export can stand in for wholly: roster storage and character storage
+export const COVERABLE = ["Roster", "CharStorage"];
+// the pages of each coverable window saved by an earlier export, by `page_key`
+export const cover_pages = computed(() => {
   const { roster_config, active_profile } = useRosterStore();
-  return new Set(
-    roster_config.scan_pages
-      .filter(
-        (page) =>
-          page.window === "Roster" &&
-          page.char_id === null &&
-          page.roster_id === active_profile.roster_id,
-      )
-      .map((page) => page_key(page.window, page.page)),
+  const owner = { Roster: null, CharStorage: active_profile.id };
+  const out = Object.fromEntries(
+    COVERABLE.map((window) => [window, new Set<string>()]),
   );
+  for (const page of roster_config.scan_pages) {
+    if (
+      page.window in owner &&
+      page.char_id === owner[page.window] &&
+      page.roster_id === active_profile.roster_id
+    )
+      out[page.window].add(page_key(page.window, page.page));
+  }
+  return out;
 });
-// Whether roster storage is taken from the pages saved by an earlier export, its grid covered and
-// whatever is read there ignored. It is unless no roster page was ever saved, one open in game
-// never was, or the roster's budgets changed since the last snapshot. The user can flip it either
-// way.
-export const roster_saved = computed(() => roster_pages.value.size > 0);
-export const roster_covered = computed(() => {
-  if (!roster_saved.value) return false;
-  if (roster_cover.value !== null) return roster_cover.value;
-  const unsaved = Object.keys(seen_pages.value).some(
-    (key) => key.startsWith("Roster ") && !roster_pages.value.has(key),
-  );
-  if (unsaved) return false;
+// Whether a coverable window is taken from the pages saved by an earlier export, its grid
+// covered and whatever is read there ignored. It is unless none of its pages was ever saved, one
+// open in game never was, or the budgets it feeds changed since the last snapshot. The user can
+// flip it either way.
+export const covered = computed(() => {
   const { roster_config, active_profile } = useRosterStore();
-  return roster_unchanged(roster_config, active_profile.roster_id);
+  const { roster_id, id } = active_profile;
+  const unchanged = {
+    Roster: roster_unchanged(roster_config, roster_id),
+    CharStorage: char_unchanged(roster_config, roster_id, id),
+  };
+  return Object.fromEntries(
+    COVERABLE.map((window) => {
+      const pages = cover_pages.value[window];
+      if (!pages.size) return [window, false];
+      const say = window_cover.value[window];
+      if (say !== null) return [window, say];
+      const unsaved = Object.keys(seen_pages.value).some(
+        (key) => key.startsWith(`${window} `) && !pages.has(key),
+      );
+      return [window, !unsaved && unchanged[window]];
+    }),
+  ) as Record<string, boolean>;
 });
 
 // Straight off the slot grid, per page, before conversion. Only slots that are good or were set
@@ -203,8 +219,7 @@ export const live = computed(() => {
   const missing: MissingSlot[] = [];
   const seen = new Set<string>();
   const content = (key: string) => (pages[key] ??= empty_content());
-  const covered = (window: string) =>
-    window === "Roster" && roster_covered.value;
+  const is_covered = (window: string) => !!covered.value[window];
 
   function group(
     key: string,
@@ -257,7 +272,7 @@ export const live = computed(() => {
   }
 
   for (const key of Object.keys(seen_pages.value)) {
-    if (!covered(key.split(" ")[0])) seen.add(key);
+    if (!is_covered(key.split(" ")[0])) seen.add(key);
   }
   const keys = new Set([...slots.value.keys(), ...Object.keys(edits.value)]);
   for (const key of keys) {
@@ -265,7 +280,7 @@ export const live = computed(() => {
     const slot = shown_slot(slots.value.get(key));
     if (!edit && (!slot || slot.status === "Irrelevant")) continue;
     const address = edit?.address ?? slot.address;
-    if (covered(address.inventory_type)) continue;
+    if (is_covered(address.inventory_type)) continue;
     const item = edit ? edit.item : slot.icon_name_score?.[0];
     if (!item) continue;
     const page = page_key(address.inventory_type, address.page_num);
@@ -281,7 +296,7 @@ export const live = computed(() => {
       missing.push({
         place: slot_place(address),
         item: item_name(item),
-        why: slot.reason || "Its number is still being read.",
+        why: slot.reason || "Its number is still being recognized by OCR.",
         address,
       });
     const band =
@@ -433,7 +448,7 @@ export function export_manifest() {
         tradability: null,
       });
   }
-  // read first: the snapshot can make roster storage covered by default
+  // read first: the snapshot can make a window covered by default
   const { materials, chests, read } = manifest.value;
   const store = useRosterStore();
   const config = store.roster_config;
@@ -477,7 +492,7 @@ export function export_manifest() {
     ),
   );
   take_snapshot(config, profile.roster_id, "After export");
-  roster_cover.value = null;
+  reset_covers();
   exported_read.value = JSON.stringify(manifest.value.read);
 }
 

@@ -23,7 +23,10 @@ export default async ({ page, hf }) => {
 
   await hf.open(page, "/Newchar/scanner");
   await page.getByLabel("Upload image or video").setInputFiles(FILE);
-  await page.getByText("● Live").waitFor({ timeout: 180_000 });
+  await page.getByRole("button", { name: /Show details/ }).click();
+  await page
+    .getByLabel("Frames scanned per second")
+    .waitFor({ timeout: 180_000 });
 
   // once the video ends the upload only repeats its last frame twice a second
   // the page keeps the last 5000 of each, a long recording has more

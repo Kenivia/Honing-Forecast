@@ -91,7 +91,7 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
   income_results: {},
   choice_levels: {},
   tier: 0,
-  min_resolution: 1,
+  min_resolution: 10,
 
   roster_id: 0,
   optimizer_override: {

@@ -4,6 +4,7 @@ import { BAND_COLORS, BAND_NAMES } from "@/Utils/Constants";
 import { get_icon_path } from "@/Utils/Helpers";
 import { amount_text, state_fits, type Chest } from "@/Utils/Chest";
 import ChestIcon from "./ChestIcon.vue";
+import CloseButton from "./CloseButton.vue";
 
 // The chests still to be opened, as two lists side by side in one card, the selection one in two
 // columns while obtain-all is hidden. Which chest goes where is the page's to say. The default
@@ -143,14 +144,13 @@ const row_span = computed(() => (props.editing ? 4 : 3));
                 </span>
               </template>
             </span>
-            <button
+            <CloseButton
               v-if="editing"
-              class="generic-button"
+              class="justify-self-center"
+              :size="28"
               :aria-label="`Delete ${chest.title}`"
               @click="emit('remove', chest.key)"
-            >
-              x
-            </button>
+            />
           </div>
         </div>
         <slot v-if="at === 0" />

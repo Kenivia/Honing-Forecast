@@ -1,6 +1,6 @@
 # Currencies
 
-Silver, gold and Destiny Shards are read apart from the slots, in `crates/scanner/src/currency.rs`, as the last step of every scanned frame. The page shows them in a bar above the slot grid (`CurrencyBar.vue`) and the manifest adds them to its cells (`Manifest.md`).
+Silver, gold and Destiny Shards are read apart from the slots, in `crates/scanner/src/currency.rs`, as the last step of every scanned frame. The page shows them in a bar above the slot grid, in the same card (`CurrencyBar.vue`) and the manifest adds them to its cells (`Manifest.md`).
 
 What was measured, and the cases behind the rules, are in `Currency tried.md`; read it only when trying something new here.
 

@@ -11,20 +11,13 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
   - optimizer for n weeks in the future
     - something happening over n weeks?
 
-- ~~replace mats graph st we have 1 mat at any time, show price history , allow adusting~~
-
 ## Misc UI
 
-- show a warning when the char is t4 but serca mats detected in char storage / inv
-- hide obtain all and cap length when not shown, consolidate into one panel
-- forced x10 location
 - need to add the UI for choices and hard code some examples
   - ~~need to get paradise data from somewhere~~
   - ~~gold chests~~
   - mari's shop
-  - custom chests
-- save previous optimizer work
-- hover tooltip for data
+  - ~~custom chests~~
 
 ### LOW PRIO
 
@@ -63,6 +56,13 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Done / cancelled
 
+- ~~replace mats graph st we have 1 mat at any time, show price history , allow adusting~~
+- ~~show a warning when the char is t4 but serca mats detected in char storage / inv~~
+- ~~hide obtain all and cap length when not shown, consolidate into one panel~~
+- ~~forced x10 location~~
+
+- ~~save previous optimizer work~~ nah its fine
+- ~~hover tooltip for data~~
 - ~~gold distribution graph (using coarse lattice maybe?)~~
 
 ~~bounds~~

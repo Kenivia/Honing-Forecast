@@ -137,7 +137,7 @@ watch(
           v-for="name in MODES"
           :key="name"
           class="generic-button"
-          :class="{ 'bg-(--bg-very-bright)!': mode === name }"
+          :class="{ 'bg-(--gold-muted)!': mode === name }"
           :aria-pressed="mode === name"
           @click="pick('Paradise mode', name)"
         >
@@ -150,7 +150,7 @@ watch(
           :key="difficulty.name"
           class="generic-button"
           :class="{
-            'bg-(--bg-very-bright)!': shown === difficulty.name,
+            'bg-(--gold-muted)!': shown === difficulty.name,
             'text-(--text-very-muted)': difficulty.item_level > item_level,
           }"
           :aria-pressed="shown === difficulty.name"
@@ -165,7 +165,7 @@ watch(
         v-for="name in LEVELS"
         :key="name"
         class="generic-button"
-        :class="{ 'bg-(--bg-very-bright)!': level === name }"
+        :class="{ 'bg-(--gold-muted)!': level === name }"
         :aria-pressed="level === name"
         @click="pick('Paradise level', name)"
       >

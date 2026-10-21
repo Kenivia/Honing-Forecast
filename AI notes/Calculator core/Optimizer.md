@@ -86,7 +86,7 @@ Inside a response:
 
 ## Streak length
 
-The game can do ten taps at once, so a plan may be asked to change what it takes only every so many taps. The payload's `min_resolution` is that number (`StateBundle::block`; `Tuning::streak_length` overrides it, which is how the arena varies it). The frontend sends the profile's `min_resolution`, 1 or 10 by the "Force x10 streak length" checkbox in the optimizer control panel (saved with the profile).
+The game can do ten taps at once, so a plan may be asked to change what it takes only every so many taps. The payload's `min_resolution` is that number (`StateBundle::block`; `Tuning::streak_length` overrides it, which is how the arena varies it). The frontend sends the profile's `min_resolution`, 1 or 10 by the "Force x10 streak length" checkbox in the optimizer control panel (saved with the profile; new profiles default to 10, V7 migrations get 1).
 
 - **The rule**: from an upgrade's next tap on, the taps go in blocks of that many, and every tap of a block takes the same. So every streak, of taking or of not taking, is a multiple of it but the last before the pity, which the pity cuts.
 - **A random move** rounds its front streak down to a block and starts its back streak where a block does, and changes a streak by two blocks at least, or the rounding would undo it.

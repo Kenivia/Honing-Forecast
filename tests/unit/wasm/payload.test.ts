@@ -185,7 +185,7 @@ describe("build_payload: plans and budget", () => {
     const p = build_payload();
     // event temporarily forced off
     expect(p.express_event).toBe(false);
-    expect([p.num_threads, p.metric_type, p.min_resolution]).toEqual([1, 1, 1]);
+    expect([p.num_threads, p.metric_type, p.min_resolution]).toEqual([1, 1, 10]);
   });
 });
 

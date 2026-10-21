@@ -15,7 +15,7 @@ import {
   currencies,
   edits,
   reset_scan,
-  roster_cover,
+  window_cover,
   seen_pages,
   set_edit,
   slots,
@@ -23,7 +23,7 @@ import {
 import {
   export_manifest,
   manifest,
-  roster_covered,
+  covered,
 } from "@/Components/Character/InventoryScanner/Manifest";
 import { build_materials } from "@/WasmInterface/PayloadBuilder";
 
@@ -70,7 +70,7 @@ const as = (index: number) => {
 
 section("first export, character A");
 as(0);
-check("nothing saved: roster storage not covered", !roster_covered.value);
+check("nothing saved: roster storage not covered", !covered.value.Roster);
 see("Roster 0", "CharStorage 0", "CharInventory 0");
 put("Roster", 0, 0, "Red", 100, "Tradable");
 put("CharStorage", 0, 0, "Blue", 50, "CharBound");
@@ -151,7 +151,7 @@ equal(
 
 section("character B, roster storage covered");
 as(1);
-check("saved and unchanged: covered", roster_covered.value);
+check("saved and unchanged: covered", covered.value.Roster);
 see("Roster 0", "CharInventory 0");
 put("Roster", 0, 0, "Red", 999, "Tradable");
 put("CharInventory", 0, 0, "Blue", 7, "RosterBound");
@@ -190,37 +190,37 @@ const roster_read = () =>
   manifest.value.read
     .filter((page) => page.window === "Roster")
     .map((page) => page.page);
-check("only page 1 saved, none open: covered", roster_covered.value);
+check("only page 1 saved, none open: covered", covered.value.Roster);
 see("Roster 0");
-check("the saved page open: still covered", roster_covered.value);
+check("the saved page open: still covered", covered.value.Roster);
 see("Roster 1");
-check("page 2 open, never saved: not covered", !roster_covered.value);
+check("page 2 open, never saved: not covered", !covered.value.Roster);
 put("Roster", 1, 0, "Red", 30, "Tradable");
 equal("both open pages read", roster_read(), [0, 1]);
-roster_cover.value = true;
-check("the user can still cover it", roster_covered.value);
+window_cover.value.Roster = true;
+check("the user can still cover it", covered.value.Roster);
 equal("covered, nothing read there counts", roster_read(), []);
-roster_cover.value = false;
-check("and uncover it", !roster_covered.value);
-roster_cover.value = null;
+window_cover.value.Roster = false;
+check("and uncover it", !covered.value.Roster);
+window_cover.value.Roster = null;
 reset_scan();
-check("a wipe forgets the page was open", roster_covered.value);
+check("a wipe forgets the page was open", covered.value.Roster);
 set_cell(store.active_tradable_mats_owned, "Red", "1");
-check("changed budgets still uncover it", !roster_covered.value);
+check("changed budgets still uncover it", !covered.value.Roster);
 set_cell(store.active_tradable_mats_owned, "Red", "105");
 check(
   "budgets back as snapshotted: covered",
-  roster_unchanged(config, 0) && roster_covered.value,
+  roster_unchanged(config, 0) && covered.value.Roster,
 );
 
 section("A again, roster budget changed by hand");
 as(0);
 set_cell(store.active_tradable_mats_owned, "Red", "1");
-roster_cover.value = null;
-check("changed since the snapshot: not covered", !roster_covered.value);
-roster_cover.value = true;
-check("the user can cover it anyway", roster_covered.value);
-roster_cover.value = null;
+window_cover.value.Roster = null;
+check("changed since the snapshot: not covered", !covered.value.Roster);
+window_cover.value.Roster = true;
+check("the user can cover it anyway", covered.value.Roster);
+window_cover.value.Roster = null;
 // only roster page 2 is opened: page 1 and A's own windows come from the last export
 see("Roster 1");
 put("Roster", 1, 0, "Red", 30, "Tradable");
@@ -243,7 +243,7 @@ equal("tradable: saved page 1, new page 2, B's", now.tradable.Red, 135);
 equal("A bound from its saved pages", now.bound.Blue, 50);
 check(
   "after the export the cover is back to the default",
-  roster_cover.value === null && roster_covered.value,
+  window_cover.value.Roster === null && covered.value.Roster,
 );
 
 section("snapshots");
@@ -275,8 +275,32 @@ check(
     JSON.stringify(last.tradable),
 );
 
+section("character storage covered");
+as(0);
+const storage_read = () =>
+  manifest.value.read.filter((page) => page.window === "CharStorage").length;
+check("A unchanged since its export: covered", covered.value.CharStorage);
+put("CharStorage", 0, 0, "Blue", 999, "CharBound");
+equal("covered, nothing read there counts", storage_read(), 0);
+see("CharStorage 1");
+check("a page never saved open: not covered", !covered.value.CharStorage);
+reset_scan();
+set_cell(store.active_profile.bound_budgets, "Blue", "1");
+check("its bound budget changed: not covered", !covered.value.CharStorage);
+set_cell(store.active_profile.bound_budgets, "Blue", "50");
+check("back as snapshotted: covered", covered.value.CharStorage);
+set_cell(store.active_tradable_mats_owned, "Red", "1");
+check("the roster's budgets changed: not covered", !covered.value.CharStorage);
+set_cell(store.active_tradable_mats_owned, "Red", "135");
+window_cover.value.CharStorage = false;
+check("the user can uncover it", !covered.value.CharStorage);
+as(1);
+window_cover.value.CharStorage = null;
+check("B never exported its storage: not covered", !covered.value.CharStorage);
+
 section("a Serca character's T4 is exported unconverted");
 as(0);
+window_cover.value.CharStorage = false;
 a.tier = 1;
 see("CharStorage 0", "CharInventory 0");
 put("CharStorage", 0, 0, "Fusion", 12, "CharBound");

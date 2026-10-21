@@ -140,15 +140,14 @@ impl ScannerState {
         if matches!(status, SlotStatus::Good) && shared && info.label.is_none() {
             return (
                 SlotStatus::NeedHover,
-                "Several items share this icon, and only the tooltip says which this is. Hover it."
-                    .into(),
+                "Several items share this icon.".into(),
                 tradability,
             );
         }
         if matches!(status, SlotStatus::Good) && tradability.is_none() {
             return (
                 SlotStatus::NeedTradability,
-                "Whether this stack can be traded is only on its tooltip. Hover it.".into(),
+                "The tradability of this stack is not known.".into(),
                 None,
             );
         }
@@ -250,7 +249,7 @@ impl ScannerState {
             if !standing.is_empty() && standing.iter().all(unread_bar) {
                 return (
                     SlotStatus::NeedHover,
-                    "Only the description on its tooltip says how this gold is bound. Hover it a little longer.".into(),
+                    "Only the description on its tooltip shows the tradability of the gold. You may need to hover it a little longer.".into(),
                 );
             }
             if sure || !standing.is_empty() || info.hovered {
@@ -273,7 +272,7 @@ impl ScannerState {
                 (
                     SlotStatus::NeedHover,
                     format!(
-                        "A chest's contents are only on its tooltip, so hover it. None read in this column has this stack's amount; chests with this icon read there so far: {} of {alike}.",
+                        "A chest's content is only on its tooltip. None read in this column has this stack's amount; chests with this icon read there so far: {} of {alike}.",
                         chests.len()
                     ),
                 )
@@ -286,10 +285,13 @@ impl ScannerState {
             return (SlotStatus::Good, String::new());
         }
         match &info.amount {
-            None => (SlotStatus::Pending, "The number on the icon is still being read.".into()),
+            None => (
+                SlotStatus::Pending,
+                "The number on the icon is still being recognized by OCR.".into(),
+            ),
             Some(text) if icon_number(text) >= 9999 => (
                 SlotStatus::NeedHover,
-                "The icon only shows up to 9999, so the real amount is on the tooltip. Hover this stack.".into(),
+                "The icon only shows up to 9999, the real amount is on the tooltip.".into(),
             ),
             Some(_) => (SlotStatus::Good, String::new()),
         }

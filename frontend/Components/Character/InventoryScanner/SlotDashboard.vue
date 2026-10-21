@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { SlotAddress } from "./LoadStorage";
 import {
   chests_for,
@@ -9,7 +9,6 @@ import {
   shown_slot,
   slot_images,
   slot_key,
-  slot_place,
   slots,
 } from "./ScanStore";
 import { item_name, SHARED_ICONS } from "./Manifest";
@@ -40,10 +39,26 @@ const assumed = computed(() => slot.value !== read.value);
 const edit = computed(() => edits.value[key.value]);
 
 // for an icon several materials share, the one its tooltip said it is
-const item = computed(() => {
-  if (edit.value) return edit.value.item;
+const read_item = computed(() => {
   const icon = slot.value?.icon_name_score?.[0] ?? null;
   return (SHARED_ICONS[icon] && slot.value.label) || icon;
+});
+const item = computed(() => (edit.value ? edit.value.item : read_item.value));
+
+// the icons the slot scored close to, a shared icon as its materials
+const candidates = computed(() => {
+  const icon = slot.value?.icon_name_score?.[0];
+  if (!icon) return [];
+  return [icon, ...slot.value.alternatives]
+    .flatMap((name) => SHARED_ICONS[name] ?? [name])
+    .filter((name) => props.items.includes(name));
+});
+const likely_only = ref(true);
+// the item picked stays offered, likely or not
+const options = computed(() => {
+  if (!likely_only.value || !candidates.value.length) return props.items;
+  const picked = draft.item && !candidates.value.includes(draft.item);
+  return picked ? [...candidates.value, draft.item] : candidates.value;
 });
 const status = computed(() => {
   if (edit.value) return "Edited by hand";
@@ -65,6 +80,11 @@ const status_color = computed(() =>
 const tradability = computed(
   () => (edit.value ? edit.value.tradability : slot.value?.tradability) ?? null,
 );
+const read_tradability = computed(() =>
+  slot.value?.tradability
+    ? `${TRADABILITY_NAMES[slot.value.tradability]}${assumed.value ? " (assumed)" : ""}`
+    : "-",
+);
 
 const slot_chests = computed(() =>
   props.address ? chests_for(props.address, item.value) : [],
@@ -76,6 +96,9 @@ const draft = reactive({
   amount: null as number | null,
   tradability: "",
 });
+// what the draft started from, so a change lights up the save button
+const loaded = ref("");
+const changed = computed(() => JSON.stringify(draft) !== loaded.value);
 watch(
   // also when the slot is saved, retried or first read
   [key, edit, () => !slot.value, assumed],
@@ -83,6 +106,7 @@ watch(
     draft.item = item.value ?? "";
     draft.amount = edit.value ? edit.value.amount : (slot.value?.value ?? null);
     draft.tradability = tradability.value ?? "";
+    loaded.value = JSON.stringify(draft);
   },
   { immediate: true },
 );
@@ -125,14 +149,14 @@ function accept() {
 
 <template>
   <div
-    class="card-shell card-body flex min-h-32 flex-wrap gap-x-8 gap-y-4 text-sm"
+    class="card-shell card-body flex min-h-32 flex-wrap gap-x-10 gap-y-4 text-sm"
   >
     <span v-if="!address" class="text-(--text-muted)">
-      Hover a slot to see what was read. Click one to keep it selected, and
-      again to release it.
+      Hover a slot (on the website) to see what the scanner has read. Click one
+      to keep it selected for editing.
     </span>
     <template v-else>
-      <div class="flex max-w-80 flex-col gap-2">
+      <div class="flex w-60 flex-col gap-2">
         <div class="flex gap-3">
           <SlotCell
             class="h-16 w-16 shrink-0 cursor-default!"
@@ -149,9 +173,6 @@ function accept() {
               }}
             </span>
             <span :style="{ color: status_color }">{{ status }}</span>
-            <span class="text-(--text-muted)">
-              {{ slot_place(address) }}
-            </span>
           </div>
         </div>
         <div
@@ -163,28 +184,121 @@ function accept() {
         </div>
       </div>
 
-      <div class="flex flex-col gap-1">
-        <span class="text-(--text-bright)">
-          {{ edit ? "Set by hand" : "What was read" }}
-        </span>
-        <div class="grid grid-cols-[auto_auto] gap-x-3 text-(--text-muted)">
-          <span>Amount</span>
-          <span class="text-(--text-main)">
-            {{ (edit ? edit.amount : slot?.value) ?? "-" }}
+      <div
+        class="grid h-fit grid-cols-[auto_auto_auto] items-center gap-x-4 gap-y-1"
+        role="group"
+        aria-label="Read and corrected"
+      >
+        <span></span>
+        <span class="text-(--text-bright)">Read</span>
+        <span class="text-(--text-bright)">Correct it</span>
+
+        <span class="text-(--text-muted)">Item</span>
+        <span>{{ item_name(read_item) ?? "-" }}</span>
+        <div class="flex items-center gap-2">
+          <select
+            v-model="draft.item"
+            class="selector max-w-56"
+            aria-label="Item"
+          >
+            <option value="">Irrelevant</option>
+            <option v-for="name in options" :key="name" :value="name">
+              {{ item_name(name) }}
+            </option>
+          </select>
+          <label
+            class="flex items-center gap-1 text-(--text-muted)"
+            :class="{ 'cursor-not-allowed opacity-50': !candidates.length }"
+          >
+            <input
+              v-model="likely_only"
+              type="checkbox"
+              :disabled="!candidates.length"
+            />
+            Likely candidates only
+          </label>
+        </div>
+
+        <span class="text-(--text-muted)">Amount</span>
+        <span>{{ slot?.value ?? "-" }}</span>
+        <input
+          v-if="draft.item"
+          v-model="draft.amount"
+          type="number"
+          min="0"
+          class="generic-input h-7! w-24 pl-1"
+          :style="missing_style(no_amount)"
+          aria-label="Amount"
+        />
+        <span v-else></span>
+
+        <span class="text-(--text-muted)">Tradability</span>
+        <span>{{ read_tradability }}</span>
+        <select
+          v-if="draft.item"
+          v-model="draft.tradability"
+          class="selector w-fit"
+          :style="missing_style(no_tradability)"
+          aria-label="Tradability"
+        >
+          <option value="" disabled>Choose</option>
+          <option
+            v-for="[value, label] in TRADABILITY"
+            :value="value"
+            :key="label"
+          >
+            {{ label }}
+          </option>
+        </select>
+        <span v-else></span>
+
+        <span class="text-(--text-muted)">Number on icon</span>
+        <span>{{ slot?.amount ?? "-" }}</span>
+        <span></span>
+
+        <span class="text-(--text-muted)">Tooltip amount</span>
+        <span>{{ slot?.tooltip_amount ?? "-" }}</span>
+        <span></span>
+
+        <div class="col-start-3 flex flex-col gap-1 pt-1">
+          <span v-if="incomplete" class="text-(--warning)">
+            {{
+              no_amount && no_tradability
+                ? "Amount and tradability are needed."
+                : no_amount
+                  ? "The amount is needed."
+                  : "The tradability is needed."
+            }}
           </span>
-          <span>Tradability</span>
-          <span class="text-(--text-main)">
-            {{ TRADABILITY_NAMES[tradability] ?? "-" }}
-            {{ !edit && assumed ? "(assumed)" : "" }}
-          </span>
-          <template v-if="!edit">
-            <span>Number on icon</span>
-            <span class="text-(--text-main)">{{ slot?.amount ?? "-" }}</span>
-            <span>Tooltip amount</span>
-            <span class="text-(--text-main)">
-              {{ slot?.tooltip_amount ?? "-" }}
-            </span>
-          </template>
+          <div class="flex gap-2">
+            <button
+              class="generic-button"
+              :class="{
+                'cursor-not-allowed! opacity-50': incomplete,
+                'bg-blue-600! hover:bg-blue-500!': changed && !incomplete,
+              }"
+              :disabled="incomplete"
+              @click="save"
+            >
+              Save edit
+            </button>
+            <button
+              v-if="!edit && slot?.status === 'Error'"
+              class="generic-button"
+              :class="{ 'cursor-not-allowed! opacity-50': read_incomplete }"
+              :disabled="read_incomplete"
+              @click="accept"
+            >
+              Okay
+            </button>
+            <button
+              v-if="slot || edit"
+              class="generic-button"
+              @click="retry_slot(address)"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </div>
 
@@ -204,83 +318,6 @@ function accept() {
           >
             {{ content.item }} x{{ content.amount }}
           </div>
-        </div>
-      </div>
-
-      <div class="flex flex-col gap-1">
-        <span class="text-(--text-bright)">Correct it</span>
-        <div
-          class="grid grid-cols-[auto_auto] items-center gap-x-3 gap-y-1 text-(--text-muted)"
-        >
-          <span>Item</span>
-          <select v-model="draft.item" class="selector" aria-label="Item">
-            <option value="">Irrelevant</option>
-            <option v-for="name in items" :key="name" :value="name">
-              {{ item_name(name) }}
-            </option>
-          </select>
-          <template v-if="draft.item">
-            <span>Amount</span>
-            <input
-              v-model="draft.amount"
-              type="number"
-              min="0"
-              class="generic-input h-7! w-24 pl-1"
-              :style="missing_style(no_amount)"
-              aria-label="Amount"
-            />
-            <span>Tradability</span>
-            <select
-              v-model="draft.tradability"
-              class="selector"
-              :style="missing_style(no_tradability)"
-              aria-label="Tradability"
-            >
-              <option value="" disabled>Choose</option>
-              <option
-                v-for="[value, label] in TRADABILITY"
-                :value="value"
-                :key="label"
-              >
-                {{ label }}
-              </option>
-            </select>
-          </template>
-        </div>
-        <span v-if="incomplete" class="text-(--warning)">
-          {{
-            no_amount && no_tradability
-              ? "Amount and tradability are needed."
-              : no_amount
-                ? "The amount is needed."
-                : "The tradability is needed."
-          }}
-        </span>
-        <div class="flex gap-2">
-          <button
-            class="generic-button"
-            :class="{ 'cursor-not-allowed! opacity-50': incomplete }"
-            :disabled="incomplete"
-            @click="save"
-          >
-            Save edit
-          </button>
-          <button
-            v-if="!edit && slot?.status === 'Error'"
-            class="generic-button"
-            :class="{ 'cursor-not-allowed! opacity-50': read_incomplete }"
-            :disabled="read_incomplete"
-            @click="accept"
-          >
-            Okay
-          </button>
-          <button
-            v-if="slot || edit"
-            class="generic-button"
-            @click="retry_slot(address)"
-          >
-            Retry
-          </button>
         </div>
       </div>
     </template>

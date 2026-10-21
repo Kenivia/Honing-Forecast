@@ -6,12 +6,47 @@ import {
   NUM_ADV_PIECES,
   PLUS_TIER_CONVERSION,
 } from "@/Utils/Constants";
-import { check_revert_ilevel_ok } from "@/Utils/Helpers";
+import {
+  check_adv_all_done,
+  check_all_plus_20,
+  check_revert_ilevel_ok,
+} from "@/Utils/Helpers";
 import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
 
 import { grid_change_callback } from "../CharWorkerUtils";
 import { CharProfile } from "@/Stores/CharacterProfile";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
+
+// what the tier button says, on it, on hover, and whether converting resets anything
+export const tier_label = (profile: CharProfile) =>
+  profile.tier == 0 ? "Convert to T4.5 Serca" : "Revert back to T4";
+export const tier_warning = (profile: CharProfile) =>
+  profile.tier == 0 &&
+  !(check_all_plus_20(profile) && check_adv_all_done(profile));
+export function tier_tooltip(profile: CharProfile) {
+  if (profile.tier == 0) {
+    if (!tier_warning(profile))
+      return "Eligible for conversion to T4.5 Serca gear";
+    return (
+      "Warning! " +
+      [
+        !check_adv_all_done(profile)
+          ? "All Adv honing will be set to +40"
+          : null,
+        !check_all_plus_20(profile)
+          ? "All Gear will be set to +11 (Serca)"
+          : null,
+      ]
+        .filter((x) => x !== null)
+        .join(", \n")
+    );
+  }
+  return check_revert_ilevel_ok(profile) === true
+    ? "Can go back to T4"
+    : "Cannot convert back to T4 because +" +
+        String(check_revert_ilevel_ok(profile)) +
+        " cannot be mapped directly to a T4 upgrade";
+}
 
 export function change_tier(target_profile: CharProfile, fetched?: boolean) {
   let old_tier = target_profile.tier;

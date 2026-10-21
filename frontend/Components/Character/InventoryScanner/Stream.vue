@@ -45,6 +45,7 @@ import {
   SAME_FRAME,
 } from "./Capture";
 import { scan_settings } from "./ScanSettings";
+import { show_debug } from "./ScannerUIutils";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 const runtime = useRuntimeStore();
 
@@ -107,10 +108,12 @@ const brightness_choice = computed({
         : { value: detected.value.brightness ?? 50, manual: true };
   },
 });
+// idle, they are only kept for the next capture
 function apply_settings() {
   Object.assign(scan_settings, structuredClone(toRaw(draft)));
-  restart_scanner();
+  if (status.value === "capturing") restart_scanner();
 }
+const details = ref(false);
 function discard_settings() {
   Object.assign(draft, copy_settings());
 }
@@ -161,8 +164,7 @@ async function start_capture() {
   }
 }
 
-// uploads are for development and tests only
-const DEV = import.meta.env.DEV;
+// uploads, like debug captures, are behind "Show debug options"
 
 async function start_upload(event: Event) {
   const input = event.target as HTMLInputElement;
@@ -460,193 +462,206 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
 </script>
 
 <template>
-  <div class="card-shell card-body flex flex-col gap-4">
-    <div class="flex items-center gap-3">
-      <span class="text-sm font-semibold">Screen Capture</span>
-      <span
-        class="rounded-full px-2 py-0.5 text-xs"
-        :class="{
-          'bg-green-500/20 text-green-400': status === 'capturing',
-          'bg-zinc-500/20 text-zinc-400': status === 'idle',
-        }"
-      >
-        {{ status === "capturing" ? "● Live" : "Idle" }}
-      </span>
+  <div class="card-shell w-fit max-w-full">
+    <div class="card-header">
+      <span class="card-title">Screen Capture</span>
     </div>
+    <div class="card-body flex flex-col gap-4">
+      <p
+        v-if="error"
+        class="max-w-150 rounded bg-red-500/10 px-3 py-2 text-xs text-red-400"
+      >
+        {{ error }}
+      </p>
+      <p v-if="download_note" class="max-w-150 text-sm text-(--text-muted)">
+        Downloading scanner data: {{ download_note }}.
+      </p>
 
-    <p
-      v-if="error"
-      class="rounded bg-red-500/10 px-3 py-2 text-xs text-red-400"
-    >
-      {{ error }}
-    </p>
-    <p v-if="download_note" class="text-sm text-(--text-muted)">
-      Downloading scanner data: {{ download_note }}. Scanning starts once it is
-      done.
-    </p>
+      <div class="flex gap-2">
+        <button
+          class="rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+          :disabled="status === 'capturing'"
+          @click="start_capture"
+        >
+          Share screen
+        </button>
+        <label
+          v-if="show_debug"
+          class="cursor-pointer rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500"
+        >
+          Upload image / video / capture
+          <input
+            type="file"
+            accept="image/*,video/*,.hfcap"
+            aria-label="Upload image or video"
+            class="hidden"
+            @change="start_upload"
+          />
+        </label>
+        <button
+          class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+          :disabled="status !== 'capturing'"
+          @click="stop_capture"
+        >
+          Stop
+        </button>
+        <button
+          class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+          :disabled="status !== 'capturing' && !has_progress"
+          @click="wipe_scan"
+        >
+          Reset scan
+        </button>
+        <span
+          v-if="status === 'idle' && has_progress"
+          class="self-center text-sm text-(--warning)"
+        >
+          Starting a new capture wipes the current scan.
+        </span>
+      </div>
+      <button
+        class="flex w-fit items-center gap-1 text-sm text-(--text-muted) hover:text-(--text-bright)"
+        :aria-expanded="details"
+        @click="details = !details"
+      >
+        <span class="text-[1.1rem] font-semibold">{{
+          details ? "▾" : "▸"
+        }}</span>
+        {{ details ? "Hide details" : "Show details" }}
+      </button>
+      <div
+        v-if="details && status === 'capturing'"
+        class="flex gap-4 text-sm text-(--text-muted)"
+      >
+        <span aria-label="Frames scanned per second">
+          {{ sent_fps }} fps scanned
+        </span>
+        <span v-if="!replaying" aria-label="Lines waiting for OCR">
+          {{ ocr_pending }} in OCR queue
+        </span>
+      </div>
+      <template v-if="details && !replaying">
+        <div
+          class="grid w-fit grid-cols-[auto_auto_auto] items-center gap-x-2 gap-y-1 text-sm"
+        >
+          <span>Aspect</span>
+          <select v-model="aspect_choice" class="selector" aria-label="Aspect">
+            <option value="auto">Auto</option>
+            <option value="16:9">16:9</option>
+            <option value="21:9">Forced 21:9</option>
+          </select>
+          <span class="text-(--text-muted)">
+            {{
+              draft.forced_21_9.manual
+                ? ""
+                : detected.forced_21_9 == null
+                  ? status === "capturing"
+                    ? "detecting..."
+                    : "-"
+                  : detected.forced_21_9
+                    ? "21:9"
+                    : "16:9"
+            }}
+          </span>
+          <span>Brightness</span>
+          <select
+            v-model="brightness_choice"
+            class="selector"
+            aria-label="Brightness"
+          >
+            <option value="auto">Auto</option>
+            <option value="manual">Manual</option>
+          </select>
+          <input
+            v-if="draft.brightness.manual"
+            v-model.number="draft.brightness.value"
+            class="generic-input number-border w-13"
+            type="number"
+            min="0"
+            max="100"
+            aria-label="In-game brightness"
+          />
+          <span v-else class="text-(--text-muted)">
+            {{
+              detected.brightness ??
+              (status === "capturing" ? "detecting..." : "-")
+            }}
+          </span>
+        </div>
+        <div
+          v-if="draft_changed"
+          class="flex max-w-150 flex-wrap items-center gap-2"
+        >
+          <span v-if="status === 'capturing'" class="text-sm text-(--warning)">
+            Applying restarts the scanner and wipes the current scan.
+          </span>
+          <button
+            class="rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+            :disabled="!draft_valid"
+            @click="apply_settings"
+          >
+            Apply
+          </button>
+          <button
+            class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600"
+            @click="discard_settings"
+          >
+            Cancel
+          </button>
+        </div>
+      </template>
+      <p v-if="replay_note" class="text-sm text-(--text-muted)">
+        {{ replay_note }}
+      </p>
 
-    <div
-      v-if="status === 'capturing' && !replaying"
-      class="flex flex-wrap items-center gap-2"
-    >
-      <span> Aspect: </span>
-      <select v-model="aspect_choice" class="selector" aria-label="Aspect">
-        <option value="auto">Auto</option>
-        <option value="16:9">16:9</option>
-        <option value="21:9">Forced 21:9</option>
-      </select>
-      <span
-        v-if="!draft.forced_21_9.manual"
-        class="text-sm text-(--text-muted)"
-      >
-        {{
-          detected.forced_21_9 == null
-            ? "detecting"
-            : detected.forced_21_9
-              ? "21:9"
-              : "16:9"
-        }}
-      </span>
-      <span class="ml-4"> Brightness: </span>
-      <select
-        v-model="brightness_choice"
-        class="selector"
-        aria-label="Brightness"
-      >
-        <option value="auto">Auto</option>
-        <option value="manual">Manual</option>
-      </select>
-      <input
-        v-if="draft.brightness.manual"
-        v-model.number="draft.brightness.value"
-        class="generic-input number-border w-13"
-        type="number"
-        min="0"
-        max="100"
-        aria-label="In-game brightness"
-      />
-      <span v-else class="text-sm text-(--text-muted)">
-        {{ detected.brightness ?? "detecting" }}
-      </span>
-    </div>
+      <!-- as wide as the rest of the card makes it, never wider -->
+      <div class="w-0 min-w-full">
+        <div class="text-(--text-bright)">Troubleshooting</div>
+        <div class="pl-4">
+          Check the aspect ratio and brightness under "Show details" above. If
+          they look right and it still doesn't work, it's probably my fault.
+          Please report it on
+          <a href="https://discord.gg/KWDpQyvgzc" class="link">Discord</a> or
+          <a href="https://github.com/Kenivia/Honing-Forecast" class="link"
+            >GitHub</a
+          >.
+        </div>
+      </div>
 
-    <div
-      v-if="status === 'capturing' && !replaying && draft_changed"
-      class="flex flex-wrap items-center gap-2"
-    >
-      <span class="text-sm text-(--warning)">
-        Applying restarts the scanner and clears everything scanned so far,
-        corrections included.
-      </span>
-      <button
-        class="rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
-        :disabled="!draft_valid"
-        @click="apply_settings"
-      >
-        Apply
-      </button>
-      <button
-        class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600"
-        @click="discard_settings"
-      >
-        Cancel
-      </button>
+      <!-- debug captures, behind the sidebar's "Show debug options" -->
+      <template v-if="show_debug">
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+            :disabled="status !== 'capturing' || replaying"
+            @click="toggle_recording"
+          >
+            {{ recording ? "Stop recording" : "Record debug capture" }}
+          </button>
+          <button
+            class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+            :disabled="recording || in_recorder > 0 || !captured_bytes"
+            @click="download_capture"
+          >
+            Download capture
+          </button>
+          <span
+            v-if="captured_bytes"
+            class="text-sm text-(--text-muted)"
+            aria-label="Capture size"
+          >
+            {{ (captured_bytes / 1e6).toFixed(0) }} MB
+            {{ recording ? "recorded" : "ready" }}
+          </span>
+        </div>
+        <p
+          v-if="recorder_fell_behind"
+          class="max-w-150 text-sm text-(--warning)"
+        >
+          Recording stopped: this computer could not keep up with recording
+          every frame. What was recorded so far can still be downloaded.
+        </p>
+      </template>
     </div>
-
-    <div class="flex gap-2">
-      <button
-        class="rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
-        :disabled="status === 'capturing'"
-        @click="start_capture"
-      >
-        Share screen
-      </button>
-      <label
-        v-if="DEV"
-        class="cursor-pointer rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500"
-      >
-        Upload image / video / capture
-        <input
-          type="file"
-          accept="image/*,video/*,.hfcap"
-          aria-label="Upload image or video"
-          class="hidden"
-          @change="start_upload"
-        />
-      </label>
-      <button
-        class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
-        :disabled="status !== 'capturing'"
-        @click="stop_capture"
-      >
-        Stop
-      </button>
-      <button
-        class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
-        :disabled="status !== 'capturing' && !has_progress"
-        @click="wipe_scan"
-      >
-        Reset scan
-      </button>
-      <span
-        v-if="status === 'capturing'"
-        class="self-center text-sm text-(--text-muted)"
-        aria-label="Frames scanned per second"
-      >
-        {{ sent_fps }} fps scanned
-      </span>
-      <span
-        v-if="status === 'capturing' && !replaying"
-        class="self-center text-sm text-(--text-muted)"
-        aria-label="Lines waiting for OCR"
-      >
-        {{ ocr_pending }} in OCR queue
-      </span>
-      <span
-        v-if="status === 'idle' && has_progress"
-        class="self-center text-sm text-(--warning)"
-      >
-        Starting a capture wipes the current scan.
-      </span>
-    </div>
-    <p v-if="replay_note" class="text-sm text-(--text-muted)">
-      {{ replay_note }}
-    </p>
-    <div class="flex flex-wrap items-center gap-2">
-      <button
-        class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
-        :disabled="status !== 'capturing' || replaying"
-        @click="toggle_recording"
-      >
-        {{ recording ? "Stop recording" : "Record debug capture" }}
-      </button>
-      <button
-        class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
-        :disabled="recording || in_recorder > 0 || !captured_bytes"
-        @click="download_capture"
-      >
-        Download capture
-      </button>
-      <span
-        v-if="captured_bytes"
-        class="text-sm text-(--text-muted)"
-        aria-label="Capture size"
-      >
-        {{ (captured_bytes / 1e6).toFixed(0) }} MB
-        {{ recording ? "recorded" : "ready" }}
-      </span>
-    </div>
-    <p v-if="recorder_fell_behind" class="text-sm text-(--warning)">
-      Recording stopped: this computer could not keep up with recording every
-      frame. What was recorded so far can still be downloaded.
-    </p>
-    <p class="text-xs text-(--text-muted)">
-      A debug capture restarts the scan and records everything on the shared
-      screen, for sending in when something is read wrong. Stop recording,
-      correct the slots by hand, then download.
-    </p>
-    <button @click="toggle_cropper" class="generic-button">
-      {{ cropper_running ? "stop cropper" : "start scropper" }}
-    </button>
   </div>
 </template>

@@ -7,18 +7,14 @@ import { SlotAddress } from "./LoadStorage";
 import {
   edits,
   game_pages,
-  roster_cover,
   shown_slot,
   slot_images,
   slot_key,
   slots,
+  window_cover,
 } from "./ScanStore";
-import {
-  manifest,
-  roster_covered,
-  roster_pages,
-  roster_saved,
-} from "./Manifest";
+import { COVERABLE, cover_pages, covered, manifest } from "./Manifest";
+import CurrencyBar from "./CurrencyBar.vue";
 import SlotCell from "./SlotCell.vue";
 import SlotDashboard from "./SlotDashboard.vue";
 
@@ -89,16 +85,14 @@ const saved = computed(
 );
 const has_saved = (type: string) =>
   [...saved.value].some((key) => key.startsWith(`${type} `));
-const shown_saved = computed(() =>
-  roster_pages.value.has(page_key("Roster", page.Roster)),
-);
 
-// who exported roster storage last, and when
-const roster_export = computed(() => {
+// who exported a coverable window last, and when
+function last_export(type: string) {
+  const owner = type === "Roster" ? null : active_profile.value.id;
   const pages = roster_config.value.scan_pages.filter(
     (page) =>
-      page.window === "Roster" &&
-      page.char_id === null &&
+      page.window === type &&
+      page.char_id === owner &&
       page.roster_id === active_profile.value.roster_id,
   );
   const last = pages.reduce((a, b) => (b.at > a.at ? b : a), pages[0]);
@@ -107,7 +101,7 @@ const roster_export = computed(() => {
     all_profiles.value.find((profile) => profile.id === last.by)?.char_name ??
     "a deleted character";
   return `${name}, ${new Date(last.at).toLocaleString()}`;
-});
+}
 
 const hovered = ref<SlotAddress | null>(null);
 const locked = ref<SlotAddress | null>(null);
@@ -123,96 +117,121 @@ function toggle_lock(address: SlotAddress) {
 </script>
 
 <template>
-  <div class="flex w-full flex-col gap-3">
-    <div class="flex w-full flex-wrap gap-3" @mouseleave="hovered = null">
-      <div
-        v-for="win in WINDOWS"
-        :key="win.type"
-        class="flex flex-col gap-1"
-        role="group"
-        :aria-label="win.label"
-        :style="{
-          flex: `${win.cols} 1 0`,
-          minWidth: `${win.cols * MIN_SLOT}px`,
-        }"
-      >
-        <div class="flex flex-wrap items-center gap-1 text-sm">
-          <span class="mr-1 text-(--text-muted)">{{ win.label }}</span>
-          <button
-            v-for="(_, index) in win.pages"
-            :key="index"
-            class="generic-button relative"
-            :style="{ color: page[win.type] === index ? 'var(--gold)' : '' }"
-            @click="page[win.type] = index"
-          >
-            {{ index + 1 }}
-            <svg
-              v-if="saved.has(page_key(win.type, index))"
-              role="img"
-              aria-label="saved"
-              viewBox="0 0 16 16"
-              class="absolute -top-1 -right-1 h-2.5 w-2.5 fill-(--gold-muted)"
-            >
-              <path d="M2 1h10l3 3v11H1V1h1zm2 1v4h7V2H4zm1 8v4h6v-4H5z" />
-            </svg>
-          </button>
-          <span
-            v-if="has_saved(win.type)"
-            class="annotation ml-2 flex items-center gap-1"
-          >
-            <svg viewBox="0 0 16 16" class="h-2.5 w-2.5 fill-(--gold-muted)">
-              <path d="M2 1h10l3 3v11H1V1h1zm2 1v4h7V2H4zm1 8v4h6v-4H5z" />
-            </svg>
-            last known scan used
-          </span>
-          <!-- greyed out while the page shown was never exported -->
-          <button
-            v-if="win.type === 'Roster' && roster_saved && !roster_covered"
-            class="generic-button ml-auto"
-            :class="{ 'cursor-not-allowed! opacity-50': !shown_saved }"
-            :disabled="!shown_saved"
-            @click="roster_cover = true"
-          >
-            Use saved
-          </button>
-        </div>
+  <div class="flex w-full flex-col items-center gap-3">
+    <div class="card-shell card-body flex w-full! flex-col gap-3">
+      <CurrencyBar />
+      <div class="flex w-full flex-wrap gap-3" @mouseleave="hovered = null">
         <div
-          class="relative grid gap-1"
+          v-for="win in WINDOWS"
+          :key="win.type"
+          class="flex flex-col gap-1"
+          role="group"
+          :aria-label="win.label"
           :style="{
-            gridTemplateColumns: `repeat(${win.cols}, minmax(0, 1fr))`,
+            flex: `${win.cols} 1 0`,
+            minWidth: `${win.cols * MIN_SLOT}px`,
           }"
         >
-          <div
-            v-if="win.type === 'Roster' && roster_covered"
-            class="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-(--bg-muted) p-2 text-center text-sm"
-            role="group"
-            aria-label="Roster storage covered"
-          >
-            <span>Taken from the last export ({{ roster_export }}).</span>
-            <span class="text-(--text-muted)">
-              {{
-                roster_cover === null
-                  ? "You don't need to re-scan if nothing here has changed. "
-                  : ""
-              }}
-            </span>
-            <button class="generic-button" @click="roster_cover = false">
-              Scan roster storage
+          <div class="flex flex-wrap items-center gap-1 text-sm">
+            <span class="mr-1 text-(--text-muted)">{{ win.label }}</span>
+            <button
+              v-for="(_, index) in win.pages"
+              :key="index"
+              class="generic-button relative"
+              :style="{ color: page[win.type] === index ? 'var(--gold)' : '' }"
+              @click="page[win.type] = index"
+            >
+              {{ index + 1 }}
+              <svg
+                v-if="saved.has(page_key(win.type, index))"
+                role="img"
+                aria-label="saved"
+                viewBox="0 0 16 16"
+                class="absolute -top-1 -right-1 h-2.5 w-2.5 fill-(--gold-muted)"
+              >
+                <path d="M2 1h10l3 3v11H1V1h1zm2 1v4h7V2H4zm1 8v4h6v-4H5z" />
+              </svg>
             </button>
+            <!-- covers every page of a coverable window with its last export -->
+            <button
+              v-if="COVERABLE.includes(win.type) && cover_pages[win.type].size"
+              class="generic-button ml-2 flex items-center gap-1"
+              :class="{ 'bg-(--gold-muted)!': covered[win.type] }"
+              :aria-pressed="covered[win.type]"
+              @click="window_cover[win.type] = !covered[win.type]"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                class="h-2.5 w-2.5"
+                :class="
+                  covered[win.type]
+                    ? 'fill-(--text-bright)'
+                    : 'fill-(--gold-muted)'
+                "
+              >
+                <path d="M2 1h10l3 3v11H1V1h1zm2 1v4h7V2H4zm1 8v4h6v-4H5z" />
+              </svg>
+              {{
+                covered[win.type]
+                  ? "Using most recent scan"
+                  : "Use most recent scan"
+              }}
+            </button>
+            <span
+              v-else-if="has_saved(win.type)"
+              class="annotation ml-2 flex items-center gap-1"
+            >
+              <svg viewBox="0 0 16 16" class="h-2.5 w-2.5 fill-(--gold-muted)">
+                <path d="M2 1h10l3 3v11H1V1h1zm2 1v4h7V2H4zm1 8v4h6v-4H5z" />
+              </svg>
+              Using most recent scan
+            </span>
           </div>
-          <SlotCell
-            v-for="address in addresses(win)"
-            :key="slot_key(address)"
-            :info="shown_slot(slots.get(slot_key(address)))"
-            :edit="edits[slot_key(address)]"
-            :image="slot_images.get(slot_key(address))"
-            :active="is_active(address)"
-            @mouseenter="hovered = address"
-            @click="toggle_lock(address)"
-          />
+          <div
+            class="relative grid gap-1"
+            :style="{
+              gridTemplateColumns: `repeat(${win.cols}, minmax(0, 1fr))`,
+            }"
+          >
+            <div
+              v-if="covered[win.type]"
+              class="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-(--bg-muted) p-2 text-center text-sm"
+              role="group"
+              :aria-label="`${win.label} covered`"
+            >
+              <span>Using most recent scan ({{ last_export(win.type) }}).</span>
+              <span class="text-(--text-muted)">
+                {{
+                  window_cover[win.type] === null
+                    ? "You don't need to re-scan if nothing here has changed. "
+                    : ""
+                }}
+              </span>
+              <button
+                class="generic-button"
+                @click="window_cover[win.type] = false"
+              >
+                Scan {{ win.label.toLowerCase() }}
+              </button>
+            </div>
+            <SlotCell
+              v-for="address in addresses(win)"
+              :key="slot_key(address)"
+              :info="shown_slot(slots.get(slot_key(address)))"
+              :edit="edits[slot_key(address)]"
+              :image="slot_images.get(slot_key(address))"
+              :active="is_active(address)"
+              @mouseenter="hovered = address"
+              @click="toggle_lock(address)"
+            />
+          </div>
         </div>
       </div>
     </div>
-    <SlotDashboard :address="shown" :items="items" />
+    <SlotDashboard
+      class="w-[1055px]! max-w-full"
+      :address="shown"
+      :items="items"
+    />
   </div>
 </template>

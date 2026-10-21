@@ -263,3 +263,16 @@
   color: var(--gold);
   text-decoration: underline;
 }
+
+/* small superscript tag, e.g. "new!" or "beta" */
+.new-tag {
+  background-color: var(--text-muted);
+  color: var(--bg-void);
+  font-size: 8px;
+  border-radius: 3px;
+  align-self: flex-start;
+  top: -3px;
+  left: -4px;
+  position: relative;
+  padding: 0px 2px;
+}

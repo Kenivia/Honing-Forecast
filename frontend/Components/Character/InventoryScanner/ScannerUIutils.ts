@@ -1,3 +1,8 @@
+import { ref } from "vue";
+
+// uploads and debug captures, on by default on a dev build
+export const show_debug = ref(import.meta.env.DEV);
+
 // what a slot's border, or a currency, is coloured by its status
 export const STATUS_COLORS = {
   Pending: "var(--text-muted)",
@@ -7,6 +12,27 @@ export const STATUS_COLORS = {
   Error: "var(--warning)",
   Irrelevant: "var(--border-very-muted)",
 };
+
+const BORDER_WIDTHS = {
+  Pending: "1px",
+  Good: "1px",
+  NeedHover: "3px",
+  NeedTradability: "3px",
+  Error: "3px",
+  Irrelevant: "1px",
+};
+
+// a slot's or currency's outline, dashed while it waits on a hover or was set by hand
+export function status_border(status: string, edited = false) {
+  return {
+    borderColor: edited ? "var(--average)" : STATUS_COLORS[status],
+    borderWidth: edited ? "2px" : BORDER_WIDTHS[status],
+    borderStyle:
+      edited || status === "NeedHover" || status === "NeedTradability"
+        ? "dashed"
+        : "solid",
+  };
+}
 
 export function draw_icon(
   canvas: HTMLCanvasElement | null,

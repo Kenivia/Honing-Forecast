@@ -256,6 +256,21 @@ export function roster_unchanged(config: RosterConfig, roster_id: number) {
   );
 }
 
+// the same, and the character's bound budget and chests too
+export function char_unchanged(
+  config: RosterConfig,
+  roster_id: number,
+  char_id: string,
+) {
+  const char = latest_snapshot(config, roster_id)?.chars[char_id];
+  const profile = config.profiles.find((profile) => profile.id === char_id);
+  if (!char || !profile || !roster_unchanged(config, roster_id)) return false;
+  return (
+    JSON.stringify([char.bound, char.chests]) ===
+    JSON.stringify([nonzero(profile.bound_budgets), profile.chests])
+  );
+}
+
 // ============================================================================
 // Diff
 // ============================================================================

@@ -161,7 +161,7 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
         v-for="name in TABS"
         :key="name"
         class="generic-button"
-        :class="{ 'bg-(--bg-very-bright)!': tab === name }"
+        :class="{ 'bg-(--gold-muted)!': tab === name }"
         role="tab"
         :aria-selected="tab === name"
         @click="tab = name"
@@ -251,7 +251,7 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
                   :key="difficulty.name"
                   class="generic-button"
                   :class="{
-                    'bg-(--bg-very-bright)!': group.shown === difficulty.name,
+                    'bg-(--gold-muted)!': group.shown === difficulty.name,
                     'text-(--text-very-muted)':
                       difficulty.item_level > item_level,
                   }"

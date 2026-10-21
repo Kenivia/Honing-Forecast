@@ -509,7 +509,7 @@ impl ScannerState {
     }
 
     pub fn currency_results(&self) -> Vec<CurrencyResult> {
-        let disagree = "Its reads disagree. Set it by hand in the manifest.".to_string();
+        let disagree = "Its reads disagree. Set it by hand in the dashboard.".to_string();
         let single = |currency: Currency, bands: fn(u64) -> [u64; 3], unseen: &str| {
             let (status, reason, value) = match self.field_read(Field::Total(currency)) {
                 Read::Settled(value) => (SlotStatus::Good, String::new(), Some(value)),
@@ -580,7 +580,7 @@ impl ScannerState {
         }
         result(
             SlotStatus::NeedHover,
-            "How much of it is bound is only on its tooltip. Hover your gold in the inventory, the currency window or the bar at the top of the screen.".into(),
+            "The breakdown of the types of gold is only on the tooltip.".into(),
             total_value,
             None,
         )

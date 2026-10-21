@@ -127,7 +127,7 @@ watch(
         v-for="(name, band) in BAND_NAMES"
         :key="band"
         class="generic-button"
-        :class="{ 'bg-(--bg-very-bright)!': custom.band === band }"
+        :class="{ 'bg-(--gold-muted)!': custom.band === band }"
         :aria-pressed="custom.band === band"
         @click="stored().band = band"
       >

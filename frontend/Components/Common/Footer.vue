@@ -33,17 +33,6 @@ const show_new_tag = computed(
   </footer>
 </template>
 <style scoped>
-.new-tag {
-  background-color: var(--text-muted);
-  color: var(--bg-void);
-  font-size: 8px;
-  border-radius: 3px;
-  align-self: flex-start;
-  top: -3px;
-  left: -4px;
-  position: relative;
-  padding: 0px 2px;
-}
 .footer-bar {
   display: grid;
   grid-template-columns: 90px 90px;

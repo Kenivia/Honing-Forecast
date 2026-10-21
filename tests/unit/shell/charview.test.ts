@@ -111,9 +111,9 @@ describe("CharView", () => {
     expect(hrefs).toEqual([
       "/Bob/guide",
       "/Bob/calc",
-      "/Bob/scanner",
       "/Bob/income",
       "/Bob/choices",
+      "/Bob/scanner",
     ]);
     await wrapper.findAll("a.side-bar-link")[0].trigger("click");
     await flushPromises();

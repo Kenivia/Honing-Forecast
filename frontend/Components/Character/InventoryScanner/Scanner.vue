@@ -8,8 +8,8 @@ import {
 } from "./LoadStorage.js";
 import { process_result } from "./ScanStore";
 import { SHARED_ICONS } from "./Manifest";
-import CurrencyBar from "./CurrencyBar.vue";
 import Manifest from "./Manifest.vue";
+import ScanGuide from "./ScanGuide.vue";
 import SlotGrid from "./SlotGrid.vue";
 import Stream from "./Stream.vue";
 
@@ -35,9 +35,11 @@ const items = computed(() =>
 </script>
 
 <template>
-  <div v-if="config" class="flex w-full flex-col gap-3">
-    <Stream v-model:status="status" :process_result="process_result" />
-    <CurrencyBar />
+  <div v-if="config" class="flex w-full flex-col items-center gap-3">
+    <div class="flex max-w-full flex-wrap items-start justify-center gap-3">
+      <Stream v-model:status="status" :process_result="process_result" />
+      <ScanGuide />
+    </div>
     <SlotGrid :items="items" />
     <Manifest />
   </div>

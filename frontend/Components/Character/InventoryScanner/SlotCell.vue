@@ -2,7 +2,7 @@
 import { computed, ref, watchPostEffect } from "vue";
 import { OneIconConfig, SlotResult } from "./LoadStorage";
 import { SlotEdit } from "./ScanStore";
-import { STATUS_COLORS, draw_icon } from "./ScannerUIutils";
+import { draw_icon, status_border } from "./ScannerUIutils";
 import Spinner from "@/Components/Common/Spinner.vue";
 
 const props = defineProps<{
@@ -12,23 +12,8 @@ const props = defineProps<{
   active: boolean;
 }>();
 
-const BORDER_WIDTHS = {
-  Pending: "1px",
-  Good: "1px",
-  NeedHover: "3px",
-  NeedTradability: "3px",
-  Error: "3px",
-  Irrelevant: "1px",
-};
-
 const border = computed(() =>
-  props.edit
-    ? "var(--average)"
-    : STATUS_COLORS[props.info?.status ?? "Pending"],
-);
-
-const border_width = computed(() =>
-  props.edit ? "2px" : BORDER_WIDTHS[props.info?.status ?? "Pending"],
+  status_border(props.info?.status ?? "Pending", !!props.edit),
 );
 
 const canvas = ref<HTMLCanvasElement | null>(null);
@@ -42,17 +27,10 @@ watchPostEffect(() => {
 
 <template>
   <div
-    class="relative aspect-square cursor-pointer border"
-    :class="{
-      'border-dashed':
-        edit ||
-        props.info?.status === 'NeedHover' ||
-        props.info?.status === 'NeedTradability',
-      'z-10': active,
-    }"
+    class="relative aspect-square cursor-pointer"
+    :class="{ 'z-10': active }"
     :style="{
-      borderColor: border,
-      borderWidth: border_width,
+      ...border,
       outline: active ? '3px dashed var(--text-bright)' : 'none',
     }"
   >

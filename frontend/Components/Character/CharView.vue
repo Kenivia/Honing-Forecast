@@ -52,14 +52,14 @@ onUnmounted(() => {
         <RouterLink to="calc" class="side-bar-link" @click="close">
           Calc
         </RouterLink>
-        <RouterLink to="scanner" class="side-bar-link" @click="close">
-          Scanner
-        </RouterLink>
         <RouterLink v-if="DEV" to="income" class="side-bar-link" @click="close">
           Income
         </RouterLink>
         <RouterLink to="choices" class="side-bar-link" @click="close">
           Choices
+        </RouterLink>
+        <RouterLink to="scanner" class="side-bar-link" @click="close">
+          Scanner<span class="new-tag ml-2">beta</span>
         </RouterLink>
       </div>
 
