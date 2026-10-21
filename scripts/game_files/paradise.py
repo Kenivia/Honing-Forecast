@@ -1,7 +1,7 @@
 """
 Writes frontend/Data/paradise.json: the rewards of Paradise (TrinityInferno, "Hell" in the client) for the current
 season, as choices for the Choices page. One choice per mode, item level and reward level; each option is one main
-reward plus the additional rewards, and again with the Wealth ones instead. Run after
+reward plus the additional rewards, and again with the Wealth ones instead (Destiny only). Run after
 scanner_setup/game_files/extract.py.
 
     python scripts/game_files/paradise.py
@@ -103,19 +103,20 @@ def main():
                     for name, bag in options_of(drop(row[f"MainDropId{i}"]), labels):
                         names.append(name)
                         options.append(bag)
-            out.append(
-                {
-                    "id": f"paradise {reward} {level}",
-                    "group": f"Paradise: {mode}",
-                    "title": "Base" if index == 0 else f"Level {index}",
-                    "difficulty": str(item_level),
-                    "item_level": item_level,
-                    "band": 0,
-                    "names": names,
-                    "options": [add(bag, extra) for bag in options],
-                    "wealth": [add(bag, wealth) for bag in options],
-                }
-            )
+            choice = {
+                "id": f"paradise {reward} {level}",
+                "group": f"Paradise: {mode}",
+                "title": "Base" if index == 0 else f"Level {index}",
+                "difficulty": str(item_level),
+                "item_level": item_level,
+                "band": 0,
+                "names": names,
+                "options": [add(bag, extra) for bag in options],
+            }
+            # Netherworld has neither additional rewards nor Wealth
+            if int(row["PlentyDropId"]):
+                choice["wealth"] = [add(bag, wealth) for bag in options]
+            out.append(choice)
     OUT.write_text(json.dumps(out, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
     print(f"{len(out)} choices to {OUT}")
 

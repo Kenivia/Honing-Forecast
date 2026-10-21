@@ -169,16 +169,27 @@ check(
   PARADISE_CHOICES.every(
     (x) =>
       x.names.length === x.options.length &&
-      x.wealth.length === x.options.length,
+      (x.wealth?.length ?? x.options.length) === x.options.length,
   ),
 );
 check(
   "Paradise gives materials only",
   PARADISE_CHOICES.every((x) =>
-    [...x.options, ...x.wealth].every((bag) =>
+    [...x.options, ...(x.wealth ?? [])].every((bag) =>
       Object.keys(bag).every((label) => label in MATERIALS),
     ),
   ),
+);
+check(
+  "Wealth in Destiny only",
+  PARADISE_CHOICES.every(
+    (x) => !x.wealth === (x.group === "Paradise: Netherworld"),
+  ),
+);
+equal(
+  "Netherworld: the main reward alone",
+  PARADISE_CHOICES.find((x) => x.id === "paradise 1125 1").options[0],
+  { "Lava's Breath": 50, "Glacier's Breath": 150 },
 );
 const paradise = PARADISE_CHOICES.find((x) => x.id === "paradise 1028 1");
 const fusion = paradise.names.indexOf("Superior Abidos Fusion Material x75");

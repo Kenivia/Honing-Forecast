@@ -196,6 +196,13 @@ describe("Paradise tab", () => {
     expect(wealth.filter((x) => plain.includes(x))).toEqual([]);
   });
 
+  it("Netherworld has no Wealth to tick", async () => {
+    await open_paradise();
+    expect(wrapper.find('input[type="checkbox"]').exists()).toBe(true);
+    await button("Paradise mode", "Netherworld").trigger("click");
+    expect(wrapper.find('input[type="checkbox"]').exists()).toBe(false);
+  });
+
   it("mode, item level and level are saved per character", async () => {
     await open_paradise();
     await button("Paradise mode", "Netherworld").trigger("click");

@@ -9917,20 +9917,6 @@
    },
    {},
    {}
-  ],
-  "wealth": [
-   {},
-   {
-    "Scroll 1 Weapon": 15
-   },
-   {
-    "Scroll 1 Armor": 15
-   },
-   {
-    "Gold": 12500
-   },
-   {},
-   {}
   ]
  },
  {
@@ -9949,20 +9935,6 @@
    "Joyful Legendary Card Pack x1, Joyful Legendary - Epic Card Pack x3, Joyful Legendary - Rare Card Pack x5"
   ],
   "options": [
-   {},
-   {
-    "Scroll 1 Weapon": 20
-   },
-   {
-    "Scroll 1 Armor": 20
-   },
-   {
-    "Gold": 20000
-   },
-   {},
-   {}
-  ],
-  "wealth": [
    {},
    {
     "Scroll 1 Weapon": 20
@@ -10005,20 +9977,6 @@
    },
    {},
    {}
-  ],
-  "wealth": [
-   {},
-   {
-    "Scroll 1 Weapon": 25
-   },
-   {
-    "Scroll 1 Armor": 25
-   },
-   {
-    "Gold": 27500
-   },
-   {},
-   {}
   ]
  },
  {
@@ -10037,20 +9995,6 @@
    "Joyful Legendary Card Pack x1, Joyful Legendary - Epic Card Pack x9, Joyful Legendary - Rare Card Pack x20"
   ],
   "options": [
-   {},
-   {
-    "Scroll 1 Weapon": 35
-   },
-   {
-    "Scroll 1 Armor": 35
-   },
-   {
-    "Gold": 32500
-   },
-   {},
-   {}
-  ],
-  "wealth": [
    {},
    {
     "Scroll 1 Weapon": 35
@@ -10093,20 +10037,6 @@
    },
    {},
    {}
-  ],
-  "wealth": [
-   {},
-   {
-    "Scroll 1 Weapon": 50
-   },
-   {
-    "Scroll 1 Armor": 50
-   },
-   {
-    "Gold": 50000
-   },
-   {},
-   {}
   ]
  },
  {
@@ -10125,20 +10055,6 @@
    "Joyful Legendary Card Pack x1, Joyful Legendary - Epic Card Pack x18, Joyful Legendary - Rare Card Pack x70"
   ],
   "options": [
-   {},
-   {
-    "Scroll 1 Weapon": 75
-   },
-   {
-    "Scroll 1 Armor": 75
-   },
-   {
-    "Gold": 65000
-   },
-   {},
-   {}
-  ],
-  "wealth": [
    {},
    {
     "Scroll 1 Weapon": 75
@@ -10181,20 +10097,6 @@
    },
    {},
    {}
-  ],
-  "wealth": [
-   {},
-   {
-    "Scroll 1 Weapon": 100
-   },
-   {
-    "Scroll 1 Armor": 100
-   },
-   {
-    "Gold": 97500
-   },
-   {},
-   {}
   ]
  },
  {
@@ -10213,20 +10115,6 @@
    "Joyful Legendary Card Pack x1, Joyful Legendary - Epic Card Pack x32, Joyful Legendary - Rare Card Pack x150"
   ],
   "options": [
-   {},
-   {
-    "Scroll 1 Weapon": 150
-   },
-   {
-    "Scroll 1 Armor": 150
-   },
-   {
-    "Gold": 130000
-   },
-   {},
-   {}
-  ],
-  "wealth": [
    {},
    {
     "Scroll 1 Weapon": 150
@@ -10258,21 +10146,6 @@
    "Joyful Legendary Card Pack x1, Joyful Legendary - Epic Card Pack x42, Joyful Legendary - Rare Card Pack x200"
   ],
   "options": [
-   {},
-   {
-    "Scroll 1 Weapon": 200
-   },
-   {
-    "Scroll 1 Armor": 200
-   },
-   {
-    "Gold": 180000
-   },
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {},
    {
     "Scroll 1 Weapon": 200
@@ -10318,21 +10191,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {},
-   {
-    "Scroll 1 Weapon": 300
-   },
-   {
-    "Scroll 1 Armor": 300
-   },
-   {
-    "Gold": 260000
-   },
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -10352,21 +10210,6 @@
    "Joyful Legendary Card Pack x1, Joyful Legendary - Epic Card Pack x80, Joyful Legendary - Rare Card Pack x500"
   ],
   "options": [
-   {},
-   {
-    "Scroll 1 Weapon": 450
-   },
-   {
-    "Scroll 1 Armor": 450
-   },
-   {
-    "Gold": 390000
-   },
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {},
    {
     "Scroll 1 Weapon": 450
@@ -10411,20 +10254,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 30,
-    "Glacier's Breath": 90
-   },
-   {
-    "Gold": 16000
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -10444,20 +10273,6 @@
    "Level 7 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 45,
-    "Glacier's Breath": 135
-   },
-   {
-    "Gold": 24000
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 45,
     "Glacier's Breath": 135
@@ -10501,20 +10316,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 60,
-    "Glacier's Breath": 180
-   },
-   {
-    "Gold": 32000
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -10534,20 +10335,6 @@
    "Level 3 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 75,
-    "Glacier's Breath": 225
-   },
-   {
-    "Gold": 40000
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 75,
     "Glacier's Breath": 225
@@ -10591,20 +10378,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 110,
-    "Glacier's Breath": 330
-   },
-   {
-    "Gold": 60000
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -10624,20 +10397,6 @@
    "Level 5 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 150,
-    "Glacier's Breath": 450
-   },
-   {
-    "Gold": 80000
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 150,
     "Glacier's Breath": 450
@@ -10681,20 +10440,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 225,
-    "Glacier's Breath": 675
-   },
-   {
-    "Gold": 120000
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -10714,20 +10459,6 @@
    "Level 7 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 290,
-    "Glacier's Breath": 870
-   },
-   {
-    "Gold": 160000
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 290,
     "Glacier's Breath": 870
@@ -10760,21 +10491,6 @@
    "Level 8 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 400,
-    "Glacier's Breath": 1200
-   },
-   {
-    "Gold": 220000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 400,
     "Glacier's Breath": 1200
@@ -10821,21 +10537,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 600,
-    "Glacier's Breath": 1800
-   },
-   {
-    "Gold": 320000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -10856,21 +10557,6 @@
    "Highest Level Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 950,
-    "Glacier's Breath": 2850
-   },
-   {
-    "Gold": 480000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 950,
     "Glacier's Breath": 2850
@@ -10915,20 +10601,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 40,
-    "Glacier's Breath": 120
-   },
-   {
-    "Gold": 17500
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -10948,20 +10620,6 @@
    "Level 7 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 60,
-    "Glacier's Breath": 180
-   },
-   {
-    "Gold": 27500
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 60,
     "Glacier's Breath": 180
@@ -11005,20 +10663,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 75,
-    "Glacier's Breath": 225
-   },
-   {
-    "Gold": 37500
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -11038,20 +10682,6 @@
    "Level 3 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 100,
-    "Glacier's Breath": 300
-   },
-   {
-    "Gold": 45000
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 100,
     "Glacier's Breath": 300
@@ -11095,20 +10725,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 150,
-    "Glacier's Breath": 450
-   },
-   {
-    "Gold": 67500
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -11128,20 +10744,6 @@
    "Level 5 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 200,
-    "Glacier's Breath": 600
-   },
-   {
-    "Gold": 90000
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 200,
     "Glacier's Breath": 600
@@ -11185,20 +10787,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 300,
-    "Glacier's Breath": 900
-   },
-   {
-    "Gold": 135000
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -11218,20 +10806,6 @@
    "Level 7 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 375,
-    "Glacier's Breath": 1125
-   },
-   {
-    "Gold": 180000
-   },
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 375,
     "Glacier's Breath": 1125
@@ -11264,21 +10838,6 @@
    "Level 8 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 525,
-    "Glacier's Breath": 1575
-   },
-   {
-    "Gold": 250000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 525,
     "Glacier's Breath": 1575
@@ -11325,21 +10884,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 775,
-    "Glacier's Breath": 2325
-   },
-   {
-    "Gold": 360000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -11360,21 +10904,6 @@
    "Highest Level Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 1280,
-    "Glacier's Breath": 3840
-   },
-   {
-    "Gold": 540000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 1280,
     "Glacier's Breath": 3840
@@ -11421,21 +10950,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 45,
-    "Glacier's Breath": 135
-   },
-   {
-    "Gold": 20000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -11456,21 +10970,6 @@
    "Level 7 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 65,
-    "Glacier's Breath": 195
-   },
-   {
-    "Gold": 30000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 65,
     "Glacier's Breath": 195
@@ -11517,21 +11016,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 90,
-    "Glacier's Breath": 270
-   },
-   {
-    "Gold": 40000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -11552,21 +11036,6 @@
    "Level 3 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 115,
-    "Glacier's Breath": 345
-   },
-   {
-    "Gold": 50000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 115,
     "Glacier's Breath": 345
@@ -11613,21 +11082,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 165,
-    "Glacier's Breath": 495
-   },
-   {
-    "Gold": 70000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -11648,21 +11102,6 @@
    "Level 5 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 225,
-    "Glacier's Breath": 675
-   },
-   {
-    "Gold": 100000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 225,
     "Glacier's Breath": 675
@@ -11709,21 +11148,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 325,
-    "Glacier's Breath": 975
-   },
-   {
-    "Gold": 150000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -11744,21 +11168,6 @@
    "Level 7 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 425,
-    "Glacier's Breath": 1275
-   },
-   {
-    "Gold": 210000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 425,
     "Glacier's Breath": 1275
@@ -11793,22 +11202,6 @@
    "Level 8 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 600,
-    "Glacier's Breath": 1800
-   },
-   {
-    "Gold": 300000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 600,
     "Glacier's Breath": 1800
@@ -11858,22 +11251,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 850,
-    "Glacier's Breath": 2550
-   },
-   {
-    "Gold": 400000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -11895,22 +11272,6 @@
    "Highest Level Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 1400,
-    "Glacier's Breath": 4200
-   },
-   {
-    "Gold": 575000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 1400,
     "Glacier's Breath": 4200
@@ -11958,21 +11319,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 50,
-    "Glacier's Breath": 150
-   },
-   {
-    "Gold": 22500
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -11993,21 +11339,6 @@
    "Level 7 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 75,
-    "Glacier's Breath": 225
-   },
-   {
-    "Gold": 36000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 75,
     "Glacier's Breath": 225
@@ -12054,21 +11385,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 100,
-    "Glacier's Breath": 300
-   },
-   {
-    "Gold": 47500
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -12089,21 +11405,6 @@
    "Level 3 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 125,
-    "Glacier's Breath": 375
-   },
-   {
-    "Gold": 60000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 125,
     "Glacier's Breath": 375
@@ -12150,21 +11451,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 180,
-    "Glacier's Breath": 540
-   },
-   {
-    "Gold": 80000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -12185,21 +11471,6 @@
    "Level 5 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 240,
-    "Glacier's Breath": 720
-   },
-   {
-    "Gold": 110000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 240,
     "Glacier's Breath": 720
@@ -12246,21 +11517,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 360,
-    "Glacier's Breath": 1080
-   },
-   {
-    "Gold": 160000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -12281,21 +11537,6 @@
    "Level 7 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 480,
-    "Glacier's Breath": 1440
-   },
-   {
-    "Gold": 225000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 480,
     "Glacier's Breath": 1440
@@ -12330,22 +11571,6 @@
    "Level 8 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 660,
-    "Glacier's Breath": 1980
-   },
-   {
-    "Gold": 325000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 660,
     "Glacier's Breath": 1980
@@ -12395,22 +11620,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 960,
-    "Glacier's Breath": 2880
-   },
-   {
-    "Gold": 475000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -12432,22 +11641,6 @@
    "Highest Level Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 1600,
-    "Glacier's Breath": 4800
-   },
-   {
-    "Gold": 650000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 1600,
     "Glacier's Breath": 4800
@@ -12495,21 +11688,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 60,
-    "Glacier's Breath": 180
-   },
-   {
-    "Gold": 27500
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -12530,21 +11708,6 @@
    "Level 7 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 90,
-    "Glacier's Breath": 270
-   },
-   {
-    "Gold": 41000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 90,
     "Glacier's Breath": 270
@@ -12591,21 +11754,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 120,
-    "Glacier's Breath": 360
-   },
-   {
-    "Gold": 55000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -12626,21 +11774,6 @@
    "Level 3 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 150,
-    "Glacier's Breath": 450
-   },
-   {
-    "Gold": 72000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 150,
     "Glacier's Breath": 450
@@ -12687,21 +11820,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 200,
-    "Glacier's Breath": 600
-   },
-   {
-    "Gold": 96000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -12722,21 +11840,6 @@
    "Level 5 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 300,
-    "Glacier's Breath": 900
-   },
-   {
-    "Gold": 132000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 300,
     "Glacier's Breath": 900
@@ -12783,21 +11886,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 450,
-    "Glacier's Breath": 1350
-   },
-   {
-    "Gold": 192000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -12818,21 +11906,6 @@
    "Level 7 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 650,
-    "Glacier's Breath": 1950
-   },
-   {
-    "Gold": 270000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 650,
     "Glacier's Breath": 1950
@@ -12867,22 +11940,6 @@
    "Level 8 Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 900,
-    "Glacier's Breath": 2700
-   },
-   {
-    "Gold": 390000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 900,
     "Glacier's Breath": 2700
@@ -12932,22 +11989,6 @@
    {},
    {},
    {}
-  ],
-  "wealth": [
-   {
-    "Lava's Breath": 1300,
-    "Glacier's Breath": 3900
-   },
-   {
-    "Gold": 570000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
   ]
  },
  {
@@ -12969,22 +12010,6 @@
    "Highest Level Processed Chaos/Destiny Stone Selection Chest x5"
   ],
   "options": [
-   {
-    "Lava's Breath": 1900,
-    "Glacier's Breath": 5700
-   },
-   {
-    "Gold": 780000
-   },
-   {},
-   {},
-   {},
-   {},
-   {},
-   {},
-   {}
-  ],
-  "wealth": [
    {
     "Lava's Breath": 1900,
     "Glacier's Breath": 5700

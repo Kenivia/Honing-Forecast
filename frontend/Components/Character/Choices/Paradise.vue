@@ -63,7 +63,10 @@ const choice = computed(() => {
   const found = members.value.find(
     (x) => x.difficulty === shown.value && x.title === level.value,
   );
-  return wealth.value ? { ...found, options: found.wealth } : found;
+  // Netherworld has no Wealth
+  return wealth.value && found.wealth
+    ? { ...found, options: found.wealth }
+    : found;
 });
 
 const worth = (job?: ChoiceJob) =>
@@ -117,8 +120,9 @@ watch(
     <span class="text-(--text-muted)">
       What each reward of a Paradise run is worth to this character, best first:
       how much less gold its upgrades cost on average, under its plan, with the
-      reward and the additional rewards that come with every one. Tick Wealth
-      for the Wealth amounts instead. Only honing materials and gold count.
+      reward and, in Destiny, the additional rewards that come with every one.
+      Tick Wealth for the Wealth amounts instead. Only honing materials and gold
+      count.
     </span>
     <span v-if="no_upgrades" class="text-(--warning)" role="alert">
       No upgrades are selected for this character, so nothing here is worth
@@ -175,7 +179,10 @@ watch(
       <span class="text-(--text-muted)">
         <span class="flex items-center gap-2">
           Worth
-          <label class="flex items-center gap-1 text-(--text-main)">
+          <label
+            v-if="choice.wealth"
+            class="flex items-center gap-1 text-(--text-main)"
+          >
             <input v-model="wealth" type="checkbox" />
             Wealth
           </label>
