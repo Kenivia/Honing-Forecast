@@ -93,6 +93,20 @@ const t4_gain = (label: string, band: number) =>
 const t4_line = (amount: number) =>
   amount > 0 ? [{ amount, text: "from T4" }] : [];
 
+// what the bands up to the one under the shown one hold (stock, chests, T4), cumulative like the graph lines
+const lower_lines = (label: string, band: number) => {
+  if (band === 0) return [];
+  const amount = [0, 1]
+    .slice(0, band)
+    .reduce(
+      (sum, b) =>
+        sum + owned.value[b][label] + gain(label, b) + t4_gain(label, b),
+      0,
+    );
+  const text = band === 1 ? "from char-bound" : "from roster-bound";
+  return amount > 0 ? [{ amount, text }] : [];
+};
+
 // This is average mats cost (not gold)
 const average_breakdown = computed(
   () => runtime.histogram.result?.avg_used ?? zeroes(),
@@ -371,6 +385,7 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
                 text: 'from chests',
               },
               ...t4_line(t4_gain(label, active_profile.chance_band)),
+              ...lower_lines(label, active_profile.chance_band),
             ]"
           />
           <div

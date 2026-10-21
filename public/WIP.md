@@ -3,19 +3,6 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
-## Core
-
-- ~~test & decide wtf to do with the core~~
-  - code review
-- ~~x10 streak frontend~~
-
-- ~~change tradabiltiy selector to the mats column~~
-- ~~estimated gold value~~
-
-- ~~show baseline in choices~~
-
-- paradise rewards from <https://sekwahar.github.io/loa_datamining/pages/hell_drops.html>
-
 ## Forecast mode
 
 - ~~forecast mode UI~~ this is gonna hvae to be very pervasive
@@ -77,6 +64,18 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Done / cancelled
 
+~~## Core~~
+
+- ~~test & decide wtf to do with the core~~
+  - code review
+- ~~x10 streak frontend~~
+
+- ~~change tradabiltiy selector to the mats column~~
+- ~~estimated gold value~~
+
+- ~~show baseline in choices~~
+
+- ~~paradise rewards ~~
 ~~### HARD~~
 
 - ~~startup time or at least a loading icon~~
