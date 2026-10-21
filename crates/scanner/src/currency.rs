@@ -260,9 +260,10 @@ fn is_yellow(buffer: &Buffer, area: Rect) -> bool {
 }
 
 // "15,275,481": the recogniser drops a first or last digit, which breaks the groups of three. It
-// also misses a separator now and then, which is no harm.
+// also misses a separator now and then, which is no harm, and spaces out "11" ("3,1 13,003").
 fn grouped(text: &str) -> Option<u64> {
-    let groups: Vec<&str> = text.trim().split([',', '.']).collect();
+    let text: String = text.chars().filter(|c| !c.is_whitespace()).collect();
+    let groups: Vec<&str> = text.split([',', '.']).collect();
     let well_formed = groups
         .iter()
         .all(|x| !x.is_empty() && x.chars().all(|c| c.is_ascii_digit()))

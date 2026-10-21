@@ -214,7 +214,7 @@ function toggle_lock(x: Shown) {
               <span class="text-(--text-muted)">
                 {{
                   window_cover[win.type] === null
-                    ? "You don't need to re-scan if nothing here has changed. "
+                    ? "You don't need to re-scan if you know nothing here has changed. "
                     : ""
                 }}
               </span>

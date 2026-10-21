@@ -31,3 +31,4 @@ What was measured on the currency reader (`Currency.md`), and the cases behind i
 - Template scores on those stills: 0.997 to 1.0 for the right icon; other icons of the bar 0.85 at most; silver against gold 0.87.
 - The three captures of 2026-10-17 08:27 to 08:35 there (forced 21:9 on, so 1080 lines): replayed with `--reread --no-edits`, everything is read, gold on its first hover. The one without gold on the bar and never hovered stays at "needs a hover", as it should.
 - Not tried: other resolutions, brightness settings, a lossy recording, the inventory's tooltip when the inventory is high enough not to push it up.
+- Capture 2026-10-21T23-20 (1080p, gold hovered in the inventory): "Gold Owned" read as "3,1 13,003" on all six margins, so it never voted and gold ended as "Its reads disagree". Dropping whitespace in `grouped` settles it at 3,113,003 (bands 297,700 / 0 / 3,133,003, total 3,430,703).

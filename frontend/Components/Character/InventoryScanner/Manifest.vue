@@ -155,8 +155,8 @@ function export_to_calc() {
 
     <div v-if="loose.length" class="card-shell card-body text-sm">
       <div class="card-title">Not included</div>
-      <span class="text-(--text-muted)">
-        Open these in game, then scan again.
+      <span class="ml-2 text-(--text-muted)">
+        Random chests are not supported, open them.
       </span>
       <div v-for="chest in loose" :key="chest.title + chest.why">
         {{ chest.title }} x{{ chest.count.toLocaleString() }}

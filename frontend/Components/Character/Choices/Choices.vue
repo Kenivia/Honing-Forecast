@@ -205,6 +205,10 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
           much less gold your upgrades cost on average if you buy the chest.
           Only guaranteed honing materials are considered.
         </span>
+
+        <span class="text-(--text-main)">
+          The cost of the chest is already considered in the + or - value.
+        </span>
         <span
           v-if="no_upgrades"
           class="self-center text-center text-(--warning)"

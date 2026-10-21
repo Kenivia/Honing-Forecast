@@ -195,7 +195,13 @@ function accept() {
             aria-label="Item"
           >
             <option value="">Irrelevant</option>
-            <option v-for="name in options" :key="name" :value="name">
+            <!-- memoized: Vue rewrites every bound option value on each render, which resets an open dropdown's highlight -->
+            <option
+              v-for="name in options"
+              :key="name"
+              v-memo="[name]"
+              :value="name"
+            >
               {{ item_name(name) }}
             </option>
           </select>
@@ -239,6 +245,7 @@ function accept() {
             v-for="[value, label] in TRADABILITY"
             :value="value"
             :key="label"
+            v-memo="[value]"
           >
             {{ label }}
           </option>

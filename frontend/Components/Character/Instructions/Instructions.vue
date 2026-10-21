@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { to_upgrade_key } from "@/Utils/KeyedUpgrades";
 import { GridConfig } from "@/Utils/GridStyling";
@@ -24,6 +24,14 @@ const { active_profile } = storeToRefs(useRosterStore());
 const any_overwritten = computed(get_any_overwritten);
 const relevant_upgrade_arr = computed(() =>
   instruction_rows(get_relevant_result(any_overwritten.value), props.is_normal),
+);
+
+const COLLAPSED_COUNT = 10;
+const expanded = ref(false);
+const shown_upgrade_arr = computed(() =>
+  expanded.value
+    ? relevant_upgrade_arr.value
+    : relevant_upgrade_arr.value.slice(0, COLLAPSED_COUNT),
 );
 
 const grid: GridConfig = props.is_normal
@@ -105,7 +113,7 @@ const optimizer_working = computed(get_optimizer_working);
             upgrade,
             index_in_special_state,
             perform_order,
-          ] in relevant_upgrade_arr"
+          ] in shown_upgrade_arr"
           :key="`instructions-${upgrade.upgrade_index}-${upgrade.piece_index}-${upgrade.is_normal_honing}`"
           class="mats-row h-fit!"
         >
@@ -130,6 +138,17 @@ const optimizer_working = computed(get_optimizer_working);
         </div>
       </div>
     </div>
+    <button
+      v-if="relevant_upgrade_arr.length > COLLAPSED_COUNT"
+      @click="expanded = !expanded"
+      class="barebone-button mx-auto w-fit text-(--text-muted)"
+    >
+      {{
+        expanded
+          ? "Collapse"
+          : `Show all ${relevant_upgrade_arr.length} upgrades`
+      }}
+    </button>
   </div>
 </template>
 <style>
