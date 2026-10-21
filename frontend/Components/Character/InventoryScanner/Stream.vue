@@ -23,7 +23,12 @@ import {
   watch,
 } from "vue";
 import { until, useIntervalFn } from "@vueuse/core";
-import { getModel, getScannerConfig, ScanResult } from "./LoadStorage";
+import {
+  download_note,
+  getModel,
+  getScannerConfig,
+  ScanResult,
+} from "./LoadStorage";
 import {
   begin_capture_file,
   CaptureStart,
@@ -224,12 +229,23 @@ async function start_scanner() {
   detected.value = { forced_21_9: null, brightness: null };
   if (replay) Object.assign(replay, { offset: replay.first, waits: 0 });
 
-  const [size, config, model] = await Promise.all([
-    replay ?? source.measure(),
-    getScannerConfig(),
-    getModel(),
-  ]);
-  if (!size) return;
+  let loaded;
+  try {
+    loaded = await Promise.all([
+      replay ?? source.measure(),
+      getScannerConfig(),
+      getModel(),
+    ]);
+  } catch {
+    if (status.value === "idle") return;
+    stop_capture();
+    error.value =
+      "Could not download the scanner's files. Check your connection and try again.";
+    return;
+  }
+  const [size, config, model] = loaded;
+  // stopped while downloading
+  if (!size || status.value === "idle") return;
   const { width, height } = size;
   // the state is built once here and then stays inside the worker's wasm
   const new_scanner_state = {
@@ -463,6 +479,10 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
       class="rounded bg-red-500/10 px-3 py-2 text-xs text-red-400"
     >
       {{ error }}
+    </p>
+    <p v-if="download_note" class="text-sm text-(--text-muted)">
+      Downloading scanner data: {{ download_note }}. Scanning starts once it is
+      done.
     </p>
 
     <div

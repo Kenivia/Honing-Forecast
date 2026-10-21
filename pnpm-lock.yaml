@@ -20,6 +20,9 @@ importers:
       '@vueuse/core':
         specifier: ^14.3.0
         version: 14.3.0(vue@3.5.38(typescript@5.9.3))
+      brotli-dec-wasm:
+        specifier: ^2.3.2
+        version: 2.3.2
       chart.js:
         specifier: 4.5.1
         version: 4.5.1
@@ -1493,6 +1496,9 @@ packages:
   brace-expansion@5.0.6:
     resolution: {integrity: sha512-kLpxurY4Z4r9sgMsyG0Z9uzsBlgiU/EFKhj/h91/8yHu0edo7XuixOIH3VcJ8kkxs6/jPzoI6U9Vj3WqbMQ94g==}
     engines: {node: 18 || 20 || >=22}
+
+  brotli-dec-wasm@2.3.2:
+    resolution: {integrity: sha512-5H+k8eVLIJY6B4olN2HP9QzJAxcplf0jV7mWnkpxvOSeUE9Npg3dQ2pgLn30a9MUFHNro1iSmtdu6VNdlb+TIw==}
 
   chai@6.3.0:
     resolution: {integrity: sha512-XWAtwJ6OHO+tj0EKCs0Y2UamnyOxseZWltU4x2U2wh8g4AigdjwvtUjvLP2tqkA/avxHEtzxNaqGq/YGNwckKg==}
@@ -3517,6 +3523,8 @@ snapshots:
   brace-expansion@5.0.6:
     dependencies:
       balanced-match: 4.0.4
+
+  brotli-dec-wasm@2.3.2: {}
 
   chai@6.3.0: {}
 

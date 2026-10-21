@@ -9,21 +9,21 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
   - code review
 - x10 streak frontend
 
-## OCR
+- change tradabiltiy selector to the mats column
+- estimated gold value
 
-### LOW PRIO
-
-- save where a chest was detected from? (there'll be multiple tho?) and show it with hover?
-- enhanced book distinguishing (can i be bothered)
-- constant extraction script / update script
+- show baseline in choices
 
 ## Forecast mode
 
-- forecast mode UI
-
+- ~~forecast mode UI~~ this is gonna hvae to be very pervasive
+  - optimizer advise & all advises must be set to that time
+  - this probably works better with an actual estimated income without having to configure
 - need to sort out the UI:
   - chest display & editing
   - preview manifest
+
+- replace mats graph st we have 1 mat at any time, show price history , allow adusting bounds
 
 ## Misc UI
 
@@ -35,6 +35,12 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - save previous optimizer work
 
 - gold distribution graph (using coarse lattice maybe?)
+
+### LOW PRIO
+
+- save where a chest was detected from? (there'll be multiple tho?) and show it with hover?
+- enhanced book distinguishing (can i be bothered)
+- constant extraction script / update script
 
 ## Price forecasting
 

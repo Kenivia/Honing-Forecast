@@ -1,4 +1,5 @@
 import { decode } from "@msgpack/msgpack";
+import { computed, reactive } from "vue";
 
 export interface ScaledPosition {
   top_left: [number, number];
@@ -151,57 +152,74 @@ export interface OcrJob {
   };
 }
 
-let configPromise: Promise<OneIconConfig[]> | null = null;
-export function getScannerConfig() {
-  if (!configPromise) {
-    configPromise = load_file("/ScannerConfig.msgpack", true) as Promise<
-      OneIconConfig[]
-    >;
-  }
-  return configPromise;
+// downloads in progress by url, in bytes; total is 0 when not known
+export const downloads = reactive<
+  Record<string, { loaded: number; total: number }>
+>({});
+
+export const download_note = computed(() => {
+  const all = Object.values(downloads);
+  if (!all.length) return null;
+  const mb = (bytes: number) => (bytes / 1e6).toFixed(1);
+  const loaded = mb(all.reduce((sum, d) => sum + d.loaded, 0));
+  return all.every((d) => d.total)
+    ? `${loaded} / ${mb(all.reduce((sum, d) => sum + d.total, 0))} MB`
+    : `${loaded} MB`;
+});
+
+// fetched once per session, but a failed download is tried again on the next call
+function once<T>(load: () => Promise<T>) {
+  let promise: Promise<T> | null = null;
+  return () =>
+    (promise ??= load().catch((e) => {
+      promise = null;
+      throw e;
+    }));
 }
 
-let modelPromise: Promise<Uint8Array> | null = null;
-export function getModel() {
-  if (!modelPromise) {
-    modelPromise = load_file(
-      "/text-recognition.rten",
-      false,
-    ) as Promise<Uint8Array>;
-  }
-  return modelPromise;
+export const getScannerConfig = once(
+  async () =>
+    decode(await load_file("/ScannerConfig.msgpack")) as OneIconConfig[],
+);
+export const getModel = once(() => load_file("/text-recognition.rten"));
+
+// A build serves these brotli compressed as <url>.br (vite.config.ts), the dev server raw. A
+// server that sends the .br with Content-Encoding: br has the browser decompress it instead.
+export async function load_file(url: string) {
+  if (import.meta.env.DEV) return (await download(url)).bytes;
+  const [{ decompress }, { bytes, encoded }] = await Promise.all([
+    import("brotli-dec-wasm").then((module) => module.default),
+    download(url + ".br"),
+  ]);
+  return encoded ? bytes : decompress(bytes);
 }
 
-// function renameKeyDeep(obj, oldKey, newKey) {
-//   if (Array.isArray(obj)) {
-//     return obj.map((item) => renameKeyDeep(item, oldKey, newKey));
-//   }
-//   if (obj !== null && typeof obj === "object") {
-//     return Object.fromEntries(
-//       Object.entries(obj).map(([key, value]) => [
-//         key === oldKey ? newKey : key,
-//         renameKeyDeep(value, oldKey, newKey),
-//       ]),
-//     );
-//   }
-//   return obj;
-// }
-
-export async function load_file(url: string, msg_pack: boolean) {
+async function download(url: string) {
   try {
     const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch ${url}: ${response.status} ${response.statusText}`,
-      );
+    if (!response.ok) throw new Error(`${url}: ${response.status}`);
+    // a missing file comes back as the app's index.html
+    if (response.headers.get("Content-Type")?.startsWith("text/html"))
+      throw new Error(`${url}: not found`);
+    // a compressed response's length is not that of the bytes read
+    const encoded = !!response.headers.get("Content-Encoding");
+    const total = encoded
+      ? 0
+      : Number(response.headers.get("Content-Length") ?? 0);
+    downloads[url] = { loaded: 0, total };
+    const chunks: Uint8Array[] = [];
+    const reader = response.body!.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      downloads[url].loaded += value.length;
     }
-    const buffer = await response.arrayBuffer();
-    // console.log(buffer, url);
-    return msg_pack ? decode(new Uint8Array(buffer)) : new Uint8Array(buffer); // renameKeyDeep(
-  } catch (e) {
-    console.log("loading msgpack failed with error ", e);
-
-    return [];
+    const bytes = new Uint8Array(
+      await new Blob(chunks as BlobPart[]).arrayBuffer(),
+    );
+    return { bytes, encoded };
+  } finally {
+    delete downloads[url];
   }
 }

@@ -45,7 +45,7 @@ outside the repo (an archived copy) needs `.cargo/config.toml` with it.
 | `pnpm test`          | Every suite below in turn: Rust, node, Vitest, browser.                  |
 | `pnpm test:node`     | The node-side suites in `tests/`. See `tests/` below.                    |
 | `pnpm test:unit`     | Vitest unit and component tests in `tests/unit/`. See `tests/` below.   |
-| `pnpm test:e2e`      | Playwright browser tests.                                                |
+| `pnpm test:e2e`      | Playwright browser tests, fully parallel (tests within a file too).      |
 | `pnpm test:rust`     | Rust unit tests for the core, and the arena's short checks.              |
 | `pnpm arena`         | The core's test harness. See `Calculator core/Arena.md`.                 |
 | `pnpm arena stress`  | The evaluator's probabilities against an exact convolution.              |
