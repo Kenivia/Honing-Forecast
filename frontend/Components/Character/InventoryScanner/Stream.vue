@@ -548,7 +548,7 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
           <select v-model="aspect_choice" class="selector" aria-label="Aspect">
             <option value="auto">Auto</option>
             <option value="16:9">16:9</option>
-            <option value="21:9">Forced 21:9</option>
+            <option value="21:9">21:9 (native or forced)</option>
           </select>
           <span class="text-(--text-muted)">
             {{
@@ -586,6 +586,9 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
               detected.brightness ??
               (status === "capturing" ? "detecting..." : "-")
             }}
+            <template v-if="detected.brightness != null">
+              (within 5 ish should be fine)
+            </template>
           </span>
         </div>
         <div

@@ -35,7 +35,7 @@ const show_limitations = ref(false);
           Open your storage or just your inventory, then hover items in game.
           You only need to do it for items with an
           <span class="text-(--series-fusion)">Orange</span> border, and only
-          ~300ms per hover is needed. You should hover until no
+          a few frames per hover is needed. You should hover until no
           <span class="text-(--series-fusion)">Orange</span> slots remain.
         </div>
       </div>
