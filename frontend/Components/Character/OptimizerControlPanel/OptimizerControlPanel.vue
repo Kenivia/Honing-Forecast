@@ -19,6 +19,15 @@ const show_override = ref(false);
 
 const optimizer_working = computed(get_optimizer_working);
 
+// the gold shown is the histogram's of the final result, so 100% waits for it
+const progress = computed(() => {
+  const pct = runtime.optimizer.est_progress_percentage;
+  const waiting =
+    pct >= 100 &&
+    (runtime.histogram.status === "busy" || runtime.histogram.queued);
+  return pct < 100 || waiting ? Math.min(pct, 99.99) : 100;
+});
+
 type Group = "normal" | "special" | "advanced";
 const option = <T,>(value: T, label: string) => ({ value, label });
 
@@ -131,18 +140,18 @@ const grid: GridConfig = {
         <span
           :style="{
             color:
-              runtime.optimizer.est_progress_percentage == 100
+              progress == 100
                 ? 'var(--gold)'
                 : 'var(--warning-dark)',
           }"
         >
-          {{ locale_to_fixed(runtime.optimizer.est_progress_percentage, 2) }}%
+          {{ locale_to_fixed(progress, 2) }}%
         </span>
         <div class="progress-bar">
           <div
             class="progress-fill"
             :style="{
-              width: `${runtime.optimizer.est_progress_percentage}%`,
+              width: `${progress}%`,
             }"
           />
         </div>

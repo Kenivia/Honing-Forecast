@@ -40,9 +40,15 @@ const item_level = computed(
   () => parse_locale_float(ilevel(profile.value, "achieved")) || 0,
 );
 
-// Every raid with its difficulties, newest first. Difficulties are locked by item level, not tier:
-// a T4 character above Serca's level gets Serca materials it cannot use.
-const raids = computed(() => raids_of(PRESET_CHOICES));
+// Every raid the character can enter, with its difficulties, newest first. Difficulties are locked
+// by item level, not tier: a T4 character above Serca's level gets Serca materials it cannot use.
+const raids = computed(() =>
+  raids_of(PRESET_CHOICES).filter(
+    (raid) =>
+      !raid.difficulties.length ||
+      raid.difficulties[0].item_level <= item_level.value,
+  ),
+);
 // the top three, and one more each time the user asks
 const SHOWN = 3;
 const more = ref(0);
@@ -130,13 +136,25 @@ const columns = computed(() => [
   store.active_roster_mats_owned,
   store.active_tradable_mats_owned,
 ]);
-const take = (choice: Choice, option: Record<string, number>) =>
+// the row last added shows so for a moment; keyed by name, as its job changes with the budgets
+const taken = ref<string | null>(null);
+let taken_timer: ReturnType<typeof setTimeout>;
+function take(key: string, choice: Choice, option: Record<string, number>) {
   take_option(choice, option, columns.value, profile.value.special_budget);
+  taken.value = key;
+  clearTimeout(taken_timer);
+  taken_timer = setTimeout(() => (taken.value = null), 2000);
+}
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 p-3">
-    <div class="flex gap-1" role="tablist" aria-label="Choices">
+  <div class="flex w-full min-w-0 flex-col gap-3 p-3">
+    <!-- clears the sidebar's menu button, shown below CharView's width of 1201 -->
+    <div
+      class="flex gap-1 max-[1201px]:pl-12"
+      role="tablist"
+      aria-label="Choices"
+    >
       <button
         v-for="name in TABS"
         :key="name"
@@ -162,6 +180,7 @@ const take = (choice: Choice, option: Record<string, number>) =>
       :no_upgrades="no_upgrades"
       :item_level="item_level"
       :baseline_text="baseline_text"
+      :taken="taken"
       @take="take"
     />
     <div v-else class="card-shell card-body flex w-full flex-col gap-2 text-sm">
@@ -181,98 +200,105 @@ const take = (choice: Choice, option: Record<string, number>) =>
         No upgrades are selected for this character, so nothing here is worth
         anything. Select some on the calculator to see what each chest is worth.
       </span>
-      <div
-        class="grid grid-cols-[minmax(10rem,auto)_6rem_auto_6rem_auto] items-center gap-x-4 gap-y-1"
-        role="table"
-        aria-label="Choices"
-      >
-        <span class="text-(--text-muted)">Gate</span>
-        <span class="text-(--text-muted)">Cost</span>
-        <span class="text-(--text-muted)">Gives</span>
-        <span class="text-(--text-muted)">
-          Worth
-          <span class="block text-(--text-main)" aria-label="Baseline">
-            Baseline = {{ baseline_text }}
+      <!-- scrolls on its own on a narrow screen, so the page does not -->
+      <div class="overflow-x-auto">
+        <div
+          class="grid w-max min-w-full grid-cols-[minmax(10rem,auto)_6rem_auto_6rem_auto] items-center gap-x-4 gap-y-1"
+          role="table"
+          aria-label="Choices"
+        >
+          <span class="text-(--text-muted)">Gate</span>
+          <span class="text-(--text-muted)">Cost</span>
+          <span class="text-(--text-muted)">Gives</span>
+          <span class="text-(--text-muted)">
+            Worth
+            <span class="block text-(--text-main)" aria-label="Baseline">
+              Baseline = {{ baseline_text }}
+            </span>
           </span>
-        </span>
-        <span></span>
-        <template v-for="group in groups" :key="group.name">
-          <div
-            class="col-span-5 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1"
-            role="rowheader"
-          >
-            <span class="text-(--text-bright)">{{ group.name }}</span>
+          <span></span>
+          <template v-for="group in groups" :key="group.name">
             <div
-              v-if="group.difficulties.length"
-              class="flex gap-1"
-              role="group"
-              :aria-label="`${group.name} difficulty`"
+              class="col-span-5 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1"
+              role="rowheader"
             >
-              <button
-                v-for="difficulty in group.difficulties"
-                :key="difficulty.name"
-                class="generic-button"
-                :class="{
-                  'bg-(--bg-very-bright)!': group.shown === difficulty.name,
-                  'text-(--text-very-muted)':
-                    difficulty.item_level > item_level,
-                }"
-                :aria-pressed="group.shown === difficulty.name"
-                :title="`Item level ${difficulty.item_level}`"
-                @click="pick(group.name, difficulty.name)"
+              <span class="text-(--text-bright)">{{ group.name }}</span>
+              <div
+                v-if="group.difficulties.length"
+                class="flex gap-1"
+                role="group"
+                :aria-label="`${group.name} difficulty`"
               >
-                {{ difficulty.name }}
-              </button>
+                <button
+                  v-for="difficulty in group.difficulties"
+                  :key="difficulty.name"
+                  class="generic-button"
+                  :class="{
+                    'bg-(--bg-very-bright)!': group.shown === difficulty.name,
+                    'text-(--text-very-muted)':
+                      difficulty.item_level > item_level,
+                  }"
+                  :aria-pressed="group.shown === difficulty.name"
+                  :title="`Item level ${difficulty.item_level}`"
+                  @click="pick(group.name, difficulty.name)"
+                >
+                  {{ difficulty.name }}
+                </button>
+              </div>
             </div>
-          </div>
-          <template
-            v-for="{ option, job, choice } in group.rows.flatMap((row) =>
-              row.options.map((x) => ({ ...x, choice: row.choice })),
-            )"
-            :key="job.hash"
-          >
-            <span class="text-(--text-main)">{{ choice.title }}</span>
-            <span class="text-(--gold)">
-              {{ (-(option.Gold ?? 0)).toLocaleString("en-US") }}
-            </span>
-            <span
-              class="flex flex-wrap items-center gap-x-3"
-              :title="choice.others?.join('\n')"
+            <template
+              v-for="{ option, job, choice, key } in group.rows.flatMap((row) =>
+                row.options.map((x, index) => ({
+                  ...x,
+                  choice: row.choice,
+                  key: `${row.choice.group}/${row.choice.title}/${index}`,
+                })),
+              )"
+              :key="job.hash"
             >
-              <span
-                v-for="(amount, label) in option"
-                v-show="label !== 'Gold'"
-                :key="label"
-                class="flex items-center gap-1"
-              >
-                <img
-                  :src="get_icon_path(label as string)"
-                  class="generic-icon h-5 w-5"
-                  :alt="label as string"
-                />
-                {{ amount.toLocaleString("en-US") }}
+              <span class="text-(--text-main)">{{ choice.title }}</span>
+              <span class="text-(--gold)">
+                {{ (-(option.Gold ?? 0)).toLocaleString("en-US") }}
               </span>
-            </span>
-            <span
-              :aria-label="`${choice.group} ${choice.title} worth`"
-              :style="{ color: worth_color(no_upgrades, worth(job.metric)) }"
-            >
-              {{ worth_text(no_upgrades, worth(job.metric)) }}
-            </span>
-            <button
-              class="generic-button w-fit"
-              :disabled="!affordable(choice, option, columns)"
-              :title="
-                affordable(choice, option, columns)
-                  ? 'Add what it gives and take its gold'
-                  : 'Not enough gold'
-              "
-              @click="take(choice, option)"
-            >
-              Add to budget
-            </button>
+              <span
+                class="flex flex-wrap items-center gap-x-3"
+                :title="choice.others?.join('\n')"
+              >
+                <span
+                  v-for="(amount, label) in option"
+                  v-show="label !== 'Gold'"
+                  :key="label"
+                  class="flex items-center gap-1"
+                >
+                  <img
+                    :src="get_icon_path(label as string)"
+                    class="generic-icon h-5 w-5"
+                    :alt="label as string"
+                  />
+                  {{ amount.toLocaleString("en-US") }}
+                </span>
+              </span>
+              <span
+                :aria-label="`${choice.group} ${choice.title} worth`"
+                :style="{ color: worth_color(no_upgrades, worth(job.metric)) }"
+              >
+                {{ worth_text(no_upgrades, worth(job.metric)) }}
+              </span>
+              <button
+                class="generic-button w-fit"
+                :disabled="!affordable(choice, option, columns)"
+                :title="
+                  affordable(choice, option, columns)
+                    ? 'Add what it gives and take its gold'
+                    : 'Not enough gold'
+                "
+                @click="take(key, choice, option)"
+              >
+                {{ taken === key ? "Added ✓" : "Add to budget" }}
+              </button>
+            </template>
           </template>
-        </template>
+        </div>
       </div>
       <button v-if="hidden" class="generic-button w-fit" @click="more++">
         Show one more raid ({{ hidden }} hidden)

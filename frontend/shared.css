@@ -59,8 +59,13 @@
   cursor: pointer;
   user-select: none;
 }
-.generic-button:hover {
+.generic-button:hover:not(:disabled) {
   background-color: var(--bg-very-bright);
+}
+
+.generic-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .header-button:hover {

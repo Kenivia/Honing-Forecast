@@ -13,6 +13,7 @@ import {
 import { useRuntimeStore } from "./Stores/RuntimeState";
 import ScanSwitchDialog from "./Components/Character/InventoryScanner/ScanSwitchDialog.vue";
 import BrokenSaveBanner from "./Components/Common/BrokenSaveBanner.vue";
+import OtherTabBanner from "./Components/Common/OtherTabBanner.vue";
 
 const roster_store = useRosterStore();
 roster_store.init();
@@ -144,6 +145,7 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
       </nav>
     </header>
     <BrokenSaveBanner />
+    <OtherTabBanner />
 
     <RouterView />
     <ScanSwitchDialog />

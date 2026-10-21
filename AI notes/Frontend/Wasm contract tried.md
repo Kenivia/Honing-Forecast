@@ -17,3 +17,11 @@ Before: once the queue kept one job per hash, two jobs with the same payload (Be
 ## The gold distribution (October 2026)
 
 - Measured on every histogram, the distribution made each run five to six times as long (`Calculator core/Evaluation pipeline tried.md`). It is asked for only while the optimizer is idle now. `start_eval_hist` takes no argument, because `@change="start_eval_hist"` passes the event in; the flag is in `eval_hist`.
+
+## Taxed sell above market (Oct 2026)
+
+Before: `taxed_price` was a material's own bundle after the fee, `market_price` the cheaper of buying and converting up (`effective_unit_prices`). With the stub prices Serca Blue sold at 3.73 a unit but cost 3.40 made from T4, so a tradable leftover was worth more under "taxed sell" than under "market" (1M tradable Serca Blue: 3,311,723 against 3,018,729 on a fixed state). After: the taxed price is capped at the buy price.
+
+## Progress (Oct 2026)
+
+Before: Rust posted progress only with a state, at most once a second per chain (each chain restarted its timer), and a later chain posted nothing until it beat the chains before. Short runs went 0.01% then 100%; a heavy Serca run sat at 24% for 50 s. The panel showed 100% as soon as the optimizer's result arrived, 150 to 330 ms before the histogram's gold. After: progress every 0.1 s, the state still at most once a second and only past the floor; the panel shows 99.99% until the histogram is done. A heavy run now climbs smoothly to about 99.9% and then waits on the merge, exchange and polish after the chains (about 25 s of a 55 s run in the fixture's all-wanted Serca case), which report nothing.

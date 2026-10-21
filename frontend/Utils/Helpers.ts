@@ -87,14 +87,15 @@ export function format_char_name(
     .slice(0, 16);
 
   const new_string =
-    String(original).charAt(0).toUpperCase() + String(original).slice(1);
-  // 4. If empty, or already taken by another profile, append index
+    String(original).charAt(0).toUpperCase() + String(original).slice(1) ||
+    "Newchar";
+  // 4. If already taken by another profile, append index
   const otherNames = all_profiles
     .filter((_, i) => i !== char_index)
     .map((x) => x.char_name);
   let dup_count = 1;
   let result = new_string;
-  while (!result || otherNames.includes(result)) {
+  while (otherNames.includes(result)) {
     result = new_string + String(dup_count);
     dup_count += 1;
   }
@@ -155,7 +156,8 @@ export function debounce<T extends (...args: any[]) => void>(
 export function metric_to_text(metric: number | null | undefined) {
   if (metric === null || metric === undefined || !Number.isFinite(metric))
     return "N/A";
-  return `${Math.round(metric == 0 ? metric : -metric).toLocaleString("en-US")}`;
+  // `|| 0` turns a rounded -0 into 0
+  return `${(Math.round(-metric) || 0).toLocaleString("en-US")}`;
 }
 export function get_icon_path(name: string) {
   return IconMap[name] ?? "";

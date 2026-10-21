@@ -104,6 +104,7 @@ const filtered_rosters_lists = computed(() =>
                 <div class="grid w-full grid-cols-[max-content_1fr]">
                   <button
                     class="arrow-btn arrow-btn-up"
+                    :aria-label="`Move ${profile_pair.profile.char_name} up`"
                     v-if="index_in_filtered > 0"
                     @click="
                       () => {
@@ -126,6 +127,7 @@ const filtered_rosters_lists = computed(() =>
 
                   <button
                     class="arrow-btn arrow-btn-down"
+                    :aria-label="`Move ${profile_pair.profile.char_name} down`"
                     v-if="
                       index_in_filtered <
                       filtered_rosters_lists[roster_index].length - 1

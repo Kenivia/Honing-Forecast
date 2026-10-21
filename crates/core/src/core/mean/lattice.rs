@@ -341,8 +341,12 @@ impl StateBundle {
             let mut order: Vec<(usize, usize)> = Vec::with_capacity(thresholds.len());
             for (which, &budget) in thresholds.iter().enumerate() {
                 let point = ((budget + float_tol(budget) - min_value) / unit).floor();
-                if point >= 0.0 {
-                    order.push(((point as usize).min(last), which));
+                // at or past the top every outcome is below, exactly; summing the masses
+                // would leave rounding that a large threshold turns into gold
+                if point >= last as f64 {
+                    answers[which] = (1.0, 1.0);
+                } else if point >= 0.0 {
+                    order.push((point as usize, which));
                 }
             }
             order.sort();
@@ -393,7 +397,19 @@ impl StateBundle {
                 step = shape.span * (step / shape.span).floor().max(1.0);
             }
             if let Some(coarse) = self.coarse(support_index, skip, &shape, reach, step, probe) {
-                out[slot] = Some(thresholds.iter().map(|&t| coarse.pair(t)).collect());
+                let top_value = shape.max_value - float_tol(shape.max_value);
+                out[slot] = Some(
+                    thresholds
+                        .iter()
+                        .map(|&t| {
+                            if t >= top_value {
+                                (1.0, 1.0)
+                            } else {
+                                coarse.pair(t)
+                            }
+                        })
+                        .collect(),
+                );
             }
         }
     }

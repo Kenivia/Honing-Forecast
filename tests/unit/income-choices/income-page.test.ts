@@ -209,13 +209,13 @@ describe("Income page", () => {
     expect(profile.bound_income.Red).toBe(0);
   });
 
-  it("manual income takes a thousands separator and a minus", async () => {
+  it("manual income takes a thousands separator and is never negative", async () => {
     open();
     await wrapper.find('[aria-label="Manual income"]').trigger("change");
     await wrapper.find('input[aria-label="Red income"]').setValue("1,000");
     expect(store.roster_config.roster_income[0][1].Red).toBe(1000);
     await wrapper.find('input[aria-label="Red income"]').setValue("-5");
-    expect(store.roster_config.roster_income[0][1].Red).toBe(-5);
+    expect(store.roster_config.roster_income[0][1].Red).toBe(0);
   });
 
   it("switching to manual keeps what was typed", async () => {

@@ -224,16 +224,23 @@ export const budgets_of = (snapshot: Snapshot) =>
     ),
   ]);
 
+// whether a snapshot now would have the same budgets as the roster's latest
+export function same_as_latest(config: RosterConfig, roster_id: number) {
+  const latest = latest_snapshot(config, roster_id);
+  return (
+    !!latest &&
+    budgets_of(latest) === budgets_of(snapshot_of(config, roster_id, "Manual"))
+  );
+}
+
 // added unless it is the same as the roster's latest
 export function take_snapshot(
   config: RosterConfig,
   roster_id: number,
   kind: Snapshot["kind"],
 ) {
-  const snapshot = snapshot_of(config, roster_id, kind);
-  const latest = latest_snapshot(config, roster_id);
-  if (!latest || budgets_of(latest) !== budgets_of(snapshot))
-    config.snapshots.push(snapshot);
+  if (!same_as_latest(config, roster_id))
+    config.snapshots.push(snapshot_of(config, roster_id, kind));
 }
 
 // whether the roster and tradable budgets are as the latest snapshot has them

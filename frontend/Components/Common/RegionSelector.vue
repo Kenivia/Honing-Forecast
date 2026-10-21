@@ -15,6 +15,7 @@ defineProps<{
       :value="region"
       @change="region_change"
       class="selector"
+      aria-label="Region"
       :disabled="runtime.is_fetching[region]"
     >
       <option value="nae">NA</option>

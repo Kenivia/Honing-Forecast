@@ -60,3 +60,7 @@ The site once drew a gold graph from a Monte Carlo of its own (removed in Octobe
   - normal +22 and advanced +40, 96 upgrades of which 24 advanced: Chromium 50 against 290 / 334 ms, Firefox 71 against 330 / 383 ms.
   - At five to six times a histogram, on every intermediate result, it was made final-state only (`Frontend/Wasm contract.md`) rather than optimised. Not tried: looping over runs on the outside, which would keep a run's totals in cache instead of sweeping an 11 MB array an upgrade; 50k runs (about half the time, 0.6% over the curve).
 - **The pity odds underflowed to 0** on the 96 upgrade setup (the luckiest was 2e-311) while they were plain chances; they are log10 now.
+
+## Thresholds past the top (Oct 2026)
+
+Before: with every stock at 999,999,999 the lattice summed every mass up to the threshold, 1 give or take rounding, and t F - mean F' at t near 3e9 left a fraction of a gold per material. Summed over the juices and books it showed as "-0" or "-1" gold spent, a gain from spending nothing. After: (1, 1) at or past the top, so that case is exactly t - mean, as the trivial path already was.

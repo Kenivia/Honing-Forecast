@@ -79,15 +79,27 @@ const selected_region = computed(
           <span>Auto fetch </span>
           <input
             type="checkbox"
+            aria-label="Auto fetch"
             v-model="roster_config.auto_fetch"
             @change="() => start_fetch(selected_region)"
           />
         </div>
+        <span
+          v-if="selected_region !== 'Custom'"
+          class="text-xs text-(--text-muted)"
+        >
+          Prices typed here are temporary: the next fetch replaces them. Pick
+          Custom to keep your own.
+        </span>
       </div>
 
       <div v-if="roster_ids.length > 1" class="side-bar-item">
         <span class="text-nowrap"> Active Roster: </span>
-        <select v-model="selected_roster_id" class="selector">
+        <select
+          v-model="selected_roster_id"
+          class="selector"
+          aria-label="Active roster"
+        >
           <option
             v-for="(roster_id, roster_index) in roster_ids"
             :value="roster_id"

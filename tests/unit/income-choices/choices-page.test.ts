@@ -3,7 +3,8 @@ import { mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { input_column_to_num, set_cell } from "@/Utils/InputColumn";
-import { PRESET_CHOICES } from "@/Utils/Choices";
+import { PRESET_CHOICES, raids_of } from "@/Utils/Choices";
+import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import Choices from "@/Components/Character/Choices/Choices.vue";
 import type { ChoiceJob } from "@/Components/Character/Choices/ChoiceJobs";
 import { queue_jobs, stop_jobs } from "@/WasmInterface/OptimizerJobs";
@@ -30,6 +31,14 @@ beforeEach(() => {
 afterEach(() => wrapper?.unmount());
 
 const open = () => (wrapper = mount(Choices));
+// high enough for every raid
+const raise_item_level = () => {
+  for (const grid of [
+    store.active_profile.normal_grid,
+    store.active_profile.adv_grid,
+  ])
+    for (const row of grid) row.fill(UpgradeStatus.Done);
+};
 const queued = (): ChoiceJob[] => vi.mocked(queue_jobs).mock.lastCall[0];
 const headers = () => wrapper.findAll('[role="rowheader"]');
 const worth_cells = () => wrapper.findAll('[aria-label$=" worth"]');
@@ -81,7 +90,23 @@ describe("Choices page", () => {
     expect(worth_cells()[0].attributes("style")).toContain("--text-main");
   });
 
+  it("lists only the raids its item level reaches", () => {
+    open();
+    const lowest = new Map(
+      raids_of(PRESET_CHOICES).map((raid) => [
+        raid.name,
+        raid.difficulties[0]?.item_level ?? 0,
+      ]),
+    );
+    const names = headers().map((h) =>
+      [...lowest.keys()].find((name) => h.text().startsWith(name)),
+    );
+    expect(names).not.toContain("Horizon Cathedral");
+    expect(names.every((name) => lowest.get(name) <= 1640)).toBe(true);
+  });
+
   it("shows three raids, one more per press", async () => {
+    raise_item_level();
     open();
     expect(headers()).toHaveLength(3);
     expect(headers()[0].text()).toContain("Horizon Cathedral");
@@ -94,6 +119,7 @@ describe("Choices page", () => {
   });
 
   it("a difficulty picked by hand is saved and lists its gates", async () => {
+    raise_item_level();
     open();
     const group = "Horizon Cathedral";
     const button = wrapper
@@ -109,6 +135,7 @@ describe("Choices page", () => {
   });
 
   it("Add to budget takes the gold and adds what it gives", async () => {
+    raise_item_level();
     open();
     const profile = store.active_profile;
     const group = "Horizon Cathedral";

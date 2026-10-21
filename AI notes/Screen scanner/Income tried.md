@@ -12,3 +12,7 @@
 - **Now at the clock's time in the estimate, now's and the weeks' results for the session** (October 2026): the minute clock moved now's point, so the rates, so every projected week's payload hash, and leaving the page and coming back (or staying a minute) re-ran all the weeks. Now is pinned to the time its budgets were first seen, and the results are saved in the profile.
 - **Band buttons at the top of the page** (until October 2026) drove the table only, once the material graph was gone. The table has them now, and the chance graph has its own cumulative ones (as the material graph's were); its material toggles are that graph's, revived as multi-select.
 - **Chance of running out** (October 2026): the graph first drew 1 - `chance_within` over every material of the tier, juices included. It draws the chance to succeed within now, of enabled base materials only.
+
+## No negative income (Oct 2026)
+
+Before: manual income took a leading minus, and the fitted slope went negative across a spend without a break (agent testing saw -74.6 a week). The author ruled that income is never negative: both are clamped at 0 now. Also before: "Take snapshot" did nothing silently on a duplicate, and with no upgrades the graphs drew a flat 0 line with ticks `1,1,1,0,0,-0,-1`; now the button is disabled with a note and the graphs give way to a message. The Weeks ahead box kept an invalid typed value on screen (`-4`) while running auto; it now shows what was kept.

@@ -16,6 +16,7 @@ import { parse_locale_float } from "@/Utils/InputColumn";
 import {
   budgets_of,
   DIFF_COLUMNS,
+  same_as_latest,
   Snapshot,
   snapshot_diff,
   snapshot_of,
@@ -45,6 +46,13 @@ import { hash, queue_jobs, stop_jobs } from "@/WasmInterface/OptimizerJobs";
 // The roster's budget snapshots as this character has them over time, and its income per week.
 const { roster_config, active_profile } = storeToRefs(useRosterStore());
 const profile = active_profile;
+const snapshot_unchanged = computed(() =>
+  same_as_latest(roster_config.value, profile.value.roster_id),
+);
+// only wanted upgrades are keyed
+const no_upgrades = computed(
+  () => !Object.keys(profile.value.keyed_upgrades).length,
+);
 const tier = computed(() => profile.value.tier);
 const special = computed(() => SPECIAL_LEAP_LABELS[tier.value]);
 
@@ -155,13 +163,13 @@ const income_record = (band: number, create = false) =>
       : roster_config.value.roster_income[profile.value.roster_id]?.[band - 1];
 const manual_rate = (label: string, band: number) =>
   has_band(label, band) ? (income_record(band)?.[label] ?? 0) : 0;
-// the site's parser has no negatives; income can be one
-function set_manual(label: string, band: number, value: string) {
-  const text = value.trim();
-  const amount = text.startsWith("-")
-    ? -parse_locale_float(text.slice(1))
-    : parse_locale_float(text);
-  income_record(band, true)[label] = Number.isFinite(amount) ? amount : 0;
+// income is never negative; the box shows what was kept, even when that did not change
+function set_manual(label: string, band: number, input: HTMLInputElement) {
+  const amount = parse_locale_float(input.value);
+  income_record(band, true)[label] = Number.isFinite(amount)
+    ? Math.max(0, amount)
+    : 0;
+  input.value = String(manual_rate(label, band));
 }
 // the table shows only the cells that exist in game
 const band_rows = computed(() =>
@@ -177,7 +185,8 @@ const auto_rate = (label: string, band_at: number) => {
       breaks: entry.snapshot.breaks,
     })),
   );
-  return slope === null ? null : slope * WEEK_MS;
+  // a spend without a break would read as negative income
+  return slope === null ? null : Math.max(0, slope * WEEK_MS);
 };
 
 // switching to manual fills what was never typed with the estimate
@@ -226,12 +235,13 @@ const crosses = (entry: Entry) =>
 // the weeks typed, or by default a week at a time while the last is done until EXTRA_WEEKS past
 // the crossing, MIN_WEEKS at least; not saved
 const weeks_ahead = ref<number | null>(null);
-function set_weeks_ahead(value: string) {
-  const weeks = Math.round(parse_locale_float(value));
+function set_weeks_ahead(input: HTMLInputElement) {
+  const weeks = Math.round(parse_locale_float(input.value));
   weeks_ahead.value =
-    value.trim() && Number.isFinite(weeks)
+    input.value.trim() && Number.isFinite(weeks)
       ? Math.min(MAX_WEEKS, Math.max(MIN_WEEKS, weeks))
       : null;
+  input.value = String(weeks_ahead.value ?? "");
 }
 const future = computed(() => {
   const out: Entry[] = [];
@@ -373,10 +383,14 @@ const KIND_COLORS = {
         <div class="card-title">Income</div>
         <button
           class="generic-button"
+          :disabled="snapshot_unchanged"
           @click="take_snapshot(roster_config, profile.roster_id, 'Manual')"
         >
           Take snapshot
         </button>
+        <span v-if="snapshot_unchanged" class="text-(--text-muted)">
+          Nothing changed since the latest snapshot
+        </span>
         <label class="flex items-center gap-1.5">
           Weeks ahead
           <input
@@ -384,61 +398,67 @@ const KIND_COLORS = {
             :value="weeks_ahead ?? ''"
             :placeholder="`auto (${future.length})`"
             aria-label="Weeks ahead"
-            @change="set_weeks_ahead(($event.target as HTMLInputElement).value)"
+            @change="set_weeks_ahead($event.target as HTMLInputElement)"
           />
         </label>
         <span v-if="runs_left" class="text-(--text-muted)">
           Optimizing {{ runs_left }} run{{ runs_left > 1 ? "s" : "" }}
         </span>
       </div>
-      <IncomeGraph
-        :series="metric_series"
-        :range="range"
-        :resets="week_lines"
-        :now="now"
-      />
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span class="text-(--text-bright)">
-          Chance to succeed all upgrades within
-        </span>
-        <div class="flex gap-1" role="group" aria-label="Chance bands">
-          <button
-            v-for="(name, at) in CHANCE_BANDS"
-            :key="name"
-            class="generic-button"
-            :class="{ 'bg-(--bg-very-bright)!': chance_band === at }"
-            :style="{ color: `var(${BAND_COLORS[at]})` }"
-            @click="chance_band = at"
-          >
-            {{ name }}
-          </button>
+      <span v-if="no_upgrades" class="text-(--warning)" role="alert">
+        No upgrades are selected for this character, so there is nothing to
+        forecast. Select some on the calculator to see the graphs.
+      </span>
+      <template v-else>
+        <IncomeGraph
+          :series="metric_series"
+          :range="range"
+          :resets="week_lines"
+          :now="now"
+        />
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <span class="text-(--text-bright)">
+            Chance to succeed all upgrades within
+          </span>
+          <div class="flex gap-1" role="group" aria-label="Chance bands">
+            <button
+              v-for="(name, at) in CHANCE_BANDS"
+              :key="name"
+              class="generic-button"
+              :class="{ 'bg-(--bg-very-bright)!': chance_band === at }"
+              :style="{ color: `var(${BAND_COLORS[at]})` }"
+              @click="chance_band = at"
+            >
+              {{ name }}
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-1" role="group" aria-label="Materials">
+            <button
+              v-for="label in chance_rows"
+              :key="label"
+              class="barebone-button"
+              :class="{ 'opacity-40': hidden.has(label) }"
+              :aria-pressed="!hidden.has(label)"
+              :aria-label="label"
+              :title="label"
+              @click="toggle(label)"
+            >
+              <img
+                :src="get_icon_path(label)"
+                class="generic-icon h-6 w-6"
+                :alt="label"
+              />
+            </button>
+          </div>
         </div>
-        <div class="flex flex-wrap gap-1" role="group" aria-label="Materials">
-          <button
-            v-for="label in chance_rows"
-            :key="label"
-            class="barebone-button"
-            :class="{ 'opacity-40': hidden.has(label) }"
-            :aria-pressed="!hidden.has(label)"
-            :aria-label="label"
-            :title="label"
-            @click="toggle(label)"
-          >
-            <img
-              :src="get_icon_path(label)"
-              class="generic-icon h-6 w-6"
-              :alt="label"
-            />
-          </button>
-        </div>
-      </div>
-      <IncomeGraph
-        :series="chance_series"
-        :range="range"
-        :resets="week_lines"
-        :now="now"
-        percent
-      />
+        <IncomeGraph
+          :series="chance_series"
+          :range="range"
+          :resets="week_lines"
+          :now="now"
+          percent
+        />
+      </template>
       <span class="text-(--text-muted)">
         Snapshots are taken by hand, and before and after every scanner export.
         The estimate uses those after an export and those taken by hand that are
@@ -653,11 +673,7 @@ const KIND_COLORS = {
                 :value="manual_rate(label, band)"
                 :aria-label="`${name(label)} income`"
                 @change="
-                  set_manual(
-                    label,
-                    band,
-                    ($event.target as HTMLInputElement).value,
-                  )
+                  set_manual(label, band, $event.target as HTMLInputElement)
                 "
               />
               <span class="text-(--text-muted)">

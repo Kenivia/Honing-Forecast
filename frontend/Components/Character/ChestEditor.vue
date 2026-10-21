@@ -28,9 +28,13 @@ function find(key: string) {
 }
 
 function set_count(key: string, event: Event) {
-  const value = parseInt((event.target as HTMLInputElement).value);
+  const input = event.target as HTMLInputElement;
+  const value = parseInt(input.value);
   const at = find(key);
-  if (at && isFinite(value)) at.list[at.index].count = Math.max(0, value);
+  if (!at) return;
+  if (isFinite(value)) at.list[at.index].count = Math.max(0, value);
+  // the box shows what was kept, even when that did not change
+  input.value = String(at.list[at.index].count);
 }
 
 function remove(key: string) {

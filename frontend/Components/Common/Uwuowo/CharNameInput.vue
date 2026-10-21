@@ -28,9 +28,12 @@ const emit = defineEmits<{
     <span class="w-fit text-nowrap"> Char name:</span
     ><input
       v-model="char_name"
+      aria-label="Char name"
       @change="
         () => {
           const new_name = format_char_name(char_name, profile_index);
+          // the prop may not change (the name normalised back to itself), so set it here too
+          char_name = new_name;
           emit('char_name_change', new_name);
         }
       "

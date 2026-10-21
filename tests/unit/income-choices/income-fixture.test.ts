@@ -97,7 +97,8 @@ describe("Income page over the fixture", () => {
     const spend = snapshots().find((s) => s.breaks);
     spend.breaks = false;
     await wrapper.vm.$nextTick();
-    expect(rate("Gold")).toBeLessThan(0);
+    // the spend reads as negative income, which is shown as none
+    expect(rate("Gold")).toBe(0);
     spend.breaks = true;
     snapshots().find((s) => s.ignored).ignored = false;
     await wrapper.vm.$nextTick();

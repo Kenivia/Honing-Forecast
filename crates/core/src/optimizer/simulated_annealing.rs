@@ -67,25 +67,30 @@ fn compute_upgrade_impact(state_bundle: &mut StateBundle) -> Vec<f64> {
     weights.iter_mut().map(|x| *x / sum).collect()
 }
 
-/// Sends a wasm progress update if at least 1 second has passed since the last one.
-/// Returns the updated `last_progress_sec` (unchanged if no update was sent).
+/// Sends the progress every tenth of a second, with the best state at most once a second and
+/// only once this chain beats the ones before. `last` is when each was last sent.
 #[cfg(feature = "wasm")]
 fn maybe_send_wasm_progress(
     done: f64,
     floor: f64,
     solver_bundle: &mut SolverStateBundle,
     timer: &Timer,
-    last_progress_sec: f64,
-) -> f64 {
-    let pct = (100.0 * done).clamp(0.01, 100.0);
+    last: &mut [f64; 2],
+) {
     let elapsed = timer.elapsed_sec();
+    if elapsed - last[0] < 0.1 {
+        return;
+    }
+    last[0] = elapsed;
+    let pct = (100.0 * done).clamp(0.01, 100.0);
 
-    // a later chain says nothing until it beats the ones before
-    if elapsed - last_progress_sec < 1.0
+    if elapsed - last[1] < 1.0
         || f64::from(*solver_bundle.best_n_states.peek_max().unwrap().1) <= floor
     {
-        return last_progress_sec;
+        send_progress(None, pct);
+        return;
     }
+    last[1] = elapsed;
 
     // Materialise the best known state before shipping it to the frontend.
     solver_bundle.state_bundle.clone_from_essence(
@@ -99,7 +104,6 @@ fn maybe_send_wasm_progress(
     solver_bundle.state_bundle.set_latest_special_probs();
 
     send_progress(Some(&solver_bundle.state_bundle), pct);
-    elapsed
 }
 
 fn start_solver<R: Rng>(
@@ -825,7 +829,7 @@ fn anneal<R: Rng>(
         send_progress(Some(&solver_bundle.state_bundle), 0.01);
     }
     #[cfg(feature = "wasm")]
-    let mut last_progress_sec: f64 = 0.0;
+    let mut last_progress = [0.0; 2];
 
     let mut next_polish: i64 = 0;
     let mut next_response: i64 = tuning.response_every;
@@ -915,13 +919,13 @@ fn anneal<R: Rng>(
 
         #[cfg(feature = "wasm")]
         {
-            last_progress_sec = maybe_send_wasm_progress(
+            maybe_send_wasm_progress(
                 (chain as f64 + eqv_wall_time_iters as f64 / tuning.max_iters as f64)
                     / chains as f64,
                 floor,
                 &mut solver_bundle,
                 &timer,
-                last_progress_sec,
+                &mut last_progress,
             );
         }
     }

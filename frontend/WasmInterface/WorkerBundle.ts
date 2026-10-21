@@ -9,6 +9,8 @@ export interface WorkerBundle {
   result: any;
   error: string | null;
   est_progress_percentage: number;
+  // a throttled run is waiting to start
+  queued: boolean;
   run_counter: number;
   debounced_start: (
     wasm_op: WasmOp,
@@ -41,6 +43,7 @@ export function create_worker_bundle(): WorkerBundle {
     result: null,
     error: null,
     est_progress_percentage: 0,
+    queued: false,
     run_counter: 0,
     debounced_start,
     throttled_start,
@@ -55,6 +58,7 @@ export function create_worker_bundle(): WorkerBundle {
 
     const { wasm_op, payload } = throttle_pending;
     throttle_pending = null;
+    bundle.queued = false;
     throttle_ready = false;
 
     throttle_timer = setTimeout(() => {
@@ -69,6 +73,7 @@ export function create_worker_bundle(): WorkerBundle {
 
   function throttled_start(wasm_op: WasmOp, payload: any) {
     throttle_pending = { wasm_op, payload };
+    bundle.queued = true;
     _try_flush_throttle();
   }
 
@@ -183,6 +188,7 @@ export function create_worker_bundle(): WorkerBundle {
     debounceTimer = null;
     throttle_timer = null;
     throttle_pending = null;
+    bundle.queued = false;
     throttle_ready = true;
     cancel_worker();
   }

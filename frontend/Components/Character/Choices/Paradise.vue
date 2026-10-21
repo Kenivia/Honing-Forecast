@@ -24,9 +24,11 @@ const props = defineProps<{
   no_upgrades: boolean;
   item_level: number;
   baseline_text: string;
+  // the reward last added
+  taken: string | null;
 }>();
 const emit = defineEmits<{
-  take: [choice: Choice, option: Record<string, number>];
+  take: [key: string, choice: Choice, option: Record<string, number>];
 }>();
 
 const { active_profile: profile } = storeToRefs(useRosterStore());
@@ -169,60 +171,63 @@ watch(
         {{ name }}
       </button>
     </div>
-    <div
-      class="grid grid-cols-[minmax(10rem,auto)_auto_8rem_auto] items-center gap-x-4 gap-y-1"
-      role="table"
-      aria-label="Paradise rewards"
-    >
-      <span class="text-(--text-muted)">Reward</span>
-      <span class="text-(--text-muted)">Gives</span>
-      <span class="text-(--text-muted)">
-        <span class="flex items-center gap-2">
-          Worth
-          <label
-            v-if="choice.wealth"
-            class="flex items-center gap-1 text-(--text-main)"
-          >
-            <input v-model="wealth" type="checkbox" />
-            Wealth
-          </label>
-        </span>
-        <span class="block text-(--text-main)" aria-label="Baseline">
-          Baseline = {{ baseline_text }}
-        </span>
-      </span>
-      <span></span>
-      <template v-for="row in sorted" :key="row.index">
-        <span class="text-(--text-main)">{{ row.name }}</span>
-        <span class="flex flex-wrap items-center gap-x-3">
-          <span
-            v-for="(amount, label) in row.option"
-            :key="label"
-            class="flex items-center gap-1"
-          >
-            <img
-              :src="get_icon_path(label as string)"
-              class="generic-icon h-5 w-5"
-              :alt="label as string"
-            />
-            {{ amount.toLocaleString("en-US") }}
+    <!-- scrolls on its own on a narrow screen, so the page does not -->
+    <div class="overflow-x-auto">
+      <div
+        class="grid w-max min-w-full grid-cols-[minmax(10rem,auto)_auto_8rem_auto] items-center gap-x-4 gap-y-1"
+        role="table"
+        aria-label="Paradise rewards"
+      >
+        <span class="text-(--text-muted)">Reward</span>
+        <span class="text-(--text-muted)">Gives</span>
+        <span class="text-(--text-muted)">
+          <span class="flex items-center gap-2">
+            Worth
+            <label
+              v-if="choice.wealth"
+              class="flex items-center gap-1 text-(--text-main)"
+            >
+              <input v-model="wealth" type="checkbox" />
+              Wealth
+            </label>
+          </span>
+          <span class="block text-(--text-main)" aria-label="Baseline">
+            Baseline = {{ baseline_text }}
           </span>
         </span>
-        <span
-          :aria-label="`${row.name} worth`"
-          :style="{ color: worth_color(no_upgrades, row.worth) }"
-        >
-          {{ worth_text(no_upgrades, row.worth) }}
-        </span>
-        <button
-          class="generic-button w-fit"
-          :disabled="is_empty(row.option)"
-          title="Add what it gives"
-          @click="emit('take', choice, row.option)"
-        >
-          Add to budget
-        </button>
-      </template>
+        <span></span>
+        <template v-for="row in sorted" :key="row.index">
+          <span class="text-(--text-main)">{{ row.name }}</span>
+          <span class="flex flex-wrap items-center gap-x-3">
+            <span
+              v-for="(amount, label) in row.option"
+              :key="label"
+              class="flex items-center gap-1"
+            >
+              <img
+                :src="get_icon_path(label as string)"
+                class="generic-icon h-5 w-5"
+                :alt="label as string"
+              />
+              {{ amount.toLocaleString("en-US") }}
+            </span>
+          </span>
+          <span
+            :aria-label="`${row.name} worth`"
+            :style="{ color: worth_color(no_upgrades, row.worth) }"
+          >
+            {{ worth_text(no_upgrades, row.worth) }}
+          </span>
+          <button
+            class="generic-button w-fit"
+            :disabled="is_empty(row.option)"
+            title="Add what it gives"
+            @click="emit('take', row.name, choice, row.option)"
+          >
+            {{ taken === row.name ? "Added ✓" : "Add to budget" }}
+          </button>
+        </template>
+      </div>
     </div>
   </div>
 </template>

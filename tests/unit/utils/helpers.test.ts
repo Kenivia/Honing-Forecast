@@ -112,7 +112,8 @@ describe("format_char_name", () => {
     const all = profiles("Bob", "Bob1", "Alice");
     expect(format_char_name("bob", 2, all)).toBe("Bob2");
     expect(format_char_name("bob", 0, all)).toBe("Bob");
-    expect(format_char_name("!!", 0, profiles())).toBe("1");
+    expect(format_char_name("!!", 0, profiles())).toBe("Newchar");
+    expect(format_char_name("", 1, profiles("Newchar", "X"))).toBe("Newchar1");
   });
 });
 

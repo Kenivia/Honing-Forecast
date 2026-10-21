@@ -12,12 +12,20 @@ import {
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
+import { useRuntimeStore } from "@/Stores/RuntimeState";
+import { grid_change_callback } from "./CharWorkerUtils";
 
 const store = useRosterStore();
 const { active_profile, roster_config } = storeToRefs(store);
 
+// the old results are of the old tier's labels, so they go first, as in change_tier
 function resetActive() {
+  const runtime = useRuntimeStore().for_char(active_profile.value.id);
+  runtime?.optimizer.cancel_and_clear_prev_result();
+  runtime?.histogram.cancel_and_clear_prev_result();
+  runtime?.marginal.cancel_and_clear_prev_result();
   store.reset_active_profile();
+  grid_change_callback();
 }
 
 const file_input = ref<HTMLInputElement | null>(null);
@@ -85,6 +93,7 @@ function set_band(band: number, event: Event) {
       <label>
         <button
           class="generic-button ml-5 text-(--warning-dark)!"
+          aria-label="Reset this char"
           @click="resetActive"
         >
           Reset this char

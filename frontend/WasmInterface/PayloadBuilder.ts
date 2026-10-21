@@ -268,7 +268,9 @@ function materials_of(
       roster: merged.roster[label] ?? 0,
       // gold is never sold
       tradable: !traded || label === "Gold" ? 0 : (merged.tradable[label] ?? 0),
-      taxed_price: traded ? taxed[label] : 0,
+      // a material made cheaper from a lower tier sells for more than it costs, so its sell
+      // price is capped there: plans assume taxed sell is never worth more than market
+      taxed_price: traded ? Math.min(taxed[label], effective[label]) : 0,
       market_price: traded ? effective[label] : 0,
     };
   }

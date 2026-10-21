@@ -38,8 +38,13 @@ const selected_color = computed(() => {
 
     <h3>
       1. The checkboxes
-      <input class="pl-2" type="checkbox" v-model="dummy_checkbox" /> on the
-      very left
+      <input
+        class="pl-2"
+        type="checkbox"
+        aria-label="Example checkbox"
+        v-model="dummy_checkbox"
+      />
+      on the very left
     </h3>
 
     <p class="pl-10!">
@@ -65,6 +70,7 @@ const selected_color = computed(() => {
       3.
       <select
         class="selector"
+        aria-label="Example status"
         v-model="dummy_select"
         :style="{
           color: selected_color,
