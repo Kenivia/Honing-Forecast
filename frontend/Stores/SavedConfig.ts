@@ -57,6 +57,7 @@ export interface SavedProfile {
   tier: number;
   express_event: boolean;
   auto_start_optimizer: boolean;
+  min_resolution: number;
   lock_fetched_done: boolean;
   pretend_30_40_x2_grace: boolean;
   band_values: BandPlan;
@@ -153,6 +154,7 @@ function profile_to_saved(profile: CharProfile): SavedProfile {
     tier: profile.tier,
     express_event: profile.express_event,
     auto_start_optimizer: profile.auto_start_optimizer,
+    min_resolution: profile.min_resolution,
     lock_fetched_done: profile.lock_fetched_done,
     pretend_30_40_x2_grace: profile.pretend_30_40_x2_grace,
     band_values: profile.band_values,
@@ -223,6 +225,7 @@ function profile_from_saved(
     express_event: saved.express_event ?? defaults.express_event,
     auto_start_optimizer:
       saved.auto_start_optimizer ?? defaults.auto_start_optimizer,
+    min_resolution: saved.min_resolution ?? defaults.min_resolution,
     lock_fetched_done: saved.lock_fetched_done ?? defaults.lock_fetched_done,
     pretend_30_40_x2_grace:
       saved.pretend_30_40_x2_grace ?? defaults.pretend_30_40_x2_grace,

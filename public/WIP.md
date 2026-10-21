@@ -14,6 +14,8 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - show baseline in choices
 
+- paradise rewards from <https://sekwahar.github.io/loa_datamining/pages/hell_drops.html>
+
 ## Forecast mode
 
 - ~~forecast mode UI~~ this is gonna hvae to be very pervasive

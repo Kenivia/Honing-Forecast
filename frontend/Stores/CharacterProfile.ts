@@ -57,7 +57,7 @@ export interface CharProfile {
 
   auto_start_optimizer: boolean;
   tier: number;
-  min_resolution: number; // currently not used (always 1)
+  min_resolution: number; // streak length, 1 or 10
   optimizer_override: OptimizerOverride;
 
   lock_fetched_done: boolean;

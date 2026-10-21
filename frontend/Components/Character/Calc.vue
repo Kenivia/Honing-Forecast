@@ -33,6 +33,7 @@ watch(
     () => active_profile.value.band_values,
     () => active_chests.value,
     () => active_profile.value.auto_start_optimizer,
+    () => active_profile.value.min_resolution,
     () => active_region.value,
   ],
   () => {

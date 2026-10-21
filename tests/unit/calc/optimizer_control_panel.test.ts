@@ -102,7 +102,7 @@ describe("OptimizerControlPanel", () => {
         .findAll(".mats-row")[1]
         .element.children[2].querySelectorAll("label");
     expect(special()).toHaveLength(1);
-    await wrapper.findAll('input[type="checkbox"]')[1].setValue(false);
+    await wrapper.findAll('input[type="checkbox"]')[2].setValue(false);
     expect(profile.optimizer_override.special.optimizer).toBe(false);
     expect(special()).toHaveLength(5);
     radio(wrapper, 2, "Armor First").click();

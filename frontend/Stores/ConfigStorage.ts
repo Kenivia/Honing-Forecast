@@ -349,6 +349,7 @@ function migrate_7_to_8(data: any): Partial<SavedConfig> {
       tier,
       express_event: profile.express_event,
       auto_start_optimizer: profile.auto_start_optimizer,
+      min_resolution: 1,
       lock_fetched_done: profile.lock_fetched_done,
       pretend_30_40_x2_grace: profile.pretend_30_40_x2_grace,
       // V7's optimizer_treatment_plan is dropped rather than mapped: band_values is left

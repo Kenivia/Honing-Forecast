@@ -111,6 +111,20 @@ const grid: GridConfig = {
         >Optimizer will not re-run on updates, results may not be optimal
       </span>
     </label>
+    <label class="control-panel-checkbox-row">
+      <input
+        type="checkbox"
+        :checked="active_profile.min_resolution === 10"
+        @change="
+          active_profile.min_resolution = (
+            $event.target as HTMLInputElement
+          ).checked
+            ? 10
+            : 1
+        "
+      />
+      <span>Force x10 streak length</span>
+    </label>
     <div>
       <div class="mx-2 flex w-full flex-row items-center gap-3">
         <span class="content-center text-nowrap">Optimizer progress:</span>
