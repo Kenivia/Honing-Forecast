@@ -50,8 +50,7 @@ const open = () => {
   });
   return wrapper;
 };
-const markers = () =>
-  wrapper.findAll('[aria-label="Snapshot timeline"] button');
+const markers = () => wrapper.findAll('[aria-label="Snapshots"] button');
 const text_of = (label: string) =>
   wrapper.find(`[aria-label="${label}"]`).text();
 const last_queue = () =>
@@ -155,7 +154,7 @@ describe("Income page", () => {
     await wrapper.find('[aria-label^="Delete"]').trigger("click");
     expect(store.roster_config.snapshots).not.toContain(b);
     expect(store.roster_config.snapshots).toHaveLength(1);
-    expect(wrapper.text()).toContain("Hover a snapshot on the timeline.");
+    expect(wrapper.text()).toContain("Hover a snapshot in the list.");
   });
 
   it("shows the change from the snapshot before", async () => {

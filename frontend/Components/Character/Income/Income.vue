@@ -27,6 +27,8 @@ import {
   next_in_chain,
   owned_at,
   projected,
+  MAX_WEEKS,
+  MIN_WEEKS,
   range_of,
   resets,
   steps_of,
@@ -165,33 +167,7 @@ function set_manual_mode(manual: boolean) {
 // The graph
 // ============================================================================
 
-const range = computed(() => range_of(snapshots.value[0]?.at, now.value));
-// the two metrics of each optimized point under the current upgrades, then from now on ahead
-const metric_series = computed((): Series[] => {
-  const done = series_entries.value.filter((entry) => entry.job.result);
-  const ahead = [now_entry.value, ...future.value].filter(
-    (entry) => entry.job.result,
-  );
-  const metric = (label: string, color: string, key: "gold" | "leftover") => ({
-    label,
-    color,
-    points: done.map((entry) => ({
-      x: entry.snapshot.at,
-      y: entry.job.result[key],
-    })),
-    line: ahead.map((entry) => ({
-      x: entry.snapshot.at,
-      y: entry.job.result[key],
-    })),
-  });
-  return [
-    metric("Avg tradable gold spent", "--gold", "gold"),
-    metric("Avg value of leftovers", "--average", "leftover"),
-  ];
-});
-const week_lines = computed(() => resets(...range.value));
-
-// now plus a week of income at a time, as the table has it, to the end of the range
+// now plus a week of income at a time, as the table has it
 const rates = computed(() =>
   [0, 1, 2].map((at) =>
     Object.fromEntries(
@@ -206,18 +182,64 @@ const rates = computed(() =>
     ),
   ),
 );
+
+// the metrics as the calculator shows them (Rust's are negative), and what pays for the cost
+type Entry = typeof now_entry.value;
+const cost = (entry: Entry) => -entry.job.result.gold;
+const leftover = (entry: Entry) => -entry.job.result.leftover;
+const covered = (entry: Entry) =>
+  leftover(entry) + value_of(entry.owned, "Gold", 2);
+const crosses = (entry: Entry) =>
+  !!entry.job.result && covered(entry) >= cost(entry);
+
+// MIN_WEEKS ahead, then a week more while the last is done and nothing has crossed yet
 const future = computed(() => {
-  const weeks = Math.floor((range.value[1] - now.value) / WEEK_MS);
-  return Array.from({ length: weeks }, (_, at) => {
+  const out: Entry[] = [];
+  let found = crosses(now_entry.value);
+  for (let weeks = 1; weeks <= MAX_WEEKS; weeks++) {
+    if (weeks > MIN_WEEKS && (found || !out.at(-1).job.result)) break;
     const snapshot = projected(
       now_snapshot.value,
       profile.value.id,
       special.value,
       rates.value,
-      at + 1,
+      weeks,
     );
-    return { snapshot, job: job_for(profile.value, snapshot, true) };
+    const job = job_for(profile.value, snapshot, true);
+    const entry = {
+      snapshot,
+      job,
+      owned: owned_at(snapshot, profile.value.id, tier.value, job.result),
+    };
+    found ||= crosses(entry);
+    out.push(entry);
+  }
+  return out;
+});
+const range = computed(() => range_of(now.value, future.value.length));
+const week_lines = computed(() => resets(...range.value));
+
+// now and the weeks ahead, as far as optimized
+const metric_series = computed((): Series[] => {
+  const done = [now_entry.value, ...future.value].filter(
+    (entry) => entry.job.result,
+  );
+  const line = (
+    label: string,
+    color: string,
+    y: (entry: Entry) => number,
+    dashed = false,
+  ) => ({
+    label,
+    color,
+    dashed,
+    points: done.map((entry) => ({ x: entry.snapshot.at, y: y(entry) })),
   });
+  return [
+    line("Avg tradable gold spent", "--gold", cost),
+    line("Avg value of leftovers", "--text-muted", leftover),
+    line("Leftovers + tradable gold", "--gold", covered, true),
+  ];
 });
 
 // one run at a time, oldest first, each from the state of the one before
@@ -236,16 +258,6 @@ watch(
   { immediate: true },
 );
 onBeforeUnmount(stop_jobs);
-
-// the plot area, for the timeline to line up with
-const area = ref<[number, number]>([0, 0]);
-const place = (at: number) => {
-  const [from, to] = range.value;
-  return (
-    area.value[0] +
-    ((at - from) / (to - from)) * (area.value[1] - area.value[0])
-  );
-};
 
 // ============================================================================
 // The dashboard
@@ -321,54 +333,44 @@ const KIND_COLORS = {
           Optimizing {{ runs_left }} run{{ runs_left > 1 ? "s" : "" }}
         </span>
       </div>
-      <span class="text-(--text-bright)">With the current upgrades</span>
       <IncomeGraph
         :series="metric_series"
         :range="range"
         :resets="week_lines"
         :now="now"
-        :selected="selected?.at ?? null"
-        @area="(left, right) => (area = [left, right])"
       />
+      <span class="text-(--text-muted)">
+        Snapshots are taken by hand, and before and after every scanner export.
+        The estimate uses those after an export and those taken by hand that are
+        not ignored, with one slope; a snapshot can start a new line (a bar
+        above it), for when something was spent. Hover one to see it, click to
+        keep it shown.
+      </span>
       <div
-        class="relative h-10 border-t border-(--border-very-muted)"
+        class="flex max-h-48 flex-col overflow-y-auto"
         role="group"
-        aria-label="Snapshot timeline"
+        aria-label="Snapshots"
       >
-        <div
-          v-for="snapshot in snapshots.filter((s) => s.breaks && used(s))"
-          :key="`break ${snapshot.at} ${snapshot.kind}`"
-          class="absolute top-0 h-full w-px bg-(--text-muted)"
-          :style="{ left: `${place(snapshot.at) - 10}px` }"
-        ></div>
         <button
           v-for="snapshot in snapshots"
           :key="`${snapshot.at} ${snapshot.kind}`"
-          class="absolute h-3 w-3 -translate-x-1/2 rounded-full border"
+          class="flex gap-3 px-2 py-0.5 text-left hover:bg-(--bg-bright)"
           :class="{
             'opacity-30': snapshot.ignored,
-            'outline-2 outline-offset-2 outline-white outline-dotted':
-              snapshot === selected,
-          }"
-          :style="{
-            left: `${place(snapshot.at)}px`,
-            top: snapshot.kind === 'Before export' ? '1.5rem' : '0.5rem',
-            background: KIND_COLORS[snapshot.kind],
-            borderColor: KIND_COLORS[snapshot.kind],
+            'bg-(--bg-very-bright)!': snapshot === selected,
+            'border-t border-(--text-muted)': snapshot.breaks && used(snapshot),
           }"
           :aria-label="`${when(snapshot.at)} ${snapshot.kind}`"
           @mouseenter="hovered = snapshot"
           @mouseleave="hovered = null"
           @click="click(snapshot)"
-        ></button>
+        >
+          <span class="w-48">{{ when(snapshot.at) }}</span>
+          <span :style="{ color: KIND_COLORS[snapshot.kind] }">
+            {{ snapshot.kind }}
+          </span>
+        </button>
       </div>
-      <span class="text-(--text-muted)">
-        Snapshots are taken by hand, and before and after every scanner export.
-        The estimate uses those after an export and those taken by hand that are
-        not ignored, with one slope; a snapshot can start a new line (a bar
-        before it), for when something was spent. Hover one to see it, click to
-        keep it shown.
-      </span>
     </div>
 
     <div
@@ -377,7 +379,7 @@ const KIND_COLORS = {
       aria-label="Snapshot dashboard"
     >
       <span v-if="!selected" class="text-(--text-muted)">
-        Hover a snapshot on the timeline.
+        Hover a snapshot in the list.
       </span>
       <template v-else>
         <div class="flex flex-col gap-1">

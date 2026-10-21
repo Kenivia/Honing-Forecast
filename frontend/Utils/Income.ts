@@ -9,8 +9,10 @@ import { merge_lower_tier } from "@/WasmInterface/PayloadBuilder";
 export const WEEK_MS = 7 * 24 * 3600 * 1000;
 // a weekly reset, Thursday 10:00 UTC; both regions reset together
 const RESET = Date.UTC(2026, 0, 1, 10);
-// the least past and future the graph shows
-export const MIN_SPAN = 5 * WEEK_MS;
+// the least future the graph shows
+export const MIN_WEEKS = 5;
+// the furthest week projected while looking for the crossing
+export const MAX_WEEKS = 26;
 
 export function resets(from: number, to: number) {
   const out: number[] = [];
@@ -164,11 +166,9 @@ export function projected(
   return out;
 }
 
-// the graph's x range: centred on now, the larger of MIN_SPAN and the oldest's age either side
-export function range_of(oldest: number | undefined, now: number) {
-  const half = Math.max(MIN_SPAN, now - (oldest ?? now));
-  return [now - half, now + half] as [number, number];
-}
+// the graph's x range: from now, MIN_WEEKS or `weeks` ahead
+export const range_of = (now: number, weeks: number) =>
+  [now, now + Math.max(MIN_WEEKS, weeks) * WEEK_MS] as [number, number];
 
 // steps between consecutive points within runs, and the days they span
 export function steps_of(points: { at: number; breaks?: boolean }[]) {

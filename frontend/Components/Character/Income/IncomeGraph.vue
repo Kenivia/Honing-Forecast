@@ -23,12 +23,12 @@ Chart.register(
   annotationPlugin,
 );
 
-// Values over time on one y axis: each series' points joined, then a dashed projection.
+// Values over time on one y axis, each series a line through its points.
 export interface Series {
   label: string;
   color: string;
   points: { x: number; y: number }[];
-  line: { x: number; y: number }[];
+  dashed?: boolean;
 }
 
 const props = defineProps<{
@@ -36,10 +36,7 @@ const props = defineProps<{
   range: [number, number];
   resets: number[];
   now: number;
-  selected: number | null;
 }>();
-// the plot area in px, so the timeline can line up with it
-const emit = defineEmits<{ area: [left: number, right: number] }>();
 
 const canvas = ref<HTMLCanvasElement | null>(null);
 let chart: Chart | null = null;
@@ -77,18 +74,10 @@ function config() {
       data: series.points,
       borderColor: color,
       borderWidth: 1.5,
-      backgroundColor: color,
-      pointRadius: 4,
-      pointHoverRadius: 6,
-    });
-    datasets.push({
-      label: `${series.label} projected`,
-      data: series.line,
-      borderColor: color,
-      borderDash: [6, 4],
-      borderWidth: 1.5,
+      borderDash: series.dashed ? [6, 4] : [],
       backgroundColor: color,
       pointRadius: 3,
+      pointHoverRadius: 5,
     });
   }
   const line = (x: number, color: string, label?: string) => ({
@@ -119,11 +108,7 @@ function config() {
       interaction: { mode: "nearest" as const, intersect: true },
       plugins: {
         legend: {
-          labels: {
-            color: muted,
-            boxHeight: 2,
-            filter: (item) => !item.text.endsWith(" projected"),
-          },
+          labels: { color: muted, boxHeight: 2 },
         },
         tooltip: {
           callbacks: {
@@ -134,20 +119,10 @@ function config() {
         annotation: {
           annotations: {
             now: line(props.now, muted, "Now"),
-            ...(props.selected === null
-              ? {}
-              : { selected: line(props.selected, "#ffffff") }),
           },
         },
       },
     },
-    plugins: [
-      {
-        id: "area",
-        afterLayout: (chart: Chart) =>
-          emit("area", chart.chartArea.left, chart.chartArea.right),
-      },
-    ],
   };
 }
 
@@ -155,7 +130,7 @@ onMounted(() => {
   chart = new Chart(canvas.value, config() as any);
 });
 watch(
-  () => [props.series, props.range, props.resets, props.now, props.selected],
+  () => [props.series, props.range, props.resets, props.now],
   () => {
     const next = config();
     chart.data = next.data;

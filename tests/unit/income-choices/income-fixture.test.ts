@@ -43,12 +43,9 @@ afterEach(() => {
 });
 
 const snapshots = () => store.roster_config.snapshots;
-const used = () =>
-  snapshots().filter((s) => s.kind !== "Before export" && !s.ignored);
 const job = (snapshot: Snapshot, is_now = false) =>
   job_for(store.active_profile, snapshot, is_now);
-const markers = () =>
-  wrapper.findAll('[aria-label="Snapshot timeline"] button');
+const markers = () => wrapper.findAll('[aria-label="Snapshots"] button');
 const graphs = () => wrapper.findAllComponents(IncomeGraph);
 const queued = () => vi.mocked(queue_jobs).mock.lastCall[0];
 const rate = (label: string) =>
@@ -70,13 +67,13 @@ describe("Income page over the fixture", () => {
     expect(snapshots().every((s) => s.chars[profile.id])).toBe(true);
   });
 
-  it("draws every snapshot on the timeline", () => {
+  it("lists every snapshot, the ignored one faded, a bar above the break", () => {
     expect(markers()).toHaveLength(12);
-    const lower = markers().filter((m) =>
-      m.attributes("style").includes("top: 1.5rem"),
-    );
-    expect(lower).toHaveLength(5);
     expect(markers().filter((m) => m.classes("opacity-30"))).toHaveLength(1);
+    const bars = markers().filter((m) => m.classes("border-t"));
+    expect(bars.map((m) => m.attributes("aria-label"))).toEqual([
+      `${new Date(snapshots().find((s) => s.breaks).at).toLocaleString()} After export`,
+    ]);
   });
 
   it("queues only the oldest snapshot first", () => {
@@ -107,27 +104,27 @@ describe("Income page over the fixture", () => {
   });
 
   // one test: now's and the weeks' results are kept for the session, across tests
-  it("runs the chain in order, each from the one before, then the metrics graph", async () => {
+  it("runs the chain in order, each from the one before, on to the crossing", async () => {
     expect(graphs()).toHaveLength(1);
-    const metrics = () => graphs()[0].props("series");
-    expect(metrics().map((s) => [s.points, s.line])).toEqual([
-      [[], []],
-      [[], []],
-    ]);
+    const series = () => graphs()[0].props("series");
+    expect(series().map((s) => s.points)).toEqual([[], [], []]);
 
-    // the ignored snapshot is left out, then now and the five weeks to the range's end
+    // every run a cost of 1M and leftovers worth 300k (Rust's metrics are negative); with
+    // about 238k tradable gold now and 40k a week, leftovers and gold cover it in week 12
     const runs = [];
     while (queued().length) {
       const [next] = queued();
       if (runs.length)
         expect(next.payload.chest_states).toBe(runs.at(-1).state.chest_states);
       const state = fake_state(runs.length);
-      next.store(fake_out(1000 + runs.length, 100), state);
+      next.store(fake_out(-1_000_000, -700_000), state);
       runs.push({ next, state });
       await nextTick();
     }
-    expect(runs).toHaveLength(11 + 1 + 5);
+    // the ignored snapshot is left out, then now and the weeks to the crossing
+    expect(runs).toHaveLength(11 + 1 + 12);
     expect(runs[0].next.hash).toBe(job(snapshots()[0]).hash);
+    expect(graphs()[0].props("range")).toEqual([NOW, NOW + 12 * WEEK_MS]);
 
     // a week of Serca Blue's char bound income on each projected budget
     const blue = (at: number) =>
@@ -135,17 +132,21 @@ describe("Income page over the fixture", () => {
     expect(blue(12) - blue(11)).toBeCloseTo(50_000, -1);
     expect(blue(16) - blue(11)).toBeCloseTo(5 * 50_000, -1);
 
-    const gold_of = (s: Snapshot) =>
-      1000 + runs.findIndex((run) => run.next.hash === job(s).hash);
-    const [gold, leftover] = metrics();
-    expect(gold.points.map((p) => p.x)).toEqual([
-      ...used().map((s) => s.at),
-      NOW,
+    const [cost, leftover, covered] = series();
+    expect(series().map((s) => [s.label, s.color, !!s.dashed])).toEqual([
+      ["Avg tradable gold spent", "--gold", false],
+      ["Avg value of leftovers", "--text-muted", false],
+      ["Leftovers + tradable gold", "--gold", true],
     ]);
-    expect(gold.points.map((p) => p.y)).toEqual([...used().map(gold_of), 1011]);
-    expect(leftover.points.at(-1).y).toBe(911);
-    expect(gold.line).toEqual(
-      [0, 1, 2, 3, 4, 5].map((k) => ({ x: NOW + k * WEEK_MS, y: 1011 + k })),
+    const weeks = Array.from({ length: 13 }, (_, k) => NOW + k * WEEK_MS);
+    expect(cost.points.map((p) => p.x)).toEqual(weeks);
+    expect(new Set(cost.points.map((p) => p.y))).toEqual(new Set([1_000_000]));
+    expect(new Set(leftover.points.map((p) => p.y))).toEqual(
+      new Set([300_000]),
     );
+    const ahead = covered.points.map((p) => p.y);
+    expect(ahead[1] - ahead[0]).toBeCloseTo(40_000, -1);
+    expect(ahead[11]).toBeLessThan(1_000_000);
+    expect(ahead[12]).toBeGreaterThanOrEqual(1_000_000);
   });
 });

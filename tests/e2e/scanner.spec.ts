@@ -169,7 +169,7 @@ test("exports merge across characters and are snapshotted", async ({
 
   // snapshots on Bee's income page: Bee's export against Newchar's
   await hf.open(page, "/Bee/income");
-  const timeline = page.getByRole("group", { name: "Snapshot timeline" });
+  const timeline = page.getByRole("group", { name: "Snapshots" });
   // Bee's "before" is Newchar's "after", so it is not added
   await expect(timeline.getByRole("button")).toHaveCount(3);
   await timeline
@@ -552,7 +552,7 @@ test("captures of two characters merge as expected", async ({
 
   // the snapshots: the empty start, and one after each export that changed something
   await hf.open(page, "/Newchar/income");
-  const timeline = page.getByRole("group", { name: "Snapshot timeline" });
+  const timeline = page.getByRole("group", { name: "Snapshots" });
   await expect(timeline.getByRole("button")).toHaveCount(4);
 });
 

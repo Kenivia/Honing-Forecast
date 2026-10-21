@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   chain_of,
   has_band,
-  MIN_SPAN,
   next_in_chain,
   projected,
   range_of,
@@ -76,10 +75,9 @@ describe("projected", () => {
 });
 
 describe("range_of / steps_of", () => {
-  it("centred on now, at least MIN_SPAN either side", () => {
-    expect(range_of(undefined, 100)).toEqual([100 - MIN_SPAN, 100 + MIN_SPAN]);
-    const old = 100 - 2 * MIN_SPAN;
-    expect(range_of(old, 100)).toEqual([old, 100 + 2 * MIN_SPAN]);
+  it("from now, five weeks or more ahead", () => {
+    expect(range_of(0, 2)).toEqual([0, 5 * WEEK_MS]);
+    expect(range_of(0, 12)).toEqual([0, 12 * WEEK_MS]);
   });
 
   it("steps within runs and their days", () => {
