@@ -31,6 +31,24 @@ export function hash(text: string) {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
 }
 
+// a saved result is of one build: another build may optimize differently
+export const payload_hash = (payload: Payload) =>
+  hash(__BUILD_COMMIT__ + JSON.stringify(payload));
+
+// `results` with `key` last, the oldest dropped past `keep` (a run can be stored twice)
+export const kept = <T>(
+  results: Record<string, T> | undefined,
+  key: string,
+  result: T,
+  keep: number,
+) =>
+  Object.fromEntries([
+    ...Object.entries(results ?? {})
+      .filter(([at]) => at !== key)
+      .slice(1 - keep),
+    [key, result],
+  ]) as Record<string, T>;
+
 export const jobs_left = ref(0);
 let queue: Job[] = [];
 const running = new Set<string>();

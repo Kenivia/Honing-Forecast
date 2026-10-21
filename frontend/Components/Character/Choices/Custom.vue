@@ -105,149 +105,162 @@ watch(
 </script>
 
 <template>
-  <div class="card-shell card-body flex w-full flex-col gap-2 text-sm">
-    <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-      <div class="card-title">Custom</div>
+  <div class="card-shell w-fit max-w-[min(100%,1055px)] text-sm">
+    <div class="card-header gap-4">
+      <span class="card-title">Custom</span>
       <span v-if="jobs_left" class="text-(--text-muted)">
         Optimizing {{ jobs_left }} run{{ jobs_left > 1 ? "s" : "" }}
       </span>
     </div>
-    <span class="text-(--text-muted)">
-      What each option of your own choice is worth to this character, best
-      first: how much less gold its upgrades cost on average, under its plan,
-      with what the option gives. A negative amount is a cost. Shared by every
-      character of the roster.
-    </span>
-    <span v-if="no_upgrades" class="text-(--warning)" role="alert">
-      No upgrades are selected for this character, so nothing here is worth
-      anything. Select some on the calculator to see what each option is worth.
-    </span>
-    <div class="flex gap-1" role="group" aria-label="Custom choice band">
-      <button
-        v-for="(name, band) in BAND_NAMES"
-        :key="band"
-        class="generic-button"
-        :class="{ 'bg-(--gold-muted)!': custom.band === band }"
-        :aria-pressed="custom.band === band"
-        @click="stored().band = band"
+    <div class="card-body flex flex-col gap-3">
+      <span class="text-(--text-muted)">
+        What each option of your own choice is worth to this character, best
+        first.
+      </span>
+      <span
+        v-if="no_upgrades"
+        class="self-center text-center text-(--warning)"
+        role="alert"
       >
-        {{ name }}
+        No upgrades are selected for this character, so nothing here is worth
+        anything.
+      </span>
+      <div class="flex items-center gap-3">
+        <span class="text-(--text-muted)">Band</span>
+        <div class="flex gap-1" role="group" aria-label="Custom choice band">
+          <button
+            v-for="(name, band) in BAND_NAMES"
+            :key="band"
+            class="generic-button"
+            :class="{ 'bg-(--gold-muted)!': custom.band === band }"
+            :aria-pressed="custom.band === band"
+            @click="stored().band = band"
+          >
+            {{ name }}
+          </button>
+        </div>
+      </div>
+      <!-- scrolls on its own on a narrow screen, so the page does not -->
+      <div class="overflow-x-auto">
+        <div
+          class="grid w-max min-w-full grid-cols-[minmax(10rem,auto)_auto_minmax(18rem,auto)_auto_auto] items-center gap-x-4 gap-y-1"
+          role="table"
+          aria-label="Custom options"
+        >
+          <span class="text-(--text-muted)">Option</span>
+          <span class="text-(--text-muted)">Gives</span>
+          <span class="text-(--text-muted)">
+            Worth
+            <span
+              class="block whitespace-nowrap text-(--text-main)"
+              aria-label="Baseline"
+            >
+              Baseline =
+              <Spinner
+                v-if="!baseline_text"
+                class="inline-block h-4 w-4 align-middle"
+              />
+              {{ baseline_text }}
+            </span>
+          </span>
+          <span></span>
+          <span></span>
+          <div class="col-span-full border-b border-(--border-muted)" />
+          <template v-for="row in sorted" :key="row.index">
+            <input
+              type="text"
+              class="generic-input h-7! w-40 pl-1"
+              :value="custom.names[row.index]"
+              :aria-label="`Option ${row.index + 1} name`"
+              @change="
+                stored().names[row.index] = (
+                  $event.target as HTMLInputElement
+                ).value
+              "
+            />
+            <span class="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span
+                v-for="(amount, label) in row.bag"
+                :key="label"
+                class="flex items-center gap-1"
+              >
+                <img
+                  :src="get_icon_path(label as string)"
+                  class="generic-icon h-5 w-5"
+                  :alt="label as string"
+                  :title="label as string"
+                />
+                <input
+                  type="number"
+                  class="generic-input h-7! w-20 pl-1"
+                  :value="amount"
+                  :aria-label="`${custom.names[row.index]} ${label}`"
+                  @change="set_amount(row.index, label as string, $event)"
+                />
+                <button
+                  class="generic-button"
+                  :aria-label="`Remove ${label}`"
+                  @click="delete stored().options[row.index][label]"
+                >
+                  ×
+                </button>
+              </span>
+              <select
+                class="selector"
+                :aria-label="`${custom.names[row.index]} add material`"
+                @change="add_label(row.index, $event)"
+              >
+                <option value="" selected disabled>+ Material</option>
+                <option
+                  v-for="label in ALL_MATERIAL_LABELS.filter(
+                    (x) => !(x in row.bag),
+                  )"
+                  :key="label"
+                >
+                  {{ label }}
+                </option>
+              </select>
+            </span>
+            <span
+              class="tabular-nums"
+              :aria-label="`${custom.names[row.index]} worth`"
+              :style="{ color: worth_color(no_upgrades, row.worth) }"
+            >
+              <Spinner
+                v-if="!no_upgrades && row.worth === undefined"
+                class="inline-block h-4 w-4 align-middle"
+              />
+              {{ worth_text(no_upgrades, row.worth) }}
+            </span>
+            <button
+              class="generic-button w-28"
+              :disabled="
+                is_empty(row.option) || !affordable(choice, row.option, columns)
+              "
+              :title="
+                affordable(choice, row.option, columns)
+                  ? 'Add what it gives and take what it costs'
+                  : 'Not enough to pay for it'
+              "
+              @click="emit('take', `custom/${row.index}`, choice, row.option)"
+            >
+              {{
+                taken === `custom/${row.index}` ? "Added ✓" : "Add to budget"
+              }}
+            </button>
+            <button
+              class="generic-button w-fit"
+              :disabled="custom.options.length <= 1"
+              @click="remove_option(row.index)"
+            >
+              Remove
+            </button>
+          </template>
+        </div>
+      </div>
+      <button class="generic-button w-fit" @click="add_option">
+        Add option
       </button>
     </div>
-    <!-- scrolls on its own on a narrow screen, so the page does not -->
-    <div class="overflow-x-auto">
-      <div
-        class="grid w-max min-w-full grid-cols-[minmax(10rem,auto)_auto_minmax(18rem,auto)_auto_auto] items-center gap-x-4 gap-y-1"
-        role="table"
-        aria-label="Custom options"
-      >
-        <span class="text-(--text-muted)">Option</span>
-        <span class="text-(--text-muted)">Gives</span>
-        <span class="text-(--text-muted)">
-          Worth
-          <span
-            class="block whitespace-nowrap text-(--text-main)"
-            aria-label="Baseline"
-          >
-            Baseline =
-            <Spinner
-              v-if="!baseline_text"
-              class="inline-block h-4 w-4 align-middle"
-            />
-            {{ baseline_text }}
-          </span>
-        </span>
-        <span></span>
-        <span></span>
-        <template v-for="row in sorted" :key="row.index">
-          <input
-            type="text"
-            class="generic-input h-7! w-40 pl-1"
-            :value="custom.names[row.index]"
-            :aria-label="`Option ${row.index + 1} name`"
-            @change="
-              stored().names[row.index] = (
-                $event.target as HTMLInputElement
-              ).value
-            "
-          />
-          <span class="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span
-              v-for="(amount, label) in row.bag"
-              :key="label"
-              class="flex items-center gap-1"
-            >
-              <img
-                :src="get_icon_path(label as string)"
-                class="generic-icon h-5 w-5"
-                :alt="label as string"
-                :title="label as string"
-              />
-              <input
-                type="number"
-                class="generic-input h-7! w-20 pl-1"
-                :value="amount"
-                :aria-label="`${custom.names[row.index]} ${label}`"
-                @change="set_amount(row.index, label as string, $event)"
-              />
-              <button
-                class="generic-button"
-                :aria-label="`Remove ${label}`"
-                @click="delete stored().options[row.index][label]"
-              >
-                ×
-              </button>
-            </span>
-            <select
-              class="selector"
-              :aria-label="`${custom.names[row.index]} add material`"
-              @change="add_label(row.index, $event)"
-            >
-              <option value="" selected disabled>+ Material</option>
-              <option
-                v-for="label in ALL_MATERIAL_LABELS.filter(
-                  (x) => !(x in row.bag),
-                )"
-                :key="label"
-              >
-                {{ label }}
-              </option>
-            </select>
-          </span>
-          <span
-            :aria-label="`${custom.names[row.index]} worth`"
-            :style="{ color: worth_color(no_upgrades, row.worth) }"
-          >
-            <Spinner
-              v-if="!no_upgrades && row.worth === undefined"
-              class="inline-block h-4 w-4 align-middle"
-            />
-            {{ worth_text(no_upgrades, row.worth) }}
-          </span>
-          <button
-            class="generic-button w-fit"
-            :disabled="
-              is_empty(row.option) || !affordable(choice, row.option, columns)
-            "
-            :title="
-              affordable(choice, row.option, columns)
-                ? 'Add what it gives and take what it costs'
-                : 'Not enough to pay for it'
-            "
-            @click="emit('take', `custom/${row.index}`, choice, row.option)"
-          >
-            {{ taken === `custom/${row.index}` ? "Added ✓" : "Add to budget" }}
-          </button>
-          <button
-            class="generic-button w-fit"
-            :disabled="custom.options.length <= 1"
-            @click="remove_option(row.index)"
-          >
-            Remove
-          </button>
-        </template>
-      </div>
-    </div>
-    <button class="generic-button w-fit" @click="add_option">Add option</button>
   </div>
 </template>

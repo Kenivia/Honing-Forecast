@@ -9,6 +9,8 @@ import {
 import { PRESET_CHOICES } from "@/Utils/Choices";
 import { budgets_of } from "@/Utils/Scans";
 import { MAX_WEEKS } from "@/Utils/Income";
+import { from_saved, to_saved } from "@/Stores/SavedConfig";
+import { fed_state } from "@/WasmInterface/PayloadBuilder";
 import { fake_out, fake_state, snap, want_upgrade } from "./helpers";
 
 // IncomeJobs and ChoiceJobs build the jobs; the queue itself is in optimizer-jobs.test.ts.
@@ -161,5 +163,18 @@ describe("ChoiceJobs", () => {
     expect(
       option_job(profile, now, base, choice, 1).payload.special_state,
     ).toEqual([1]);
+  });
+
+  it("results and the seed survive a save and load", () => {
+    const now = snap(1, profile.id, { Gold: 70000 });
+    const base = base_job(profile, now);
+    base.store(fake_out(0, 42), fake_state(5));
+    const loaded = from_saved(
+      JSON.parse(JSON.stringify(to_saved(useRosterStore().roster_config))),
+    ).profiles[0];
+    // the loaded profile's upgrades come from its grids, so the hashes are compared, not rebuilt
+    expect(loaded.choice_results[base.hash]).toEqual([0, 42]);
+    expect(loaded.choice_seed.hash).toBe(base.hash);
+    expect(fed_state(loaded.choice_seed.state).special_state).toEqual([5]);
   });
 });

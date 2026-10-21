@@ -3,40 +3,21 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
-## Core
-
-- ~~test & decide wtf to do with the core~~
-  - code review
-- x10 streak frontend
-
-- change tradabiltiy selector to the mats column
-- estimated gold value
-
-- show baseline in choices
-
 ## Forecast mode
 
 - ~~forecast mode UI~~ this is gonna hvae to be very pervasive
   - optimizer advise & all advises must be set to that time
   - this probably works better with an actual estimated income without having to configure
-- need to sort out the UI:
-  - chest display & editing
-  - preview manifest
-
-- replace mats graph st we have 1 mat at any time, show price history , allow adusting bounds
-
--
+  - optimizer for n weeks in the future
+    - something happening over n weeks?
 
 ## Misc UI
 
 - need to add the UI for choices and hard code some examples
-  - need to get paradise data from somewhere
-  - gold chests
-  - something happening over n weeks?
-
-- save previous optimizer work
-
-- gold distribution graph (using coarse lattice maybe?)
+  - ~~need to get paradise data from somewhere~~
+  - ~~gold chests~~
+  - mari's shop
+  - ~~custom chests~~
 
 ### LOW PRIO
 
@@ -75,6 +56,32 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Done / cancelled
 
+- ~~replace mats graph st we have 1 mat at any time, show price history , allow adusting~~
+- ~~show a warning when the char is t4 but serca mats detected in char storage / inv~~
+- ~~hide obtain all and cap length when not shown, consolidate into one panel~~
+- ~~forced x10 location~~
+
+- ~~save previous optimizer work~~ nah its fine
+- ~~hover tooltip for data~~
+- ~~gold distribution graph (using coarse lattice maybe?)~~
+
+~~bounds~~
+
+- ~~need to sort out the UI:~~
+  - ~~chest display & editing~~
+  - ~~preview manifest~~
+~~## Core~~
+
+- ~~test & decide wtf to do with the core~~
+  - code review
+- ~~x10 streak frontend~~
+
+- ~~change tradabiltiy selector to the mats column~~
+- ~~estimated gold value~~
+
+- ~~show baseline in choices~~
+
+- ~~paradise rewards ~~
 ~~### HARD~~
 
 - ~~startup time or at least a loading icon~~

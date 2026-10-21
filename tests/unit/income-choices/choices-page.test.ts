@@ -216,7 +216,7 @@ describe("Paradise tab", () => {
     expect(cells.at(-1).find('[aria-label="Loading"]').exists()).toBe(true);
   });
 
-  it("Wealth runs the Wealth options instead", async () => {
+  it("Wealth runs that reward's Wealth option instead", async () => {
     want_upgrade(store.active_profile);
     await open_paradise();
     queued()[0].store(fake_out(0, 1000), fake_state());
@@ -224,8 +224,9 @@ describe("Paradise tab", () => {
     const plain = queued().map((job) => job.hash);
     await wrapper.find('input[type="checkbox"]').setValue(true);
     const wealth = queued().map((job) => job.hash);
+    // each reward has its own tick, so only the first reward's run is new
     expect(wealth).toHaveLength(plain.length);
-    expect(wealth.filter((x) => plain.includes(x))).toEqual([]);
+    expect(wealth.filter((x) => !plain.includes(x))).toHaveLength(1);
   });
 
   it("Netherworld has no Wealth to tick", async () => {

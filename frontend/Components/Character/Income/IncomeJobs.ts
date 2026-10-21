@@ -6,7 +6,7 @@ import {
   snapshot_payload,
   states_payload,
 } from "@/WasmInterface/PayloadBuilder";
-import { hash, type Job } from "@/WasmInterface/OptimizerJobs";
+import { hash, kept, type Job } from "@/WasmInterface/OptimizerJobs";
 
 // Optimizer runs of snapshots under the current upgrades. A snapshot's results are kept in it by
 // payload hash; those of now and the weeks ahead in the profile. The hash leaves out the state a
@@ -19,19 +19,6 @@ export interface SnapshotJob extends Job {
 // how many results a snapshot keeps per character, and a profile of now and the weeks ahead
 const KEEP = 4;
 const KEEP_AHEAD = MAX_WEEKS + 1;
-// `results` with `key` last, the oldest dropped past `keep` (a run can be stored twice)
-const kept = (
-  results: Record<string, SnapshotResult> | undefined,
-  key: string,
-  result: SnapshotResult,
-  keep: number,
-) =>
-  Object.fromEntries([
-    ...Object.entries(results ?? {})
-      .filter(([at]) => at !== key)
-      .slice(1 - keep),
-    [key, result],
-  ]);
 // each run's optimizer state, for the next in the chain to start from
 const states = new Map<string, any>();
 export const state_of = (hash: string) => states.get(hash);

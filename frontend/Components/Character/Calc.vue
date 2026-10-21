@@ -7,7 +7,7 @@ import StatusInput from "./StatusInput/StatusInput.vue";
 import ChestPanels from "@/Components/Common/ChestPanels.vue";
 import ChestEditor from "./ChestEditor.vue";
 import { storeToRefs } from "pinia";
-import { start_all_workers, start_eval_hist } from "./CharWorkerUtils.js";
+import { start_all_workers } from "./CharWorkerUtils.js";
 import { useRosterStore } from "@/Stores/RosterConfig.js";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 import { settle_deductions } from "./Instructions/Details/NormalDetails/SuccessUtils";
@@ -36,13 +36,8 @@ watch(
     () => active_profile.value.min_resolution,
     () => active_region.value,
   ],
-  () => {
-    if (active_profile.value.auto_start_optimizer) {
-      start_all_workers();
-    } else {
-      start_eval_hist();
-    }
-  },
+  // with auto start off this only restores a saved run, else draws the histogram
+  () => start_all_workers(),
   { deep: true, immediate: true },
 );
 // A character switch remounts this page (CharView keys it), and this runs after the next

@@ -15,7 +15,7 @@ import {
   sell_tax,
 } from "@/Utils/Constants";
 
-import { toRaw } from "vue";
+import { markRaw, toRaw } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import {
   get_upgrade_map,
@@ -375,8 +375,68 @@ export function states_payload(
   };
 }
 
+// An optimizer state as saved: only what is fed back, so a histogram can rebuild the rest
+export interface SavedState {
+  upgrade_arr: Pick<
+    Upgrade,
+    | "piece_index"
+    | "piece_type_usize"
+    | "upgrade_index"
+    | "is_normal_honing"
+    | "state"
+  >[];
+  special_state: number[];
+  chest_states: [string, number[]][];
+  prep_output: { juice_info: any };
+}
+// a saved state with the payload hash it was run for
+export interface CachedState {
+  hash: string;
+  state: SavedState;
+}
+
+// raw, so the store's deep watch does not walk it
+export const cached_state = (hash: string, state: FedState): CachedState =>
+  markRaw({
+    hash,
+    state: {
+      upgrade_arr: state.upgrade_arr.map(
+        ({
+          piece_index,
+          piece_type_usize,
+          upgrade_index,
+          is_normal_honing,
+          state,
+        }) => ({
+          piece_index,
+          piece_type_usize,
+          upgrade_index,
+          is_normal_honing,
+          state,
+        }),
+      ),
+      special_state: state.special_state,
+      chest_states: [...(state.chest_states ?? [])],
+      prep_output: {
+        juice_info: state.prep_output?.juice_info && {
+          normal_uindex_to_id: state.prep_output.juice_info.normal_uindex_to_id,
+          adv_uindex_to_id: state.prep_output.juice_info.adv_uindex_to_id,
+        },
+      },
+    },
+  });
+
+export function fed_state(saved: SavedState): FedState {
+  const raw = toRaw(saved);
+  return {
+    ...raw,
+    upgrade_arr: raw.upgrade_arr as Upgrade[],
+    chest_states: new Map(raw.chest_states),
+  };
+}
+
 // the active profile over the store's budgets, chests and prices, with no state
-function store_payload(): Payload {
+export function store_payload(): Payload {
   const store = useRosterStore();
   const profile = store.active_profile;
   return payload_for(

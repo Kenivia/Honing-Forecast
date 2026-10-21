@@ -150,10 +150,10 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
 </script>
 
 <template>
-  <div class="flex w-full min-w-0 flex-col gap-3 p-3">
+  <div class="flex w-full min-w-0 flex-col items-center gap-3 p-3">
     <!-- clears the sidebar's menu button, shown below CharView's width of 1201 -->
     <div
-      class="flex gap-1 max-[1201px]:pl-12"
+      class="flex flex-wrap items-center justify-center gap-1 max-[1201px]:pl-12"
       role="tablist"
       aria-label="Choices"
     >
@@ -192,138 +192,154 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
       :taken="taken"
       @take="take"
     />
-    <div v-else class="card-shell card-body flex w-full flex-col gap-2 text-sm">
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div class="card-title">Choices</div>
+    <div v-else class="card-shell w-fit max-w-[min(100%,1055px)] text-sm">
+      <div class="card-header gap-4">
+        <span class="card-title">Choices</span>
         <span v-if="jobs_left" class="text-(--text-muted)">
           Optimizing {{ jobs_left }} run{{ jobs_left > 1 ? "s" : "" }}
         </span>
       </div>
-      <span class="text-(--text-muted)">
-        What buying each raid's bonus chest is worth to this character: how much
-        less gold its upgrades cost on average, under its plan, with the chest's
-        materials and less its gold, each optimized again. Only honing materials
-        count. Gold is paid from char bound, then roster bound, then tradable.
-      </span>
-      <span v-if="no_upgrades" class="text-(--warning)" role="alert">
-        No upgrades are selected for this character, so nothing here is worth
-        anything. Select some on the calculator to see what each chest is worth.
-      </span>
-      <!-- scrolls on its own on a narrow screen, so the page does not -->
-      <div class="overflow-x-auto">
-        <div
-          class="grid w-max min-w-full grid-cols-[minmax(10rem,auto)_6rem_auto_minmax(18rem,auto)_auto] items-center gap-x-4 gap-y-1"
-          role="table"
-          aria-label="Choices"
+      <div class="card-body flex flex-col gap-3">
+        <span class="text-(--text-main)">
+          What buying each raid's bonus chest is worth to this character, how
+          much less gold your upgrades cost on average if you buy the chest.
+          Only guaranteed honing materials are considered.
+        </span>
+        <span
+          v-if="no_upgrades"
+          class="self-center text-center text-(--warning)"
+          role="alert"
         >
-          <span class="text-(--text-muted)">Gate</span>
-          <span class="text-(--text-muted)">Cost</span>
-          <span class="text-(--text-muted)">Gives</span>
-          <span class="text-(--text-muted)">
-            Worth
-            <span
-              class="block whitespace-nowrap text-(--text-main)"
-              aria-label="Baseline"
-            >
-              Baseline =
-              <Spinner
-                v-if="!baseline_text"
-                class="inline-block h-4 w-4 align-middle"
-              />
-              {{ baseline_text }}
-            </span>
-          </span>
-          <span></span>
-          <template v-for="group in groups" :key="group.name">
-            <div
-              class="col-span-5 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1"
-              role="rowheader"
-            >
-              <span class="text-(--text-bright)">{{ group.name }}</span>
-              <div
-                v-if="group.difficulties.length"
-                class="flex gap-1"
-                role="group"
-                :aria-label="`${group.name} difficulty`"
-              >
-                <button
-                  v-for="difficulty in group.difficulties"
-                  :key="difficulty.name"
-                  class="generic-button"
-                  :class="{
-                    'bg-(--gold-muted)!': group.shown === difficulty.name,
-                    'text-(--text-very-muted)':
-                      difficulty.item_level > item_level,
-                  }"
-                  :aria-pressed="group.shown === difficulty.name"
-                  :title="`Item level ${difficulty.item_level}`"
-                  @click="pick(group.name, difficulty.name)"
-                >
-                  {{ difficulty.name }}
-                </button>
-              </div>
-            </div>
-            <template
-              v-for="{ option, job, choice, key } in group.rows.flatMap((row) =>
-                row.options.map((x, index) => ({
-                  ...x,
-                  choice: row.choice,
-                  key: `${row.choice.group}/${row.choice.title}/${index}`,
-                })),
-              )"
-              :key="job.hash"
-            >
-              <span class="text-(--text-main)">{{ choice.title }}</span>
-              <span class="text-(--gold)">
-                {{ (-(option.Gold ?? 0)).toLocaleString("en-US") }}
-              </span>
+          No upgrades are selected for this character, so nothing here is worth
+          anything.
+        </span>
+        <!-- scrolls on its own on a narrow screen, so the page does not -->
+        <div class="overflow-x-auto">
+          <div
+            class="grid w-max min-w-full grid-cols-[minmax(10rem,auto)_6rem_auto_minmax(18rem,auto)_auto] items-center gap-x-4 gap-y-1"
+            role="table"
+            aria-label="Choices"
+          >
+            <span class="text-(--text-muted)">Gate</span>
+            <span class="text-right text-(--text-muted)">Cost</span>
+            <span class="text-(--text-muted)">Gives</span>
+            <span class="text-(--text-muted)">
+              Worth
               <span
-                class="flex flex-wrap items-center gap-x-3"
-                :title="choice.others?.join('\n')"
+                class="block whitespace-nowrap text-(--text-main)"
+                aria-label="Baseline"
               >
-                <span
-                  v-for="(amount, label) in option"
-                  v-show="label !== 'Gold'"
-                  :key="label"
-                  class="flex items-center gap-1"
-                >
-                  <img
-                    :src="get_icon_path(label as string)"
-                    class="generic-icon h-5 w-5"
-                    :alt="label as string"
-                  />
-                  {{ amount.toLocaleString("en-US") }}
-                </span>
-              </span>
-              <span
-                :aria-label="`${choice.group} ${choice.title} worth`"
-                :style="{ color: worth_color(no_upgrades, worth(job.metric)) }"
-              >
+                Baseline =
                 <Spinner
-                  v-if="!no_upgrades && worth(job.metric) === undefined"
+                  v-if="!baseline_text"
                   class="inline-block h-4 w-4 align-middle"
                 />
-                {{ worth_text(no_upgrades, worth(job.metric)) }}
+                {{ baseline_text }}
               </span>
-              <button
-                class="generic-button w-fit"
-                :disabled="!affordable(choice, option, columns)"
-                :title="
-                  affordable(choice, option, columns)
-                    ? 'Add what it gives and take its gold'
-                    : 'Not enough gold'
-                "
-                @click="take(key, choice, option)"
+            </span>
+            <span></span>
+            <div class="col-span-full border-b border-(--border-muted)" />
+            <template v-for="(group, at) in groups" :key="group.name">
+              <!-- a line between raids, the header's under the first -->
+              <div
+                class="col-span-full flex flex-wrap items-center gap-x-3 gap-y-1 py-1"
+                :class="{ 'mt-1 border-t border-(--border-muted) pt-2': at }"
+                role="rowheader"
               >
-                {{ taken === key ? "Added ✓" : "Add to budget" }}
-              </button>
+                <span class="text-(--text-bright)">{{ group.name }}</span>
+                <div
+                  v-if="group.difficulties.length"
+                  class="flex gap-1"
+                  role="group"
+                  :aria-label="`${group.name} difficulty`"
+                >
+                  <button
+                    v-for="difficulty in group.difficulties"
+                    :key="difficulty.name"
+                    class="generic-button"
+                    :class="{
+                      'bg-(--gold-muted)!': group.shown === difficulty.name,
+                      'text-(--text-very-muted)':
+                        difficulty.item_level > item_level,
+                    }"
+                    :aria-pressed="group.shown === difficulty.name"
+                    :title="`Item level ${difficulty.item_level}`"
+                    @click="pick(group.name, difficulty.name)"
+                  >
+                    {{ difficulty.name }}
+                  </button>
+                </div>
+              </div>
+              <template
+                v-for="{ option, job, choice, key } in group.rows.flatMap(
+                  (row) =>
+                    row.options.map((x, index) => ({
+                      ...x,
+                      choice: row.choice,
+                      key: `${row.choice.group}/${row.choice.title}/${index}`,
+                    })),
+                )"
+                :key="job.hash"
+              >
+                <span class="text-(--text-main)">{{ choice.title }}</span>
+                <span class="text-right text-(--gold) tabular-nums">
+                  {{ (-(option.Gold ?? 0)).toLocaleString("en-US") }}
+                </span>
+                <span
+                  class="flex flex-wrap items-center gap-x-3"
+                  :title="choice.others?.join('\n')"
+                >
+                  <span
+                    v-for="(amount, label) in option"
+                    v-show="label !== 'Gold'"
+                    :key="label"
+                    class="flex items-center gap-1"
+                  >
+                    <img
+                      :src="get_icon_path(label as string)"
+                      class="generic-icon h-5 w-5"
+                      :alt="label as string"
+                    />
+                    {{ amount.toLocaleString("en-US") }}
+                  </span>
+                </span>
+                <span
+                  class="tabular-nums"
+                  :aria-label="`${choice.group} ${choice.title} worth`"
+                  :style="{
+                    color: worth_color(no_upgrades, worth(job.metric)),
+                  }"
+                >
+                  <Spinner
+                    v-if="!no_upgrades && worth(job.metric) === undefined"
+                    class="inline-block h-4 w-4 align-middle"
+                  />
+                  {{ worth_text(no_upgrades, worth(job.metric)) }}
+                </span>
+                <button
+                  class="generic-button w-28"
+                  :disabled="!affordable(choice, option, columns)"
+                  :title="
+                    affordable(choice, option, columns)
+                      ? 'Add what it gives and take its gold'
+                      : 'Not enough gold'
+                  "
+                  @click="take(key, choice, option)"
+                >
+                  {{ taken === key ? "Added ✓" : "Add to budget" }}
+                </button>
+              </template>
             </template>
-          </template>
+          </div>
         </div>
+        <button
+          v-if="hidden"
+          class="generic-button w-fit self-center"
+          @click="more++"
+        >
+          Show one more raid ({{ hidden }} hidden)
+        </button>
       </div>
-      <button v-if="hidden" class="generic-button w-fit" @click="more++">
-        Show one more raid ({{ hidden }} hidden)
-      </button>
     </div>
   </div>
 </template>

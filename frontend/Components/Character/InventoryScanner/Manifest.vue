@@ -153,6 +153,17 @@ function export_to_calc() {
       </span>
     </div>
 
+    <div v-if="loose.length" class="card-shell card-body text-sm">
+      <div class="card-title">Not included</div>
+      <span class="text-(--text-muted)">
+        Open these in game, then scan again.
+      </span>
+      <div v-for="chest in loose" :key="chest.title + chest.why">
+        {{ chest.title }} x{{ chest.count.toLocaleString() }}
+        <span class="text-(--text-muted)">({{ chest.why }})</span>
+      </div>
+    </div>
+
     <div
       class="card-shell outer-grid"
       role="group"
@@ -218,16 +229,5 @@ function export_to_calc() {
       :selection="manifest.chests.filter((chest) => !chest.obtain_all)"
       :obtain_all="manifest.chests.filter((chest) => chest.obtain_all)"
     />
-
-    <div v-if="loose.length" class="card-shell card-body text-sm">
-      <div class="card-title">Not included</div>
-      <span class="text-(--text-muted)">
-        Open these in game, then scan again.
-      </span>
-      <div v-for="chest in loose" :key="chest.title + chest.why">
-        {{ chest.title }} x{{ chest.count.toLocaleString() }}
-        <span class="text-(--text-muted)">({{ chest.why }})</span>
-      </div>
-    </div>
   </div>
 </template>

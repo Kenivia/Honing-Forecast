@@ -1,17 +1,18 @@
-import { shallowReactive } from "vue";
 import { process_chests, type ManifestChest } from "@/Utils/Chest";
 import { as_chest, type Choice } from "@/Utils/Choices";
 import { char_chests } from "@/Utils/Income";
 import type { Snapshot } from "@/Utils/Scans";
 import type { CharProfile } from "@/Stores/CharacterProfile";
 import {
+  cached_state,
+  fed_state,
   snapshot_payload,
   states_payload,
 } from "@/WasmInterface/PayloadBuilder";
-import { hash, type Job } from "@/WasmInterface/OptimizerJobs";
+import { kept, payload_hash, type Job } from "@/WasmInterface/OptimizerJobs";
 
 // The budgets as they are, and with each option of a choice taken, each optimized; an option's run
-// goes on from the plan of the run without it. Kept for the session by payload hash.
+// goes on from the plan of the run without it. Kept in the profile by payload hash.
 
 export interface ChoiceJob extends Job {
   // the user's plan's metric, and the tradable gold used (plan 0, which credits no leftovers)
@@ -19,16 +20,14 @@ export interface ChoiceJob extends Job {
   gold?: number;
 }
 
-const metrics = shallowReactive(new Map<string, number>());
-const golds = shallowReactive(new Map<string, number>());
-// the optimizer's state of each run without a choice, by payload hash
-const seeds = new Map<string, any>();
+// how many runs a profile keeps
+const KEEP = 300;
 
 function job_with(
   profile: CharProfile,
   snapshot: Snapshot,
   extra: ManifestChest[],
-  seed?: any,
+  seed?: CharProfile["choice_seed"],
 ): ChoiceJob {
   const payload = snapshot_payload(
     profile,
@@ -38,17 +37,24 @@ function job_with(
       profile.tier,
     ),
   );
-  const key = hash(JSON.stringify(payload));
+  const key = payload_hash(payload);
+  const result = profile.choice_results[key];
   return {
     hash: key,
-    payload: seed ? states_payload(payload, profile, seed) : payload,
+    payload: seed
+      ? states_payload(payload, profile, fed_state(seed.state))
+      : payload,
     profile,
-    metric: metrics.get(key),
-    gold: golds.get(key),
+    gold: result?.[0],
+    metric: result?.[1],
     store: (out, state) => {
-      if (!extra.length) seeds.set(key, state);
-      golds.set(key, out.metric_per_plan[0]);
-      metrics.set(key, out.metric_per_plan[1]);
+      if (!extra.length) profile.choice_seed = cached_state(key, state);
+      profile.choice_results = kept(
+        profile.choice_results,
+        key,
+        [out.metric_per_plan[0], out.metric_per_plan[1]],
+        KEEP,
+      );
     },
   };
 }
@@ -63,4 +69,9 @@ export const option_job = (
   choice: Choice,
   option: number,
 ) =>
-  job_with(profile, snapshot, [as_chest(choice, option)], seeds.get(base.hash));
+  job_with(
+    profile,
+    snapshot,
+    [as_chest(choice, option)],
+    profile.choice_seed?.hash === base.hash ? profile.choice_seed : undefined,
+  );

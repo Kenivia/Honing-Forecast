@@ -64,3 +64,10 @@ The histogram's result carries the `state_bundle` it evaluated (with `chest_stat
 **Every gold number shown is the histogram's** (`metric_per_plan`), scored with `Tuning::reference()`, not the optimizer's `metric`, which is of a cheaper evaluator and never displayed (`Calculator core/Evaluation pipeline.md`). The two differ by about 1e-5 of the metric, so they cannot be compared to tell anything.
 
 Leaving the calculator page or switching character cancels every worker.
+
+## Saved results
+
+Optimizer results are saved in the profile, so a reload does not run what has been run. The key is `payload_hash` (`OptimizerJobs.ts`): the stateless payload (`store_payload` / `snapshot_payload`) hashed with `__BUILD_COMMIT__`, so another build misses. A state is saved slim (`CachedState` in `PayloadBuilder.ts`): only what `states_payload` feeds back (each upgrade's keys and `state`, `special_state`, `chest_states` as entries, and the two `uindex_to_id` tables of `juice_info`); `fed_state` turns it back into a fed state.
+
+- **Calculator**: `optimizer_cache`, the last final optimizer result (never an interim one), under the hash taken after `build_payload` cleared a reset marker. `start_all_workers` first checks it: on a hit it runs one histogram of the saved state on the optimizer bundle, takes that result's `state_bundle` (the same shape as an optimizer result, all distributions rebuilt) as `optimizer.result`, then draws the histogram as after a run; the optimizer is not started. This holds for every trigger, the run buttons included, and with auto start off too: `Calc.vue`'s watch always calls `start_all_workers`.
+- **Choices**: `Screen scanner/Choices.md`. Income keeps its own results in the snapshots and the profile (`Screen scanner/Income.md`).

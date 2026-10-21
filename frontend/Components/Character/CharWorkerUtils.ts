@@ -2,7 +2,14 @@ import { useRosterStore } from "@/Stores/RosterConfig";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 
 import { grids_to_keyed } from "@/Utils/KeyedUpgrades";
-import { build_payload } from "@/WasmInterface/PayloadBuilder";
+import {
+  build_payload,
+  cached_state,
+  fed_state,
+  states_payload,
+  store_payload,
+} from "@/WasmInterface/PayloadBuilder";
+import { payload_hash } from "@/WasmInterface/OptimizerJobs";
 import { WasmOp } from "@/WasmInterface/WasmTypes";
 import { ALL_LABELS } from "@/Utils/Constants";
 
@@ -55,22 +62,48 @@ function eval_hist(with_gold: boolean) {
 //   );
 // }
 
+// A saved run of the same payload in place of the optimizer: one histogram rebuilds the full state.
+function restore_cached(): boolean {
+  const runtime = useRuntimeStore();
+  const profile = useRosterStore().active_profile;
+  const payload = store_payload();
+  const cached = profile.optimizer_cache;
+  if (cached?.hash !== payload_hash(payload)) return false;
+  runtime.marginal.cancel();
+  runtime.optimizer.debounced_start(
+    WasmOp.Histogram,
+    states_payload(payload, profile, fed_state(cached.state)),
+    (out) => {
+      if (!out) return;
+      runtime.optimizer.result = out.state_bundle;
+      start_eval_hist();
+    },
+  );
+  return true;
+}
+
 export function start_all_workers() {
   const runtime = useRuntimeStore();
   const profile = useRosterStore().active_profile;
 
   runtime.optimizer.est_progress_percentage = 0;
+  if (restore_cached()) return;
   if (profile.auto_start_optimizer) {
     runtime.marginal.cancel();
+    const payload = build_payload();
+    // after build_payload, which clears a reset upgrade's marker
+    const key = payload_hash(store_payload());
     runtime.optimizer.debounced_start(
       WasmOp.OptimizeAverage,
-      build_payload(),
+      payload,
       (result) => {
         if (!result) return;
         const { adv_cache, ...rest } = result;
         // interim states come with the cache emptied
         if (adv_cache?.size) runtime.adv_cache = adv_cache;
         runtime.optimizer.result = rest;
+        if (runtime.optimizer.status === "idle")
+          profile.optimizer_cache = cached_state(key, rest);
         start_eval_hist();
         // Est. gold value column is shelved
         // if (runtime.optimizer.status === "idle") start_marginal();

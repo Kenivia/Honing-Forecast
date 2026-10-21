@@ -30,6 +30,7 @@ import { format_char_name } from "@/Utils/Helpers";
 import type { ManifestChest } from "@/Utils/Chest";
 import type { ScanPage, Snapshot } from "@/Utils/Scans";
 import type { CustomChoice } from "@/Utils/Choices";
+import { markRaw } from "vue";
 
 // ============================================================================
 // The persisted shape.
@@ -74,6 +75,9 @@ export interface SavedProfile {
   income_now: CharProfile["income_now"];
   income_results: CharProfile["income_results"];
   choice_levels: Record<string, string>;
+  optimizer_cache: CharProfile["optimizer_cache"];
+  choice_results: CharProfile["choice_results"];
+  choice_seed: CharProfile["choice_seed"];
 }
 
 export interface SavedConfig {
@@ -172,6 +176,9 @@ function profile_to_saved(profile: CharProfile): SavedProfile {
     income_now: profile.income_now,
     income_results: profile.income_results,
     choice_levels: profile.choice_levels,
+    optimizer_cache: profile.optimizer_cache,
+    choice_results: profile.choice_results,
+    choice_seed: profile.choice_seed,
   };
 }
 
@@ -254,6 +261,12 @@ function profile_from_saved(
     income_now: saved.income_now ?? defaults.income_now,
     income_results: saved.income_results ?? defaults.income_results,
     choice_levels: saved.choice_levels ?? defaults.choice_levels,
+    // raw, so the store's deep watch does not walk them
+    optimizer_cache: saved.optimizer_cache
+      ? markRaw(saved.optimizer_cache)
+      : null,
+    choice_results: saved.choice_results ?? defaults.choice_results,
+    choice_seed: saved.choice_seed ? markRaw(saved.choice_seed) : null,
   };
 }
 

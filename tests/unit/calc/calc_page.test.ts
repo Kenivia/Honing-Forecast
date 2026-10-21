@@ -44,10 +44,10 @@ describe("Calc page", () => {
     expect(start_all_workers).toHaveBeenCalledOnce();
     store.active_profile.auto_start_optimizer = false;
     await wrapper.vm.$nextTick();
-    expect(start_eval_hist).toHaveBeenCalledOnce();
+    expect(start_all_workers).toHaveBeenCalledTimes(2);
     store.active_profile.band_values[2] = "Market";
     await wrapper.vm.$nextTick();
-    expect(start_eval_hist).toHaveBeenCalledTimes(2);
+    expect(start_all_workers).toHaveBeenCalledTimes(3);
     store.active_profile.chests.push({
       key: "k",
       title: "Box",
@@ -57,8 +57,8 @@ describe("Calc page", () => {
       obtain_all: true,
     });
     await wrapper.vm.$nextTick();
-    expect(start_eval_hist).toHaveBeenCalledTimes(3);
-    expect(start_all_workers).toHaveBeenCalledOnce();
+    expect(start_all_workers).toHaveBeenCalledTimes(4);
+    expect(start_eval_hist).not.toHaveBeenCalled();
   });
 
   it("splits the processed chests by whether a choice is left", async () => {
