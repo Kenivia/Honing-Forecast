@@ -12,6 +12,7 @@ import Manifest from "./Manifest.vue";
 import ScanGuide from "./ScanGuide.vue";
 import SlotGrid from "./SlotGrid.vue";
 import Stream from "./Stream.vue";
+import { scanner_shown } from "./ScannerUIutils";
 
 const status = ref<"idle" | "capturing">("idle");
 const config = ref<OneIconConfig[] | null>(null);
@@ -24,7 +25,11 @@ function load() {
     .catch(() => (failed.value = true));
   getModel().catch(() => {});
 }
-load();
+if (scanner_shown.value) load();
+function show_anyway() {
+  scanner_shown.value = true;
+  load();
+}
 // what a slot can be set to by hand
 const items = computed(() =>
   (config.value ?? [])
@@ -35,7 +40,19 @@ const items = computed(() =>
 </script>
 
 <template>
-  <div v-if="config" class="flex w-full flex-col items-center gap-3">
+  <div
+    v-if="!scanner_shown"
+    class="card-shell card-body flex items-center gap-3 text-sm"
+  >
+    <span class="text-(--text-main)">
+      It looks like you're on mobile (or a browser that doesn't support screen
+      sharing).
+    </span>
+    <button class="generic-button" @click="show_anyway">
+      Show scanner anyway
+    </button>
+  </div>
+  <div v-else-if="config" class="flex w-full flex-col items-center gap-3">
     <div class="flex max-w-full flex-wrap items-start justify-center gap-3">
       <Stream v-model:status="status" :process_result="process_result" />
       <ScanGuide />

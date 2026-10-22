@@ -3,6 +3,9 @@ import { ref } from "vue";
 // uploads and debug captures, on by default on a dev build
 export const show_debug = ref(import.meta.env.DEV);
 
+// screen capture is missing on mobile browsers; the scanner page can override it for the session
+export const scanner_shown = ref(!!navigator.mediaDevices?.getDisplayMedia);
+
 // what a slot's border, or a currency, is coloured by its status
 export const STATUS_COLORS = {
   Pending: "var(--text-muted)",

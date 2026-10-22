@@ -5,6 +5,7 @@ import { computed, onUnmounted, watch } from "vue";
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import ControlPanel from "@/Components/Character/ControlPanel.vue";
 import ScannerControlPanel from "@/Components/Character/InventoryScanner/ScannerControlPanel.vue";
+import { scanner_shown } from "@/Components/Character/InventoryScanner/ScannerUIutils";
 import Sidebar from "@/Components/Common/Sidebar.vue";
 import BrokenSaveBanner from "@/Components/Common/BrokenSaveBanner.vue";
 import OtherTabBanner from "@/Components/Common/OtherTabBanner.vue";
@@ -66,7 +67,9 @@ onUnmounted(() => {
       </div>
 
       <ControlPanel v-if="is_calc" />
-      <ScannerControlPanel v-if="route.name === 'char-scanner'" />
+      <ScannerControlPanel
+        v-if="route.name === 'char-scanner' && scanner_shown"
+      />
     </template>
 
     <template #main>
