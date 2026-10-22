@@ -173,6 +173,14 @@ const grids = computed((): GridConfig[] => [
             class="pr-2"
           />
         </div>
+        <!-- temporary: Serca books are not on the market yet -->
+        <div
+          v-if="grid.tier == 1"
+          class="col-span-full px-2 py-1 text-right text-sm text-(--text-muted)"
+        >
+          New serca books price fetching is not available yet, please input
+          them yourself.
+        </div>
       </div>
     </div>
   </div>
