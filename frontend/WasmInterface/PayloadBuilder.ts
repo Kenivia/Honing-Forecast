@@ -78,6 +78,8 @@ export interface Payload {
   adv_cache: any;
   // the plan the histogram draws the gold distribution of, none for no distribution
   dist_plan?: number | null;
+  // the state is of a run of nearly this payload, so a short search from it is enough
+  quick?: boolean;
 }
 
 // what of an optimizer result is fed back into the next payload

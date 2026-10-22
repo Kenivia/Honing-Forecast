@@ -98,6 +98,7 @@ function next(at: number) {
     count();
     next(at);
   };
+  // the worker is kept between runs: loading the wasm again is a good part of a short run
   worker.debounced_start(
     WasmOp.OptimizeAverage,
     job.payload,
@@ -110,8 +111,10 @@ function next(at: number) {
         states_payload(job.payload, job.profile, state),
         (out) => done(out, state),
         0,
+        false,
       );
     },
     0,
+    false,
   );
 }

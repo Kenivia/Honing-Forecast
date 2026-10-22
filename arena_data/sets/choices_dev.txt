@@ -1,0 +1,14 @@
+# the choices page's payloads of half the characters of the income fixture
+# written by a script
+Kenibrush_bonus
+Kenibrush_paradise
+Kenifloor_bonus
+Kenifloor_paradise
+Kenipope_bonus
+Kenipope_paradise
+Keniwei_bonus
+Keniwei_paradise
+Toneema_bonus
+Toneema_paradise
+Yooh_bonus
+Yooh_paradise

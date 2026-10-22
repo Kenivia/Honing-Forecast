@@ -501,6 +501,7 @@ pub fn build_with(a: &[f64], seed: u64, full: bool, given: Option<Vec<OneUpgrade
         metric_type: 1,
         adv_cache: None,
         dist_plan: None,
+        quick: false,
     };
 
     // taps already done

@@ -25,15 +25,16 @@ Things worth knowing about its shape:
 `solve` in `optimizer/simulated_annealing.rs`. Everything here is a `Tuning` field, and the defaults are what is described.
 
 1. **A starting free tap order** (`greedy_order`): the upgrades by what a free tap saves for what it takes, whole and one piece's next level at a time, where either beats the order given.
-2. **Chains** (`anneal`): the evaluations (`max_iters`) are shared between several chains, each from the same start with its own random numbers, each ending in the polishes. How many is by size (`chains` 0): a chain gets `chain_iters_per_upgrade` evaluations an upgrade, no less than `chain_iters_min`, and there are never fewer than 4. One long chain settles into one of many plans that nothing near betters; more evaluations do not get it out, another chain lands elsewhere.
-3. **The polishes** (`polish`, `polish_rounds` rounds while any of them moves the best state):
+2. **A start from shadow prices** (`shadow_start`, 4 rounds, `optimizer/shadow.rs`): each material is priced at what one more unit of it costs at the state as it is (its band thresholds moved by about 1% of its average use, over the free tap outcomes), every normal upgrade takes its best plan under those prices alone (`Response::linear`, no evaluation), the state is evaluated and the best kept. The prices are the running average of each round's; it stops when no plan moves. It costs some 2% of a solve. Every other fresh chain starts from it, the rest from the plain start: chains that all start from it agree on its plan too readily, which on small payloads is often not the best. Linear prices cannot be the whole answer: where stock is owned, its price at the best plan is the leftover's, under which every upgrade takes too much of it.
+3. **Chains** (`anneal`): the evaluations (`max_iters`) are shared between several chains, each from the same start with its own random numbers, each ending in the polishes. How many is by size (`chains` 0): a chain gets `chain_iters_per_upgrade` (250) evaluations an upgrade, no less than `chain_iters_min` (4000), and there are never fewer than 4. One long chain settles into one of many plans that nothing near betters; more evaluations do not get it out, another chain lands elsewhere. With the shadow start, more and shorter chains find more than fewer long ones on large payloads; small ones keep 4000, being cheap.
+4. **The polishes** (`polish`, `polish_rounds` rounds while any of them moves the best state):
    - the free tap order (`order_polish`): each upgrade to each place a free tap can still reach;
    - the responses (`response_polish`, see "Responses");
    - the advanced upgrades (`adv_polish`): each entry of a strategy takes the best of its 19 values;
    - the chests (`chest_polish`).
-4. **Leaving early**: once `agree_exit` chains have ended on the same metric; or, going on from a plan (below), once `carry_stall` chains in a row have not bettered it. Too few agreeing chains leave on a plan that is reliably not the best on small payloads.
-5. **Merge** (`merge`): the best chain's result takes from each other chain's, where the metric agrees, its free tap order, its plans for a whole piece type (they share juices and books), and its plan for each upgrade.
-6. **Exchange** (`exchange`): uses of a juice or a book go from one upgrade to another that takes the same, 1, 2, 4 up to 64 at a time: the last taps that take it of the one, the first that do not of the other. Then the polishes again, and again while it moves anything. Not under a streak length above 1.
+5. **Leaving early**: once `agree_exit` (5) results have ended on the same metric, or once the first `unanimous` (3) have and none elsewhere; or, going on from a plan (below), once enough chains in a row have not bettered it. Too few agreeing chains leave on a plan that is reliably not the best on small payloads, but three that agree with nothing against them have not been seen to.
+6. **Merge** (`merge`): the best chain's result takes from each other chain's, where the metric agrees, its free tap order, its plans for a whole piece type (they share juices and books), and its plan for each upgrade.
+7. **Exchange** (`exchange`): uses of a juice or a book go from one upgrade to another that takes the same, 1, 2, 4 up to 64 at a time: the last taps that take it of the one, the first that do not of the other. Then the polishes again, and again while it moves anything. Under a streak length (`exchange_blocks`) the amounts are blocks, 1 to 64 of them, and both plans are put back on the grid (`State::snap_to_block`) before the metric decides.
 
 A chained run (`Previous`, see "Chained runs") puts the plan of the run before in front of all this.
 
@@ -108,16 +109,18 @@ Of what is left, two thirds is `neighbour` (two `WeightedIndex` built per move, 
 
 ## Chained runs
 
-`solve` takes an optional `Previous`: the payload of the last run, its best `StateBundle`, and a blob the optimizer left for itself (returned in `Solved`, capped at `Tuning::max_blob_bytes`, still empty). The frontend does not pass one yet; it still seeds a run through the payload's `state` and `special_state`.
+`solve` takes an optional `Previous`: plans to go on from, the best first (`Plan`, in `optimizer/mod.rs`). Each plan is keyed by upgrade (piece, level, normal or advanced) with its states run-length coded, so it goes onto another payload's upgrades without that payload. The arena hands the last run's best plan and its blob (`Previous::of`). The wasm hands none: the frontend feeds the last result's state back in the payload, which is the same plan.
 
-What a run does with it (`Tuning::carry`):
+**The blob** (`Solved::blob`, `Blob`): the other plans a run's chains ended on, distinct by metric, best first, at most `elites` of them, as postcard bytes (with 4, a median of 640 bytes and 2.8 kB at most on 61 upgrades). `elites` is 0, so it is empty: going on from them as well bettered nothing that could be measured, at 4% more time (`Optimizer tried.md`). The frontend does not carry one.
 
-- **The plan is carried over** (`Previous::carry`): an upgrade that is still there keeps its state, less the taps done since (its first slots), and its place in the free tap order; a new one goes last and starts empty; a chest stack whose key and count are as they were is opened as it was. The arena's `carry::carried` is the same rule, kept apart because it reads a stored state.
-- **It is used only where it beats the state given**, which is the default state unless the payload has one.
-- **It is polished first** (`carry_polish`), and that is a result like a chain's.
+What a run does with them (`Tuning::carry`):
+
+- **Each is carried over** (`Plan::carry`): an upgrade that is still there keeps its state, less the taps done since (its first slots), and its place in the free tap order; a new one goes last and starts empty; a chest stack whose key and count are as they were is opened as it was. The arena's `carry::carried` is the same rule, kept apart because it reads a stored state.
+- **Only those that beat the empty plan count**, the state given with the payload among them, and only one of a metric.
+- **The best `warm_polish` of them are polished first** (`carry_polish`), each a result like a chain's; the best of those is the carried plan.
 - **The first chain goes on from it**, the others start afresh as in a cold run. A chain that starts from the carried plan almost never leaves it, so only the fresh ones say whether it is still the best.
-- **The run ends** as a cold one does, when a fresh chain ends on the same metric as the carried plan (`agree_exit` counts the polished plan and the chain from it), or when `carry_stall` chains in a row have not bettered the best. That second rule is for a run with a plan to go on from only; on a cold one it costs hit rate. Leaving as soon as the chain from the carried plan finds nothing better drifts: week after week the plan is kept past its time.
-- **A state that comes with the payload is such a plan too**, which is what the frontend sends when the user optimizes again: one chain goes on from it and the rest start fresh.
+- **The run ends** as a cold one does, when enough results agree, or when `carry_stall` chains in a row have not bettered the best. That second rule is for a run with a plan to go on from only; on a cold one it costs hit rate. Leaving as soon as the chain from the carried plan finds nothing better drifts: week after week the plan is kept past its time.
+- **`quick`** in the payload (the frontend sets it on a choice's option, which goes on from the run without; the wasm copies it to `Tuning::quick`) makes it one stalled chain in place of `carry_stall`, unless polishing the carried plan gained more than `quick_settle` (1e-3) of what the upgrades cost (`upgrade_costs`: their base materials at the last band's price). Most options leave the plan as it was, and one fresh chain finding nothing better is enough there. A large juice or leapstone option (Paradise at Level 10) moves it a lot and gets the whole search: a short one missed those by up to 1.4% of flow. Not for a chain of runs, where the plan drifts: on generated weekly income chains it lost 10 points of hit and 1.4 of near, guard and all, so the Income page does not set it.
 - The cost does not go to nothing as the stock grows: a run with mostly empty plans and a metric near zero still takes about half of a full one.
 
 ## Marginal value

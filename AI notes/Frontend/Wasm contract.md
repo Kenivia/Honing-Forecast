@@ -21,7 +21,8 @@ There is one assembly. `payload_for` builds a payload from a profile and given b
 - `chests`, the profile's chest stacks after `process_chests` (`Screen scanner/Manifest.md`, "On the calculator page"), as a record of count, band and options by the stack's key, and `special_label`, the tier's special leap label. Amounts are unrounded and Rust floors the total. Every label is of the tier: Rust panics on any other;
 - `chest_states`, the last optimizer result's, by the same keys, fed back like the free-tap order so the histogram evaluates what the optimizer chose. It arrives from Rust as a JS Map and goes back as one;
 - the previous free-tap order and the advanced-honing cache, fed back in to avoid recomputation;
-- `dist_plan`, the plan the histogram draws the gold distribution of (`Calculator core/Evaluation pipeline.md`), or none. Only the calculator sets it, to 0, and only in `start_eval_hist` (`CharWorkerUtils.ts`), never in `build_payload`, so Income's and Choices' hashes do not see it.
+- `dist_plan`, the plan the histogram draws the gold distribution of (`Calculator core/Evaluation pipeline.md`), or none. Only the calculator sets it, to 0, and only in `start_eval_hist` (`CharWorkerUtils.ts`), never in `build_payload`, so Income's and Choices' hashes do not see it;
+- `quick`, set only on a choice's option that goes on from the run without (`ChoiceJobs.ts`, after the hash is taken): the optimizer searches less from the fed state (`Calculator core/Optimizer.md`, "Chained runs").
 
 **The wasm carries the advanced-honing distributions of an upgrade not yet started.** `crates/wasm/build.rs` works out every strategy of the two fresh starts with double balls (+10/+20 and +30/+40) with the core's own code at build time, so the table cannot go stale, and `add_fresh_adv` puts it into the optimizer's payload when an upgrade is at its start. It is 0.6 MB of the wasm. An upgrade in progress, or one without double balls, is still worked out in the browser.
 
@@ -49,7 +50,7 @@ The histogram's result carries the `state_bundle` it evaluated (with `chest_stat
 
 **Errors**: the worker catches anything an op throws, a wasm panic included, and posts `{type: "error"}`. The bundle treats that like the worker's `onerror`: it logs it, sets `error`, terminates the worker (a panicked wasm instance is not reused) and calls back with `null`. Every callback returns on `null`; the throttled histogram goes on with the next pending payload.
 
-**Off the calculator page**, `OptimizerJobs.ts` runs Income's and Choices' jobs two at a time on two bundles of its own. A hash is queued once, and a job already running is not queued again. A result depends only on the hash, so a finished run is stored into every job of the last `queue_jobs` with that hash, not just the one that ran: two snapshots, or now and a snapshot, with the same payload for the character (an export that did not change it, another character's mats moving) cost one run, not two. A run that fails is dropped and frees its slot.
+**Off the calculator page**, `OptimizerJobs.ts` runs Income's and Choices' jobs two at a time on two bundles of its own, each worker kept from one run to the next (`cancel` false): loading the wasm again was a good part of a short run. `stop_jobs` and a failed run still end it. A hash is queued once, and a job already running is not queued again. A result depends only on the hash, so a finished run is stored into every job of the last `queue_jobs` with that hash, not just the one that ran: two snapshots, or now and a snapshot, with the same payload for the character (an export that did not change it, another character's mats moving) cost one run, not two. A run that fails is dropped and frees its slot.
 
 ## Flow on an input change
 

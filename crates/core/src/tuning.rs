@@ -81,16 +81,22 @@ pub struct Tuning {
     pub chain_iters_min: i64,
     /// stop once this many chains have ended on the same best; 0 for never
     pub agree_exit: usize,
+    /// stop once this many results have ended on the same best and none elsewhere; 0 for never
+    pub unanimous: usize,
     /// the best chain's result takes what the others ended on, piece by piece, where that is better
     pub merge: bool,
     /// the best result is polished by moving uses of a juice or book between two upgrades
     pub exchange: bool,
+    /// and so under a streak length, a block at a time
+    pub exchange_blocks: bool,
     /// the least share of moves that change the free tap order, while there is a budget
     pub special_floor: f64,
     /// a move of the free tap order puts an upgrade where a free tap can get to
     pub order_reach: bool,
     /// start from a free tap order made by what a free tap saves for what it takes
     pub greedy_order: bool,
+    /// rounds of the shadow price start (`optimizer/shadow.rs`) every fresh chain goes on from; 0 for none
+    pub shadow_start: usize,
 
     // chained runs
     pub max_blob_bytes: usize,
@@ -102,6 +108,15 @@ pub struct Tuning {
     pub carry_polish: bool,
     /// such a run stops once this many chains in a row have not bettered the best; 0 for never
     pub carry_stall: usize,
+    /// the run gone on from was of nearly this payload (the payload's `quick`): one stalled chain
+    /// is enough, unless polishing the carried plan gained more than `quick_settle` of what the
+    /// upgrades cost
+    pub quick: bool,
+    pub quick_settle: f64,
+    /// other plans the chains ended on that a run leaves in its blob for the next
+    pub elites: usize,
+    /// the carried plans that are polished, best first; the best of them is gone on from
+    pub warm_polish: usize,
 }
 
 impl Default for Tuning {
@@ -140,19 +155,26 @@ impl Default for Tuning {
             polish_rounds: 3,
 
             chains: 0,
-            chain_iters_per_upgrade: 375.0,
+            chain_iters_per_upgrade: 250.0,
             chain_iters_min: 4000,
             agree_exit: 5,
+            unanimous: 3,
             merge: true,
             exchange: true,
+            exchange_blocks: true,
             special_floor: 0.2,
             order_reach: true,
             greedy_order: true,
+            shadow_start: 4,
             max_blob_bytes: 5 * 1024 * 1024,
             carry: true,
             carry_iters: 1.0,
             carry_polish: true,
             carry_stall: 4,
+            quick: false,
+            quick_settle: 1e-3,
+            elites: 0,
+            warm_polish: 1,
         }
     }
 }

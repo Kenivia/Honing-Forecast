@@ -42,7 +42,9 @@ pub fn optimize_average_wrapper(input_payload: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
     let mut payload: Payload = from_value(input_payload).unwrap();
     add_fresh_adv(&mut payload);
-    let state_bundle: StateBundle = StateBundle::init_from_payload(payload);
+    let quick = payload.quick;
+    let mut state_bundle: StateBundle = StateBundle::init_from_payload(payload);
+    state_bundle.tuning.quick = quick;
 
     let mut rng: ThreadRng = rand::rng();
     let mut dummy_probe = Probe::default();

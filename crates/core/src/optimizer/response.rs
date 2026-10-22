@@ -310,12 +310,12 @@ impl StateBundle {
 }
 
 impl Response {
-    pub fn of(state_bundle: &mut StateBundle, index: usize, probe: &mut Probe) -> Response {
-        // a rejected move leaves the supports of the state it tried
-        state_bundle.update_prob_dist();
-        state_bundle.update_cost_dist();
-        state_bundle.compute_special_probs(false);
-
+    /// this upgrade's model, what it pays before its first tap and each tap of the base
+    /// materials, and the row and amount of each id a tap may take
+    fn parts(
+        state_bundle: &StateBundle,
+        index: usize,
+    ) -> (Model, Vec<f64>, Vec<f64>, Vec<(usize, f64)>) {
         let this = &state_bundle.upgrade_arr[index];
         let juice_info = &state_bundle.prep_output.juice_info;
         let model = Model::of(this, juice_info, state_bundle.block());
@@ -341,6 +341,64 @@ impl Response {
                 (state_bundle.prep_output.table.juice_row(id), amount)
             })
             .collect();
+        (model, start, costs, each)
+    }
+
+    fn assemble(
+        state_bundle: &StateBundle,
+        model: Model,
+        base_worth: Vec<f64>,
+        juice_worth: Vec<Vec<f64>>,
+        table_work: f64,
+    ) -> Response {
+        let mut next = 0;
+        let places = model
+            .pools
+            .iter()
+            .map(|ids| {
+                next += ids.len();
+                (next - ids.len()..next).collect()
+            })
+            .collect();
+        Response {
+            model,
+            places,
+            base_worth,
+            juice_worth,
+            mixed: state_bundle.tuning.response_mixed,
+            table_work,
+            steps: AtomicUsize::new(0),
+        }
+    }
+
+    /// The response where each material has a fixed price a unit, by row: no evaluation.
+    pub fn linear(state_bundle: &StateBundle, index: usize, prices: &[f64]) -> Response {
+        let (model, start, costs, each) = Response::parts(state_bundle, index);
+        let base_worth = (0..=model.len)
+            .map(|taps| {
+                -(0..NUM_BASE_MATS)
+                    .map(|row| prices[row] * (start[row] + taps as f64 * costs[row]))
+                    .sum::<f64>()
+            })
+            .collect();
+        let juice_worth = each
+            .iter()
+            .map(|&(row, amount)| {
+                (0..=model.len)
+                    .map(|times| -prices[row] * times as f64 * amount)
+                    .collect()
+            })
+            .collect();
+        Response::assemble(state_bundle, model, base_worth, juice_worth, 0.0)
+    }
+
+    pub fn of(state_bundle: &mut StateBundle, index: usize, probe: &mut Probe) -> Response {
+        // a rejected move leaves the supports of the state it tried
+        state_bundle.update_prob_dist();
+        state_bundle.update_cost_dist();
+        state_bundle.compute_special_probs(false);
+
+        let (model, start, costs, each) = Response::parts(state_bundle, index);
         // the outcomes no free tap skips it in
         let place = state_bundle
             .special_state
@@ -379,25 +437,7 @@ impl Response {
             .collect();
         // an evaluation of the metric is every one of those rows under every outcome
         let table_work = work.0 as f64 / (work.1 * skips.len()).max(1) as f64;
-        let mut next = 0;
-        let places = model
-            .pools
-            .iter()
-            .map(|ids| {
-                next += ids.len();
-                (next - ids.len()..next).collect()
-            })
-            .collect();
-        let mixed = state_bundle.tuning.response_mixed;
-        Response {
-            model,
-            places,
-            base_worth,
-            juice_worth,
-            mixed,
-            table_work,
-            steps: AtomicUsize::new(0),
-        }
+        Response::assemble(state_bundle, model, base_worth, juice_worth, table_work)
     }
 
     /// The part of the metric this upgrade's plan moves, less a constant.

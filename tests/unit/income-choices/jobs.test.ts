@@ -148,6 +148,8 @@ describe("ChoiceJobs", () => {
     expect(seeded.hash).toBe(early.hash);
     expect(seeded.payload.special_state).toEqual([3]);
     expect(Object.keys(seeded.payload.chests)).toHaveLength(1);
+    expect(early.payload.quick).toBeUndefined();
+    expect(seeded.payload.quick).toBe(true);
   });
 
   it("an option's run sets its metric, not a seed", () => {

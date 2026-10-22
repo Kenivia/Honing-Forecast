@@ -41,8 +41,12 @@ function job_with(
   const result = profile.choice_results[key];
   return {
     hash: key,
+    // an option is the budgets with one chest more: a short search from the run without
     payload: seed
-      ? states_payload(payload, profile, fed_state(seed.state))
+      ? {
+          ...states_payload(payload, profile, fed_state(seed.state)),
+          quick: true,
+        }
       : payload,
     profile,
     gold: result?.[0],

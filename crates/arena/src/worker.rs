@@ -178,6 +178,13 @@ fn time_evaluation(state_bundle: &mut StateBundle) -> f64 {
 pub fn run_job(job: &Job) {
     let tuning = tuning_with(&job.overrides);
     let mut previous: Option<Previous> = None;
+    // a star's every step goes on from its first, as a choice's options from the run without
+    let star = job
+        .scenario
+        .meta
+        .get("star")
+        .and_then(|star| star.as_bool())
+        == Some(true);
 
     for (step, payload) in job.scenario.steps.iter().enumerate() {
         // a step gets the same seed whether or not it is run as part of a chain
@@ -219,11 +226,9 @@ pub fn run_job(job: &Job) {
                     out.mc = check(&mut best, spec, &mut rng);
                 }
                 emit(&out);
-                previous = Some(Previous {
-                    payload: payload.clone(),
-                    best,
-                    blob: solved.blob,
-                });
+                if !star || step == 0 {
+                    previous = Some(Previous::of(&best, &solved.blob));
+                }
             }
             Kind::Verify { scrambles } => {
                 for index in 0..=scrambles {
@@ -274,6 +279,27 @@ mod tests {
     fn a_seed_repeats_exactly() {
         assert_eq!(short_solve(7), short_solve(7));
         assert_ne!(short_solve(7).1, short_solve(8).1);
+    }
+
+    /// a plan put in a blob comes back onto the same upgrades as it was
+    #[test]
+    fn a_blob_keeps_its_plans() {
+        let state_bundle = StateBundle::init_from_payload(dummy().steps[0].clone());
+        let mut rng = StdRng::seed_from_u64(1);
+        let plans = [
+            scramble(&mut rng, state_bundle.clone(), 40),
+            scramble(&mut rng, state_bundle.clone(), 40),
+        ];
+        let blob =
+            hf_core::optimizer::Blob::read(&hf_core::optimizer::Blob::of(&[&plans[0], &plans[1]]));
+        for (plan, kept) in plans.iter().zip(&blob.plans) {
+            let mut carried = state_bundle.clone();
+            kept.carry(&mut carried);
+            assert_eq!(
+                serde_json::to_string(&Essence::of(&carried)).unwrap(),
+                serde_json::to_string(&Essence::of(plan)).unwrap()
+            );
+        }
     }
 
     #[test]

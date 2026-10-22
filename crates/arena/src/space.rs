@@ -1203,4 +1203,184 @@ mod tests {
         )
         .unwrap();
     }
+
+    /// Whether better prices would make a better start: every upgrade's best plan under the
+    /// prices of a solved state, from the empty plan, against that solve (SHADOW_SET, nh_quick)
+    #[test]
+    #[ignore]
+    fn shadow_oracle() {
+        let root = std::path::Path::new(crate::ROOT);
+        let set = std::env::var("SHADOW_SET").unwrap_or("nh_quick".into());
+        let scenarios = crate::scenario::load_set(
+            &root.join("arena_data/scenarios"),
+            &root.join("arena_data/sets"),
+            &set,
+        );
+        let steps: Vec<Payload> = scenarios
+            .iter()
+            .flat_map(|scenario| scenario.steps.iter().cloned())
+            .collect();
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(4)
+            .build()
+            .unwrap();
+        let rows: Vec<[f64; 3]> = pool.install(|| {
+            steps
+                .par_iter()
+                .map(|payload| {
+                    let mut payload = payload.clone();
+                    crate::adv_table::fill(&mut payload);
+                    let reference = Tuning::reference();
+                    let mut solved = solved(&payload, 1, &Tuning::default()).pop().unwrap();
+                    let flow = flow(&solved).max(1.0);
+                    let top = retuned(&solved, &reference).metric;
+                    solved.metric = solved.metric_router(&mut Probe::default());
+                    let prices = solved.shadow_prices(&mut Probe::default());
+                    // the solve's order and advanced upgrades, its normal upgrades emptied
+                    let mut start = solved.clone();
+                    for upgrade in start.upgrade_arr.iter_mut().filter(|u| u.is_normal_honing) {
+                        let len = upgrade.state.len();
+                        upgrade.state.update_payload(vec![OneState::new(); len]);
+                    }
+                    let empty = retuned(&start, &reference).metric;
+                    start.metric = start.metric_router(&mut Probe::default());
+                    let mut fixed = start.clone();
+                    hf_core::optimizer::shadow_start(&mut fixed, 4, &mut Probe::default());
+                    for index in 0..start.upgrade_arr.len() {
+                        if !start.upgrade_arr[index].is_normal_honing {
+                            continue;
+                        }
+                        let response = Response::linear(&start, index, &prices);
+                        let model = &response.model;
+                        let was = model
+                            .canonical(&model.indices(&start.upgrade_arr[index].state.payload));
+                        let plan = response.better(&was, start.tuning.response_joint).1;
+                        start.upgrade_arr[index]
+                            .state
+                            .update_payload(model.plan(&plan));
+                    }
+                    let gap = |metric: f64| 100.0 * (top - metric) / flow;
+                    [
+                        gap(empty),
+                        gap(retuned(&fixed, &reference).metric),
+                        gap(retuned(&start, &reference).metric),
+                    ]
+                })
+                .collect()
+        });
+        for at in 0..3 {
+            let mut all: Vec<f64> = rows.iter().map(|row| row[at]).collect();
+            all.sort_by(f64::total_cmp);
+            println!(
+                "{}: mean {:.4}% median {:.4}% p90 {:.4}%",
+                ["empty", "shadow 4 rounds", "solved state's prices"][at],
+                all.iter().sum::<f64>() / all.len() as f64,
+                all[all.len() / 2],
+                all[all.len() * 9 / 10]
+            );
+        }
+    }
+
+    /// the shadow price start against the empty plan and a default solve, on a set (SHADOW_SET, nh_quick)
+    #[test]
+    #[ignore]
+    fn shadow_diag() {
+        let root = std::path::Path::new(crate::ROOT);
+        let set = std::env::var("SHADOW_SET").unwrap_or("nh_quick".into());
+        let scenarios = crate::scenario::load_set(
+            &root.join("arena_data/scenarios"),
+            &root.join("arena_data/sets"),
+            &set,
+        );
+        let steps: Vec<(String, Payload)> =
+            scenarios
+                .iter()
+                .flat_map(|scenario| {
+                    scenario.steps.iter().enumerate().map(|(step, payload)| {
+                        (format!("{}:{step}", scenario.name), payload.clone())
+                    })
+                })
+                .collect();
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(4)
+            .build()
+            .unwrap();
+        let rows: Vec<(String, f64, Vec<f64>, Vec<f64>)> = pool.install(|| {
+            steps
+                .par_iter()
+                .map(|(name, payload)| {
+                    let mut payload = payload.clone();
+                    crate::adv_table::fill(&mut payload);
+                    let reference = Tuning::reference();
+                    let solved = solved(&payload, 1, &Tuning::default()).pop().unwrap();
+                    let flow = flow(&solved).max(1.0);
+                    let top = retuned(&solved, &reference).metric;
+                    let start = StateBundle::init_from_payload(payload.clone());
+                    let mut shares =
+                        vec![100.0 * (top - retuned(&start, &reference).metric) / flow];
+                    let mut costs = Vec::new();
+                    for rounds in [1, 2, 4, 8] {
+                        let mut this = start.clone();
+                        let cost = hf_core::optimizer::shadow_start(
+                            &mut this,
+                            rounds,
+                            &mut Probe::default(),
+                        );
+                        shares.push(100.0 * (top - retuned(&this, &reference).metric) / flow);
+                        costs.push(cost);
+                    }
+                    (name.clone(), flow, shares, costs)
+                })
+                .collect()
+        });
+        println!(
+            "{:28} {:>12} {:>9} {:>9} {:>9} {:>9} {:>9}  cost 1/2/4/8",
+            "step", "flow", "empty %", "sh1 %", "sh2 %", "sh4 %", "sh8 %"
+        );
+        for (name, flow, shares, costs) in &rows {
+            println!(
+                "{name:28} {flow:12.0} {:>9.4} {:>9.4} {:>9.4} {:>9.4} {:>9.4}  {:.1}/{:.1}/{:.1}/{:.1}",
+                shares[0],
+                shares[1],
+                shares[2],
+                shares[3],
+                shares[4],
+                costs[0],
+                costs[1],
+                costs[2],
+                costs[3]
+            );
+        }
+        let count = rows.len() as f64;
+        let mean = |at: usize| rows.iter().map(|row| row.2[at]).sum::<f64>() / count;
+        let median = |at: usize| {
+            let mut all: Vec<f64> = rows.iter().map(|row| row.2[at]).collect();
+            all.sort_by(f64::total_cmp);
+            all[all.len() / 2]
+        };
+        let cost = |at: usize| rows.iter().map(|row| row.3[at]).sum::<f64>() / count;
+        println!(
+            "mean   {:>9.4} {:>9.4} {:>9.4} {:>9.4} {:>9.4}",
+            mean(0),
+            mean(1),
+            mean(2),
+            mean(3),
+            mean(4)
+        );
+        println!(
+            "median {:>9.4} {:>9.4} {:>9.4} {:>9.4} {:>9.4}",
+            median(0),
+            median(1),
+            median(2),
+            median(3),
+            median(4)
+        );
+        println!(
+            "mean cost {:.1} {:.1} {:.1} {:.1}",
+            cost(0),
+            cost(1),
+            cost(2),
+            cost(3)
+        );
+    }
 }

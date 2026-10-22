@@ -1,0 +1,15 @@
+# CPU time with one job at a time: pilot, two choice stars and two income chains
+chain_0011_t4_n7:4
+single_0552_serca_n16
+single_1221_t4_n9
+single_1117_t4_n10
+sweep_1_chest_base_3_t4_n12
+single_1047_serca_n11
+single_1252_serca_n34
+chain_1044_t4_n7:3
+chain_1033_serca_n25:3
+Toneema_bonus
+Toneema_paradise
+Kenivia_bonus
+Toneema:12
+Kenivia:12

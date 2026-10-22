@@ -52,7 +52,7 @@ struct Run {
 }
 
 fn solved(
-    payload: &Payload,
+    _payload: &Payload,
     base: &StateBundle,
     row: usize,
     stock: f64,
@@ -64,11 +64,7 @@ fn solved(
     mat.market_price *= FACTOR;
     mat.bound += stock;
     sb.apply_chest_state(true);
-    let previous = from.map(|best| Previous {
-        payload: payload.clone(),
-        best: best.clone(),
-        blob: Vec::new(),
-    });
+    let previous = from.map(|best| Previous::of(best, &[]));
     let mut probe = Probe::default();
     let mut rng = StdRng::seed_from_u64(seed);
     let best = solve(&mut rng, sb, previous.as_ref(), &mut probe).best;

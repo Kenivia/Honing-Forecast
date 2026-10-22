@@ -44,7 +44,9 @@ The binary is both driver and worker. The driver (always the current build) load
 
 `arena_data/scenarios/*.json`, each `{ "steps": [payload, ...] }` with every step a full `Payload`. `pnpm arena dummy` writes the placeholder one. Its payloads carry four chest stacks, keyed "0" to "3": a three-way choice, an obtain-all with gold, fractional amounts, and one that gives special leaps. A worker's `Essence` carries `chest_states` next to `special_state`; one whose keys are not the reference's (a snapshot older than the keys has none) is left out and the reference's default is kept. A variant built before chests were keyed cannot read these payloads.
 
-Every scenario runs **cold** (each step alone) and **chained** (each step is handed a `Previous`: the last payload, the last best `StateBundle`, and the optimizer's own blob, capped at `Tuning::max_blob_bytes`). A step is seeded the same way in both. A chained step starts from the plan of the step before (`Optimizer.md`, "Chained runs"); `carry=false` makes it a cold one again.
+Every scenario runs **cold** (each step alone) and **chained** (each step is handed a `Previous`: the last best plan and the plans of the optimizer's blob, capped at `Tuning::max_blob_bytes`). A step is seeded the same way in both. A chained step starts from the plan of the step before (`Optimizer.md`, "Chained runs"); `carry=false` makes it a cold one again.
+
+**A star** (`meta.star` true) hands every step the `Previous` of its first, not of the step before: the first is the Choices page's run without a choice, the others its options. Chained mode is what the page does; cold mode solves each option alone. A snapshot from before stars runs one as a chain.
 
 A Serca payload's materials have to be the Serca labels of the frontend, the four Serca books included; `python scripts/arena/add_serca_books.py` gave every older one the books (none owned, 15,000 gold), and does nothing to a payload that has them.
 
@@ -79,6 +81,8 @@ The generated folders, and the commands that made them:
 | `chests` (402 scenarios, 822 payloads) | `gen chests --singles 300 --chains 60 --steps 8 --sweeps --chests --offset 1000`, less the sweeps that have no chests. The offset keeps its names apart from `explore`'s, which sets look scenarios up by |
 | `seeded` | `nh_dev` with `v0`'s state from seed 0 given in each payload, as the frontend gives the plan it shows when the user optimizes again. Names start with `seed_`; compare with the same payload unseeded by name |
 | `tiny` | `pnpm arena tiny` ("The state space") |
+| `choices` (22 stars, 289 payloads), `income` (8 chains of 24) | `pnpm exec vitest run --config scripts/arena/vitest.export.config.ts`: the real save of `tests/income-fixture.json` through the pages' own job builders (`scripts/arena/export_pages.test.ts`). Choices: per character with upgrades, the bonus chests of the three raids shown and Paradise (Destiny at Base and Level 10, Netherworld at Base), as stars. Income: every snapshot, now and 12 weeks ahead. Every payload is at a streak length of 10, as the site sends |
+| `b10` | the scenarios of `speed_dev` and `speed_test` with `min_resolution` 10, as the site sends by default (names start with `b10_`) |
 
 `python arena_data/explore_report.py [session] [folder]` prints what a run of `explore` says: hit rate, time and when the best was found by size, by axis, by sweep level and by what happened before a chain step.
 
@@ -104,6 +108,9 @@ A set is a named list of scenarios for one purpose, in `arena_data/sets/<name>.t
 - `nh_dev` and `nh_test` are the singles of the `normal` folder with 4 upgrades or more, the even ones (158) and the odd ones (157): normal honing only. The first is what the optimizer of October 2026 was developed on, the second was kept out of it. `nh_quick` is every fourth of `nh_dev`.
 - `weekly` is the 48 weekly chains, `weekly_dev` the first six of each kind, which the chained runs were tuned on, and `weekly_test` the other 36.
 - `chests` is every case of the `chests` folder that has a choice in it, chains cut to three steps: 349 scenarios, 453 payloads, about 15 minutes for three variants and three seeds at 16 jobs.
+- `speed_dev` mixes every kind (`nh_quick`, the small named sets, every eighth of `chests`, ten weeks of `weekly_dev`, `chains`); `speed_test` is held out of it. `speed_dev10` and `speed_test10` are the same at a streak length of 10 (`b10`). `choices_dev`/`choices_test` and `income_dev`/`income_test` split the real pages' characters in two.
+- `opt_dev` and `opt_test` are those four together; `quick_dev` a quick cut of `opt_dev` (every other single, short weekly and chains, both streak lengths, half the choices, eight income weeks), about 380 payloads, 2 minutes a variant and seed at 16 jobs. `warm_dev` is its runs that go on from a plan, with the Paradise stars added.
+- `cpu_check` (pilot, three choice stars, two income chains) is for CPU time at `--jobs 1`, a few minutes a variant; `income_all` every income chain at full length; `fail_small` seven small payloads the shadow start alone used to miss.
 - The rest (`advanced`, `chains`, `free_taps`, `juice`, `large`, `small`, `stress`, `replan`) say what they are for in their first comment.
 
 ## Against a fixed baseline

@@ -43,6 +43,10 @@ pub struct Payload {
     /// the plan the histogram draws the gold distribution of, none for no distribution
     #[serde(default)]
     pub dist_plan: Option<usize>,
+    /// the run gone on from was of nearly this payload (a choice's option against the budgets
+    /// as they are), so one fresh chain that finds nothing better is enough; never hashed
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub quick: bool,
 }
 fn default_one() -> i64 {
     1

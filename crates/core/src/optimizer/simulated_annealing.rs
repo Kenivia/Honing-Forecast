@@ -1,6 +1,6 @@
 use super::response::{Model, Response};
 use super::scaler::AdaptiveScaler;
-use super::{Previous, Solved};
+use super::{Blob, Previous, Solved};
 
 #[cfg(feature = "wasm")]
 use crate::js_interface::send_progress;
@@ -41,6 +41,13 @@ pub fn my_push(
 }
 
 fn compute_upgrade_impact(state_bundle: &mut StateBundle) -> Vec<f64> {
+    let weights = upgrade_costs(state_bundle);
+    let sum: f64 = weights.iter().sum::<f64>();
+    weights.iter().map(|x| *x / sum).collect()
+}
+
+/// what each upgrade's base materials cost at the last band's price, with nothing owned
+fn upgrade_costs(state_bundle: &StateBundle) -> Vec<f64> {
     let mut weights = Vec::with_capacity(state_bundle.upgrade_arr.len());
 
     for upgrade in &state_bundle.upgrade_arr {
@@ -62,9 +69,7 @@ fn compute_upgrade_impact(state_bundle: &mut StateBundle) -> Vec<f64> {
         }
         weights.push(magnitude);
     }
-
-    let sum: f64 = weights.iter().sum::<f64>();
-    weights.iter_mut().map(|x| *x / sum).collect()
+    weights
 }
 
 /// Sends the progress at most once a second, with the best state on the same tick but only once
@@ -535,16 +540,14 @@ pub fn solve<R: Rng>(
             .update_payload(vec![slot; upgrade.state.len()]);
     }
     state_bundle.special_state = (0..state_bundle.upgrade_arr.len()).collect();
-    let mut warm: Option<StateBundle> = None;
-    let mut floor = state_bundle.metric_router(probe);
-    let carried = previous.map(|previous| {
-        let mut other = state_bundle.clone();
-        previous.carry(&mut other);
-        other
-    });
-    for mut other in [Some(given), carried]
-        .into_iter()
-        .flatten()
+    let floor = state_bundle.metric_router(probe);
+    let carried = previous
+        .map(|previous| previous.carried(&state_bundle))
+        .unwrap_or_default();
+    let close = |metric: f64| metric.abs().max(1.0) * 1e-7;
+    let mut warms: Vec<StateBundle> = Vec::new();
+    for mut other in std::iter::once(given)
+        .chain(carried)
         .filter(|_| tuning.carry)
     {
         // a plan from before the streak length went up keeps to it from here on
@@ -560,31 +563,61 @@ pub fn solve<R: Rng>(
                 );
             }
         }
-        let metric = other.metric_router(probe);
-        if metric > floor {
-            (floor, warm) = (metric, Some(other));
+        other.metric = other.metric_router(probe);
+        if other.metric > floor
+            && !warms
+                .iter()
+                .any(|warm| (warm.metric - other.metric).abs() <= close(other.metric))
+        {
+            warms.push(other);
         }
     }
+    warms.sort_by(|a, b| b.metric.total_cmp(&a.metric));
+    warms.truncate(tuning.warm_polish.max(1));
+    let carried = warms.first().map(|warm| warm.metric);
     if tuning.greedy_order {
         greedy_order(&mut state_bundle, probe);
+    }
+    // every other fresh chain starts from shadow prices: all of them from one start agree on
+    // its plan too readily
+    let mut shadowed = state_bundle.clone();
+    if tuning.shadow_start > 0 {
+        super::shadow_start(&mut shadowed, tuning.shadow_start, probe);
     }
 
     // Several shorter chains share the evaluations, each polished, and the best is kept. The
     // first goes on from a carried plan where there is one, the rest start afresh.
     let mut results: Vec<StateBundle> = Vec::new();
-    if let Some(warm) = warm.as_mut().filter(|_| tuning.carry_polish) {
+    if tuning.carry_polish {
         // a carried plan is often a polish away from the best
-        warm.tuning.max_iters = 0;
-        *warm = anneal(rng, warm, probe, 0, chains, f64::NEG_INFINITY);
-        results.push(warm.clone());
+        for warm in warms.iter_mut() {
+            warm.tuning.max_iters = 0;
+            *warm = anneal(rng, warm, probe, 0, chains, f64::NEG_INFINITY);
+            results.push(warm.clone());
+        }
+        warms.sort_by(|a, b| b.metric.total_cmp(&a.metric));
     }
+    // a quick run stops at one stalled chain, unless the polish had to move the plan much
+    let quick = match (carried, warms.first()) {
+        (Some(before), Some(warm)) if tuning.quick => {
+            let scale: f64 = upgrade_costs(&state_bundle).iter().sum();
+            warm.metric - before <= tuning.quick_settle * scale.max(1.0)
+        }
+        _ => false,
+    };
+    let stall = if quick { 1 } else { tuning.carry_stall };
+    let warm = warms.into_iter().next();
     let mut stalled = 0;
     for chain in 0..chains {
         let floor = results
             .iter()
             .map(|result| result.metric)
             .fold(f64::NEG_INFINITY, f64::max);
-        let mut start = state_bundle.clone();
+        let mut start = if chain % 2 == 0 && tuning.shadow_start > 0 {
+            shadowed.clone()
+        } else {
+            state_bundle.clone()
+        };
         start.tuning.max_iters = tuning.max_iters / chains;
         if let Some(warm) = warm.as_ref().filter(|_| chain == 0) {
             start = warm.clone();
@@ -598,14 +631,15 @@ pub fn solve<R: Rng>(
             .iter()
             .map(|result| result.metric)
             .fold(f64::NEG_INFINITY, f64::max);
-        let close = top.abs().max(1.0) * 1e-7;
+        let close = close(top);
         let same = results
             .iter()
             .filter(|result| top - result.metric <= close)
             .count();
         stalled = if top > floor + close { 0 } else { stalled + 1 };
         if tuning.agree_exit > 0 && same >= tuning.agree_exit
-            || warm.is_some() && tuning.carry_stall > 0 && stalled >= tuning.carry_stall
+            || tuning.unanimous > 0 && same >= tuning.unanimous && same == results.len()
+            || warm.is_some() && stall > 0 && stalled >= stall
         {
             break;
         }
@@ -615,7 +649,23 @@ pub fn solve<R: Rng>(
     let merged = tuning.merge && merge(&mut best, &results[1..], probe);
     refine(rng, &mut best, merged, probe);
     best.tuning = tuning;
-    let blob: Vec<u8> = Vec::new();
+    // the other plans the chains ended on, for a run that goes on from this one
+    let mut elites: Vec<&StateBundle> = Vec::new();
+    for result in &results {
+        if elites.len() < best.tuning.elites
+            && (best.metric - result.metric).abs() > close(best.metric)
+            && !elites
+                .iter()
+                .any(|elite| (elite.metric - result.metric).abs() <= close(result.metric))
+        {
+            elites.push(result);
+        }
+    }
+    let blob = if elites.is_empty() {
+        Vec::new()
+    } else {
+        Blob::of(&elites)
+    };
     assert!(blob.len() <= best.tuning.max_blob_bytes);
     Solved { best, blob }
 }
@@ -712,8 +762,9 @@ fn merge(best: &mut StateBundle, others: &[StateBundle], probe: &mut Probe) -> b
 /// that do not of the other. Each upgrade having its best plan against the rest leaves these.
 /// Returns whether anything moved.
 fn exchange(best: &mut StateBundle, probe: &mut Probe) -> bool {
-    // a streak length would have to be kept on both sides
-    if best.block() > 1 {
+    // under a streak length a block at a time, each side put back on the grid
+    let block = best.block();
+    if block > 1 && !best.tuning.exchange_blocks {
         return false;
     }
     best.metric = best.metric_router(probe);
@@ -754,7 +805,7 @@ fn exchange(best: &mut StateBundle, probe: &mut Probe) -> bool {
                 for &(to, to_stride, to_option) in users.iter().filter(|user| user.0 != from) {
                     let (a, b) = (&models[from], &models[to]);
                     let (wide_a, wide_b) = (width(a, from_stride), width(b, to_stride));
-                    for amount in (0..7).map(|power| 1usize << power) {
+                    for amount in (0..7).map(|power| block << power) {
                         let kept = (
                             best.upgrade_arr[normal[from]].state.payload.clone(),
                             best.upgrade_arr[normal[to]].state.payload.clone(),
@@ -784,6 +835,17 @@ fn exchange(best: &mut StateBundle, probe: &mut Probe) -> bool {
                         best.upgrade_arr[normal[to]]
                             .state
                             .update_payload(b.plan(&plan_b));
+                        if block > 1 {
+                            for index in [normal[from], normal[to]] {
+                                let upgrade = &mut best.upgrade_arr[index];
+                                upgrade.state.snap_to_block(
+                                    block,
+                                    upgrade.piece_type_usize,
+                                    upgrade.upgrade_index,
+                                    &best.prep_output.juice_info,
+                                );
+                            }
+                        }
                         let metric = best.metric_router(probe);
                         if metric > best.metric + best.metric.abs() * 1e-12 {
                             best.metric = metric;

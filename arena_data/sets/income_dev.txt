@@ -1,0 +1,6 @@
+# the income page's payloads of half the characters of the income fixture
+# written by a script
+Kenibrush
+Kenifloor
+Kenipope
+Keniwei

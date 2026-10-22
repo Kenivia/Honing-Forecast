@@ -1,0 +1,6 @@
+# the income page's payloads of the other half, held out
+# written by a script
+Kenicards
+Kenihawking
+Kenivia
+Toneema

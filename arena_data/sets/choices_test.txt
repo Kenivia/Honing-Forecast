@@ -1,0 +1,12 @@
+# the choices page's payloads of the other half, held out
+# written by a script
+Kenicards_bonus
+Kenicards_paradise
+Kenihawking_bonus
+Kenihawking_paradise
+Kenivia_bonus
+Kenivia_paradise
+Mahoushogun_bonus
+Mahoushogun_paradise
+Yoenagi_bonus
+Yoenagi_paradise

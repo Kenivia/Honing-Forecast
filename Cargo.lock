@@ -731,6 +731,7 @@ dependencies = [
  "num",
  "once_cell",
  "ordered-float",
+ "postcard",
  "priority-queue",
  "rand 0.9.5",
  "serde",

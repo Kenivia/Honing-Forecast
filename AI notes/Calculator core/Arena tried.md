@@ -8,6 +8,7 @@ What past arena sessions measured, and the snapshots they used. Only read this w
 - **`v0`** is the code at `2dacbf9a`, the optimizer before the round of October 2026: one chain of 24,000 evaluations and a pass of responses at the end. It is the frozen baseline `diff_report.py` compares against.
 - `v1` and `v2` are snapshots of the defaults at the end of that round; `v2` differs only in `carry_stall`. `v6` is the defaults as handed over, `v7` that with an id counted once a tap and the crossover kept to plans of one length, `v8` that with the cumulants fixed for hard tilts (sessions 97 and 98 have `v7`). The `k*` labels in those sessions are the steps on the way, with their diffs in the `snapshot` table.
 - `chest_base` is the random chest state, `chest_moves` the first chest moves, `adv_table` the faster advanced distributions and their table.
+- The speed round of 2026-10-22 (`Optimizer tried.md`): `w0` is `81800d25` with stars in the arena only, the frozen point of that round; `w1` to `w8` the knobs as they came (polished start, plans in the blob, `unanimous`, an age in the blob, `exchange_blocks`, probe rows of the carried plan's polish, the shadow start, `settle`), `w9` the new defaults before the held-out set, `w10` with alternating starts, `w11` the defaults as handed over.
 
 ## Sessions
 
@@ -41,6 +42,24 @@ The optimizer round, all cold at 16 jobs unless said:
 | 91 | the `seeded` folder, 4 seeds |
 | 92 | `weekly_test`, 1 seed: leaving at 3 that agree |
 | 94 | `nh_test`, 8 seeds, the defaults |
+
+The speed round of 2026-10-22, all chained at 16 jobs:
+
+| session | what |
+| --- | --- |
+| 102 | an `opt_dev` run stopped early: too slow to iterate on |
+| 103, 105 | `w0` at 192,000 evaluations, 1 seed: the best known of `quick_dev` and the Paradise stars |
+| 104 | `quick_dev`, 2 seeds: `w0` against the polished start |
+| 106, 109, 111 | `warm_dev`, 2 seeds: going on from a plan |
+| 107, 108, 110 | `quick_dev`, 2 seeds: leaving early, chain lengths, the exchange under a streak length, the shadow start |
+| 112 | `opt_test`, 1 seed, `w9` at 144,000: a weak best known, since `unanimous` left early |
+| 113 | `opt_test`, 2 seeds (seed 1 stopped early): `w0` against `w9`, with the blob's plans and with `carry_stall` 1 |
+| 114, 115 | `fail_small`, 4 seeds, cold: the small payloads `w9` missed, knob by knob, then `w10` (alternating starts) |
+| 116 | `opt_test`, 2 seeds: `w0` against `w11` (the defaults), `w11` with `quick` and with the blob's plans |
+| 117 | `opt_test`, 1 seed: `w11` at 144,000 without `unanimous`, the best known |
+| 118 | `cpu_check`, 1 seed, `--jobs 1`: `w0`, `w11` and `w11` with `quick` |
+| 119 | `income_all`, 2 seeds: the same three over every income chain at full length |
+| 120 | `warm_dev`, 2 seeds, chained: `w11` against `w11` with `quick`, for the Income page |
 
 Sessions 3 to 5 are of the payloads before the folder was generated again and match nothing in it now. Session 17 is session 20 with a root finder bug that killed 3 of its jobs; 15 is 18 before that fix. The re-planning run is session 8 of the `replan` table.
 

@@ -134,3 +134,52 @@ Sessions 79, 81 and 95. Over `v0`'s time a cold run takes 1.9 and 1.5 times, a c
 - single_3003 Glacier stays noisy at every d (26 against 70 at d = 1): the x solve itself varies.
 - Cost: one full solve per row per d plus the baseline; 4 to 5 s a solve on single_3003 and single_3012.
 - **Not yet tried**: d = 4 with a two-way carry (x cold, x + d from x, x again from x + d's plan, keep the better x), which is what removed the misses in the envelope test. Also open: whether the column should mean the next unit (small d, noisier) or the next few on average.
+
+## The speed round (2026-10-22)
+
+Aim: as accurate (the near rate, 1e-3 of flow, within about a point) in less time, the Choices and Income pages first. Sets in `Arena.md` (`quick_dev`, `warm_dev`, `opt_test`); `w0` is the code before, sessions 102 to 117. Hit is within 1e-4 of flow of the best known, near within 1e-3. CPU is at 16 jobs, so only comparable within a session.
+
+**The hit criterion is well clear of the evaluators' error.** Every run of sessions 102 to 104 that missed by more than 1e-4 (56) was scored again at 8, 64 and 512 coarse cells: all three see the miss, its size the same within 3e-5 of flow. A miss is the search's, not the evaluator's.
+
+**Where the time went before**: 80 to 90% of a solve is evaluations; by size, payloads of 16 to 31 upgrades were half the CPU and 32 and up another 28%, under 8 upgrades 4%. The real pages' payloads (`choices`, `income`, every one at a streak length of 10) were hit on every run, cold or chained, yet took 28,000 to 31,000 evaluations each, a choice's option as much as a cold run: chains ran until 5 agreed, or 4 in a row stalled after a carried plan.
+
+How the defaults came about, each against the one before on `quick_dev` (698 runs a variant, 2 seeds); the held-out set then changed two of them (below):
+
+| | hit | near | CPU |
+| --- | --- | --- | --- |
+| `w0` | 95.3 | 98.7 | 1 |
+| leaving once the first 3 results agree and none elsewhere (`unanimous`) | 95.3 | 98.7 | 0.80 |
+| and `chain_iters_min` 2000 (was 4000) | 94.8 | 98.9 | 0.79 |
+| and the exchange under a streak length (`exchange_blocks`) | 95.1 | 98.9 | 0.79 |
+| and the shadow price start, 4 rounds | 95.0 | 98.4 | 0.79 |
+| and `chain_iters_per_upgrade` 250 (was 375) | 95.7 | 98.6 | 0.72 |
+
+- `unanimous` alone ended on the same plan as `w0` on every run, 20% sooner. The shorter chains matter on large payloads: at 32 upgrades and up hit went from 90% to 98% at the same CPU (6 chains of 8,000 in place of 4 of 12,000), at 16 to 31 the same hit for 40% less CPU.
+- Not kept: `max_iters` 32,000 (93.0 / 97.6) or 40,000 (93.8 / 98.3) from the shadow start; `chain_iters_per_upgrade` 150 or 200 (within a point of 250 either way, session 110); `agree_exit` 4 (the same as 5 here, unanimous does it better).
+- **A chain's last improvement** (`w0`, session 104): median at 43% of the chain, 10% under 8 upgrades, 58 to 71% from 8 up with a 90th percentile of 95 to 99%. Large chains improve until late, so stopping a stalled chain would save little where the time is.
+
+**Starts.**
+- **The polished start for every chain** (`start_polish`, dropped): 11% fewer evaluations, hit 95.3 to 93.4: chains from one polished start agree on a plan that is not the best (fresh chain steps 100 to 86%).
+- **The shadow price start** (developed by a subagent, `shadow_diag` and `shadow_oracle` in `crates/arena/src/space.rs`, `nh_quick`): with the order and advanced upgrades of a solve, the empty plan is 23% of flow off it on average (median 17%), 4 rounds of shadow prices 0.63% (median 0.064%, 90th percentile 2%) for about 650 evaluations. With the identity order it was 3.2%: the order is most of what is left. Damping by a running average beat a fixed 0.5 from 4 rounds on.
+- **The prices of the solved plan itself** give a worse start (mean 5.3%, 90th percentile 20%, median 0.003%): where stock is owned, its price at the best plan is the leftover's, and under it every upgrade takes too much. So no learned predictor of the prices (the small neural net considered) could beat the averaged fixed point by much; none was built.
+
+**Going on from a plan** (`warm_dev`: the choices' stars, income, weekly and generated chains, 650 runs a variant):
+- **One fresh chain after the carried plan's** (`carry_stall` 1) and the carried chain cut to a quarter: options 15 times cheaper, hit 99.3 to 96.6, near 100 to 98.3 (session 106). Uncut: 99.0 / 99.3 at a quarter of the evaluations. Every miss was a large juice option on a large character (Paradise Level 10, 256 Lava's and 768 Glacier's Breath on 61 upgrades): the new juice has to be spread over many upgrades at once. The shadow start halved the worst of them (0.12% to 0.05% of flow).
+- **On chains of runs it drifts**: weekly income chains (`week_inc`) at a streak length of 10 missed 4 to 8 of 30 steps at `carry_stall` 1, 2 to 4 of them by more than 1e-3, against 1 to 3 at 4. The generated chains' income steps (5 to 25% of use at once) and finished upgrades missed more too. Weekly honing chains missed nothing whatever the setting.
+- **The other plans of the run before** (`elites` 4, `warm_polish` 5) helped chains (generated: 0 of 18 missed against 6 of 18 at `carry_stall` 1) and not the stars.
+- Tried and dropped: a run searching afresh every third (an age in the blob, `thorough_every`), and a run whose polish moved the carried plan searching longer (`settle`). Half the chained runs' polish moved nothing and those never missed, but the drift on weekly income chains came from runs whose polish did move it, and neither rule took it back.
+- **Hence `quick`**: the short search only where the frontend knows the payload is a variant of the one gone on from (a choice's option), the default elsewhere.
+
+**Iterated local search** (developed by a subagent, not kept): from the polished cold start, kick (redraw 2 to 4 upgrades by impact, empty one piece's levels within two, move the free tap order, a chest), polish, keep if better, every polish charged to the budget. `nh_quick`, 3 seeds: 83.3 / 97.5 against the chains' 91.7 / 98.3 at 0.83 of their CPU; with 8-upgrade kicks and 40 stalled kicks to stop 86.7 / 98.3. On `pilot` it won, 91.7 against 85.4. It stalls near 85% whatever the budget: on a large payload a polish is mostly responses and few kicks fit.
+
+**Exchange under a streak length**: amounts of 1 to 64 blocks, both plans put back on the grid before the metric decides. On the streak-10 singles hit 93.5 to 94.9, nothing else moved, at no measurable cost.
+
+**The result** (`opt_test`, held out throughout, 1,316 runs a variant, 2 seeds, session 116, best known with session 117): the defaults (`w11`) against `w0`, hit 97.5 to 98.1, near 99.8 to 99.9, mean gap 0.0011% to 0.0008% of flow, 27% less CPU, 38% fewer evaluations. No group got worse by more than a run. Choices options: 98.8 / 100 both, CPU 0.61 of `w0`'s; with `quick` 97.5 / 100, worst 0.028% of flow, 0.27 of `w0`'s. The other plans of the run before in the blob (`elites` 4): 98.3 / 99.9 for 4% more CPU, which is why `elites` is 0. One job at a time (`cpu_check`, session 118, all of it hit): `w0` 72 CPU seconds, the defaults 38, with `quick` 24; options 36, 16 and 8; income's later weeks 16, 8 and 3.
+
+**In the browser** (the income fixture, Choices bonus chests then Paradise, from opening the tab to the last run, stubbed prices, the page of before built from HEAD on another port): Toneema 10.3 + 8.8 s to 2.1 + 1.4 s, Keniwei 14.0 + 13.4 to 3.3 + 2.3, Kenipope (61 upgrades) 8.4 + 7.5 to 3.5 + 2.2, Kenivia 4.0 + 3.3 to 1.1 + 0.7, Kenibrush 1.8 + 1.7 to 0.5 + 0.2; the worths shown the same within a hundred gold. Income: Toneema 116 s to 70, Kenivia 47 to 16. That includes keeping the jobs' workers between runs.
+
+**What the held-out set caught** (`opt_test`, session 113). The defaults as above, with every fresh chain from the shadow start and `chain_iters_min` 2000, did worse than `w0` there: near 98.1 against 100. The misses were small payloads (1 to 9 upgrades) that stopped at some 6,000 evaluations where `w0` took 20,000 to 48,000: three short chains from one shadow start agreed on a plan that was not the best. On those seven payloads, 4 seeds (sessions 114, 115): `w0` 86% hit, those defaults 25%, without the shadow start 82%, with `chain_iters_min` 4000 68%, without `unanimous` 43%; every other chain from the shadow start 61%, and with `chain_iters_min` 4000 as well 79%. Hence both: payloads under 8 upgrades are 4% of the time, so the longer chains there cost nothing that shows.
+
+**`quick` needs a guard.** One stalled chain on every option missed the large juice options of the held-out characters by up to 1.4% of flow. Polishing the base's plan under the option's payload gains nothing on 229 of 288 options (session 111), and the most on exactly those: Paradise Level 10 juice at 0.05 to 0.4 of what the upgrades cost, leapstones at 0.01 to 0.14. So an option whose polish gained more than 1e-3 of that gets the whole search.
+
+**`quick` for the Income page, not kept.** Every income chain at full length (`income_all`, session 119): the later weeks hit 100 / 100 at `w0`, 100 / 100 at the defaults, 98.4 / 100 with `quick` (worst 0.065% of flow), at 1,268, 785 and 316 CPU seconds; in the browser Toneema's chain 70 s to 36, Kenivia's 16 to 12. But the generated weekly income chains (`week_inc`, `warm_dev`, session 120) still drift under it, guard and all: hit 94.4 to 84.7, near 100 to 98.6, worst 0.12% of flow; the generated chains 90.7 to 83.3 hit, 97.2 to 96.3 near. Those stand for accounts other than the fixture's, so Income keeps the whole search. Turning it on is `quick: true` in `warm` (`IncomeJobs.ts`), after the hash.

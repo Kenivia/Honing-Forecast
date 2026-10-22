@@ -18,45 +18,87 @@ mod neighbour;
 mod one_batch;
 pub mod response;
 mod scaler;
+mod shadow;
 mod simulated_annealing;
 
-use crate::payload::Payload;
+use crate::chest::ChestStates;
+use crate::state::OneState;
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
+use serde::{Deserialize, Serialize};
+pub use shadow::shadow_start;
 pub use simulated_annealing::{polish_only, scramble, solve};
 
-/// What a run in a chain knows about the run before it.
+/// What a run knows of the runs before it: their plans, the best first.
 pub struct Previous {
-    pub payload: Payload,
-    pub best: StateBundle,
-    /// whatever the optimizer left for itself, at most `Tuning::max_blob_bytes`
-    pub blob: Vec<u8>,
+    pub plans: Vec<Plan>,
 }
 
 pub struct Solved {
     pub best: StateBundle,
+    /// what the optimizer leaves for the next run, at most `Tuning::max_blob_bytes`
     pub blob: Vec<u8>,
 }
 
-impl Previous {
-    /// Puts the plan of the run before on this run's upgrades. An upgrade keeps its state, less
-    /// the taps done since, and its place in the free tap order; a new one goes last. A chest
-    /// stack that is as it was is opened as it was.
-    pub fn carry(&self, state_bundle: &mut StateBundle) {
-        let key = |upgrade: &Upgrade| {
-            (
-                upgrade.piece_index,
-                upgrade.upgrade_index,
-                upgrade.is_normal_honing,
-            )
-        };
-        let was: AHashMap<(usize, usize, bool), usize> = self
-            .best
+/// One plan, keyed by upgrade so that it goes onto other upgrades. A state is run-length
+/// coded, plans being long runs of the same slot.
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Plan {
+    pub keys: Vec<(usize, usize, bool)>,
+    pub states: Vec<Vec<(u32, OneState)>>,
+    /// places in `keys`
+    pub special_state: Vec<usize>,
+    pub chest_states: ChestStates,
+}
+
+/// What a run leaves for the next: other plans its chains ended on, best first.
+#[derive(Serialize, Deserialize, Default)]
+pub struct Blob {
+    pub plans: Vec<Plan>,
+}
+
+fn key(upgrade: &Upgrade) -> (usize, usize, bool) {
+    (
+        upgrade.piece_index,
+        upgrade.upgrade_index,
+        upgrade.is_normal_honing,
+    )
+}
+
+impl Plan {
+    pub fn of(state_bundle: &StateBundle) -> Plan {
+        let states = state_bundle
             .upgrade_arr
             .iter()
+            .map(|upgrade| {
+                let mut runs: Vec<(u32, OneState)> = Vec::new();
+                for slot in &upgrade.state.payload {
+                    match runs.last_mut() {
+                        Some((count, last)) if last == slot => *count += 1,
+                        _ => runs.push((1, slot.clone())),
+                    }
+                }
+                runs
+            })
+            .collect();
+        Plan {
+            keys: state_bundle.upgrade_arr.iter().map(key).collect(),
+            states,
+            special_state: state_bundle.special_state.clone(),
+            chest_states: state_bundle.chest_states.clone(),
+        }
+    }
+
+    /// Puts this plan on these upgrades. An upgrade keeps its state, less the taps done since,
+    /// and its place in the free tap order; a new one goes last. A chest stack that is as it
+    /// was is opened as it was.
+    pub fn carry(&self, state_bundle: &mut StateBundle) {
+        let was: AHashMap<(usize, usize, bool), usize> = self
+            .keys
+            .iter()
             .enumerate()
-            .map(|(index, upgrade)| (key(upgrade), index))
+            .map(|(index, key)| (*key, index))
             .collect();
         let mut now: AHashMap<(usize, usize, bool), usize> = AHashMap::new();
         for (index, upgrade) in state_bundle.upgrade_arr.iter_mut().enumerate() {
@@ -64,7 +106,10 @@ impl Previous {
             let Some(&old) = was.get(&key(upgrade)) else {
                 continue;
             };
-            let mut state = self.best.upgrade_arr[old].state.payload.clone();
+            let mut state: Vec<OneState> = self.states[old]
+                .iter()
+                .flat_map(|(count, slot)| std::iter::repeat_n(slot.clone(), *count as usize))
+                .collect();
             let len = upgrade.state.len();
             if upgrade.is_normal_honing {
                 state.drain(..state.len().saturating_sub(len));
@@ -75,10 +120,9 @@ impl Previous {
             }
         }
         let mut order: Vec<usize> = self
-            .best
             .special_state
             .iter()
-            .filter_map(|&old| now.get(&key(&self.best.upgrade_arr[old])).copied())
+            .filter_map(|&old| now.get(&self.keys[old]).copied())
             .collect();
         let new: Vec<usize> = (0..state_bundle.upgrade_arr.len())
             .filter(|index| !order.contains(index))
@@ -86,7 +130,7 @@ impl Previous {
         order.extend(new);
         state_bundle.special_state = order;
         let mut chest_states = state_bundle.chest_states.clone();
-        for (key, state) in &self.best.chest_states {
+        for (key, state) in &self.chest_states {
             if state_bundle
                 .prep_output
                 .chests
@@ -97,5 +141,46 @@ impl Previous {
             }
         }
         state_bundle.set_chest_state(&chest_states);
+    }
+}
+
+impl Blob {
+    pub fn of(plans: &[&StateBundle]) -> Vec<u8> {
+        let blob = Blob {
+            plans: plans.iter().map(|plan| Plan::of(plan)).collect(),
+        };
+        postcard::to_allocvec(&blob).unwrap()
+    }
+
+    /// nothing where it is not one
+    pub fn read(bytes: &[u8]) -> Blob {
+        postcard::from_bytes(bytes).unwrap_or_default()
+    }
+}
+
+impl Previous {
+    /// the best plan of the run before and the others it left
+    pub fn of(best: &StateBundle, blob: &[u8]) -> Previous {
+        Previous {
+            plans: std::iter::once(Plan::of(best))
+                .chain(Blob::read(blob).plans)
+                .collect(),
+        }
+    }
+
+    /// each plan put on these upgrades
+    pub fn carried(&self, state_bundle: &StateBundle) -> Vec<StateBundle> {
+        self.plans
+            .iter()
+            .map(|plan| {
+                let mut other = state_bundle.clone();
+                plan.carry(&mut other);
+                other
+            })
+            .collect()
+    }
+
+    pub fn carry(&self, state_bundle: &mut StateBundle) {
+        self.plans[0].carry(state_bundle);
     }
 }
