@@ -16,6 +16,8 @@ const {
   active_profile,
   active_region,
   active_chests,
+  active_mats_prices,
+  active_selected_bundles,
   processed_chests: chests,
 } = storeToRefs(useRosterStore());
 // the stored chests are shown in place of these while editing
@@ -35,6 +37,12 @@ watch(
     () => active_profile.value.auto_start_optimizer,
     () => active_profile.value.min_resolution,
     () => active_region.value,
+    // a fetch landing after mount; by value, as every fetch rewrites the bundles
+    () =>
+      JSON.stringify([
+        active_mats_prices.value.values,
+        active_selected_bundles.value,
+      ]),
   ],
   // with auto start off this only restores a saved run, else draws the histogram
   () => start_all_workers(),

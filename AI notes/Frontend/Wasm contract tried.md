@@ -25,3 +25,7 @@ Before: `taxed_price` was a material's own bundle after the fee, `market_price` 
 ## Progress (Oct 2026)
 
 Before: Rust posted progress only with a state, at most once a second per chain (each chain restarted its timer), and a later chain posted nothing until it beat the chains before. Short runs went 0.01% then 100%; a heavy Serca run sat at 24% for 50 s. The panel showed 100% as soon as the optimizer's result arrived, 150 to 330 ms before the histogram's gold. After: progress every 0.1 s, the state still at most once a second and only past the floor; the panel shows 99.99% until the histogram is done. A heavy run now climbs smoothly to about 99.9% and then waits on the merge, exchange and polish after the chains (about 25 s of a 55 s run in the fixture's all-wanted Serca case), which report nothing.
+
+## Saved result missed after a late price fetch (Oct 2026)
+
+Before: `Calc.vue`'s watch did not include prices. A market fetch that changed prices after mount (the hourly fresh fetch, or a slow one) left the page and `optimizer_cache` on the old prices without a run, and the next reload or character switch missed the hash and ran the optimizer. After: the watch includes the active prices and bundles (by value), so the run happens when the prices land and the next mount hits. Checked with `pnpm browse` and the market response delayed 8s: one run at the fetch, none on two reloads.
