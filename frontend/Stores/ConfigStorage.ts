@@ -13,13 +13,14 @@ import { debounce } from "@/Utils/Helpers";
 import { RosterConfig } from "./RosterConfig";
 import { from_saved, SavedColumn, SavedConfig, to_saved } from "./SavedConfig";
 
-export const STORAGE_VERSION = 9;
-export const STORAGE_KEY = "HF_CONFIG_V9_COMPRESSED";
+export const STORAGE_VERSION = 10;
+export const STORAGE_KEY = "HF_CONFIG_V10_COMPRESSED";
 
 // Older keys, newest first. On a version bump, move the current key to the top of
 // this list. `version` is only a fallback for pre-V8 saves, which carry no version
 // inside the payload.
 const LEGACY_KEYS: { key: string; version: number }[] = [
+  { key: "HF_CONFIG_V9_COMPRESSED", version: 9 },
   { key: "HF_CONFIG_V8_COMPRESSED", version: 8 },
   { key: "HF_CONFIG_V7_COMPRESSED", version: 7 },
   { key: "HF_CONFIG_V6_COMPRESSED", version: 6 },
@@ -38,6 +39,7 @@ const MIGRATIONS: Record<number, (data: any) => any> = {
   6: migrate_6_to_7,
   7: migrate_7_to_8,
   8: migrate_8_to_9,
+  9: migrate_9_to_10,
 };
 
 // ============================================================================
@@ -417,5 +419,36 @@ function migrate_8_to_9(data: any): any {
     }
   }
   data.version = 9;
+  return data;
+}
+
+// Roster ids become uuids. Profiles are sorted by the old id first, so the rosters keep their order.
+function migrate_9_to_10(data: any): any {
+  const ids: Record<string, string> = {};
+  const id_of = (old: any) => (ids[String(old)] ??= crypto.randomUUID());
+  const rekey = (record: any) =>
+    Object.fromEntries(
+      Object.entries(record ?? {}).map(([old, value]) => [id_of(old), value]),
+    );
+  const profiles: any[] = data.profiles ?? [];
+  const active = profiles[data.active_profile_index ?? 0];
+  data.profiles = profiles.toSorted(
+    (a, b) => (Number(a.roster_id) || 0) - (Number(b.roster_id) || 0),
+  );
+  data.active_profile_index = Math.max(0, data.profiles.indexOf(active));
+  for (const item of [...data.profiles, ...(data.scan_pages ?? []), ...(data.snapshots ?? [])]) {
+    item.roster_id = id_of(item.roster_id);
+  }
+  for (const key of [
+    "roster_mats_owned",
+    "tradable_mats_owned",
+    "roster_chests",
+    "roster_income",
+    "custom_choices",
+    "all_regions",
+  ]) {
+    data[key] = rekey(data[key]);
+  }
+  data.version = 10;
   return data;
 }

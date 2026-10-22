@@ -22,9 +22,12 @@ export function set_profiles(entries: [string, number][]) {
   config.profiles = entries.map(([name, roster_id]) => {
     const p = new_char_profile();
     p.char_name = name;
-    p.roster_id = roster_id;
+    p.roster_id = String(roster_id);
     return p;
   });
+  config.roster_mats_owned = {};
+  config.tradable_mats_owned = {};
+  config.all_regions = {};
   for (const [, roster_id] of entries) {
     config.roster_mats_owned[roster_id] ??= create_default_owned_input_column();
     config.tradable_mats_owned[roster_id] ??=

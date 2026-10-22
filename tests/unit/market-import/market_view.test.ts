@@ -43,11 +43,11 @@ describe("convert button", () => {
   it("converts the selected roster's stock", async () => {
     const w = mount_view();
     const cfg = useRosterStore().roster_config;
-    cfg.roster_mats_owned[0].values.Red = "1,000";
-    cfg.tradable_mats_owned[0].values.Red = "502";
+    cfg.roster_mats_owned[cfg.profiles[0].roster_id].values.Red = "1,000";
+    cfg.tradable_mats_owned[cfg.profiles[0].roster_id].values.Red = "502";
     await w.find("button.tier-button").trigger("click");
-    const r = input_column_to_num(cfg.roster_mats_owned[0]);
-    const t = input_column_to_num(cfg.tradable_mats_owned[0]);
+    const r = input_column_to_num(cfg.roster_mats_owned[cfg.profiles[0].roster_id]);
+    const t = input_column_to_num(cfg.tradable_mats_owned[cfg.profiles[0].roster_id]);
     expect([r["Serca Red"], r.Red, t.Red]).toEqual([300, 0, 2]);
   });
 });
@@ -56,7 +56,9 @@ describe("market sidebar", () => {
   it("changing region stores it and fetches it", async () => {
     const w = mount_view();
     await w.find("select.selector").setValue("euc");
-    expect(useRosterStore().roster_config.all_regions[0]).toBe("euc");
+    expect(useRosterStore().roster_config.all_regions[
+      useRosterStore().roster_ids[0]
+    ]).toBe("euc");
     expect(start_fetch).toHaveBeenCalledWith("euc");
   });
 
@@ -67,7 +69,9 @@ describe("market sidebar", () => {
     await btn().trigger("click");
     expect(start_fetch).toHaveBeenCalledWith("nae", true);
     expect(w.text()).toContain("Auto fetch");
-    useRosterStore().roster_config.all_regions[0] = "Custom";
+    useRosterStore().roster_config.all_regions[
+      useRosterStore().roster_ids[0]
+    ] = "Custom";
     await flushPromises();
     expect(btn().attributes("disabled")).toBeDefined();
     expect(w.text()).not.toContain("Auto fetch");
@@ -102,7 +106,7 @@ describe("market sidebar", () => {
     const second = {
       ...store.roster_config.profiles[0],
       id: "b",
-      roster_id: 3,
+      roster_id: "3",
     };
     store.roster_config.profiles.push(second);
     store.roster_config.roster_mats_owned[3] =
@@ -114,7 +118,7 @@ describe("market sidebar", () => {
     const w = mount(MarketView, {
       global: { plugins: [pinia] },
     });
-    await w.findAll("select.selector")[1].setValue(3);
+    await w.findAll("select.selector")[1].setValue("3");
     const input = row(w, "T4 materials", "Red").find(
       'input[aria-label="Roster bound owned"]',
     );
@@ -129,7 +133,9 @@ describe("budget grid", () => {
       'input[aria-label="Roster bound owned"]',
     );
     await input.setValue("100+20");
-    expect(useRosterStore().roster_config.roster_mats_owned[0].values.Red).toBe(
+    expect(useRosterStore().roster_config.roster_mats_owned[
+      useRosterStore().roster_ids[0]
+    ].values.Red).toBe(
       (120).toLocaleString(),
     );
   });

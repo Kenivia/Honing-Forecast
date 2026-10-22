@@ -167,7 +167,7 @@ describe("MaterialDist chest gains", () => {
       store.active_profile.chests.push(
         chest({ count: 3, options: [{ Red: 10 }, { Blue: 5 }] }),
       );
-      store.roster_config.roster_chests[0] = [
+      store.roster_config.roster_chests[store.active_profile.roster_id] = [
         chest({
           key: "y",
           band: 2,
@@ -268,7 +268,11 @@ describe("MaterialDist chance band", () => {
   // the page survives a character switch
   it("follows the chance band of a character switched to", async () => {
     const { wrapper, store } = await setup();
-    store.add_profile({ ...new_char_profile(), chance_band: 2 });
+    store.add_profile({
+      ...new_char_profile(),
+      roster_id: store.active_profile.roster_id,
+      chance_band: 2,
+    });
     store.switch_profile(1);
     await wrapper.vm.$nextTick();
     const select = wrapper.find('select[aria-label="Chance column"]');

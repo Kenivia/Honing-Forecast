@@ -66,9 +66,14 @@ for (const region of Object.keys(v8.mats_prices)) {
   for (const k of books) delete v8.mats_prices[region].values[k];
 }
 const { version: _v, ...rest } = v8;
+// roster ids are uuids since V10; the old ones put back by position, which this save keeps
+const profiles = again.profiles.map((p, i) => ({
+  ...p,
+  roster_id: rest.profiles[i].roster_id,
+}));
 check(
   "the rest of the save unchanged",
-  JSON.stringify(again.profiles) === JSON.stringify(rest.profiles) &&
+  JSON.stringify(profiles) === JSON.stringify(rest.profiles) &&
     JSON.stringify(again.mats_prices) === JSON.stringify(rest.mats_prices),
 );
 

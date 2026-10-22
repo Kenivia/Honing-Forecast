@@ -31,7 +31,7 @@ function editor(tier = 0) {
   const store = useRosterStore();
   store.active_profile.tier = tier;
   store.active_profile.chests.push(structuredClone(own));
-  store.roster_config.roster_chests[0] = [structuredClone(shared)];
+  store.roster_config.roster_chests[store.active_profile.roster_id] = [structuredClone(shared)];
   const wrapper = mount(ChestEditor);
   return { wrapper, store };
 }
@@ -71,7 +71,7 @@ describe("ChestEditor", () => {
     await wrapper.find('input[aria-label="Own box count"]').setValue("7");
     await wrapper.find('input[aria-label="Shared box count"]').setValue("-4");
     expect(store.active_profile.chests[0].count).toBe(7);
-    expect(store.roster_config.roster_chests[0][0].count).toBe(0);
+    expect(store.roster_config.roster_chests[store.active_profile.roster_id][0].count).toBe(0);
     // not a number: left as it was
     await wrapper.find('input[aria-label="Own box count"]').setValue("abc");
     expect(store.active_profile.chests[0].count).toBe(7);
@@ -83,17 +83,17 @@ describe("ChestEditor", () => {
     await wrapper
       .find('button[aria-label="Delete Shared box"]')
       .trigger("click");
-    expect(store.roster_config.roster_chests[0]).toEqual([]);
+    expect(store.roster_config.roster_chests[store.active_profile.roster_id]).toEqual([]);
     expect(store.active_profile.chests).toHaveLength(1);
     await wrapper.find('button[aria-label="Delete Own box"]').trigger("click");
     expect(store.active_profile.chests).toEqual([]);
     // a key in neither list removes nothing
-    store.roster_config.roster_chests[0] = [structuredClone(shared)];
+    store.roster_config.roster_chests[store.active_profile.roster_id] = [structuredClone(shared)];
     wrapper.findComponent(ChestPanels).vm.$emit("remove", "nope");
     wrapper.findComponent(ChestPanels).vm.$emit("count", "nope", {
       target: { value: "5" },
     });
-    expect(store.roster_config.roster_chests[0]).toEqual([shared]);
+    expect(store.roster_config.roster_chests[store.active_profile.roster_id]).toEqual([shared]);
   });
 
   it("offers the tier's materials and its special leap", async () => {
@@ -130,7 +130,7 @@ describe("ChestEditor", () => {
     expect(add().element.disabled).toBe(false);
     await add().trigger("click");
     // band defaults to roster bound, whose list did not exist yet
-    const added = store.roster_config.roster_chests[0][0];
+    const added = store.roster_config.roster_chests[store.active_profile.roster_id][0];
     expect(added).toMatchObject({
       title: "Added chest",
       band: 1,
@@ -162,7 +162,7 @@ describe("ChestEditor", () => {
       count: 1,
       options: [{ Leaps: 3 }],
     });
-    expect(store.roster_config.roster_chests[0]).toHaveLength(1);
+    expect(store.roster_config.roster_chests[store.active_profile.roster_id]).toHaveLength(1);
   });
 });
 

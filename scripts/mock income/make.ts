@@ -60,8 +60,8 @@ function set_budgets(t: number, outlier = 1) {
   const columns = {
     bound: profile.bound_budgets,
     special: profile.special_budget,
-    roster: config.roster_mats_owned[0],
-    tradable: config.tradable_mats_owned[0],
+    roster: config.roster_mats_owned[profile.roster_id],
+    tradable: config.tradable_mats_owned[profile.roster_id],
   };
   for (const [band, column] of Object.entries(columns)) {
     for (const [label, base] of Object.entries(BASE[band])) {
@@ -85,7 +85,7 @@ function add(
   outlier = 1,
 ) {
   set_budgets(budgets_at, outlier);
-  config.snapshots.push({ ...snapshot_of(config, 0, kind), at: t, ...extra });
+  config.snapshots.push({ ...snapshot_of(config, profile.roster_id, kind), at: t, ...extra });
 }
 
 config.snapshots = [];

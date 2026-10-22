@@ -23,7 +23,7 @@ export interface PageContent {
 // currencies belong to the roster (`char_id` null), everything else to a character. A currency
 // is a page of its own, numbered as `CURRENCY_PAGES`.
 export interface ScanPage extends PageContent {
-  roster_id: number;
+  roster_id: string;
   char_id: string | null;
   window: string;
   page: number;
@@ -99,7 +99,7 @@ const same_page = (a: ScanPage, b: ScanPage) =>
 // the saved pages of this roster's own windows and of this character's
 export const own_pages = (
   config: RosterConfig,
-  roster_id: number,
+  roster_id: string,
   char_id: string,
 ) =>
   config.scan_pages.filter(
@@ -111,7 +111,7 @@ export const own_pages = (
 // the saved pages of the roster's other characters
 export function other_pages(
   config: RosterConfig,
-  roster_id: number,
+  roster_id: string,
   char_id: string,
 ) {
   const others = config.profiles
@@ -159,7 +159,7 @@ export interface CharSnapshot {
 export interface Snapshot {
   at: number;
   kind: "Before export" | "After export" | "Manual";
-  roster_id: number;
+  roster_id: string;
   roster_owned: Record<string, number>;
   tradable: Record<string, number>;
   roster_chests: ManifestChest[];
@@ -183,7 +183,7 @@ const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
 export function snapshot_of(
   config: RosterConfig,
-  roster_id: number,
+  roster_id: string,
   kind: Snapshot["kind"],
 ): Snapshot {
   const chars: Record<string, CharSnapshot> = {};
@@ -210,7 +210,7 @@ export function snapshot_of(
   };
 }
 
-export const latest_snapshot = (config: RosterConfig, roster_id: number) =>
+export const latest_snapshot = (config: RosterConfig, roster_id: string) =>
   config.snapshots.findLast((snapshot) => snapshot.roster_id === roster_id);
 
 // the materials and chests alone
@@ -225,7 +225,7 @@ export const budgets_of = (snapshot: Snapshot) =>
   ]);
 
 // whether a snapshot now would have the same budgets as the roster's latest
-export function same_as_latest(config: RosterConfig, roster_id: number) {
+export function same_as_latest(config: RosterConfig, roster_id: string) {
   const latest = latest_snapshot(config, roster_id);
   return (
     !!latest &&
@@ -236,7 +236,7 @@ export function same_as_latest(config: RosterConfig, roster_id: number) {
 // added unless it is the same as the roster's latest
 export function take_snapshot(
   config: RosterConfig,
-  roster_id: number,
+  roster_id: string,
   kind: Snapshot["kind"],
 ) {
   if (!same_as_latest(config, roster_id))
@@ -244,7 +244,7 @@ export function take_snapshot(
 }
 
 // whether the roster and tradable budgets are as the latest snapshot has them
-export function roster_unchanged(config: RosterConfig, roster_id: number) {
+export function roster_unchanged(config: RosterConfig, roster_id: string) {
   const latest = latest_snapshot(config, roster_id);
   if (!latest) return false;
   return (
@@ -259,7 +259,7 @@ export function roster_unchanged(config: RosterConfig, roster_id: number) {
 // the same, and the character's bound budget and chests too
 export function char_unchanged(
   config: RosterConfig,
-  roster_id: number,
+  roster_id: string,
   char_id: string,
 ) {
   const char = latest_snapshot(config, roster_id)?.chars[char_id];

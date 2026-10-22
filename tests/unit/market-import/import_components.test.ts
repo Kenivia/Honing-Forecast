@@ -33,7 +33,7 @@ function pinia_with(names: string[], rosters: number[] = []) {
   cfg.profiles = names.map((char_name, i) => ({
     ...new_char_profile(),
     char_name,
-    roster_id: rosters[i] ?? 0,
+    roster_id: String(rosters[i] ?? 0),
   }));
   return pinia;
 }

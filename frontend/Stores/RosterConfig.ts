@@ -33,19 +33,19 @@ export interface RosterConfig {
   mats_prices: Record<MarketRegions, InputColumn>;
   // which bundle the user buys, per material, for anything sold in several sizes
   selected_bundles: Record<MarketRegions, Record<string, number>>;
-  roster_mats_owned: Record<number, InputColumn>;
-  tradable_mats_owned: Record<number, InputColumn>;
+  roster_mats_owned: Record<string, InputColumn>;
+  tradable_mats_owned: Record<string, InputColumn>;
   // chests of a roster that are not bound to one character
-  roster_chests: Record<number, ManifestChest[]>;
+  roster_chests: Record<string, ManifestChest[]>;
   // every page the scanner exported, as last exported, and the budget snapshots
   scan_pages: ScanPage[];
   snapshots: Snapshot[];
   // income per week typed by hand, [roster bound, tradable]
-  roster_income: Record<number, Record<string, number>[]>;
+  roster_income: Record<string, Record<string, number>[]>;
   // the Choices page's custom choice
-  custom_choices: Record<number, CustomChoice>;
+  custom_choices: Record<string, CustomChoice>;
 
-  all_regions: Record<number, MarketRegions>;
+  all_regions: Record<string, MarketRegions>;
 
   cumulative_graph: boolean;
 
@@ -79,20 +79,21 @@ function default_prices(region: MarketRegions): InputColumn {
 // A function rather than a const so callers always get a fresh tree, and so this module
 // has no load-time dependency on ConfigStorage.
 export function default_roster_config(): RosterConfig {
+  const roster_id = crypto.randomUUID();
   return {
     mats_prices: {
       nae: default_prices("nae"),
       euc: default_prices("euc"),
       Custom: default_prices("Custom"),
     },
-    roster_mats_owned: { 0: create_default_owned_input_column() },
-    tradable_mats_owned: { 0: create_default_owned_input_column() },
+    roster_mats_owned: { [roster_id]: create_default_owned_input_column() },
+    tradable_mats_owned: { [roster_id]: create_default_owned_input_column() },
     roster_chests: {},
     scan_pages: [],
     snapshots: [],
     roster_income: {},
     custom_choices: {},
-    all_regions: { 0: "nae" },
+    all_regions: { [roster_id]: "nae" },
     cumulative_graph: true,
     selected_bundles: {
       nae: default_selected_bundles(),
@@ -100,7 +101,7 @@ export function default_roster_config(): RosterConfig {
       Custom: default_selected_bundles(),
     },
     latest_market_data: {},
-    profiles: [new_char_profile()],
+    profiles: [{ ...new_char_profile(), roster_id }],
     active_profile_index: 0,
     last_seen_version: "v0.0.0",
     show_all_rows: false,
@@ -152,10 +153,10 @@ export const useRosterStore = defineStore("roster", {
       (state) =>
       (name: string): number =>
         state.roster_config.profiles.findIndex((p) => p.char_name === name),
-    roster_ids: (state): number[] =>
-      [...new Set(state.roster_config.profiles.map((x) => x.roster_id))].sort(
-        (a, b) => a - b,
-      ),
+    // in order of first appearance; add_profile keeps a roster's characters together
+    roster_ids: (state): string[] => [
+      ...new Set(state.roster_config.profiles.map((x) => x.roster_id)),
+    ],
 
     active_selected_bundles(state): Record<string, number> {
       return state.roster_config.selected_bundles[this.active_region];
@@ -183,8 +184,15 @@ export const useRosterStore = defineStore("roster", {
     switch_profile(index: number) {
       this.roster_config.active_profile_index = index;
     },
+    // after the roster's last character, so deleting one never reorders the rosters
     add_profile(profile: CharProfile) {
-      this.roster_config.profiles.push(profile);
+      const profiles = this.roster_config.profiles;
+      const id = this.active_profile?.id;
+      const last = profiles.findLastIndex(
+        (p) => p.roster_id === profile.roster_id,
+      );
+      profiles.splice(last < 0 ? profiles.length : last + 1, 0, profile);
+      if (id) this.point_active_at(id);
     },
     // points the active index at the character with `id`, wherever it now is
     point_active_at(id: string) {
@@ -193,19 +201,19 @@ export const useRosterStore = defineStore("roster", {
     },
 
     // returns the store's (reactive) copy
-    add_char(roster_id: number): CharProfile {
+    add_char(roster_id: string): CharProfile {
       const profiles = this.roster_config.profiles;
-      this.add_profile({
+      const profile = {
         ...new_char_profile(),
         roster_id,
         char_name: format_char_name("Newchar", profiles.length, profiles),
-      });
-      return profiles.at(-1);
+      };
+      this.add_profile(profile);
+      return profiles.find((p) => p.id === profile.id);
     },
     add_roster() {
       const config = this.roster_config;
-      const roster_id =
-        Math.max(...config.profiles.map((p) => p.roster_id)) + 1;
+      const roster_id = crypto.randomUUID();
       config.roster_mats_owned[roster_id] = create_default_owned_input_column();
       config.tradable_mats_owned[roster_id] =
         create_default_owned_input_column();
@@ -228,7 +236,7 @@ export const useRosterStore = defineStore("roster", {
       this.point_active_at(id);
     },
     // Deleting the active character moves to the one before it. A roster's last character
-    // takes the roster's data with it, so a new roster reusing the id starts empty.
+    // takes the roster's data with it.
     delete_profile(index: number) {
       const config = this.roster_config;
       const active = config.active_profile_index;

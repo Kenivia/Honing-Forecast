@@ -26,7 +26,7 @@ import {
 export interface CharProfile {
   // stable and unique, what everything but the route identifies a character by
   id: string;
-  roster_id: number;
+  roster_id: string;
 
   // what a leftover unit of each ownership band is worth
   band_values: BandPlan;
@@ -102,7 +102,7 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
   tier: 0,
   min_resolution: 10,
 
-  roster_id: 0,
+  roster_id: "",
   optimizer_override: {
     normal: {
       juice: NormalOverride.Optimizer,

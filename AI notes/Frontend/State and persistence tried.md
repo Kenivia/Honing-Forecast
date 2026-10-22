@@ -51,3 +51,9 @@ After: `Calc.vue`'s unmount calls `settle_deductions` for its own character, and
 ## An unreadable save is surfaced (Oct 2026)
 
 Before: the `<key>_BROKEN` copy was never read back or shown (only a console error), never cleaned up so it kept taking quota, and when it did not fit the failure was swallowed and the next write overwrote the only copy. A save that decompressed to `null` was taken for no save at all. After: a banner offers Download (importable backup) and Discard; with no room for the copy, saving is paused instead; a `null` decompress counts as unreadable. No automatic recovery, deliberately. Covered by `tests/unit/stores/config_storage.test.ts` and `tests/unit/shell/broken_save_banner.test.ts`.
+
+## Roster ids: integers to uuids (V10)
+
+Before: roster ids were small integers per browser (`add_roster` took the highest + 1), rosters were listed sorted by id, and `add_char` / `duplicate_profile` pushed to the end of `profiles`, so a roster's characters could be interleaved with another's. Every save had a roster 0, so ids collided across users and saves, and a deleted roster's id was reused (hence the cleanup on delete).
+
+After: uuids, with the order taken from `profiles` (first appearance) and kept stable by inserting a new character after its roster's last. Considered and dropped: a uuid kept beside the integer (a second id to keep in sync), and a stored `roster_order` list (a second source of truth for what `profiles` already says). Covered by `tests/unit/stores/roster_store.test.ts` (order after deleting a roster's first characters) and the migration suites.

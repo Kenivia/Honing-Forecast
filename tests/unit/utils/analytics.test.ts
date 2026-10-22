@@ -1,0 +1,67 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { default_roster_config } from "@/Stores/RosterConfig";
+import { upload_snapshots } from "@/Utils/Analytics";
+import { snapshot } from "../stores/fixtures";
+
+const fetch = vi.fn();
+beforeEach(() => {
+  vi.stubEnv("PROD", true);
+  vi.stubGlobal("fetch", fetch);
+  fetch.mockReset().mockResolvedValue({ ok: true });
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
+
+function config_with(count: number) {
+  const config = default_roster_config();
+  const { roster_id, id } = config.profiles[0];
+  config.snapshots = Array.from({ length: count }, (_, i) => ({
+    ...snapshot(roster_id, id),
+    at: i,
+  }));
+  return config;
+}
+const sent = (call: number) => JSON.parse(fetch.mock.calls[call][1].body);
+
+describe("upload_snapshots", () => {
+  it("sends what was not sent, in batches, and marks it", async () => {
+    const config = config_with(25);
+    config.snapshots[0].sent = true;
+    await upload_snapshots(config);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(sent(0).snapshots.map((s) => s.at)).toEqual(
+      [...Array(20).keys()].map((i) => i + 1),
+    );
+    expect(sent(1).snapshots).toHaveLength(4);
+    expect(sent(0)).toMatchObject({
+      roster: String(config.profiles[0].roster_id),
+      region: "nae",
+    });
+    expect(config.snapshots.every((s) => s.sent)).toBe(true);
+    await upload_snapshots(config);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("marks nothing when the upload fails, and stops", async () => {
+    const config = config_with(25);
+    fetch.mockResolvedValue({ ok: false });
+    await upload_snapshots(config);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(config.snapshots.some((s) => s.sent)).toBe(false);
+    fetch.mockRejectedValue(new Error("offline"));
+    await upload_snapshots(config);
+    expect(config.snapshots.some((s) => s.sent)).toBe(false);
+  });
+
+  it("sends nothing when opted out or outside production", async () => {
+    const config = config_with(1);
+    config.analytics = false;
+    await upload_snapshots(config);
+    config.analytics = true;
+    vi.stubEnv("PROD", false);
+    await upload_snapshots(config);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});

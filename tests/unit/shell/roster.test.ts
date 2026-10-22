@@ -80,22 +80,23 @@ describe("RosterView", () => {
       .trigger("click");
     const added = store.all_profiles.at(-1);
     expect(added.char_name).toBe("Newchar1");
-    expect(added.roster_id).toBe(1);
+    expect(added.roster_id).toBe("1");
     expect(new Set(store.all_profiles.map((p) => p.id)).size).toBe(3);
   });
 
-  it("add new roster takes the next id with its own columns and NA", async () => {
+  it("add new roster gets a fresh id with its own columns and NA", async () => {
     const { wrapper, store } = await mount_roster([
       ["Alice", 0],
       ["Carol", 3],
     ]);
     await button(wrapper, "Add new roster")[0].trigger("click");
-    expect(store.roster_ids).toEqual([0, 3, 4]);
+    const [alice, carol, added] = store.roster_ids;
+    expect([alice, carol, added.length]).toEqual(["0", "3", 36]);
     const config = store.roster_config;
-    expect(config.all_regions[4]).toBe("nae");
-    expect(config.roster_mats_owned[4]).toBeDefined();
-    expect(config.tradable_mats_owned[4]).toBeDefined();
-    expect(config.roster_mats_owned[4]).not.toBe(config.roster_mats_owned[0]);
+    expect(config.all_regions[added]).toBe("nae");
+    expect(config.roster_mats_owned[added]).toBeDefined();
+    expect(config.tradable_mats_owned[added]).toBeDefined();
+    expect(config.roster_mats_owned[added]).not.toBe(config.roster_mats_owned[0]);
   });
 
   it("make a copy deep-copies under a new id and name", async () => {
@@ -107,7 +108,7 @@ describe("RosterView", () => {
     await button(wrapper, "Make a copy")[1].trigger("click");
     const [, carol, copy] = store.all_profiles;
     expect(copy.char_name).toBe("Newchar");
-    expect(copy.roster_id).toBe(1);
+    expect(copy.roster_id).toBe("1");
     expect(copy.tier).toBe(1);
     expect(copy.id).not.toBe(carol.id);
     copy.normal_grid[0][0] = !carol.normal_grid[0][0] as any;
@@ -222,7 +223,7 @@ describe("RosterView", () => {
     ]);
     fetchers[1].props("apply")(["r"], false, "Dave");
     const dave = store.all_profiles.at(-1);
-    expect([dave.char_name, dave.roster_id]).toEqual(["Dave", 1]);
+    expect([dave.char_name, dave.roster_id]).toEqual(["Dave", "1"]);
     expect(vi.mocked(apply_results)).toHaveBeenCalledWith(
       dave,
       ["r"],

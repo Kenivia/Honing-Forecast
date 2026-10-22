@@ -55,7 +55,7 @@ export type SavedUpgrade = Omit<OneUpgradeInput, "used_materials">;
 export interface SavedProfile {
   id: string;
   char_name: string;
-  roster_id: number;
+  roster_id: string;
   tier: number;
   express_event: boolean;
   auto_start_optimizer: boolean;
@@ -186,17 +186,15 @@ function profile_from_saved(
   saved: Partial<SavedProfile>,
   index: number,
   earlier: CharProfile[],
-  roster_ids: number[],
+  roster_ids: string[],
 ): CharProfile {
   const defaults = structuredClone(DEFAULT_CHAR_PROFILE);
   const tier =
     saved.tier === 0 || saved.tier === 1 ? saved.tier : defaults.tier;
 
-  const roster_id =
-    saved.roster_id !== undefined &&
-    roster_ids.includes(Number(saved.roster_id))
-      ? Number(saved.roster_id)
-      : (roster_ids[0] ?? 0);
+  const roster_id = roster_ids.includes(saved.roster_id)
+    ? saved.roster_id
+    : roster_ids[0];
 
   // Levels below the tier's floor are always already done, except on the vambrace.
   const floor = tier === 0 ? 10 : 11;
@@ -378,9 +376,9 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
     );
   }
 
-  const roster_ids = Object.keys(saved.roster_mats_owned ?? {}).map(Number);
+  const roster_ids = Object.keys(saved.roster_mats_owned ?? {});
   if (roster_ids.length > 0) {
-    const template = out.roster_mats_owned[0];
+    const template = Object.values(out.roster_mats_owned)[0];
     out.roster_mats_owned = {};
     out.tradable_mats_owned = {};
     out.all_regions = {};
@@ -406,16 +404,19 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
         profile,
         index,
         profiles,
-        Object.keys(out.roster_mats_owned).map(Number),
+        Object.keys(out.roster_mats_owned),
       ),
     );
   });
-  out.profiles = profiles;
-
-  out.active_profile_index = Math.max(
-    0,
-    Math.min(profiles.length - 1, saved.active_profile_index ?? 0),
+  // a roster's characters together, as add_profile keeps them
+  const active =
+    profiles[
+      Math.max(0, Math.min(profiles.length - 1, saved.active_profile_index ?? 0))
+    ];
+  out.profiles = [...new Set(profiles.map((p) => p.roster_id))].flatMap((id) =>
+    profiles.filter((p) => p.roster_id === id),
   );
+  out.active_profile_index = out.profiles.indexOf(active);
   out.last_seen_version = saved.last_seen_version ?? out.last_seen_version;
   out.latest_market_data = saved.latest_market_data ?? {};
   out.cumulative_graph = saved.cumulative_graph ?? out.cumulative_graph;

@@ -90,7 +90,12 @@ async function add_bee(page: Page) {
     const { new_char_profile } = await import(
       find("Stores/CharacterProfile.ts")
     );
-    useRosterStore().add_profile({ ...new_char_profile(), char_name: "Bee" });
+    const store = useRosterStore();
+    store.add_profile({
+      ...new_char_profile(),
+      char_name: "Bee",
+      roster_id: store.active_profile.roster_id,
+    });
   });
   // saving is debounced
   await page.waitForTimeout(1000);
@@ -324,7 +329,7 @@ test("a scan moved to another roster takes that roster's cover", async ({
     store.add_profile({
       ...new_char_profile(),
       char_name: "Cee",
-      roster_id: 1,
+      roster_id: "1",
     });
     store.roster_config.roster_mats_owned[1] =
       create_default_owned_input_column();

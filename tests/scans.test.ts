@@ -32,7 +32,7 @@ const store = useRosterStore();
 store.replace_config(from_saved({}));
 const config = store.roster_config;
 const a = config.profiles[0];
-const b = { ...new_char_profile(), char_name: "Bee" };
+const b = { ...new_char_profile(), char_name: "Bee", roster_id: a.roster_id };
 store.add_profile(b);
 const ids = config.profiles.map((profile) => profile.id);
 
@@ -210,7 +210,7 @@ check("changed budgets still uncover it", !covered.value.Roster);
 set_cell(store.active_tradable_mats_owned, "Red", "105");
 check(
   "budgets back as snapshotted: covered",
-  roster_unchanged(config, 0) && covered.value.Roster,
+  roster_unchanged(config, config.profiles[0].roster_id) && covered.value.Roster,
 );
 
 section("A again, roster budget changed by hand");
@@ -271,7 +271,7 @@ equal(
 );
 check(
   "now matches the last snapshot",
-  JSON.stringify(snapshot_of(config, 0, "Manual").tradable) ===
+  JSON.stringify(snapshot_of(config, config.profiles[0].roster_id, "Manual").tradable) ===
     JSON.stringify(last.tradable),
 );
 

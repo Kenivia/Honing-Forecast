@@ -16,7 +16,7 @@ import { input_column_to_num } from "@/Utils/InputColumn";
 import { GridConfig } from "@/Utils/GridStyling";
 
 const props = defineProps<{
-  selected_roster_id: number;
+  selected_roster_id: string;
 }>();
 const roster_store = useRosterStore();
 const { roster_config } = storeToRefs(roster_store);

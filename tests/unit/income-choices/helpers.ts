@@ -30,7 +30,7 @@ export function snap(
   return {
     at,
     kind: "Manual",
-    roster_id: 0,
+    roster_id: "0",
     roster_owned: {},
     tradable: {},
     roster_chests: [],

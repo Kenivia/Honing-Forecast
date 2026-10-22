@@ -106,17 +106,23 @@ describe("to_saved / from_saved: V8-only fields", () => {
     const fresh = default_roster_config();
     expect(back.profiles).toHaveLength(1);
     expect(back.profiles[0].id).toMatch(/[0-9a-f-]{36}/);
-    expect(to_saved({ ...back, profiles: [] })).toEqual(
-      to_saved({ ...fresh, profiles: [] }),
-    );
+    // the default roster's id is fresh each time
+    const strip = (config: typeof back) => {
+      const saved: any = to_saved({ ...config, profiles: [] });
+      for (const key of ["roster_mats_owned", "tradable_mats_owned", "all_regions"])
+        saved[key] = Object.values(saved[key]);
+      return saved;
+    };
+    expect(strip(back)).toEqual(strip(fresh));
+    expect(back.profiles[0].roster_id).toBe(Object.keys(back.all_regions)[0]);
   });
 });
 
 describe("from_saved: repairs", () => {
   it("a profile on a roster with no materials moves to the first roster", () => {
     const saved: any = to_saved(rich_config());
-    saved.profiles[2].roster_id = 9;
-    expect(reload(saved).profiles[2].roster_id).toBe(0);
+    saved.profiles[2].roster_id = "9";
+    expect(reload(saved).profiles[2].roster_id).toBe("0");
   });
 
   it("duplicate names get a suffix, ids stay", () => {

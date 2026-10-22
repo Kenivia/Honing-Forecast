@@ -276,7 +276,7 @@ describe("Custom tab", () => {
       .find((b) => b.text() === "Add option")
       .trigger("click");
     await add("Option 3", "Blue", 1000);
-    expect(store.roster_config.custom_choices[0].options).toEqual([
+    expect(store.roster_config.custom_choices[store.active_profile.roster_id].options).toEqual([
       { Red: 500, Gold: -100 },
       {},
       { Blue: 1000 },

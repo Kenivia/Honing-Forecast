@@ -149,7 +149,10 @@ describe("apply_remaining_mats", () => {
 
   it("a snapshot of one character is never written into another", () => {
     const { store } = fresh_stores();
-    store.roster_config.profiles.push(new_char_profile());
+    store.add_profile({
+      ...new_char_profile(),
+      roster_id: store.active_profile.roster_id,
+    });
     set_cell(store.active_profile.bound_budgets, "Red", "1000");
     apply_remaining_mats();
     store.switch_profile(1);

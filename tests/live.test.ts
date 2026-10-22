@@ -58,14 +58,24 @@ check(
   "tiers unchanged",
   loaded.profiles.every((p, i) => p.tier === v7.profiles[i].tier),
 );
+// old roster id -> new, read off the profiles, whose order this save keeps
+const ids: Record<string, string> = {};
+v7.profiles.forEach((p: any, i: number) => {
+  ids[p.roster_id] ??= loaded.profiles[i].roster_id;
+});
 check(
-  "roster ids unchanged",
-  loaded.profiles.every((p, i) => p.roster_id === v7.profiles[i].roster_id),
+  "each roster got one new id",
+  loaded.profiles.every((p, i) => p.roster_id === ids[v7.profiles[i].roster_id]) &&
+    new Set(Object.values(ids)).size === Object.keys(ids).length &&
+    Object.values(ids).every((id) => id.length === 36),
 );
 check(
   "rosters unchanged",
   Object.keys(loaded.roster_mats_owned).sort().join(",") ===
-    Object.keys(v7.roster_mats_owned).sort().join(","),
+    Object.keys(v7.roster_mats_owned)
+      .map((old) => ids[old])
+      .sort()
+      .join(","),
 );
 check(
   "active index kept",
@@ -143,13 +153,13 @@ for (const roster_id of Object.keys(v7.roster_mats_owned)) {
   compare_merged(
     `  roster ${roster_id} owned`,
     v7.roster_mats_owned[roster_id],
-    loaded.roster_mats_owned[roster_id],
+    loaded.roster_mats_owned[ids[roster_id]],
     0,
   );
   compare_merged(
     `  roster ${roster_id} tradable`,
     v7.tradable_mats_owned[roster_id],
-    loaded.tradable_mats_owned[roster_id],
+    loaded.tradable_mats_owned[ids[roster_id]],
     0,
   );
 }
@@ -196,7 +206,7 @@ console.log("\n--- shared materials are stored once, not once per tier");
 for (const label of SHARED_LABELS) {
   check(
     `  ${label} appears once in a column`,
-    Object.keys(loaded.roster_mats_owned[0].values).filter((k) => k === label)
+    Object.keys(loaded.roster_mats_owned[ids[0]].values).filter((k) => k === label)
       .length === 1,
   );
 }

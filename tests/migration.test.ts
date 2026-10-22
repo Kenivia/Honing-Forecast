@@ -314,7 +314,9 @@ check(
   T0.filter((l) => !T1.includes(l)).every((l) => bb_p1[l] === 1),
 );
 
-const owned = input_column_to_num(loaded.roster_mats_owned[0], true);
+// the V7 rosters 0 and 1, by their first characters
+const [r0, r1] = [loaded.profiles[0].roster_id, loaded.profiles[1].roster_id];
+const owned = input_column_to_num(loaded.roster_mats_owned[r0], true);
 check(
   "roster owned per label",
   T0.every((l, i) => owned[l] === owned0[i]),
@@ -377,11 +379,12 @@ check(
 console.log("\n--- rosters / regions / bundles");
 check(
   "two rosters",
-  Object.keys(loaded.roster_mats_owned).sort().join(",") === "0,1",
+  Object.keys(loaded.roster_mats_owned).sort().join(",") ===
+    [r0, r1].sort().join(",") && r0 !== r1,
 );
 check(
   "regions kept",
-  loaded.all_regions[0] === "nae" && loaded.all_regions[1] === "euc",
+  loaded.all_regions[r0] === "nae" && loaded.all_regions[r1] === "euc",
 );
 check("shard bag selection kept", loaded.selected_bundles.nae.Shards === 2000);
 check(

@@ -62,9 +62,9 @@ describe("getters", () => {
     expect(labels).toContain("Serca Red");
   });
 
-  it("roster ids are unique and sorted", () => {
-    store.roster_config.profiles[0].roster_id = 5;
-    expect(store.roster_ids).toEqual([0, 1, 5]);
+  it("roster ids are unique, in order of first appearance", () => {
+    store.roster_config.profiles[0].roster_id = "5";
+    expect(store.roster_ids).toEqual(["5", "0", "1"]);
   });
 
   it("unit prices use the selected bundle", () => {
@@ -99,10 +99,21 @@ describe("actions", () => {
   });
 
   it("add_profile appends as given", () => {
-    const p = { ...new_char_profile(), char_name: "Delta", roster_id: 1 };
+    const p = { ...new_char_profile(), char_name: "Delta", roster_id: "1" };
     store.add_profile(p);
     expect(store.all_profiles.at(-1).char_name).toBe("Delta");
     expect(store.all_profiles.at(-1).id).toBe(p.id);
+  });
+
+  it("add_profile keeps a roster's characters together", () => {
+    store.add_profile({ ...new_char_profile(), char_name: "Delta", roster_id: "0" });
+    expect(store.all_profiles.map((p) => p.char_name)).toEqual([
+      "Alpha",
+      "Beta",
+      "Delta",
+      "Gamma",
+    ]);
+    expect(store.active_profile.char_name).toBe("Gamma");
   });
 
   it("reset keeps id, name and roster, clears everything else", () => {
@@ -111,7 +122,7 @@ describe("actions", () => {
     store.active_profile.tier = 1;
     store.reset_active_profile();
     const p = store.active_profile;
-    expect([p.id, p.char_name, p.roster_id]).toEqual([id, "Alpha", 0]);
+    expect([p.id, p.char_name, p.roster_id]).toEqual([id, "Alpha", "0"]);
     expect(p.tier).toBe(0);
     expect(p.chests).toEqual([]);
     expect(p.income_manual).toBe(false);
@@ -160,7 +171,7 @@ describe("roster CRUD", () => {
 
   it("deleting a character drops its own scan pages only", () => {
     const gamma = store.all_profiles[2];
-    store.add_profile({ ...new_char_profile(), roster_id: 1 });
+    store.add_profile({ ...new_char_profile(), roster_id: "1" });
     store.delete_profile(2);
     const config = store.roster_config;
     expect(config.scan_pages.map((p) => p.char_id)).toEqual([null]);
@@ -180,8 +191,8 @@ describe("roster CRUD", () => {
       config.roster_income,
     ])
       expect(record[1]).toBeUndefined();
-    expect(config.scan_pages.every((p) => p.roster_id === 0)).toBe(true);
-    expect(config.snapshots.map((s) => s.roster_id)).toEqual([0]);
+    expect(config.scan_pages.every((p) => p.roster_id === "0")).toBe(true);
+    expect(config.snapshots.map((s) => s.roster_id)).toEqual(["0"]);
     expect(config.roster_chests[0]).toHaveLength(1);
   });
 
@@ -189,16 +200,26 @@ describe("roster CRUD", () => {
     store.delete_profile(2);
     store.add_roster();
     const config = store.roster_config;
-    expect(store.roster_ids).toEqual([0, 1]);
-    expect(config.all_regions[1]).toBe("nae");
-    expect(config.roster_chests[1]).toBeUndefined();
-    expect(config.snapshots.some((s) => s.roster_id === 1)).toBe(false);
+    const [first, added] = store.roster_ids;
+    expect(store.roster_ids).toHaveLength(2);
+    expect([first, added.length]).toEqual(["0", 36]);
+    expect(config.all_regions[added]).toBe("nae");
+    expect(config.roster_chests[added]).toBeUndefined();
+    expect(config.snapshots.some((s) => s.roster_id === added)).toBe(false);
     expect(names().at(-1)).toBe("Newchar");
   });
 
+  it("deleting a roster's first character keeps the rosters' order", () => {
+    store.add_char("0");
+    store.delete_profile(0);
+    store.delete_profile(0);
+    expect(names()).toEqual(["Newchar", "Gamma"]);
+    expect(store.roster_ids).toEqual(["0", "1"]);
+  });
+
   it("add_char names it uniquely and returns the stored profile", () => {
-    const a = store.add_char(1);
-    const b = store.add_char(1);
+    const a = store.add_char("1");
+    const b = store.add_char("1");
     expect([a.char_name, b.char_name]).toEqual(["Newchar", "Newchar1"]);
     a.char_name = "Delta";
     expect(names().at(-2)).toBe("Delta");
@@ -206,7 +227,7 @@ describe("roster CRUD", () => {
 
   it("duplicate is an identical character under a new id and name", () => {
     store.duplicate_profile(0);
-    const [alpha, , , copy] = store.all_profiles;
+    const [alpha, , copy] = store.all_profiles;
     expect(copy.id).not.toBe(alpha.id);
     expect(copy.char_name).toBe("Newchar");
     expect(copy.chests).toEqual(alpha.chests);
