@@ -3,6 +3,7 @@ import { shallowRef } from "vue";
 import {
   ALL_LABELS,
   bundle_key,
+  FALLBACK_PRICES,
   MATERIALS,
   NUM_BANDS,
   SPECIAL_LEAP_LABELS,
@@ -12,13 +13,14 @@ import { debounce } from "@/Utils/Helpers";
 import { RosterConfig } from "./RosterConfig";
 import { from_saved, SavedColumn, SavedConfig, to_saved } from "./SavedConfig";
 
-export const STORAGE_VERSION = 8;
-export const STORAGE_KEY = "HF_CONFIG_V8_COMPRESSED";
+export const STORAGE_VERSION = 9;
+export const STORAGE_KEY = "HF_CONFIG_V9_COMPRESSED";
 
 // Older keys, newest first. On a version bump, move the current key to the top of
 // this list. `version` is only a fallback for pre-V8 saves, which carry no version
 // inside the payload.
 const LEGACY_KEYS: { key: string; version: number }[] = [
+  { key: "HF_CONFIG_V8_COMPRESSED", version: 8 },
   { key: "HF_CONFIG_V7_COMPRESSED", version: 7 },
   { key: "HF_CONFIG_V6_COMPRESSED", version: 6 },
   { key: "HF_UI_STATE_V5_COMPRESSED", version: 5 },
@@ -35,6 +37,7 @@ const MIGRATIONS: Record<number, (data: any) => any> = {
   5: migrate_5_to_6,
   6: migrate_6_to_7,
   7: migrate_7_to_8,
+  8: migrate_8_to_9,
 };
 
 // ============================================================================
@@ -284,7 +287,9 @@ function v7_merge_columns(
   for (const tier of tiers) {
     const old = columns?.[tier];
     ALL_LABELS[tier].forEach((label, row) => {
-      const parsed = parse_locale_int(String(old?.data?.[row] ?? "0"));
+      // a row added after the save was made is left out, so from_saved uses the template
+      if (old?.data?.[row] === undefined) return;
+      const parsed = parse_locale_int(String(old.data[row]));
       values[key_of(label)] = Number.isFinite(parsed) ? parsed : 0;
       if (old?.enabled?.[row] === false) {
         disabled.add(key_of(label));
@@ -376,7 +381,7 @@ function migrate_7_to_8(data: any): Partial<SavedConfig> {
   });
 
   return {
-    version: STORAGE_VERSION,
+    version: 8,
     profiles,
     active_profile_index: data.active_profile_index,
     last_seen_version: data.last_seen_version,
@@ -391,4 +396,26 @@ function migrate_7_to_8(data: any): Partial<SavedConfig> {
     auto_deduct_costs: data.auto_deduct_costs,
     auto_fetch: data.auto_fetch,
   };
+}
+
+// The V7 migration wrote 0 for books a V7 save did not have yet, overriding the fallback.
+// A 0 is reset to the fallback; any other value was the user's.
+const V8_ZEROED_BOOKS = [
+  "Enhanced 19-20 Armor",
+  "Enhanced 19-20 Weapon",
+  "12-15 Armor",
+  "12-15 Weapon",
+  "16-19 Armor",
+  "16-19 Weapon",
+];
+
+function migrate_8_to_9(data: any): any {
+  for (const column of Object.values<any>(data.mats_prices ?? {})) {
+    for (const label of V8_ZEROED_BOOKS) {
+      const key = bundle_key(label, MATERIALS[label].bundle_sizes[0]);
+      if (column.values?.[key] === 0) column.values[key] = FALLBACK_PRICES[key];
+    }
+  }
+  data.version = 9;
+  return data;
 }

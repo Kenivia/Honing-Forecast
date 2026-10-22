@@ -422,7 +422,7 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
   out.show_all_rows = saved.show_all_rows ?? out.show_all_rows;
   out.auto_deduct_costs = saved.auto_deduct_costs ?? out.auto_deduct_costs;
   out.auto_fetch = saved.auto_fetch ?? out.auto_fetch;
-  // arrived during V8, which is not released: a save without them has none
+  // arrived during V8: a save without them has none
   out.roster_chests = saved.roster_chests ?? {};
   out.scan_pages = Array.isArray(saved.scan_pages) ? saved.scan_pages : [];
   out.snapshots = Array.isArray(saved.snapshots) ? saved.snapshots : [];

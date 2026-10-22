@@ -54,7 +54,7 @@ Runtime worker bundles are keyed by profile id. `App.vue` watches the list of id
 
 `SavedConfig.ts` defines the saved shape and converts to and from it; `ConfigStorage.ts` owns localStorage and the migrations.
 
-- One key, `HF_CONFIG_V8_COMPRESSED`, lz-string-compressed JSON, with the version **also inside** the payload. The key carries the version so a save is never read by code that predates it; the payload version drives the migration chain.
+- One key, `HF_CONFIG_V9_COMPRESSED`, lz-string-compressed JSON, with the version **also inside** the payload. The key carries the version so a save is never read by code that predates it; the payload version drives the migration chain.
 - One column per scope, not one per tier, so a material shared between tiers is stored once.
 - Two rules govern the shape: nothing derivable from `Constants.ts` is stored, and material values are keyed by **label**, never by row index. Reordering, inserting or removing a material row is therefore not a save-shape change.
 - `to_saved` / `from_saved` are explicit. A field that is not listed is not saved, so transient state cannot leak in by being added to the store.
@@ -68,11 +68,13 @@ Runtime worker bundles are keyed by profile id. `App.vue` watches the list of id
 
 A profile's `id` is saved and survives load, save, load unchanged. It also arrived during V8: a save without ids (or with an id an earlier profile already took) gets fresh ones in `profile_from_saved`, so there is no migration step for it.
 
-A profile's `chests` are saved as the scanner exported them (title, band, count, options by label, `obtain_all`), with both tiers in them; what the calculator uses is derived on the page. They arrived during V8, which is not released: V7 had none, so the migration writes an empty list and a save without the field loads as empty. Only char-bound chests are a profile's now; the rest are the roster's (`roster_chests`, keyed by roster id). `roster_chests`, `scan_pages` and `snapshots` also arrived during V8 and load empty from a save without them, V7 included (the migration goes through `from_saved`); there is no V9.
+A profile's `chests` are saved as the scanner exported them (title, band, count, options by label, `obtain_all`), with both tiers in them; what the calculator uses is derived on the page. They arrived during V8: V7 had none, so the migration writes an empty list and a save without the field loads as empty. Only char-bound chests are a profile's now; the rest are the roster's (`roster_chests`, keyed by roster id). `roster_chests`, `scan_pages` and `snapshots` also arrived during V8 and load empty from a save without them, V7 included (the migration goes through `from_saved`).
 
 `roster_income`, `custom_choices` and a profile's `income_manual` / `bound_income` / `income_now` / `income_results` / `choice_levels` / `optimizer_cache` / `choice_results` / `choice_seed` arrived during V8 too and load empty or off. The last three are saved optimizer results (`Wasm contract.md`, "Saved results"); the two states are `markRaw` on load and on write, so the store's deep watch does not walk them. `scan_pages` and `snapshots` only grow with exports and are rewritten with the rest of the config on every change. If that gets slow, they are the part to move to a key of their own.
 
-**Do not trust a pre-V8 column's own `keys` array.** Nothing before V8 read it, so it drifted out of order in real saves while `data` stayed positional against `ALL_LABELS`. `migrate_7_to_8` maps by position for that reason.
+**Do not trust a pre-V8 column's own `keys` array.** Nothing before V8 read it, so it drifted out of order in real saves while `data` stayed positional against `ALL_LABELS`. `migrate_7_to_8` maps by position for that reason. A V7 column can also be shorter than its tier's labels (the enhanced and Serca books were appended after some V7 saves were made); `v7_merge_columns` leaves a missing row out rather than writing 0, so `from_saved` gives it the template value (its fallback price).
+
+`migrate_8_to_9` repairs saves made before that fix: in every region's `mats_prices`, an enhanced or Serca book priced exactly 0 is reset to its fallback (any other value is the user's). That is all V9 changes; the shape is V8's. `tests/live_v8.test.ts` runs it on a real V8 save (`tests/v8 config`).
 
 `migrate_7_to_8` **drops** V7's `optimizer_treatment_plan` rather than mapping it: two of its four values behaved identically, one was unreachable, and it is not worth carrying, so `band_values` is left out and `profile_from_saved` supplies the default. `histogram_treatment_plan` is a different setting — which ownership line the chance column reads — and becomes `chance_band`. `leftover_price` is dropped too; it was always zero.
 

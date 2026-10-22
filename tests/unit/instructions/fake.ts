@@ -123,6 +123,7 @@ export function set_results(
     special_invalid_index,
     latest_special_probs,
     chest_states: new Map(),
+    prep_output: { table: { labels: [] }, materials: [] },
   };
   runtime.optimizer.result = bundle;
   runtime.histogram.result = {

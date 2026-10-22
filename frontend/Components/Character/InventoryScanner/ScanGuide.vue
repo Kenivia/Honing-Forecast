@@ -4,7 +4,7 @@ import { ref } from "vue";
 const LIMITATIONS = [
   "Only full screen and borderless are supported.",
   "It may not work below 1080p.",
-  "HDR and other brightness adjustments will break it.",
+  "HDR and other brightness adjustments (or any kind of filter) will break it - unfortunately this means color blind mode does not work",
   "Non-default fonts may or may not work.",
   "Huge (bigger than 'largest') cursor sizes may break things.",
   "Only the English client is supported for now. It probably won't work with other languages.",
@@ -34,8 +34,8 @@ const show_limitations = ref(false);
         <div class="pl-4">
           Open your storage or just your inventory, then hover items in game.
           You only need to do it for items with an
-          <span class="text-(--series-fusion)">Orange</span> border, and only
-          a few frames per hover is needed. You should hover until no
+          <span class="text-(--series-fusion)">Orange</span> border, and only a
+          few frames per hover is needed. You should hover until no
           <span class="text-(--series-fusion)">Orange</span> slots remain.
         </div>
       </div>

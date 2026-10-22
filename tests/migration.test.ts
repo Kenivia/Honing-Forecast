@@ -493,6 +493,31 @@ check(
     .join(","),
 );
 
+console.log("\n=== 7b. rows added after a V7 save get their fallback ===");
+// the enhanced and Serca books were appended after some V7 saves were made
+localStorage.clear();
+const short = structuredClone(v7);
+short.mats_prices.nae[0].data.length = T0.length - 2;
+short.mats_prices.nae[1].data.length = T1.length - 4;
+localStorage.setItem(
+  "HF_CONFIG_V7_COMPRESSED",
+  LZString.compressToUTF16(JSON.stringify(short)),
+);
+const short_prices = input_column_to_num(
+  load_roster_config().mats_prices.nae,
+  true,
+);
+const added = [...T0.slice(-2), ...T1.slice(-4)].map((l) => bundle_key(l, 1));
+check(
+  "missing V7 rows -> fallback price",
+  added.every((k) => short_prices[k] === FALLBACK_PRICES[k]),
+  added.map((k) => `${k}: ${short_prices[k]}`).join("; "),
+);
+check(
+  "rows the save had are kept",
+  short_prices[bundle_key("Red", 100)] === price0[T0.indexOf("Red")],
+);
+
 console.log("\n=== 8. load, save, load again ===");
 // The write path and the V8 read path are separate code. A save that cannot be read
 // back by the same version only shows up on a second load, so do a real round trip

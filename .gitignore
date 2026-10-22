@@ -56,3 +56,5 @@ playwright-report/
 
 
 *.sqlite
+
+.claude/worktrees/

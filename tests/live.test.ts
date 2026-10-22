@@ -80,7 +80,9 @@ function expected(old_cols: any, winner: number) {
   const order = [0, 1].filter((t) => t !== winner).concat(winner);
   for (const tier of order) {
     ALL_LABELS[tier].forEach((label, row) => {
-      const n = parse_locale_int(String(old_cols?.[tier]?.data?.[row] ?? "0"));
+      // rows added after the save fall back to the template
+      if (old_cols?.[tier]?.data?.[row] === undefined) return;
+      const n = parse_locale_int(String(old_cols[tier].data[row]));
       values[label] = Number.isFinite(n) ? n : 0;
       enabled[label] = old_cols?.[tier]?.enabled?.[row] !== false;
     });

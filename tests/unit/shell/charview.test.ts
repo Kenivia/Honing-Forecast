@@ -13,6 +13,7 @@ import { h, onUnmounted } from "vue";
 import { RouterView, type Router } from "vue-router";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
+import { scanner_shown } from "@/Components/Character/InventoryScanner/ScannerUIutils";
 import { load_router, set_profiles, stub_match_media } from "./helpers";
 
 let router: Router;
@@ -124,6 +125,8 @@ describe("CharView", () => {
     const { wrapper } = await mount_at("/Bob/calc");
     expect(wrapper.find(".ControlPanel").exists()).toBe(true);
     expect(wrapper.find(".ScannerControlPanel").exists()).toBe(false);
+    // jsdom has no screen capture, so the scanner would be hidden as on mobile
+    scanner_shown.value = true;
     await router.push("/Bob/scanner");
     await flushPromises();
     expect(wrapper.find(".ControlPanel").exists()).toBe(false);

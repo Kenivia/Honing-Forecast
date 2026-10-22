@@ -20,7 +20,7 @@
     "change-log": "python ./scripts/change_log_helper/build.py",
     "check": "vue-tsc --noEmit",
     "no-test-build": "pnpm run wasm && vite build",
-    "build": "pnpm run test:rust && pnpm run no-test-build && cargo +nightly udeps",
+    "build": "pnpm run test && pnpm run no-test-build && cargo +nightly udeps",
     "no-check-deploy": "git push origin main:Production --force-with-lease",
     "deploy": "pwsh -File ./scripts/pre_deploy_check.ps1 && pnpm run no-check-deploy",
     "cloudflare-deploy": "wrangler deploy --config cloudflare/wrangler.toml",
