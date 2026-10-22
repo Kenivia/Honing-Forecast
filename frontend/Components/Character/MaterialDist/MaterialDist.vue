@@ -197,7 +197,8 @@ const any_credited = computed(() =>
 
 // parallel to chance_band, which also picks the owned column shown
 const CHANCE_TEXTS = ["Char-Bound", "Roster-Bound", "Tradable"].map(
-  (band) => `Chance to succeed all upgrades within ${band} material`,
+  (band) =>
+    `Chance to succeed all upgrades before running out of ${band} material`,
 );
 const CHANCE_COLORS = ["var(--bound)", "var(--roster)", "var(--tradable)"];
 const OWNED_TITLES = ["Bound mats", "Roster mats", "Tradable"];
@@ -326,7 +327,7 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
               </option>
             </select>
             <QuestionMark
-              text="The &quot;+N from ...&quot; amounts are not included in the input box on the left."
+              text='The "+N from ..." amounts are not included in the input box on the left.'
               class="absolute bottom-0 left-full mb-1 ml-1"
             />
           </div>

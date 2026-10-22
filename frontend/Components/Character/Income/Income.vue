@@ -418,7 +418,7 @@ const KIND_COLORS = {
         />
         <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
           <span class="text-(--text-bright)">
-            Chance to succeed all upgrades within
+            Chance to succeed all upgrades before running out of
           </span>
           <div class="flex gap-1" role="group" aria-label="Chance bands">
             <button

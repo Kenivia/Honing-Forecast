@@ -5,11 +5,11 @@ import { RouterLink } from "vue-router";
 const dummy_checkbox = ref(true);
 
 const bound_chance_text =
-  "Chance to succeed all upgrades within Char-Bound material";
+  "Chance to succeed all upgrades before running out of Char-Bound material";
 const roster_chance_text =
-  "Chance to succeed all upgrades within Roster-Bound material";
+  "Chance to succeed all upgrades before running out of Roster-Bound material";
 const tradable_chance_text =
-  "Chance to succeed all upgrades within Tradable material";
+  "Chance to succeed all upgrades before running out of Tradable material";
 
 const dummy_select = ref(bound_chance_text);
 
