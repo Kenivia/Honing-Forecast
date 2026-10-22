@@ -7,6 +7,7 @@ import { GridConfig } from "@/Utils/GridStyling";
 import {
   get_any_overwritten,
   get_optimizer_working,
+  get_zero_gold_warning,
   get_relevant_result,
   instruction_rows,
 } from "./InstructionUtils";
@@ -22,6 +23,7 @@ const props = defineProps<{
 
 const { active_profile } = storeToRefs(useRosterStore());
 const any_overwritten = computed(get_any_overwritten);
+const zero_gold_warning = computed(get_zero_gold_warning);
 const relevant_upgrade_arr = computed(() =>
   instruction_rows(get_relevant_result(any_overwritten.value), props.is_normal),
 );
@@ -57,6 +59,11 @@ const optimizer_working = computed(get_optimizer_working);
             : "Advanced Honing Instructions"
         }}
         {{ any_overwritten ? "(Not optimized)" : "" }}
+        <span
+          v-if="!any_overwritten && zero_gold_warning"
+          class="bg-(--warning-dark) px-1"
+          >{{ zero_gold_warning }}</span
+        >
 
         <span v-if="optimizer_working" class="text-(--text-main)">
           ({{

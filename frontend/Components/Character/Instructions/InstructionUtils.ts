@@ -3,7 +3,12 @@ import { useRuntimeStore } from "@/Stores/RuntimeState";
 import { AdvOverride, NormalOverride } from "@/WasmInterface/Overrides";
 import { StateBundle } from "@/WasmInterface/WasmTypes";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
-import { JOINED_ADV_JUICE } from "@/Utils/Constants";
+import {
+  BAND_NAMES,
+  clamp_band_plan,
+  JOINED_ADV_JUICE,
+  NUM_BASE_MATS,
+} from "@/Utils/Constants";
 import { artisan_number, artisan_string } from "@/Utils/HoningUtil";
 import { toOrdinal } from "@/Utils/Helpers";
 
@@ -16,6 +21,34 @@ export function get_any_overwritten(): boolean {
     optimizer_override.advanced.scroll !== AdvOverride.Optimizer ||
     optimizer_override.special.optimizer !== true
   );
+}
+
+// When no plan can cost gold: every base mat used is disabled, or covered at no-juice pity by
+// the bands worth nothing.
+export function get_zero_gold_warning(): string | null {
+  const result = useRuntimeStore().histogram.result;
+  if (!result) return null;
+  const { band_values, bound_budgets } = useRosterStore().active_profile;
+  const { table, materials } = result.state_bundle.prep_output;
+  const rows = table.labels
+    .slice(0, NUM_BASE_MATS)
+    .map((label: string, row: number) => [label, row])
+    .filter(([label]) => result.no_juice_pity?.[label] > 0);
+  if (rows.length === 0) return null;
+  const disabled = (label: string) => bound_budgets.enabled[label] === false;
+  if (rows.every(([label]) => disabled(label)))
+    return "You've disabled every mat, so no matter how you juice, it costs 0 gold. You should probably enable something";
+  const worthless = clamp_band_plan(band_values).filter(
+    (v) => v === "Worthless",
+  ).length;
+  const covered = ([label, row]) => {
+    const { bound, roster, tradable } = materials[row];
+    const owned = [bound, roster, tradable].slice(0, worthless);
+    return owned.reduce((a, b) => a + b, 0) >= result.no_juice_pity[label];
+  };
+  if (worthless > 0 && rows.every((r) => disabled(r[0]) || covered(r)))
+    return `You can afford pity with ${BAND_NAMES.slice(0, worthless).join(" + ").toLowerCase()} mats, so no matter how you juice, it costs 0 gold.`;
+  return null;
 }
 
 export function get_optimizer_working(): boolean {

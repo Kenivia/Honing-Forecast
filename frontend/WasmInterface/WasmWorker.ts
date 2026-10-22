@@ -20,7 +20,12 @@ import type {
 
 // Rust hash maps arrive as JS Maps. Every label keyed field becomes a plain record here,
 // so nothing downstream has to know which is which.
-const KEYED_FIELDS = ["cum_percentiles", "chance_within", "avg_used"];
+const KEYED_FIELDS = [
+  "cum_percentiles",
+  "chance_within",
+  "avg_used",
+  "no_juice_pity",
+];
 function to_records(result: any): any {
   for (const field of KEYED_FIELDS) {
     if (result[field] instanceof Map) {

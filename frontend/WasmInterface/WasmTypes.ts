@@ -24,6 +24,8 @@ export interface HistogramOutputs {
   // chance the first k ownership bands cover every upgrade, as [bound, +roster, +tradable]
   chance_within: ByLabel<[number, number, number]>;
   avg_used: ByLabel<number>;
+  // base mats used at pity with nothing juiced
+  no_juice_pity: ByLabel<number>;
 
   // one entry per plan in the payload, in payload order
   gold_per_plan: ByLabel<number>[];
