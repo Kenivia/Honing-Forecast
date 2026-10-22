@@ -101,6 +101,7 @@ export interface SavedConfig {
   show_all_rows: boolean;
   auto_deduct_costs: boolean;
   auto_fetch: boolean;
+  analytics: boolean;
 }
 
 // ============================================================================
@@ -360,6 +361,7 @@ export function to_saved(config: RosterConfig): Omit<SavedConfig, "version"> {
     show_all_rows: config.show_all_rows,
     auto_deduct_costs: config.auto_deduct_costs,
     auto_fetch: config.auto_fetch,
+    analytics: config.analytics,
   };
 }
 
@@ -411,7 +413,10 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
   // a roster's characters together, as add_profile keeps them
   const active =
     profiles[
-      Math.max(0, Math.min(profiles.length - 1, saved.active_profile_index ?? 0))
+      Math.max(
+        0,
+        Math.min(profiles.length - 1, saved.active_profile_index ?? 0),
+      )
     ];
   out.profiles = [...new Set(profiles.map((p) => p.roster_id))].flatMap((id) =>
     profiles.filter((p) => p.roster_id === id),
@@ -429,6 +434,7 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
   out.snapshots = Array.isArray(saved.snapshots) ? saved.snapshots : [];
   out.roster_income = saved.roster_income ?? {};
   out.custom_choices = saved.custom_choices ?? {};
+  out.analytics = saved.analytics ?? out.analytics;
 
   return out;
 }

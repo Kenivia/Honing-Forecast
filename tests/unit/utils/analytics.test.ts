@@ -5,7 +5,8 @@ import { snapshot } from "../stores/fixtures";
 
 const fetch = vi.fn();
 beforeEach(() => {
-  vi.stubEnv("PROD", true);
+  vi.stubEnv("MODE", "production");
+  vi.stubEnv("DEV", false);
   vi.stubGlobal("fetch", fetch);
   fetch.mockReset().mockResolvedValue({ ok: true });
 });
@@ -55,12 +56,25 @@ describe("upload_snapshots", () => {
     expect(config.snapshots.some((s) => s.sent)).toBe(false);
   });
 
-  it("sends nothing when opted out or outside production", async () => {
+  it("a dev build's uploads are tagged dev", async () => {
+    vi.stubEnv("MODE", "development");
+    vi.stubEnv("DEV", true);
+    await upload_snapshots(config_with(1));
+    expect(sent(0).version).toBe("dev");
+  });
+
+  it("sends nothing when opted out, outside a real build or under automation", async () => {
     const config = config_with(1);
     config.analytics = false;
     await upload_snapshots(config);
     config.analytics = true;
-    vi.stubEnv("PROD", false);
+    vi.stubEnv("MODE", "test");
+    await upload_snapshots(config);
+    // what the node suites see
+    vi.stubEnv("MODE", undefined);
+    await upload_snapshots(config);
+    vi.stubEnv("MODE", "development");
+    vi.stubGlobal("navigator", { webdriver: true });
     await upload_snapshots(config);
     expect(fetch).not.toHaveBeenCalled();
   });

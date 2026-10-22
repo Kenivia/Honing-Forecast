@@ -25,6 +25,7 @@
     "deploy": "pwsh -File ./scripts/pre_deploy_check.ps1 && pnpm run no-check-deploy",
     "cloudflare-deploy": "wrangler deploy --config cloudflare/wrangler.toml",
     "cloudflare-dev": "wrangler dev --remote --config cloudflare/wrangler.toml",
+    "pull-analytics": "node scripts/pull-analytics.mjs",
     "remove-tmp": "node -e \"require('fs').rmSync('.tmp', { recursive: true, force: true })\""
   },
   "dependencies": {
@@ -56,6 +57,7 @@
     "@vue/compiler-sfc": "^3.5.38",
     "@vue/test-utils": "2.5.1",
     "concurrently": "^10.0.3",
+    "devalue": "^6.0.3",
     "esbuild": "^0.28.2",
     "eslint": "^10.5.0",
     "eslint-plugin-vue": "^10.9.2",

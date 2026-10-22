@@ -15,7 +15,7 @@ These notes are high-level. They cover what is hard to work out from reading one
 | `crates/wasm` (`hf-wasm`) | Thin `wasm_bindgen` wrappers over core and scanner. The only crate the frontend loads. |
 | `crates/arena` (`hf-arena`) | Native test harness for the core: Monte Carlo correctness, optimizer accuracy and speed, results in SQLite. |
 | `frontend/` | Vue 3 + Pinia + Tailwind app. `@` aliases to this folder. |
-| `cloudflare/` | A Worker that proxies and caches market prices and character lookups. |
+| `cloudflare/` | A Worker that proxies and caches market prices and character lookups, and stores analytics uploads in D1 (`schema.sql`). |
 | `public/` | Static assets, changelogs, `WIP.md` (the author's roadmap), scanner config and OCR model. |
 | `scanner_setup/` | Everything that builds or calibrates the scanner config: source icons (`templates/`), game-file extraction, brightness calibration, anchor setup, the browser profiling scripts. |
 | `scripts/` | Changelog helper, the pre-deploy check and the Income page's mock save (`mock income/`); everything scanner-specific lives in `scanner_setup/` instead. |
@@ -35,6 +35,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 - `pnpm build` chains `pnpm test:rust` (the Rust tests only) before the wasm and Vite builds and an unused-dependency check that needs nightly. `pnpm no-test-build` skips the test.
 - `pnpm deploy` only checks you are on a clean `main`, then force-pushes `main` to the `Production` branch (assumed to be what the hosted site builds from). It does not run tests.
 - `pnpm cloudflare-deploy` deploys the Worker separately.
+- `pnpm pull-analytics` downloads and deletes the analytics uploads (`Frontend/External services.md`).
 - `pnpm change-log` scaffolds the next changelog file in `public/change-logs`.
 
 ## Cargo features
@@ -70,7 +71,7 @@ Each note describes the code as it is now. Where there is history (what was meas
 - `Working in this repo.md`: line endings, scratch space, what the type checker cannot see, and the test suites. Read before a large edit.
 - `Frontend/State and persistence.md`: the store, data scopes, localStorage and migrations.
 - `Frontend/Wasm contract.md`: payload building, worker protocol, what must match Rust.
-- `Frontend/External services.md`: market prices, character import, changelogs.
+- `Frontend/External services.md`: market prices, character import, analytics uploads, changelogs.
 - `Screen scanner/Pipeline.md`: capture to recognised slots, and what is still stubbed.
 - `Screen scanner/Tooltips.md`: reading the hover tooltip, chests among it, and tying it to a slot.
 - `Screen scanner/Config and calibration.md`: the template config and brightness calibration.

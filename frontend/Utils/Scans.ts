@@ -170,6 +170,8 @@ export interface Snapshot {
   // left out of the income estimate, or starting a new line in it
   ignored?: boolean;
   breaks?: boolean;
+  // uploaded (Utils/Analytics.ts)
+  sent?: boolean;
 }
 
 const nonzero = (column: InputColumn) =>

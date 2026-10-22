@@ -3,14 +3,20 @@ import { LATEST_VERSION } from "./Changelog";
 import type { RosterConfig } from "@/Stores/RosterConfig";
 
 // Uploads each roster's budget snapshots not sent yet to the Worker, which looks up the
-// characters' recent raids and stores both without the names. Production only.
+// characters' recent raids and stores both without the names. Dev builds upload too, tagged
+// "dev"; unit tests and browser automation (the e2e tests) never do.
 
 // per request, so the Worker stays within its CPU limit
 const BATCH = 20;
 let uploading = false;
 
+// real builds only, so an unknown mode (node suites, scripts) never uploads
+const enabled = () =>
+  ["production", "development"].includes(import.meta.env.MODE) &&
+  !navigator.webdriver;
+
 export async function upload_snapshots(config: RosterConfig) {
-  if (uploading || !config.analytics || !import.meta.env.PROD) return;
+  if (uploading || !config.analytics || !enabled()) return;
   uploading = true;
   try {
     for (const roster of new Set(config.snapshots.map((s) => s.roster_id))) {
@@ -25,7 +31,7 @@ export async function upload_snapshots(config: RosterConfig) {
           body: JSON.stringify({
             roster: String(roster),
             region: config.all_regions[roster],
-            version: LATEST_VERSION,
+            version: import.meta.env.DEV ? "dev" : LATEST_VERSION,
             snapshots: batch,
           }),
         }).catch(() => null);

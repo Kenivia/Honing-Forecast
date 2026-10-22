@@ -26,7 +26,7 @@ Data in `roster_config` lives at four scopes:
 | Per character | Upgrade grids, keyed upgrades, bound material budgets, free-tap budget, chests, tier, band values, optimizer settings. |
 | Per roster | Roster-owned materials, tradable materials, roster chests, region, the scanner's saved pages and the budget snapshots (both lists in the config, filtered by roster), manual roster-bound and tradable income, the Choices page's custom choice. |
 | Per region | Market prices per bundle, the chosen bundle per material, the last fetched market response. |
-| Global | UI flags, the active character index, last seen version, whether the scanner's beta banner was dismissed. |
+| Global | UI flags, the active character index, last seen version, whether the scanner's beta banner was dismissed, whether snapshots are shared (`analytics`). |
 
 The active character is set from the route, and most components read through `active_*` getters.
 

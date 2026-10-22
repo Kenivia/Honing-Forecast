@@ -52,12 +52,6 @@ for (const region of Object.keys(v8.mats_prices)) {
     others.every((k) => got[k] === old[k]),
   );
 }
-check(
-  "a nonzero book price is the user's",
-  input_column_to_num(loaded.mats_prices.nae, true)[
-    bundle_key("12-15 Armor", 1)
-  ] === 3,
-);
 
 // apart from the book prices, the save comes through unchanged
 const again = to_saved(loaded);

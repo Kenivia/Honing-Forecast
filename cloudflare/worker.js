@@ -1,7 +1,16 @@
+import { unflatten } from "devalue";
+
 const MARKET_URL =
   "https://marketdata-api.yrzhao1068589.workers.dev/v1/prices/latest";
 const BIBLE_URL = "https://lostark.bible";
 const CACHE_TTL = 3600;
+const MAX_UPLOAD = 1_000_000;
+// free plan: 50 subrequests per invocation
+const MAX_CHARS = 40;
+const BIBLE_REGIONS = { nae: "NA", euc: "CE" };
+const WEEK_MS = 7 * 24 * 3600 * 1000;
+// a weekly reset, Thursday 10:00 UTC
+const RESET = Date.UTC(2026, 0, 1, 10);
 
 const UWUOWO_HEADERS = {
   "User-Agent":
@@ -29,6 +38,11 @@ export default {
         if (region && char_name) {
           return handleCharacterProxy(region, char_name, suffix, env, ctx);
         }
+      }
+
+      if (request.method === "POST" && url.pathname === "/snapshots") {
+        // awaited so a failure gets the catch's CORS headers
+        return await handleSnapshots(request, env);
       }
 
       if (request.method === "POST" && url.pathname === "/") {
@@ -137,6 +151,78 @@ async function handleMarketProxy(request, env, ctx) {
       headers: { "Content-Type": "application/json", "X-Cache": "MISS" },
     }),
   );
+}
+
+// One roster's snapshots, stored with each character's recent raids from lostark.bible and
+// without anything that names the character.
+async function handleSnapshots(request, env) {
+  const body = await request.text();
+  if (body.length > MAX_UPLOAD) {
+    return corsResponse(new Response("Too large", { status: 413 }));
+  }
+  const { roster, region, version, snapshots } = JSON.parse(body);
+  if (typeof roster !== "string" || !Array.isArray(snapshots)) {
+    return corsResponse(new Response("Bad upload", { status: 400 }));
+  }
+
+  // the latest name of each character
+  const names = {};
+  for (const snapshot of snapshots) {
+    for (const [id, char] of Object.entries(snapshot.chars ?? {})) {
+      names[id] = char.name;
+      delete char.name;
+    }
+  }
+  const raids = {};
+  await Promise.all(
+    Object.entries(names)
+      .slice(0, MAX_CHARS)
+      .map(async ([id, name]) => {
+        raids[id] = await fetchRaids(BIBLE_REGIONS[region], name);
+      }),
+  );
+
+  await env.DB.prepare(
+    "INSERT INTO uploads (received, roster, region, version, snapshots, raids) VALUES (?, ?, ?, ?, ?, ?)",
+  )
+    .bind(
+      Date.now(),
+      roster,
+      String(region),
+      String(version),
+      JSON.stringify(snapshots),
+      JSON.stringify(raids),
+    )
+    .run();
+  return corsResponse(new Response("ok", { status: 200 }));
+}
+
+// The character's recent logs, reduced to what does not identify it, or why there are none.
+async function fetchRaids(region, name) {
+  if (!region) return "no region";
+  if (!name || /^Newchar\d*$/.test(name)) return "no name";
+  try {
+    const upstream = await fetch(
+      `${BIBLE_URL}/character/${region}/${encodeURIComponent(name)}/logs/__data.json`,
+      { headers: UWUOWO_HEADERS },
+    );
+    if (!upstream.ok) return `error ${upstream.status}`;
+    const page = (await upstream.json()).nodes
+      .map((node) => (node?.type === "data" ? unflatten(node.data) : null))
+      .find((data) => data && "logs" in data);
+    if (!page) return "not found";
+    if (!page.logsEnabled || !page.isPublic) return "private";
+    return page.logs.map((log) => ({
+      boss: log.boss,
+      difficulty: log.difficulty,
+      isBus: log.isBus,
+      gearScore: Math.floor(log.gearScore),
+      class: log.class,
+      week: RESET + Math.floor((log.timestamp - RESET) / WEEK_MS) * WEEK_MS,
+    }));
+  } catch (e) {
+    return `error ${e.message}`;
+  }
 }
 
 async function hashBody(text) {

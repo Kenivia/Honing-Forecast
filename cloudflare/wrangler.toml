@@ -10,3 +10,9 @@ invocation_logs = true
 binding = "CACHE_KV"
 id = "457b0a565e1e44d99d1ed0d2c5ff610b"      
 
+
+# analytics uploads; create with `wrangler d1 create hf-analytics`, then apply schema.sql
+[[d1_databases]]
+binding = "DB"
+database_name = "hf-analytics"
+database_id = "1fcbabd9-8306-413a-91d4-696f026251aa"

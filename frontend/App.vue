@@ -14,6 +14,7 @@ import { useRuntimeStore } from "./Stores/RuntimeState";
 import ScanSwitchDialog from "./Components/Character/InventoryScanner/ScanSwitchDialog.vue";
 import BrokenSaveBanner from "./Components/Common/BrokenSaveBanner.vue";
 import OtherTabBanner from "./Components/Common/OtherTabBanner.vue";
+import { upload_snapshots } from "./Utils/Analytics";
 
 const roster_store = useRosterStore();
 roster_store.init();
@@ -32,6 +33,16 @@ const runtime = useRuntimeStore();
 watch(
   () => all_profiles.value.map((p) => p.id),
   (ids) => runtime.sync_profiles(ids),
+  { immediate: true },
+);
+
+// on load, then as snapshots are taken or sharing is turned back on
+watch(
+  () => [
+    roster_store.roster_config.snapshots.length,
+    roster_store.roster_config.analytics,
+  ],
+  () => upload_snapshots(roster_store.roster_config),
   { immediate: true },
 );
 
