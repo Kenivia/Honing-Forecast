@@ -21,7 +21,7 @@ from PIL import Image
 from find_icon import load_icons
 from game import ROOT, load_index
 
-TEMPLATES = ROOT / "templates"
+TEMPLATES = ROOT / "scanner_setup/templates"
 ART = TEMPLATES / "DecoyIcons"
 NEAR = 0.93  # the slot limit is 0.95, and a slot scores up to 0.02 off what its template would
 SAME = 0.99

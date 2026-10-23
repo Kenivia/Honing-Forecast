@@ -140,6 +140,7 @@ equal(
 
 const raids = raids_of(PRESET_CHOICES).map((x) => x.name);
 equal("raids by their highest difficulty, newest first", raids, [
+  "Belgardin, Arbiter of Death",
   "Horizon Cathedral",
   "Witch of Agony, Serca",
   "Denouement: Final Day",

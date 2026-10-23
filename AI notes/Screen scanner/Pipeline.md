@@ -224,7 +224,7 @@ Not done yet:
 - A crop that falls outside the frame (inventory window partly off the capture) still panics.
 - A session that only ever finds one brightness-telling anchor keeps its error (up to 1.5 settings at 1080p).
 - A brightness setting changed in game during a session is not picked up until the scanner restarts. Neither is forced 21:9 switched in game.
-- **`public/ScannerConfig.msgpack` is 17 MB**: 1,030 icons, decoys and anchors, raw RGBA. As PNG it would be a few MB; not done, since load time no longer depends on it much.
+- **`public/ScannerConfig.msgpack` is 17 MB**: 1,039 templates (246 icons, 762 decoys, 31 anchors), raw RGBA. As PNG it would be a few MB; not done, since load time no longer depends on it much.
 - The two book icons pass at 0.93 (`Config and calibration.md`); nothing else has its own slot limit.
 - The roster page tabs for "page 1 inactive" and "page 2 active" were built from character-storage tab pixels, which look the same.
 - Tooltip reading works in the native harness and in the browser on an uploaded recording, where every frame is scanned. Its limits are listed in `Tooltips.md`.

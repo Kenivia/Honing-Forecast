@@ -1,5 +1,161 @@
 [
  {
+  "id": "bonus 224014 1",
+  "group": "Belgardin, Arbiter of Death",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -6400,
+    "Shards": 19000,
+    "Serca Red": 860,
+    "Serca Blue": 1720,
+    "Serca Leaps": 36
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x14",
+   "Great Stone of Soaring x10",
+   "Radiant Savior Bracelet x3",
+   "Ark Grid Core x3",
+   "Spectral Shade x12"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Normal / Solo",
+  "item_level": 1750
+ },
+ {
+  "id": "bonus 224014 2",
+  "group": "Belgardin, Arbiter of Death",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -9600,
+    "Shards": 32200,
+    "Serca Red": 1430,
+    "Serca Blue": 2860,
+    "Serca Leaps": 60,
+    "Serca Special Leap": 5
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x16",
+   "Great Stone of Soaring x10",
+   "Radiant Savior Bracelet x4",
+   "Spectral Shade x18",
+   "Ark Grid Core x3",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Normal / Solo",
+  "item_level": 1750
+ },
+ {
+  "id": "bonus 224013 1",
+  "group": "Belgardin, Arbiter of Death",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -9600,
+    "Shards": 26220,
+    "Serca Red": 1300,
+    "Serca Blue": 2600,
+    "Serca Leaps": 49
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x16",
+   "Great Stone of Soaring x10",
+   "Radiant Savior Bracelet x5",
+   "Deathly Hand x12",
+   "Ark Grid Core x4"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Nightmare",
+  "item_level": 1780
+ },
+ {
+  "id": "bonus 224013 2",
+  "group": "Belgardin, Arbiter of Death",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -14400,
+    "Shards": 44440,
+    "Serca Red": 1980,
+    "Serca Blue": 3960,
+    "Serca Leaps": 83,
+    "Serca Special Leap": 7
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x18",
+   "Great Stone of Soaring x10",
+   "Radiant Savior Bracelet x6",
+   "Deathly Hand x18",
+   "Ark Grid Core x4",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Nightmare",
+  "item_level": 1780
+ },
+ {
+  "id": "bonus 224012 1",
+  "group": "Belgardin, Arbiter of Death",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -8000,
+    "Shards": 22800,
+    "Serca Red": 1130,
+    "Serca Blue": 2260,
+    "Serca Leaps": 43
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x15",
+   "Great Stone of Soaring x10",
+   "Radiant Savior Bracelet x4",
+   "Deathly Hand x12",
+   "Ark Grid Core x3"
+  ],
+  "title": "Gate 1",
+  "difficulty": "Hard",
+  "item_level": 1770
+ },
+ {
+  "id": "bonus 224012 2",
+  "group": "Belgardin, Arbiter of Death",
+  "band": 0,
+  "options": [
+   {},
+   {
+    "Gold": -11840,
+    "Shards": 38640,
+    "Serca Red": 1720,
+    "Serca Blue": 3440,
+    "Serca Leaps": 72,
+    "Serca Special Leap": 6
+   }
+  ],
+  "others": [
+   "Arriving Battle Necklace / Arriving Battle Earrings / Arriving Battle Ring x17",
+   "Great Stone of Soaring x10",
+   "Radiant Savior Bracelet x5",
+   "Deathly Hand x18",
+   "Ark Grid Core x3",
+   "Joyful Legendary Card Pack / Epic Card Pack II / Rare Card Pack II x1"
+  ],
+  "title": "Gate 2",
+  "difficulty": "Hard",
+  "item_level": 1770
+ },
+ {
   "id": "bonus 223014 1",
   "group": "Witch of Agony, Serca",
   "band": 0,

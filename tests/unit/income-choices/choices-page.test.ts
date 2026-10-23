@@ -114,11 +114,11 @@ describe("Choices page", () => {
     raise_item_level();
     open();
     expect(headers()).toHaveLength(3);
-    expect(headers()[0].text()).toContain("Horizon Cathedral");
+    expect(headers()[0].text()).toContain("Belgardin, Arbiter of Death");
     const more = wrapper
       .findAll("button")
       .find((b) => b.text().startsWith("Show one more raid"));
-    expect(more.text()).toContain("(7 hidden)");
+    expect(more.text()).toContain("(8 hidden)");
     await more.trigger("click");
     expect(headers()).toHaveLength(4);
   });
@@ -143,7 +143,7 @@ describe("Choices page", () => {
     raise_item_level();
     open();
     const profile = store.active_profile;
-    const group = "Horizon Cathedral";
+    const group = "Belgardin, Arbiter of Death";
     const choice = PRESET_CHOICES.find(
       (x) =>
         x.group === group &&

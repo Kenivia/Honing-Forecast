@@ -38,7 +38,7 @@ LOOSER = ["RosterBound", "Tradable"]  # than bound to a character, the least so 
 # How a bar's gold is bound, by Item.Category: plain, deposit (two kinds), roster, character. Any other chest's can be traded.
 GOLD_BANDS = {34300: "Tradable", 34301: "Tradable", 34302: "Tradable", 34303: "RosterBound", 34304: "CharBound"}
 UNWANTED = ("Cube", "Engraving")  # in a chest's title: it is irrelevant, and so is what only it leads to
-UNWANTED_ICONS = ("all_quest_02_184", "all_quest_02_196", "all_quest_02_198", "all_quest_02_199", "all_quest_02_226")  # likewise, by its art
+UNWANTED_ICONS = ("all_quest_02_184", "all_quest_02_196", "all_quest_02_198", "all_quest_02_199", "all_quest_02_226", "use_11_161", "use_11_162", "use_11_163")  # likewise, by its art
 
 bare = lambda title: title.replace(" (Bound)", "")
 
