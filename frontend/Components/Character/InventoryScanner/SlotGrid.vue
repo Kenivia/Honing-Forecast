@@ -7,11 +7,11 @@ import { Currency, SlotAddress } from "./LoadStorage";
 import {
   edits,
   game_pages,
+  page_cover,
   shown_slot,
   slot_images,
   slot_key,
   slots,
-  window_cover,
 } from "./ScanStore";
 import { COVERABLE, cover_pages, covered, manifest } from "./Manifest";
 import CurrencyBar from "./CurrencyBar.vue";
@@ -87,12 +87,22 @@ const saved = computed(
 const has_saved = (type: string) =>
   [...saved.value].some((key) => key.startsWith(`${type} `));
 
-// who exported a coverable window last, and when
+// the page shown in a window, by `page_key`
+const shown_page = (type: string) => page_key(type, page[type]);
+// a saved page of a coverable window the user uncovered
+const uncovered = (type: string) =>
+  COVERABLE.includes(type) &&
+  cover_pages.value[type].has(shown_page(type)) &&
+  !covered.value[shown_page(type)];
+
+// who exported the page shown in a coverable window last, and when
 function last_export(type: string) {
   const owner = type === "Roster" ? null : active_profile.value.id;
+  const at = page[type];
   const pages = roster_config.value.scan_pages.filter(
     (page) =>
       page.window === type &&
+      page.page === at &&
       page.char_id === owner &&
       page.roster_id === active_profile.value.roster_id,
   );
@@ -163,30 +173,16 @@ function toggle_lock(x: Shown) {
                 <path d="M2 1h10l3 3v11H1V1h1zm2 1v4h7V2H4zm1 8v4h6v-4H5z" />
               </svg>
             </button>
-            <!-- covers every page of a coverable window with its last export -->
+            <!-- undoes uncovering the page shown -->
             <button
-              v-if="COVERABLE.includes(win.type) && cover_pages[win.type].size"
+              v-if="uncovered(win.type)"
               class="generic-button ml-2 flex items-center gap-1"
-              :class="{ 'bg-(--gold-muted)!': covered[win.type] }"
-              :aria-pressed="covered[win.type]"
-              @click="window_cover[win.type] = !covered[win.type]"
+              @click="page_cover[shown_page(win.type)] = true"
             >
-              <svg
-                viewBox="0 0 16 16"
-                class="h-2.5 w-2.5"
-                :class="
-                  covered[win.type]
-                    ? 'fill-(--text-bright)'
-                    : 'fill-(--gold-muted)'
-                "
-              >
+              <svg viewBox="0 0 16 16" class="h-2.5 w-2.5 fill-(--gold-muted)">
                 <path d="M2 1h10l3 3v11H1V1h1zm2 1v4h7V2H4zm1 8v4h6v-4H5z" />
               </svg>
-              {{
-                covered[win.type]
-                  ? "Using most recent scan"
-                  : "Use most recent scan"
-              }}
+              Use most recent scan
             </button>
             <span
               v-else-if="has_saved(win.type)"
@@ -205,17 +201,13 @@ function toggle_lock(x: Shown) {
             }"
           >
             <div
-              v-if="covered[win.type]"
+              v-if="covered[shown_page(win.type)]"
               class="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-(--bg-muted) p-2 text-center text-sm"
               role="group"
               :aria-label="`${win.label} covered`"
             >
               <span>
-                {{
-                  window_cover[win.type] === null
-                    ? "You don't need to re-scan if you know nothing here has changed. "
-                    : ""
-                }}
+                You don't need to re-scan if you know nothing here has changed.
               </span>
               <span class="text-(--text-muted)"
                 >Using most recent scan ({{ last_export(win.type) }}).</span
@@ -223,9 +215,9 @@ function toggle_lock(x: Shown) {
 
               <button
                 class="generic-button"
-                @click="window_cover[win.type] = false"
+                @click="page_cover[shown_page(win.type)] = false"
               >
-                Scan {{ win.label.toLowerCase() }}
+                Scan {{ win.label.toLowerCase() }} page {{ page[win.type] + 1 }}
               </button>
             </div>
             <SlotCell

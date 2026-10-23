@@ -17,3 +17,9 @@ Dropped as more trouble than they were worth once pages are saved and merged: an
 Before: export wrote `owned[label][band]` of the scan alone into the roster's columns, and every chest into the exporting character's `chests`. Scanning a second character replaced the first one's roster-bound and tradable finds, and a roster-bound chest belonged to whichever character exported it.
 
 Now pages are saved per owner and merged (`Manifest.md`, "Saved pages and other characters"). Merging per window, not per page, was considered and rejected: a page not opened would then count as empty. Per page accepts counting an item twice when it moved to a page not shown again.
+
+## Window-wide cover (October 2026)
+
+Before: `covered[window]` covered all of roster storage or character storage at once, and opening a page in game that was never saved uncovered the whole window. One toggle beside the tabs ("Use most recent scan" / "Using most recent scan") covered or uncovered the window from any page, and the overlay's "Scan <window>" uncovered all of it.
+
+Now the cover is per saved page (`Manifest.md`), so re-scanning one page keeps the others from the last export, and "Use most recent scan" shows only to undo uncovering the page shown.

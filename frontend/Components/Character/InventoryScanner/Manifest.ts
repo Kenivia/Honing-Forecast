@@ -31,6 +31,7 @@ import {
   chests_for,
   edits,
   has_progress,
+  page_cover,
   reset_covers,
   seen_pages,
   set_edit,
@@ -38,7 +39,6 @@ import {
   shown_slot,
   slot_place,
   slots,
-  window_cover,
   WINDOW_NAMES,
 } from "./ScanStore";
 import ITEMS from "../../../../scanner_setup/templates/items.json";
@@ -187,10 +187,10 @@ export const cover_pages = computed(() => {
   }
   return out;
 });
-// Whether a coverable window is taken from the pages saved by an earlier export, its grid
-// covered and whatever is read there ignored. It is unless none of its pages was ever saved, one
-// open in game never was, or the budgets it feeds changed since the last snapshot. The user can
-// flip it either way.
+// Whether a saved page of a coverable window is taken from the last export, its grid covered and
+// whatever is read there ignored, by `page_key`. Every saved page of a window is unless the
+// budgets it feeds changed since the last snapshot; a page never saved never is. The user can
+// flip each saved page either way.
 export const covered = computed(() => {
   const { roster_config, active_profile } = useRosterStore();
   const { roster_id, id } = active_profile;
@@ -198,18 +198,13 @@ export const covered = computed(() => {
     Roster: roster_unchanged(roster_config, roster_id),
     CharStorage: char_unchanged(roster_config, roster_id, id),
   };
-  return Object.fromEntries(
-    COVERABLE.map((window) => {
-      const pages = cover_pages.value[window];
-      if (!pages.size) return [window, false];
-      const say = window_cover.value[window];
-      if (say !== null) return [window, say];
-      const unsaved = Object.keys(seen_pages.value).some(
-        (key) => key.startsWith(`${window} `) && !pages.has(key),
-      );
-      return [window, !unsaved && unchanged[window]];
-    }),
-  ) as Record<string, boolean>;
+  const out: Record<string, boolean> = {};
+  for (const window of COVERABLE) {
+    for (const key of cover_pages.value[window]) {
+      out[key] = page_cover.value[key] ?? unchanged[window];
+    }
+  }
+  return out;
 });
 
 // Straight off the slot grid, per page, before conversion. Only slots that are good or were set
@@ -221,7 +216,6 @@ export const live = computed(() => {
   const missing: MissingSlot[] = [];
   const seen = new Set<string>();
   const content = (key: string) => (pages[key] ??= empty_content());
-  const is_covered = (window: string) => !!covered.value[window];
 
   function group(
     key: string,
@@ -274,7 +268,7 @@ export const live = computed(() => {
   }
 
   for (const key of Object.keys(seen_pages.value)) {
-    if (!is_covered(key.split(" ")[0])) seen.add(key);
+    if (!covered.value[key]) seen.add(key);
   }
   const keys = new Set([...slots.value.keys(), ...Object.keys(edits.value)]);
   for (const key of keys) {
@@ -282,10 +276,10 @@ export const live = computed(() => {
     const slot = shown_slot(slots.value.get(key));
     if (!edit && (!slot || slot.status === "Irrelevant")) continue;
     const address = edit?.address ?? slot.address;
-    if (is_covered(address.inventory_type)) continue;
+    const page = page_key(address.inventory_type, address.page_num);
+    if (covered.value[page]) continue;
     const item = edit ? edit.item : slot.icon_name_score?.[0];
     if (!item) continue;
-    const page = page_key(address.inventory_type, address.page_num);
     seen.add(page);
     // a slot set by hand is as good as a read one: no amount is a single item, and no
     // tradability is what is assumed for its window
@@ -483,17 +477,15 @@ export function export_manifest() {
   const at = Date.now();
   save_pages(
     config,
-    read.map(
-      ({ window, page, content }): ScanPage => ({
-        ...copy(content),
-        roster_id: profile.roster_id,
-        char_id: ROSTER_WINDOWS.includes(window) ? null : profile.id,
-        window,
-        page,
-        at,
-        by: profile.id,
-      }),
-    ),
+    read.map(({ window, page, content }): ScanPage => ({
+      ...copy(content),
+      roster_id: profile.roster_id,
+      char_id: ROSTER_WINDOWS.includes(window) ? null : profile.id,
+      window,
+      page,
+      at,
+      by: profile.id,
+    })),
   );
   take_snapshot(config, profile.roster_id, "After export");
   reset_covers();

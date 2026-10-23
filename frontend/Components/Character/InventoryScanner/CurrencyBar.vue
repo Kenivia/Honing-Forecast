@@ -77,7 +77,7 @@ const shown = computed(() =>
               (amount, band) =>
                 `${BAND_NAMES[band]} ${amount.toLocaleString()}`,
             )
-            .join(" · ")
+            .join(", ")
         }}
       </span>
       <span v-else-if="item.reason" class="text-xs text-(--text-muted)">

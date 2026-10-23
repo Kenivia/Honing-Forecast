@@ -2,12 +2,7 @@ import { ref } from "vue";
 import type { RouteLocationNormalized } from "vue-router";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
-import {
-  reset_covers,
-  reset_scan,
-  scan_wipes,
-  window_cover,
-} from "./ScanStore";
+import { reset_covers, reset_scan, page_cover, scan_wipes } from "./ScanStore";
 import { scan_unexported } from "./Manifest";
 
 // The scan belongs to the active character. Going to another one wipes it, after asking when
@@ -32,8 +27,11 @@ export function wipe_scan() {
 // a cover was chosen against the old character's or roster's saved reading
 export function move_scan(same_roster: boolean) {
   moving = true;
-  if (same_roster) window_cover.value.CharStorage = null;
-  else reset_covers();
+  if (same_roster) {
+    for (const key of Object.keys(page_cover.value)) {
+      if (key.startsWith("CharStorage ")) delete page_cover.value[key];
+    }
+  } else reset_covers();
 }
 
 // a router guard

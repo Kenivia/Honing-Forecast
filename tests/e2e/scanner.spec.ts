@@ -198,29 +198,30 @@ test("a roster page never exported is not covered", async ({ page }) => {
   await page.getByRole("button", { name: "Export to calculator" }).click();
   await page.waitForTimeout(1000);
 
-  // Bee: only page 1 was exported, so covered until page 2 is open in game
+  // Bee: only page 1 was exported, so page 2 open in game is not covered
   await open_scanner(page, "Bee");
   const cover = page.getByRole("group", { name: "Roster storage covered" });
   const roster = page.getByRole("group", { name: "Roster storage" });
   const use_saved = roster.getByRole("button", { name: /most recent scan/ });
   await expect(cover).toBeVisible();
   await scan(page, [["Roster", 1, 0, "Red", 30, "Tradable"]], ["Roster 1"]);
+  await roster.getByRole("button", { name: "2", exact: true }).click();
   await expect(cover).toHaveCount(0);
   await expect(manifest_cell(page, "Red", "Tradable")).toHaveText("130");
 
-  // the toggle covers the whole window, whichever page is shown
-  await expect(use_saved).toHaveAttribute("aria-pressed", "false");
-  await roster.getByRole("button", { name: "2", exact: true }).click();
+  // page 1 stays covered on its own; uncovering it offers the saved page back
+  await expect(use_saved).toHaveCount(0);
+  await roster.getByRole("button", { name: "1 saved" }).click();
+  await expect(cover).toBeVisible();
+  await expect(use_saved).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Scan roster storage page 1" })
+    .click();
+  await expect(cover).toHaveCount(0);
   await use_saved.click();
   await expect(cover).toBeVisible();
-  await expect(use_saved).toHaveAttribute("aria-pressed", "true");
-  await expect(manifest_cell(page, "Red", "Tradable")).toHaveText("100");
-  await use_saved.click();
-  await expect(cover).toHaveCount(0);
+  await expect(use_saved).toHaveCount(0);
   await expect(manifest_cell(page, "Red", "Tradable")).toHaveText("130");
-  await use_saved.click();
-  await page.getByRole("button", { name: "Scan roster storage" }).click();
-  await expect(cover).toHaveCount(0);
 
   // once exported, page 2 is saved too and the cover is back
   await page.getByRole("button", { name: "Export to calculator" }).click();
@@ -280,13 +281,13 @@ test("switching character asks what to do with an unexported scan", async ({
   await expect(dialog).toHaveCount(0);
   expect(await scan_edits(page)).toBe(0);
 
-  // wiped, the switch goes where it was headed and Bee keeps its export
+  // wiped, the switch goes to that character's scanner and Bee keeps its export
   await page.getByRole("link", { name: /^Scanner/ }).click();
   await expect(page).toHaveURL(/\/Newchar\/scanner$/);
   await scan(page, blue(5), ["CharInventory 0"]);
   await link("Bee").click();
   await dialog.getByRole("button", { name: "Wipe the scan" }).click();
-  await expect(page).toHaveURL(/\/Bee\/calc$/);
+  await expect(page).toHaveURL(/\/Bee\/scanner$/);
   expect(await scan_edits(page)).toBe(0);
   expect((await budgets(page)).bound.Blue).toBe(20);
 });
@@ -531,24 +532,28 @@ test("captures of two characters merge as expected", async ({
   now = await export_now(page);
   expect(now).toEqual(after_two);
 
-  // everything, roster storage page 2 too: never exported, so not covered; covered by hand, it
-  // is ignored; uncovered, it counts. Character storage shows only saved pages and stays covered.
+  // everything, roster storage page 2 too: never exported, so not covered, while page 1 is and
+  // what is read there is ignored; uncovered, it counts. Character storage shows only saved pages
+  // and stays covered.
   let four = await replay(page, "Bee", CAPTURES[3]);
-  await expect(cover).toHaveCount(0);
   await expect(
     page.getByRole("group", { name: "Character storage covered" }),
   ).toBeVisible();
   await expect(storage.getByRole("img", { name: "saved" })).toHaveCount(2);
   const roster = page.getByRole("group", { name: "Roster storage" });
-  await roster.getByRole("button", { name: /^1( saved)?$/ }).click();
-  await roster.getByRole("button", { name: /most recent scan/ }).click();
-  await expect(cover).toBeVisible();
-  await expect(roster.getByRole("button", { name: "1 saved" })).toBeVisible();
-  // covered, what is read there is left out
-  four = await live_pages(page);
-  expect(Object.keys(four).some((key) => key.startsWith("Roster"))).toBe(false);
-  await page.getByRole("button", { name: "Scan roster storage" }).click();
+  await roster.getByRole("button", { name: "2", exact: true }).click();
   await expect(cover).toHaveCount(0);
+  await roster.getByRole("button", { name: "1 saved" }).click();
+  await expect(cover).toBeVisible();
+  four = await live_pages(page);
+  expect(Object.keys(four).includes("Roster 0")).toBe(false);
+  await page
+    .getByRole("button", { name: "Scan roster storage page 1" })
+    .click();
+  await expect(cover).toHaveCount(0);
+  await expect(
+    roster.getByRole("button", { name: /most recent scan/ }),
+  ).toBeVisible();
   four = await live_pages(page);
   now = await export_now(page);
   const page_2 = (key: string) => key === "Roster 1";
