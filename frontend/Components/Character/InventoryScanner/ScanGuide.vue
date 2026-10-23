@@ -32,6 +32,15 @@
           you don't export, it won't be saved on reload.
         </div>
       </div>
+
+      <div>
+        <div class="text-(--text-bright)">Note:</div>
+        <div class="pl-4">
+          Try not to move items or open chests during a scan. This may cause
+          duplicate reads. If this happens, you can "Reset scan" and start over,
+          or set the extra one to "irrelevant" manually.
+        </div>
+      </div>
     </div>
   </div>
 </template>

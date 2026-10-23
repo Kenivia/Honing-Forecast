@@ -8,10 +8,10 @@ const router = useRouter();
 const store = useRosterStore();
 
 function wipe() {
-  const { path } = pending_switch.value;
+  const { name } = pending_switch.value;
   pending_switch.value = null;
   wipe_scan();
-  router.push(path);
+  router.push({ name: "char-scanner", params: { characterName: name } });
 }
 
 // on to the scanner, where the scan goes on

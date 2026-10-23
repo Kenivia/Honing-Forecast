@@ -143,7 +143,7 @@ watch(
       <!-- scrolls on its own on a narrow screen, so the page does not -->
       <div class="overflow-x-auto">
         <div
-          class="grid w-max min-w-full grid-cols-[minmax(10rem,auto)_auto_minmax(18rem,auto)_auto_auto] items-center gap-x-4 gap-y-1"
+          class="grid w-max min-w-full grid-cols-[minmax(10rem,auto)_auto_minmax(18rem,auto)_auto] items-center gap-x-4 gap-y-1"
           role="table"
           aria-label="Custom options"
         >
@@ -163,7 +163,6 @@ watch(
               {{ baseline_text }}
             </span>
           </span>
-          <span></span>
           <span></span>
           <div class="col-span-full border-b border-(--border-muted)" />
           <template v-for="row in sorted" :key="row.index">
@@ -221,33 +220,36 @@ watch(
                 </option>
               </select>
             </span>
-            <span
-              class="tabular-nums"
-              :aria-label="`${custom.names[row.index]} worth`"
-              :style="{ color: worth_color(no_upgrades, row.worth) }"
-            >
-              <Spinner
-                v-if="!no_upgrades && row.worth === undefined"
-                class="inline-block h-4 w-4 align-middle"
-              />
-              {{ worth_text(no_upgrades, row.worth) }}
-            </span>
-            <button
-              class="generic-button w-28"
-              :disabled="
-                is_empty(row.option) || !affordable(choice, row.option, columns)
-              "
-              :title="
-                affordable(choice, row.option, columns)
-                  ? 'Add what it gives and take what it costs'
-                  : 'Not enough to pay for it'
-              "
-              @click="emit('take', `custom/${row.index}`, choice, row.option)"
-            >
-              {{
-                taken === `custom/${row.index}` ? "Added ✓" : "Add to budget"
-              }}
-            </button>
+            <div class="flex items-center justify-between gap-3">
+              <span
+                class="tabular-nums"
+                :aria-label="`${custom.names[row.index]} worth`"
+                :style="{ color: worth_color(no_upgrades, row.worth) }"
+              >
+                <Spinner
+                  v-if="!no_upgrades && row.worth === undefined"
+                  class="inline-block h-4 w-4 align-middle"
+                />
+                {{ worth_text(no_upgrades, row.worth) }}
+              </span>
+              <button
+                class="generic-button w-28"
+                :disabled="
+                  is_empty(row.option) ||
+                  !affordable(choice, row.option, columns)
+                "
+                :title="
+                  affordable(choice, row.option, columns)
+                    ? 'Add what it gives and take what it costs'
+                    : 'Not enough to pay for it'
+                "
+                @click="emit('take', `custom/${row.index}`, choice, row.option)"
+              >
+                {{
+                  taken === `custom/${row.index}` ? "Added ✓" : "Add to budget"
+                }}
+              </button>
+            </div>
             <button
               class="generic-button w-fit"
               :disabled="custom.options.length <= 1"

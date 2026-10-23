@@ -220,7 +220,7 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
         <!-- scrolls on its own on a narrow screen, so the page does not -->
         <div class="overflow-x-auto">
           <div
-            class="grid w-max min-w-full grid-cols-[minmax(10rem,auto)_6rem_auto_minmax(18rem,auto)_auto] items-center gap-x-4 gap-y-1"
+            class="grid w-max min-w-full grid-cols-[minmax(10rem,auto)_6rem_auto_minmax(18rem,auto)] items-center gap-x-4 gap-y-1"
             role="table"
             aria-label="Choices"
           >
@@ -241,7 +241,6 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
                 {{ baseline_text }}
               </span>
             </span>
-            <span></span>
             <div class="col-span-full border-b border-(--border-muted)" />
             <template v-for="(group, at) in groups" :key="group.name">
               <!-- a line between raids, the header's under the first -->
@@ -307,31 +306,33 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
                     {{ amount.toLocaleString("en-US") }}
                   </span>
                 </span>
-                <span
-                  class="tabular-nums"
-                  :aria-label="`${choice.group} ${choice.title} worth`"
-                  :style="{
-                    color: worth_color(no_upgrades, worth(job.metric)),
-                  }"
-                >
-                  <Spinner
-                    v-if="!no_upgrades && worth(job.metric) === undefined"
-                    class="inline-block h-4 w-4 align-middle"
-                  />
-                  {{ worth_text(no_upgrades, worth(job.metric)) }}
-                </span>
-                <button
-                  class="generic-button w-28"
-                  :disabled="!affordable(choice, option, columns)"
-                  :title="
-                    affordable(choice, option, columns)
-                      ? 'Add what it gives and take its gold'
-                      : 'Not enough gold'
-                  "
-                  @click="take(key, choice, option)"
-                >
-                  {{ taken === key ? "Added ✓" : "Add to budget" }}
-                </button>
+                <div class="flex items-center justify-between gap-3">
+                  <span
+                    class="tabular-nums"
+                    :aria-label="`${choice.group} ${choice.title} worth`"
+                    :style="{
+                      color: worth_color(no_upgrades, worth(job.metric)),
+                    }"
+                  >
+                    <Spinner
+                      v-if="!no_upgrades && worth(job.metric) === undefined"
+                      class="inline-block h-4 w-4 align-middle"
+                    />
+                    {{ worth_text(no_upgrades, worth(job.metric)) }}
+                  </span>
+                  <button
+                    class="generic-button w-28"
+                    :disabled="!affordable(choice, option, columns)"
+                    :title="
+                      affordable(choice, option, columns)
+                        ? 'Add what it gives and take its gold'
+                        : 'Not enough gold'
+                    "
+                    @click="take(key, choice, option)"
+                  >
+                    {{ taken === key ? "Added ✓" : "Add to budget" }}
+                  </button>
+                </div>
               </template>
             </template>
           </div>

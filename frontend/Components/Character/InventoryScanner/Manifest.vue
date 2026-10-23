@@ -139,9 +139,7 @@ function export_to_calc() {
           <span v-if="!exported" class="text-(--text-muted)">
             Overwrites the budgets and chests of this character and its roster.
           </span>
-          <span v-else class="text-(--achieved)">
-            Exported. Snapshots were taken before and after.
-          </span>
+          <span v-else class="text-(--achieved)"> Exported. </span>
         </div>
       </div>
       <span
