@@ -14,15 +14,11 @@ export type MarketRegions = "nae" | "euc" | "Custom";
 // Custom is user-entered and is never fetched.
 export const FETCHABLE_REGIONS: MarketRegions[] = ["nae", "euc"];
 export async function fetch_market_data(region: MarketRegions): Promise<any> {
-  const body = {
-    region_slug: region.toLowerCase(),
-    item_slugs: Object.keys(ITEM_SLUG_TO_LABEL),
-  };
-  const response = await fetch(WORKER_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  // a GET, so the Worker's cache can serve it
+  const items = Object.keys(ITEM_SLUG_TO_LABEL).join(",");
+  const response = await fetch(
+    `${WORKER_URL}/market/${region.toLowerCase()}?items=${items}`,
+  );
   return await response.json();
 }
 

@@ -3,9 +3,12 @@ import { unflatten } from "devalue";
 const MARKET_URL =
   "https://marketdata-api.yrzhao1068589.workers.dev/v1/prices/latest";
 const BIBLE_URL = "https://lostark.bible";
-const CACHE_TTL = 3600;
-const MAX_UPLOAD = 1_000_000;
-// free plan: 50 subrequests per invocation
+// Workers Cache keeps 200s for an hour; a hit never runs the Worker
+const CACHE = "public, max-age=3600";
+// upstream fetches per minute, across all of Cloudflare
+const LIMITS = { market: 10, bible: 200 };
+const MAX_UPLOAD = 300_000;
+// one upload's share of the lostark.bible limit
 const MAX_CHARS = 40;
 const BIBLE_REGIONS = { nae: "NA", euc: "CE" };
 const WEEK_MS = 7 * 24 * 3600 * 1000;
@@ -32,98 +35,69 @@ export default {
       }
 
       if (request.method === "GET") {
-        const [, region, char_name, suffix = ""] = url.pathname.match(
+        const character = url.pathname.match(
           /^\/character\/([^/]+)\/([^/]+)(?:\/([^/]*))?$/,
         );
-        if (region && char_name) {
-          return handleCharacterProxy(region, char_name, suffix, env, ctx);
+        if (character) {
+          const [, region, char_name, suffix = ""] = character;
+          return await handleCharacterProxy(region, char_name, suffix, env);
+        }
+        const market = url.pathname.match(/^\/market\/([^/]+)$/);
+        if (market) {
+          return await handleMarketProxy(
+            market[1],
+            url.searchParams.get("items") ?? "",
+            env,
+          );
+        }
+        const raids = url.pathname.match(/^\/raids\/([^/]+)\/([^/]+)$/);
+        if (raids) {
+          return await handleRaids(raids[1], decodeURIComponent(raids[2]), env);
         }
       }
 
       if (request.method === "POST" && url.pathname === "/snapshots") {
         // awaited so a failure gets the catch's CORS headers
-        return await handleSnapshots(request, env);
+        return await handleSnapshots(request, env, ctx);
       }
 
-      if (request.method === "POST" && url.pathname === "/") {
-        // console.log(request, env, ctx);
-        return handleMarketProxy(request, env, ctx);
-      }
-
-      return corsResponse(new Response("Not Found", { status: 404 }));
+      return reply("Not Found", 404);
     } catch (e) {
-      // console.log(`Worker error: ${e.message}`);
-      return corsResponse(
-        new Response(`Worker error: ${e.message}`, { status: 500 }),
-      );
+      return reply(`Worker error: ${e.message}`, 500);
     }
   },
 };
 
-async function handleCharacterProxy(region, charName, suffix, env, ctx) {
-  const upstreamUrl =
-    `${BIBLE_URL}/character/${region}/${charName}` +
-    (suffix ? `/${suffix}` : "");
-  const cacheKey = `character:${region}:${charName}:${suffix}`;
-
-  const cached = await env.CACHE_KV.get(cacheKey);
-  if (cached) {
-    return corsResponse(
-      new Response(cached, {
-        status: 200,
-        headers: { "Content-Type": "text/html", "X-Cache": "HIT" },
-      }),
-    );
-  }
-
-  const upstream = await fetch(upstreamUrl, {
-    method: "GET",
-    headers: UWUOWO_HEADERS,
-  });
-
-  if (!upstream.ok) {
-    return corsResponse(
-      new Response(
-        `Upstream error: ${upstream.status}, response: ${await upstream.text()}`,
-        { status: 502 },
-      ),
-    );
-  }
-
-  const data = await upstream.text();
-  if (data == "") {
-    return corsResponse(
-      new Response(
-        `Empty response: ${upstream.status}, response: ${await upstream.text()}`,
-        { status: 502 },
-      ),
-    );
-  }
-
-  ctx.waitUntil(env.CACHE_KV.put(cacheKey, data, { expirationTtl: CACHE_TTL }));
-
-  return corsResponse(
-    new Response(data, {
-      status: 200,
-      headers: { "Content-Type": "text/html", "X-Cache": "MISS" },
-    }),
-  );
+// One fetch from the source, unless this minute's are used up. Only cache misses get here.
+async function allow(env, source) {
+  const row = await env.DB.prepare(
+    `INSERT INTO limits (source, minute, n) VALUES (?1, ?2, 1)
+     ON CONFLICT (source) DO UPDATE SET n = CASE WHEN minute = ?2 THEN n + 1 ELSE 1 END, minute = ?2
+     WHERE minute != ?2 OR n < ?3
+     RETURNING n`,
+  )
+    .bind(source, Math.floor(Date.now() / 60_000), LIMITS[source])
+    .first();
+  return row !== null;
 }
 
-async function handleMarketProxy(request, env, ctx) {
-  const body = await request.text();
-  const cacheKey = await hashBody(body);
-
-  const cached = await env.CACHE_KV.get(cacheKey);
-  if (cached) {
-    return corsResponse(
-      new Response(cached, {
-        status: 200,
-        headers: { "Content-Type": "application/json", "X-Cache": "HIT" },
-      }),
-    );
+async function handleCharacterProxy(region, charName, suffix, env) {
+  if (!(await allow(env, "bible"))) return reply("Rate limited", 429);
+  const upstream = await fetch(
+    `${BIBLE_URL}/character/${region}/${charName}` +
+      (suffix ? `/${suffix}` : ""),
+    { headers: UWUOWO_HEADERS },
+  );
+  const data = await upstream.text();
+  if (!upstream.ok) {
+    return reply(`Upstream error: ${upstream.status}, response: ${data}`, 502);
   }
+  if (data == "") return reply(`Empty response: ${upstream.status}`, 502);
+  return reply(data, 200, "text/html");
+}
 
+async function handleMarketProxy(region, items, env) {
+  if (!(await allow(env, "market"))) return reply("Rate limited", 429);
   const upstream = await fetch(MARKET_URL, {
     method: "POST",
     headers: {
@@ -132,37 +106,30 @@ async function handleMarketProxy(request, env, ctx) {
       "Content-Type": "application/json",
       Priority: "u=4",
     },
-    body,
+    body: JSON.stringify({ region_slug: region, item_slugs: items.split(",") }),
   });
+  if (!upstream.ok) return reply(`Upstream error: ${upstream.status}`, 502);
+  return reply(await upstream.text(), 200, "application/json");
+}
 
-  if (!upstream.ok) {
-    return corsResponse(
-      new Response(`Upstream error: ${upstream.status}`, { status: 502 }),
-    );
-  }
-
-  const data = await upstream.text();
-
-  ctx.waitUntil(env.CACHE_KV.put(cacheKey, data, { expirationTtl: CACHE_TTL }));
-
-  return corsResponse(
-    new Response(data, {
-      status: 200,
-      headers: { "Content-Type": "application/json", "X-Cache": "MISS" },
-    }),
-  );
+// A character's raids, for uploads through the cache. Passing failures are not cached.
+async function handleRaids(region, name, env) {
+  const raids = await fetchRaids(region, name, env);
+  const cache =
+    typeof raids !== "string" || raids === "private" || raids === "not found";
+  return reply(JSON.stringify(raids), 200, "application/json", cache);
 }
 
 // One roster's snapshots, stored with each character's recent raids from lostark.bible and
 // without anything that names the character.
-async function handleSnapshots(request, env) {
+async function handleSnapshots(request, env, ctx) {
   const body = await request.text();
   if (body.length > MAX_UPLOAD) {
-    return corsResponse(new Response("Too large", { status: 413 }));
+    return reply("Too large", 413);
   }
   const { roster, region, version, snapshots } = JSON.parse(body);
   if (typeof roster !== "string" || !Array.isArray(snapshots)) {
-    return corsResponse(new Response("Bad upload", { status: 400 }));
+    return reply("Bad upload", 400);
   }
 
   // the latest name of each character
@@ -174,11 +141,20 @@ async function handleSnapshots(request, env) {
     }
   }
   const raids = {};
+  const bible_region = BIBLE_REGIONS[region];
   await Promise.all(
     Object.entries(names)
       .slice(0, MAX_CHARS)
       .map(async ([id, name]) => {
-        raids[id] = await fetchRaids(BIBLE_REGIONS[region], name);
+        if (!bible_region) return (raids[id] = "no region");
+        if (!name || /^Newchar\d*$/.test(name)) return (raids[id] = "no name");
+        // a loopback call, so Workers Cache serves characters looked up within the hour
+        raids[id] = await ctx.exports.default
+          .fetch(
+            `https://loopback/raids/${bible_region}/${encodeURIComponent(name)}`,
+          )
+          .then((res) => res.json())
+          .catch((e) => `error ${e.message}`);
       }),
   );
 
@@ -194,14 +170,13 @@ async function handleSnapshots(request, env) {
       JSON.stringify(raids),
     )
     .run();
-  return corsResponse(new Response("ok", { status: 200 }));
+  return reply("ok", 200, "text/plain", false);
 }
 
 // The character's recent logs, reduced to what does not identify it, or why there are none.
-async function fetchRaids(region, name) {
-  if (!region) return "no region";
-  if (!name || /^Newchar\d*$/.test(name)) return "no name";
+async function fetchRaids(region, name, env) {
   try {
+    if (!(await allow(env, "bible"))) return "rate limited";
     const upstream = await fetch(
       `${BIBLE_URL}/character/${region}/${encodeURIComponent(name)}/logs/__data.json`,
       { headers: UWUOWO_HEADERS },
@@ -225,12 +200,16 @@ async function fetchRaids(region, name) {
   }
 }
 
-async function hashBody(text) {
-  const encoded = new TextEncoder().encode(text);
-  const digest = await crypto.subtle.digest("SHA-256", encoded);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+function reply(body, status, type = "text/plain", cache = status === 200) {
+  return corsResponse(
+    new Response(body, {
+      status,
+      headers: {
+        "Content-Type": type,
+        "Cache-Control": cache ? CACHE : "no-store",
+      },
+    }),
+  );
 }
 
 function corsResponse(response, status) {

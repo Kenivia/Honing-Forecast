@@ -16,3 +16,9 @@ After: per-region flags (the bypass argument is gone), only listed bundles are w
 Before: imported advanced progress was `adv - floor(adv / 10)` (+25 gave 23, i.e. level 22 with 30% xp) instead of 50. The roster import had an un-awaited `setTimeout(…, 500)` that did nothing. A name change in the custom region still fetched `/character/null/…`. Results that landed after the name or region changed were written anyway.
 
 After: `(adv % 10) * 10` in a fresh array, the no-op is gone (the 60/min limiter spaces requests), the custom region never fetches, and late results are dropped.
+
+## Worker cache and limits (Oct 2026)
+
+Before: market and character responses cached in KV for an hour (free plan: 1k KV writes a day); the market was a POST keyed by a hash of its body; upload raid lookups were never cached, and nothing limited upstream fetches. The classic Cache API (`caches.default`) was ruled out: it does nothing on workers.dev, only on custom domains.
+
+After: Workers Cache, GET-only routes (market moved to `GET /market/<region>?items=`), raids through a cached loopback route, per-source per-minute limits in D1, upload bodies capped at 300 KB (was 1 MB).

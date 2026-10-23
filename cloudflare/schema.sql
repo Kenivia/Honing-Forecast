@@ -9,3 +9,10 @@ CREATE TABLE IF NOT EXISTS uploads (
   snapshots TEXT,
   raids TEXT
 );
+
+-- upstream fetches in the current minute, per source
+CREATE TABLE IF NOT EXISTS limits (
+  source TEXT PRIMARY KEY,
+  minute INTEGER,
+  n INTEGER
+);

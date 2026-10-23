@@ -45,6 +45,22 @@ describe("upload_snapshots", () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  it("keeps bodies under 300 KB and skips a snapshot that never fits", async () => {
+    const config = config_with(4);
+    const pad = (i: number, size: number) =>
+      ((config.snapshots[i] as any).pad = "x".repeat(size));
+    pad(0, 400_000);
+    pad(1, 250_000);
+    pad(2, 90_000);
+    await upload_snapshots(config);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(sent(0).snapshots.map((s) => s.at)).toEqual([1]);
+    expect(sent(1).snapshots.map((s) => s.at)).toEqual([2, 3]);
+    for (const call of fetch.mock.calls)
+      expect(call[1].body.length).toBeLessThanOrEqual(300_000);
+    expect(config.snapshots.every((s) => s.sent)).toBe(true);
+  });
+
   it("marks nothing when the upload fails, and stops", async () => {
     const config = config_with(25);
     fetch.mockResolvedValue({ ok: false });

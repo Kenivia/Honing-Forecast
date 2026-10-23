@@ -61,15 +61,15 @@ describe("parse_response", () => {
 });
 
 describe("fetch_market_data", () => {
-  it("posts the lower-cased region and every slug", async () => {
+  it("gets the lower-cased region and every slug", async () => {
     const fn = mock_fetch();
     await fetch_market_data("nae");
-    const [, init] = fn.mock.calls[0] as any;
-    const body = JSON.parse(init.body);
-    expect(init.method).toBe("POST");
-    expect(body.region_slug).toBe("nae");
-    expect(body.item_slugs).toContain("destiny-shard-pouch-l");
-    expect(body.item_slugs).toHaveLength(31);
+    const [address] = fn.mock.calls[0] as any;
+    const url = new URL(address, "http://worker");
+    expect(url.pathname.endsWith("/market/nae")).toBe(true);
+    const items = url.searchParams.get("items")!.split(",");
+    expect(items).toContain("destiny-shard-pouch-l");
+    expect(items).toHaveLength(31);
   });
 });
 
