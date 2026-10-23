@@ -42,11 +42,14 @@ describe("lostark.bible scraping", () => {
     expect(out).toEqual({
       class_name: "Bard",
       achieved_ilevel: "1,712.50",
-      pieces: Array(6).fill({ plus_n: 20, ilevel: 1710, tier: 0, adv: 25 }),
+      pieces: [
+        ...Array(6).fill({ plus_n: 20, ilevel: 1710, tier: 0, adv: 25 }),
+        { plus_n: 0, ilevel: NaN, tier: 1, adv: NaN },
+      ],
     });
   });
 
-  it("reads an equipped vambrace as a 7th Serca piece, and skips an unequipped one", async () => {
+  it("reads the vambrace as a 7th Serca piece, +0 when not equipped", async () => {
     // cell markup as lostark.bible served it on 2026-10-23
     serve(
       char_serca.replace(
@@ -63,10 +66,16 @@ describe("lostark.bible scraping", () => {
       tier: 1,
       adv: NaN,
     });
-    serve(char_t4);
+    // an empty cell, as for a character without one
+    serve(
+      char_serca.replace(
+        /<\/div>\s*<\/div>\s*<\/body>/,
+        `<div><div></div><div><div></div><div></div></div></div></div></div></body>`,
+      ),
+    );
     expect(
-      ((await fetch_and_parse(req(), parse_char)) as any).pieces,
-    ).toHaveLength(6);
+      ((await fetch_and_parse(req(), parse_char)) as any).pieces[6].plus_n,
+    ).toBe(0);
   });
 
   it("tells Serca pieces apart by a missing advanced cell and high ilevel", async () => {

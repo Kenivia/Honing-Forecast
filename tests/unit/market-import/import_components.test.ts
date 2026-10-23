@@ -77,8 +77,8 @@ describe("FetchRosterButton", () => {
 
     await button(w, "Confirm all").trigger("click");
     expect(apply.mock.calls.map((c) => [c[1], c[2], c[0].length])).toEqual([
-      [false, "Beta", 6],
-      [false, "Gamma", 6],
+      [false, "Beta", 7],
+      [false, "Gamma", 7],
     ]);
     expect(w.text()).not.toContain("Are these your children?");
   });

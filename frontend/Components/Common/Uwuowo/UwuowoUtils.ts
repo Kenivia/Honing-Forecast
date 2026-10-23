@@ -32,7 +32,7 @@ export interface UwuowoPiece {
   adv: number;
 }
 export interface UwuowoCharResult {
-  pieces: UwuowoPiece[]; // [+n, ilevel, tier , adv]; 7th is the vambrace if equipped
+  pieces: UwuowoPiece[]; // [+n, ilevel, tier , adv]; 7th is the vambrace
   class_name: string;
   achieved_ilevel: string;
 }
@@ -170,20 +170,20 @@ export function parse_char(
         return { plus_n, ilevel, tier, adv };
       });
 
-    // vambrace (Serca only) is found by label; absent when not equipped
+    // vambrace (Serca only) is found by label; +0 when not equipped
     const vambrace_row = [...container.children]
       .map((cell) => cell.children[1]?.children[0])
       .find((row) => row?.children[0]?.textContent.trim() === "Vambrace");
-    if (vambrace_row) {
-      pieces.push({
-        plus_n: parse_locale_int(
-          vambrace_row.children[1].textContent.replace("+", ""),
-        ),
-        ilevel: NaN,
-        tier: 1,
-        adv: NaN,
-      });
-    }
+    pieces.push({
+      plus_n: vambrace_row
+        ? parse_locale_int(
+            vambrace_row.children[1].textContent.replace("+", ""),
+          )
+        : 0,
+      ilevel: NaN,
+      tier: 1,
+      adv: NaN,
+    });
   } catch (e) {
     return `Parsing equipment failed with message ${e}`;
   }
