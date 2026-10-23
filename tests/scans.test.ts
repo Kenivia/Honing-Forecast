@@ -210,7 +210,8 @@ check("changed budgets still uncover it", !covered.value.Roster);
 set_cell(store.active_tradable_mats_owned, "Red", "105");
 check(
   "budgets back as snapshotted: covered",
-  roster_unchanged(config, config.profiles[0].roster_id) && covered.value.Roster,
+  roster_unchanged(config, config.profiles[0].roster_id) &&
+    covered.value.Roster,
 );
 
 section("A again, roster budget changed by hand");
@@ -271,9 +272,13 @@ equal(
 );
 check(
   "now matches the last snapshot",
-  JSON.stringify(snapshot_of(config, config.profiles[0].roster_id, "Manual").tradable) ===
-    JSON.stringify(last.tradable),
+  JSON.stringify(
+    snapshot_of(config, config.profiles[0].roster_id, "Manual").tradable,
+  ) === JSON.stringify(last.tradable),
 );
+equal("grids snapshotted", last.chars[ids[0]].normal_grid, a.normal_grid);
+equal("adv grid snapshotted", last.chars[ids[0]].adv_grid, a.adv_grid);
+equal("tier snapshotted", last.chars[ids[0]].tier, a.tier);
 
 section("character storage covered");
 as(0);

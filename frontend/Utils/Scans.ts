@@ -1,6 +1,7 @@
 import { ALL_MATERIAL_LABELS, NUM_BANDS } from "./Constants";
 import { InputColumn, input_column_to_num } from "./InputColumn";
 import { add_stack, type ManifestChest } from "./Chest";
+import type { StatusGrid } from "./KeyedUpgrades";
 import type { RosterConfig } from "@/Stores/RosterConfig";
 
 // Scanned pages as last exported, merged across characters, and snapshots of the budgets.
@@ -151,6 +152,11 @@ export interface CharSnapshot {
   bound: Record<string, number>;
   special: Record<string, number>;
   chests: ManifestChest[];
+  // the upgrade grids as `UpgradeStatus` (Done by hand, FetchedDone from lostark.bible), read
+  // against the tier; for analytics only, so not compared by `budgets_of`
+  tier?: number;
+  normal_grid?: StatusGrid;
+  adv_grid?: StatusGrid;
   // by payload hash, the latest few only
   results?: Record<string, SnapshotResult>;
 }
@@ -196,6 +202,9 @@ export function snapshot_of(
       bound: nonzero(profile.bound_budgets),
       special: nonzero(profile.special_budget),
       chests: copy(profile.chests),
+      tier: profile.tier,
+      normal_grid: copy(profile.normal_grid),
+      adv_grid: copy(profile.adv_grid),
     };
   }
   const region = config.all_regions[roster_id];

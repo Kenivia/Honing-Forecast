@@ -275,7 +275,8 @@ function accept() {
               class="generic-button"
               :class="{
                 'cursor-not-allowed! opacity-50': incomplete,
-                'bg-blue-600! hover:bg-blue-500!': changed && !incomplete,
+                'bg-(--accent-blue)! hover:bg-(--accent-blue-hover)!':
+                  changed && !incomplete,
               }"
               :disabled="incomplete"
               @click="save"

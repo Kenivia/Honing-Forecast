@@ -51,6 +51,8 @@
 
   --serca-blue: #2806b1;
   --serca-blue-hover: #4520d8;
+  --accent-blue: oklch(54.6% 0.245 262.881);
+  --accent-blue-hover: oklch(62.3% 0.214 259.815);
   --free-tap-bright: #f7c7ff;
   --free-tap: #ed7bff;
 

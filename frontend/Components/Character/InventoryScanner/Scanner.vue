@@ -62,11 +62,11 @@ const items = computed(() =>
   </div>
   <div v-else class="card-shell card-body flex items-center gap-3 text-sm">
     <template v-if="failed">
-      <span class="text-red-400">
+      <span class="text-(--warning)">
         Could not download the scanner's files. Check your connection.
       </span>
       <button
-        class="rounded-md bg-blue-600 px-3 py-1.5 transition-colors hover:bg-blue-500"
+        class="generic-button bg-(--accent-blue)! hover:bg-(--accent-blue-hover)!"
         @click="load"
       >
         Try again

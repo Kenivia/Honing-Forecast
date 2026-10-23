@@ -60,6 +60,19 @@ const source = runtime.frame_source;
 
 const error = ref<string | null>(null);
 
+const show_limitations = ref(false);
+const LIMITATIONS = [
+  "Only full screen and borderless are supported.",
+  "It may not work below 1080p.",
+  "HDR and other brightness adjustments (or any kind of filter) will break it - unfortunately this means color blind mode does not work",
+  "Non-default fonts may or may not work.",
+  "Huge (bigger than 'largest') cursor sizes may break things.",
+  "Only the English client is supported for now.",
+  "A lossless capture is required.",
+  "T3 materials are not detected.",
+  "Enhanced 19-20 books are detected as ordinary 19-20 books.",
+];
+
 // A capture file being run again in place of a stream, see Capture.ts. It is scanned as this
 // build does, OCR and all, each frame waiting until no line is out for OCR and the slots without a
 // time budget, so a text is back one scan after it was sent and runs repeat, like capture_replay.
@@ -467,19 +480,16 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
       <span class="card-title">Screen Capture</span>
     </div>
     <div class="card-body flex flex-col gap-4">
-      <p
-        v-if="error"
-        class="max-w-150 rounded bg-red-500/10 px-3 py-2 text-xs text-red-400"
-      >
+      <p v-if="error" class="max-w-150 text-xs text-(--warning)">
         {{ error }}
       </p>
       <p v-if="download_note" class="max-w-150 text-sm text-(--text-muted)">
         Downloading scanner data: {{ download_note }}.
       </p>
 
-      <div class="flex gap-2">
+      <div class="flex w-full gap-2">
         <button
-          class="rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+          class="generic-button bg-(--accent-blue)! px-4! py-1.5! enabled:hover:bg-(--accent-blue-hover)!"
           :disabled="status === 'capturing'"
           @click="start_capture"
         >
@@ -487,7 +497,7 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
         </button>
         <label
           v-if="show_debug"
-          class="cursor-pointer rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500"
+          class="generic-button bg-(--accent-blue)! px-4! py-1.5! hover:bg-(--accent-blue-hover)!"
         >
           Upload image / video / capture
           <input
@@ -499,14 +509,14 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
           />
         </label>
         <button
-          class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+          class="generic-button px-4! py-1.5!"
           :disabled="status !== 'capturing'"
           @click="stop_capture"
         >
           Stop
         </button>
         <button
-          class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+          class="generic-button px-4! py-1.5!"
           :disabled="status !== 'capturing' && !has_progress"
           @click="wipe_scan"
         >
@@ -599,14 +609,14 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
             Applying restarts the scanner and wipes the current scan.
           </span>
           <button
-            class="rounded-md bg-blue-600 px-3 py-1.5 text-sm transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+            class="generic-button bg-(--accent-blue)! px-[5px]! py-[3px]! text-lg enabled:hover:bg-(--accent-blue-hover)!"
             :disabled="!draft_valid"
             @click="apply_settings"
           >
             Apply
           </button>
           <button
-            class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600"
+            class="generic-button px-[5px]! py-[3px]! text-lg"
             @click="discard_settings"
           >
             Cancel
@@ -617,17 +627,41 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
         {{ replay_note }}
       </p>
 
-      <!-- as wide as the rest of the card makes it, never wider -->
-      <div class="w-0 min-w-full">
-        <div class="text-(--text-bright)">Troubleshooting</div>
-        <div class="pl-4">
-          Check the aspect ratio and brightness under "Show details" above. If
-          they look right and it still doesn't work, it's probably my fault.
-          Please report it on
-          <a href="https://discord.gg/KWDpQyvgzc" class="link">Discord</a> or
-          <a href="https://github.com/Kenivia/Honing-Forecast" class="link"
-            >GitHub</a
-          >.
+      <!-- as wide as the rest of the card makes it, the spacer widens it with limitations open -->
+      <div>
+        <div v-if="show_limitations" class="h-0 w-100" />
+        <div class="w-0 min-w-full">
+          <div class="text-(--text-bright)">Troubleshooting</div>
+          <div class="pl-4">
+            Check the aspect ratio and brightness under "Show details" above. If
+            they look right and it still doesn't work, it's probably my fault.
+            Please report it on
+            <a href="https://discord.gg/KWDpQyvgzc" class="link">Discord</a> or
+            <a href="https://github.com/Kenivia/Honing-Forecast" class="link"
+              >GitHub</a
+            >.
+          </div>
+          <div>
+            <button
+              class="mt-2 flex items-center gap-1 text-(--text-bright) hover:text-(--text-main)"
+              :aria-expanded="show_limitations"
+              @click="show_limitations = !show_limitations"
+            >
+              <span class="font-semibold">{{
+                show_limitations ? "▾" : "▸"
+              }}</span>
+              Known Limitations
+            </button>
+            <ul
+              v-if="show_limitations"
+              aria-label="Limitations"
+              class="flex flex-col gap-0.5 pl-4"
+            >
+              <li v-for="limitation in LIMITATIONS" :key="limitation">
+                - {{ limitation }}
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -635,14 +669,14 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
       <template v-if="show_debug">
         <div class="flex flex-wrap items-center gap-2">
           <button
-            class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+            class="generic-button px-[5px]! py-[3px]! text-lg"
             :disabled="status !== 'capturing' || replaying"
             @click="toggle_recording"
           >
             {{ recording ? "Stop recording" : "Record debug capture" }}
           </button>
           <button
-            class="rounded-md bg-zinc-700 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+            class="generic-button px-[5px]! py-[3px]! text-lg"
             :disabled="recording || in_recorder > 0 || !captured_bytes"
             @click="download_capture"
           >

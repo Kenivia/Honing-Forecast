@@ -86,10 +86,10 @@ const selected_region = computed(
         </div>
         <span
           v-if="selected_region !== 'Custom'"
-          class="text-xs text-(--text-muted)"
+          class="mt-3 text-xs text-(--text-muted)"
         >
-          Prices typed here are temporary: the next fetch replaces them. Pick
-          Custom to keep your own.
+          Prices typed here are temporary (the next fetch replaces them). Change
+          your region to "Custom" to keep your own prices.
         </span>
       </div>
 

@@ -7,7 +7,7 @@ import { storeToRefs } from "pinia";
 
 const { roster_config } = storeToRefs(useRosterStore());
 
-const analytics_tooltip = `Sends your materials and chests owned amounts to help estimate how much players earn (for a future income forecasting feature). Only the numbers are sent, not captured footage`;
+const analytics_tooltip = `Sends your ilevel and materials and chests owned amounts to help estimate how much players earn (for a future income forecasting feature). Only the numbers are sent, not captured footage`;
 </script>
 <template>
   <div class="w-full items-center">
@@ -29,7 +29,7 @@ const analytics_tooltip = `Sends your materials and chests owned amounts to help
       <div class="control-panel-checkbox-row">
         <label class="flex flex-row items-center gap-2">
           <input v-model="roster_config.analytics" type="checkbox" />
-          <span>Share owned materials anonymously</span>
+          <span>Share owned material anonymously</span>
         </label>
         <QuestionMark :text="analytics_tooltip" />
       </div>

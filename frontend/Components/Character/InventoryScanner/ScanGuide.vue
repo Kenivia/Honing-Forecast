@@ -1,19 +1,4 @@
-<script setup lang="ts">
-import { ref } from "vue";
-
-const LIMITATIONS = [
-  "Only full screen and borderless are supported.",
-  "It may not work below 1080p.",
-  "HDR and other brightness adjustments (or any kind of filter) will break it - unfortunately this means color blind mode does not work",
-  "Non-default fonts may or may not work.",
-  "Huge (bigger than 'largest') cursor sizes may break things.",
-  "Only the English client is supported for now. It probably won't work with other languages.",
-  "A lossless capture is required.",
-  "T3 materials are not detected.",
-  "Enhanced 19-20 books are detected as ordinary 19-20 books.",
-];
-const show_limitations = ref(false);
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <div class="card-shell w-150! max-w-full text-base">
@@ -46,28 +31,6 @@ const show_limitations = ref(false);
           Check the manifest below, and "export to calculator" when ready. If
           you don't export, it won't be saved on reload.
         </div>
-      </div>
-
-      <div>
-        <button
-          class="flex items-center gap-1 text-(--text-bright) hover:text-(--text-main)"
-          :aria-expanded="show_limitations"
-          @click="show_limitations = !show_limitations"
-        >
-          <span class="text-[1.1rem] font-semibold">{{
-            show_limitations ? "▾" : "▸"
-          }}</span>
-          Limitations
-        </button>
-        <ul
-          v-if="show_limitations"
-          aria-label="Limitations"
-          class="flex flex-col gap-0.5 pl-4"
-        >
-          <li v-for="limitation in LIMITATIONS" :key="limitation">
-            - {{ limitation }}
-          </li>
-        </ul>
       </div>
     </div>
   </div>
