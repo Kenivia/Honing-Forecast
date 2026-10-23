@@ -10,7 +10,7 @@ describe("ScannerControlPanel", () => {
     const boxes = wrapper.findAll('input[type="checkbox"]');
     expect(boxes).toHaveLength(4);
     expect(wrapper.findAll("label").at(-1).text()).toBe(
-      "Share owned materials anonymously",
+      "Share owned material anonymously",
     );
     const store = useRosterStore();
     expect(store.roster_config.analytics).toBe(true);

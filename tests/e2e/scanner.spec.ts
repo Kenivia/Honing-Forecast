@@ -106,8 +106,7 @@ const manifest_cell = (page: Page, label: string, band: string) =>
     .getByRole("group", { name: "Manifest materials" })
     .getByLabel(`${label} ${band}`, { exact: true });
 
-// disabled for now: "Take snapshot" is disabled when nothing changed, so the last click times out
-test.fixme("exports merge across characters and are snapshotted", async ({
+test("exports merge across characters and are snapshotted", async ({
   page,
 }) => {
   test.setTimeout(180_000);
@@ -185,9 +184,10 @@ test.fixme("exports merge across characters and are snapshotted", async ({
   const dashboard = page.getByRole("group", { name: "Snapshot dashboard" });
   await expect(dashboard.getByLabel("Blue Roster bound")).toHaveText("+7");
   await expect(dashboard.getByLabel("Blue Char bound")).toHaveText("+3");
-  // a manual snapshot equal to the latest is not added
-  await page.getByRole("button", { name: "Take snapshot" }).click();
-  await expect(timeline.getByRole("button")).toHaveCount(3);
+  // nothing changed since the latest, so a manual snapshot is not offered
+  await expect(
+    page.getByRole("button", { name: "Take snapshot" }),
+  ).toBeDisabled();
 });
 
 test("a roster page never exported is not covered", async ({ page }) => {

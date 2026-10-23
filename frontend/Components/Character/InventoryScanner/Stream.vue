@@ -489,7 +489,7 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
 
       <div class="flex w-full gap-2">
         <button
-          class="generic-button bg-(--accent-blue)! px-4! py-1.5! enabled:hover:bg-(--accent-blue-hover)!"
+          class="generic-button rounded-lg! bg-(--accent-blue)! px-4! py-1.5! enabled:hover:bg-(--accent-blue-hover)!"
           :disabled="status === 'capturing'"
           @click="start_capture"
         >
@@ -497,7 +497,7 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
         </button>
         <label
           v-if="show_debug"
-          class="generic-button bg-(--accent-blue)! px-4! py-1.5! hover:bg-(--accent-blue-hover)!"
+          class="generic-button rounded-lg! bg-(--accent-blue)! px-4! py-1.5! hover:bg-(--accent-blue-hover)!"
         >
           Upload image / video / capture
           <input
@@ -509,14 +509,14 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
           />
         </label>
         <button
-          class="generic-button px-4! py-1.5!"
+          class="generic-button rounded-lg! px-4! py-1.5!"
           :disabled="status !== 'capturing'"
           @click="stop_capture"
         >
           Stop
         </button>
         <button
-          class="generic-button px-4! py-1.5!"
+          class="generic-button rounded-lg! px-4! py-1.5!"
           :disabled="status !== 'capturing' && !has_progress"
           @click="wipe_scan"
         >
