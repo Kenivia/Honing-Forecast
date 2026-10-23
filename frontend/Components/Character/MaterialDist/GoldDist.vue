@@ -106,7 +106,7 @@ function hover_annotation(x, _y, cy, _material, color, is_last): string {
       :cumulative="roster_config.cumulative_graph"
       :annotations="annotations"
       :annotation-colors="['--average', '--tradable']"
-      :annotation-positions="['graph', 'top']"
+      :annotation-positions="['graph', 'bottom']"
       :annotation-labels="['Average', 'Tradable gold']"
       :tooltip-text-fn="hover_annotation"
       :empty_message="empty_message"

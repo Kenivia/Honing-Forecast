@@ -176,7 +176,7 @@ function export_to_calc() {
             v-for="(name, index) in TIER_LABELS"
             :key="index"
             class="generic-button"
-            :style="{ color: tier === index ? 'var(--gold)' : '' }"
+            :class="{ 'bg-(--gold-muted)!': tier === index }"
             @click="tier = index"
           >
             {{ name }}

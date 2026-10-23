@@ -393,14 +393,18 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
             :callback="() => start_all_workers()"
             :hide_label="is924Narrow && row < NUM_BASE_MATS"
             :band_label="OWNED_LABELS[active_profile.chance_band]"
-            :plus="[
-              {
-                amount: gain(label, active_profile.chance_band),
-                text: 'from chests',
-              },
-              ...t4_line(t4_gain(label, active_profile.chance_band)),
-              ...lower_lines(label, active_profile.chance_band),
-            ]"
+            :plus="
+              active_profile.bound_budgets.enabled[label]
+                ? [
+                    {
+                      amount: gain(label, active_profile.chance_band),
+                      text: 'from chests',
+                    },
+                    ...t4_line(t4_gain(label, active_profile.chance_band)),
+                    ...lower_lines(label, active_profile.chance_band),
+                  ]
+                : []
+            "
           />
           <!-- <div
             v-if="marginal[label] !== undefined"

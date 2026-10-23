@@ -13,8 +13,8 @@ export const ANNOTATION_COLORS = [
 export const ANNOTATION_POSITIONS: ("top" | "middle" | "bottom" | "graph")[] = [
   "graph",
   "bottom",
-  "middle",
-  "top",
+  "bottom",
+  "bottom",
 ];
 export const ANNOTATION_LABELS = [
   "Average",

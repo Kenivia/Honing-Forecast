@@ -210,14 +210,17 @@ function toggle_lock(x: Shown) {
               role="group"
               :aria-label="`${win.label} covered`"
             >
-              <span>Using most recent scan ({{ last_export(win.type) }}).</span>
-              <span class="text-(--text-muted)">
+              <span>
                 {{
                   window_cover[win.type] === null
                     ? "You don't need to re-scan if you know nothing here has changed. "
                     : ""
                 }}
               </span>
+              <span class="text-(--text-muted)"
+                >Using most recent scan ({{ last_export(win.type) }}).</span
+              >
+
               <button
                 class="generic-button"
                 @click="window_cover[win.type] = false"
