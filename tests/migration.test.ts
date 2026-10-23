@@ -17,7 +17,7 @@ import {
   write_state,
 } from "@/Stores/ConfigStorage";
 import { to_saved, from_saved } from "@/Stores/SavedConfig";
-import { input_column_to_num } from "@/Utils/InputColumn";
+import { input_column_to_num, MAX_AMOUNT } from "@/Utils/InputColumn";
 import LZString from "lz-string";
 
 // A faithful V7 payload: full InputColumns, positional data, locale-formatted strings.
@@ -353,7 +353,7 @@ check(
 check(
   "upper_bound from Constants",
   Object.values(loaded.profiles[0].bound_budgets.upper_bound).every(
-    (x) => x === 999999999,
+    (x) => x === MAX_AMOUNT,
   ),
 );
 check(

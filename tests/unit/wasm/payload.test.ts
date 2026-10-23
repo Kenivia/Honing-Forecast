@@ -27,7 +27,7 @@ import {
   bundle_key,
   SPECIAL_LEAP_LABELS,
 } from "@/Utils/Constants";
-import type { InputColumn } from "@/Utils/InputColumn";
+import { MAX_AMOUNT, type InputColumn } from "@/Utils/InputColumn";
 import { UpgradeStatus, type Upgrade } from "@/Utils/KeyedUpgrades";
 import type { ManifestChest } from "@/Utils/Chest";
 
@@ -123,7 +123,7 @@ describe("build_payload: materials", () => {
     // shards start disabled
     set(store.active_tradable_mats_owned, "Shards", 1000);
     expect(build_payload().materials.Shards).toEqual({
-      bound: 999999999,
+      bound: MAX_AMOUNT,
       roster: 0,
       tradable: 0,
       taxed_price: 0,

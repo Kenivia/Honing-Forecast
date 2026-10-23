@@ -334,7 +334,7 @@ mod tests {
     #[test]
     fn a_material_nobody_pays_for_is_one_entry() {
         let mat = OneMaterial {
-            bound: 999999999.0,
+            bound: 99999999999.0,
             roster: 0.0,
             tradable: 0.0,
             taxed_price: 0.0,

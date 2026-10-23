@@ -5,6 +5,7 @@ import {
   get_modified_cell,
   input_column_to_num,
   InputType,
+  MAX_AMOUNT,
   parse_input,
   parse_locale_float,
   parse_locale_int,
@@ -14,7 +15,7 @@ import {
 const column = (type = InputType.Int) =>
   create_input_column(type, ["A", "B"], {
     value: (l) => (l === "A" ? "1,000" : "7"),
-    upper_bound: (l) => (l === "A" ? 5000 : 999999999),
+    upper_bound: (l) => (l === "A" ? 5000 : MAX_AMOUNT),
   });
 const event = (value: string) => ({ target: { value } }) as unknown as Event;
 
@@ -24,7 +25,7 @@ describe("create_input_column", () => {
       enabled: (l) => l !== "Y",
     });
     expect(c.values).toEqual({ X: "0", Y: "0" });
-    expect(c.upper_bound).toEqual({ X: 999999999, Y: 999999999 });
+    expect(c.upper_bound).toEqual({ X: MAX_AMOUNT, Y: MAX_AMOUNT });
     expect(c.enabled).toEqual({ X: true, Y: false });
     expect(column_labels(c)).toEqual(["X", "Y"]);
   });
@@ -69,9 +70,9 @@ describe("parse_input bounds", () => {
   it("a disabled label reads as unlimited unless pretended enabled", () => {
     const c = column();
     c.enabled.A = false;
-    expect(parse_input(c, "A", "12")).toBe(999999999);
+    expect(parse_input(c, "A", "12")).toBe(MAX_AMOUNT);
     expect(parse_input(c, "A", "12", true)).toBe(12);
-    expect(input_column_to_num(c)).toEqual({ A: 999999999, B: 7 });
+    expect(input_column_to_num(c)).toEqual({ A: MAX_AMOUNT, B: 7 });
     expect(input_column_to_num(c, true)).toEqual({ A: 1000, B: 7 });
   });
 

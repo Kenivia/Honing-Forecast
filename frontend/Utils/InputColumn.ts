@@ -6,6 +6,9 @@ export interface InputColumn {
   upper_bound: Record<string, number>;
   enabled: Record<string, boolean>;
 }
+// the largest amount a cell takes, and what a disabled one reads as
+export const MAX_AMOUNT = 99_999_999_999;
+
 export enum InputType {
   Int,
   Float,
@@ -30,7 +33,7 @@ export function create_input_column(
   };
   for (const label of labels) {
     out.values[label] = init.value?.(label) ?? "0";
-    out.upper_bound[label] = init.upper_bound?.(label) ?? 999999999;
+    out.upper_bound[label] = init.upper_bound?.(label) ?? MAX_AMOUNT;
     out.enabled[label] = init.enabled?.(label) ?? true;
   }
   return out;
@@ -121,7 +124,7 @@ export function parse_input(
   pretend_enabled?: boolean,
 ): number {
   if (!column.enabled[label] && !pretend_enabled) {
-    return 999999999;
+    return MAX_AMOUNT;
   }
   const out =
     column.type === InputType.Int
