@@ -7,7 +7,7 @@ import {
 } from "./UwuowoUtils";
 
 import { computed } from "vue";
-import { PIECE_NAMES } from "@/Utils/Constants";
+import { NUM_ADV_PIECES, PIECE_NAMES } from "@/Utils/Constants";
 import LabeledPieceIcon from "../LabeledPieceIcon.vue";
 
 const props = defineProps<{
@@ -33,7 +33,9 @@ const have_both = computed(() => {
   return (
     props.char_parsed &&
     props.char_parsed.result &&
-    props.char_parsed.result.pieces.some((x) => x.tier === 1) &&
+    props.char_parsed.result.pieces
+      .slice(0, NUM_ADV_PIECES)
+      .some((x) => x.tier === 1) &&
     props.char_parsed.result.pieces.some(
       (x) => x.tier === 0, //  && (x.plus_n < 20 || x.adv < 40),
     )
@@ -76,7 +78,9 @@ const link = computed(
               +{{ char_parsed.result.pieces[index].plus_n }}</span
             >
             <span class="px-1">{{
-              char_parsed.result.pieces[index].ilevel
+              isNaN(char_parsed.result.pieces[index].ilevel)
+                ? ""
+                : char_parsed.result.pieces[index].ilevel
             }}</span>
           </div>
           <div v-else>

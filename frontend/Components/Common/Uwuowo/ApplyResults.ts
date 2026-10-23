@@ -5,7 +5,7 @@ import {
   change_tier,
   convert_apply_done_want,
 } from "@/Components/Character/StatusInput/StatusInputUtil";
-import { ADV_COLS, NUM_ADV_PIECES, NUM_PIECES } from "@/Utils/Constants";
+import { ADV_COLS, NUM_ADV_PIECES } from "@/Utils/Constants";
 import {
   grids_to_keyed,
   to_upgrade_key,
@@ -22,7 +22,7 @@ export function apply_results(
   const old_tier: number = target_profile.tier;
   const new_tier: number = force_t4
     ? 0
-    : results.some((x) => x.tier === 1)
+    : results.slice(0, NUM_ADV_PIECES).some((x) => x.tier === 1)
       ? 1
       : 0;
   // console.log(results, old_tier, new_tier);
@@ -32,6 +32,20 @@ export function apply_results(
 
   const want_adv: { row: number; upgrade_index: number; diff: number }[] = [];
   for (let row = 0; row < results.length; row++) {
+    // vambrace: Serca only, left alone on T4
+    if (row === NUM_ADV_PIECES) {
+      if (new_tier === 1) {
+        apply_done_want(
+          results[row].plus_n,
+          target_profile.normal_grid[row].findLastIndex(
+            (value) => value == UpgradeStatus.Want,
+          ) + 1,
+          target_profile.normal_grid[row],
+          true,
+        );
+      }
+      continue;
+    }
     const want =
       results[row].tier === old_tier
         ? target_profile.normal_grid[row].findLastIndex(

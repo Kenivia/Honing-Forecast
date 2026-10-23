@@ -103,6 +103,39 @@ describe("apply_results", () => {
     ]);
   });
 
+  it("the vambrace is applied on Serca, keeping its wants", () => {
+    profile.normal_grid[6] = row(0, 15);
+    apply_results(
+      profile,
+      [...Array(6).fill(serca(15)), serca(10)],
+      false,
+      true,
+    );
+    expect(profile.tier).toBe(1);
+    expect(profile.normal_grid[6]).toEqual(row(10, 15));
+  });
+
+  it("the vambrace neither picks the tier nor is applied on T4", () => {
+    const before = row(0, 5);
+    profile.normal_grid[6] = [...before];
+    apply_results(
+      profile,
+      [...Array(6).fill(t4(20, 20)), serca(10)],
+      false,
+      true,
+    );
+    expect(profile.tier).toBe(0);
+    expect(profile.normal_grid[6]).toEqual(before);
+    apply_results(
+      profile,
+      [...Array(6).fill(serca(15)), serca(10)],
+      true,
+      true,
+    );
+    expect(profile.tier).toBe(0);
+    expect(profile.normal_grid[6]).toEqual(before);
+  });
+
   it("a Serca profile importing T4-only gear switches back to T4", () => {
     profile.tier = 1;
     apply_results(profile, [t4(21, 10)], false, true);

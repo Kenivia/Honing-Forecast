@@ -46,17 +46,27 @@ describe("lostark.bible scraping", () => {
     });
   });
 
-  it("ignores an equipped vambrace with no quality or item level", async () => {
+  it("reads an equipped vambrace as a 7th Serca piece, and skips an unequipped one", async () => {
+    // cell markup as lostark.bible served it on 2026-10-23
     serve(
-      char_t4.replace(
-        "<span>Vambrace</span><span>Not Equipped</span>",
-        "<div><span>Vambrace</span><span>+5</span><span>T4</span></div><div></div>",
+      char_serca.replace(
+        /<\/div>\s*<\/div>\s*<\/body>/,
+        `<div><div></div> <div class="flex flex-col justify-center"><div><span class="font-semibold">Vambrace</span> <span class="font-semibold" title="Honing +10">+10</span> <span title="Tier 4">T4</span> </div> <div class="flex gap-1"><span>100</span> </div></div></div>
+        </div></div></body>`,
       ),
     );
     const out: any = await fetch_and_parse(req(), parse_char);
-    expect(out.pieces).toEqual(
-      Array(6).fill({ plus_n: 20, ilevel: 1710, tier: 0, adv: 25 }),
-    );
+    expect(out.pieces).toHaveLength(7);
+    expect(out.pieces[6]).toEqual({
+      plus_n: 10,
+      ilevel: NaN,
+      tier: 1,
+      adv: NaN,
+    });
+    serve(char_t4);
+    expect(
+      ((await fetch_and_parse(req(), parse_char)) as any).pieces,
+    ).toHaveLength(6);
   });
 
   it("tells Serca pieces apart by a missing advanced cell and high ilevel", async () => {
