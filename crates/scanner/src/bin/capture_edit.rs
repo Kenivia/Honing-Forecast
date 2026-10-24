@@ -8,7 +8,7 @@
 // accept sets every slot to what the page showed, for a capture whose reading was all checked by
 // hand; an irrelevant slot's edit has no item.
 // A slot is named as the page's edits name it. The item defaults to the icon the page showed in
-// that slot; tradability is Tradable, RosterBound or CharBound.
+// that slot, item=none sets it irrelevant; tradability is Tradable, RosterBound or CharBound.
 use hf_scanner::dev_utils::capture::{END, MAGIC};
 use serde_json::{Value, json};
 use std::{env, fs};
@@ -75,12 +75,13 @@ fn main() {
                 let (name, value) = field.split_once('=').unwrap();
                 edit[name] = match name {
                     "amount" => json!(value.parse::<u32>().unwrap()),
+                    "item" if value == "none" => Value::Null,
                     "item" | "tradability" => json!(value),
                     _ => panic!("no field {name}"),
                 };
             }
             assert!(
-                edit["item"].is_string(),
+                edit["item"].is_string() || args[3..].iter().any(|x| x == "item=none"),
                 "no icon shown in {key}, give item="
             );
             println!("{key}: {edit}");

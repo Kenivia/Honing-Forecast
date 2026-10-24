@@ -126,12 +126,24 @@ pub fn is_chest_icon(icon: &str) -> bool {
     BY_TEMPLATE.contains_key(icon)
 }
 
-// Some chest with this icon has its item level written across the slot. Only those that count:
-// with the others in, plain chests of another art passed as this one with the level's rows left out.
-pub fn has_level(icon: &str) -> bool {
-    variants_of(icon)
+// the lowest item level a chest that counts and can sit in a slot asks for
+static LOWEST_LEVEL: LazyLock<u32> = LazyLock::new(|| {
+    VARIANTS
         .iter()
-        .any(|x| x.level.is_some() && !x.irrelevant)
+        .filter(|x| !x.irrelevant && x.template().is_some())
+        .filter_map(|x| x.level)
+        .min()
+        .unwrap()
+});
+
+// Some chest with this icon has its item level written across the slot. Irrelevant ones count
+// too, so that one is read as its own art and its tooltip lands on it, but only from the lowest
+// level of one that counts: older ones let a chest that counts pass as their look-alike art.
+pub fn has_level(icon: &str) -> bool {
+    variants_of(icon).iter().any(|x| {
+        x.level
+            .is_some_and(|level| !x.irrelevant || level >= *LOWEST_LEVEL)
+    })
 }
 
 // Whether every one of these chests opens to the same things, gold bound the same way, so that it
