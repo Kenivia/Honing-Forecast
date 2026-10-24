@@ -80,7 +80,7 @@ function set_band(band: number, event: Event) {
     <div class="py-1 text-sm">
       <label class="control-panel-checkbox-row">
         <input v-model="roster_config.show_all_rows" type="checkbox" />
-        <span>Show all mats (this tier)</span>
+        <span>Show all mats </span>
       </label>
       <label class="control-panel-checkbox-row">
         <input v-model="roster_config.auto_deduct_costs" type="checkbox" />

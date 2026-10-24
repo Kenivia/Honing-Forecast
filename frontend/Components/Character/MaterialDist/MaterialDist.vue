@@ -148,7 +148,22 @@ const visibleRows = computed(() =>
         range !== undefined &&
         has_upgrades_in_range(active_profile.value, ...range)
       );
+    })
+    // show all also lists what converts into a row, input only, above it
+    .flatMap((r) => {
+      const from = MATERIALS[r.label].from;
+      return roster_config.value.show_all_rows && from
+        ? [
+            { ...r, label: from.label, source: true },
+            { ...r, source: false },
+          ]
+        : [{ ...r, source: false }];
     }),
+);
+const special_source = computed(() =>
+  roster_config.value.show_all_rows
+    ? MATERIALS[SPECIAL_LEAP_LABELS[active_profile.value.tier]].from?.label
+    : undefined,
 );
 
 const tickbox_tooltip = `Untick the box if you don't plan on buying that material from market.`;
@@ -367,46 +382,77 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
         <!-- <span v-if="customLeftovers">Left</span> -->
       </div>
       <div v-if="runtime.histogram.result" class="contents">
-        <div
-          v-for="{ label, row, color } in visibleRows"
+        <template
+          v-for="{ label, row, color, source } in visibleRows"
           :key="`graph-${label}`"
-          class="mats-row"
-          role="group"
-          :aria-label="label"
-          :class="{
-            disabled: !active_profile.bound_budgets.enabled[label],
-          }"
         >
-          <MaterialCell
-            :input_column="owned_column"
-            :tick_column="active_profile.bound_budgets"
-            :label="label"
-            :show_label="true"
-            :aria_name="OWNED_ARIA[active_profile.chance_band]"
-            :input_color="selected_chance_color"
-            :setter="
-              (val) => {
-                owned_column.values[label] = val;
-              }
-            "
-            :hide_tick="row >= NUM_BASE_MATS"
-            :callback="() => start_all_workers()"
-            :hide_label="is924Narrow && row < NUM_BASE_MATS"
-            :band_label="OWNED_LABELS[active_profile.chance_band]"
-            :plus="
-              active_profile.bound_budgets.enabled[label]
-                ? [
-                    {
-                      amount: gain(label, active_profile.chance_band),
-                      text: 'from chests',
-                    },
-                    ...t4_line(t4_gain(label, active_profile.chance_band)),
-                    ...lower_lines(label, active_profile.chance_band),
-                  ]
-                : []
-            "
-          />
-          <!-- <div
+          <div
+            v-if="source"
+            class="mats-row"
+            role="group"
+            :aria-label="label"
+            :class="{
+              disabled: !active_profile.bound_budgets.enabled[label],
+            }"
+          >
+            <MaterialCell
+              :input_column="owned_column"
+              :tick_column="active_profile.bound_budgets"
+              :label="label"
+              :show_label="true"
+              :aria_name="OWNED_ARIA[active_profile.chance_band]"
+              :input_color="selected_chance_color"
+              :setter="
+                (val) => {
+                  owned_column.values[label] = val;
+                }
+              "
+              :callback="() => start_all_workers()"
+              :hide_label="is924Narrow"
+              :band_label="OWNED_LABELS[active_profile.chance_band]"
+              :plus="[]"
+            />
+            <div class="col-span-4"></div>
+          </div>
+          <div
+            v-else
+            class="mats-row"
+            role="group"
+            :aria-label="label"
+            :class="{
+              disabled: !active_profile.bound_budgets.enabled[label],
+            }"
+          >
+            <MaterialCell
+              :input_column="owned_column"
+              :tick_column="active_profile.bound_budgets"
+              :label="label"
+              :show_label="true"
+              :aria_name="OWNED_ARIA[active_profile.chance_band]"
+              :input_color="selected_chance_color"
+              :setter="
+                (val) => {
+                  owned_column.values[label] = val;
+                }
+              "
+              :hide_tick="row >= NUM_BASE_MATS"
+              :callback="() => start_all_workers()"
+              :hide_label="is924Narrow && row < NUM_BASE_MATS"
+              :band_label="OWNED_LABELS[active_profile.chance_band]"
+              :plus="
+                active_profile.bound_budgets.enabled[label]
+                  ? [
+                      {
+                        amount: gain(label, active_profile.chance_band),
+                        text: 'from chests',
+                      },
+                      ...t4_line(t4_gain(label, active_profile.chance_band)),
+                      ...lower_lines(label, active_profile.chance_band),
+                    ]
+                  : []
+              "
+            />
+            <!-- <div
             v-if="marginal[label] !== undefined"
             class="flex flex-col items-end justify-center text-(--gold)"
             :class="{ 'opacity-50': marginal_stale }"
@@ -419,41 +465,59 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
             >
           </div>
           <div v-else></div> -->
-          <MaterialCell
-            :input_column="histogram_chances"
-            :label="label"
-            :input_color="selected_chance_color"
-            :is_percentage="true"
-          />
-          <MaterialCell
-            :input_column="average_breakdown"
-            :label="label"
-            :input_color="'--average'"
-          />
-          <MaterialCell
-            :input_column="gold_breakdown"
-            :label="label"
-            :input_color="'--gold'"
-          />
-          <MaterialGraph
-            :data="histogram_result?.cum_percentiles?.[label] ?? null"
-            :material-label="label"
-            :graph-color="color"
-            :cumulative="roster_config.cumulative_graph"
-            :annotations="annotation_values[label]"
-            :annotationColors="
-              ANNOTATION_COLORS.filter((_, i) => enabled_annotations[i])
-            "
-            :annotation-positions="
-              ANNOTATION_POSITIONS.filter((_, i) => enabled_annotations[i])
-            "
-            :annotationLabels="
-              ANNOTATION_LABELS.filter((_, i) => enabled_annotations[i])
-            "
-            :tooltip-text-fn="hover_annotation"
-          />
-        </div>
+            <MaterialCell
+              :input_column="histogram_chances"
+              :label="label"
+              :input_color="selected_chance_color"
+              :is_percentage="true"
+            />
+            <MaterialCell
+              :input_column="average_breakdown"
+              :label="label"
+              :input_color="'--average'"
+            />
+            <MaterialCell
+              :input_column="gold_breakdown"
+              :label="label"
+              :input_color="'--gold'"
+            />
+            <MaterialGraph
+              :data="histogram_result?.cum_percentiles?.[label] ?? null"
+              :material-label="label"
+              :graph-color="color"
+              :cumulative="roster_config.cumulative_graph"
+              :annotations="annotation_values[label]"
+              :annotationColors="
+                ANNOTATION_COLORS.filter((_, i) => enabled_annotations[i])
+              "
+              :annotation-positions="
+                ANNOTATION_POSITIONS.filter((_, i) => enabled_annotations[i])
+              "
+              :annotationLabels="
+                ANNOTATION_LABELS.filter((_, i) => enabled_annotations[i])
+              "
+              :tooltip-text-fn="hover_annotation"
+            />
+          </div>
+        </template>
 
+        <div v-if="special_source" class="mats-row">
+          <MaterialCell
+            :input_column="active_profile.special_budget"
+            :label="special_source"
+            :show_label="true"
+            :setter="
+              (val) => {
+                active_profile.special_budget.values[special_source] = val;
+              }
+            "
+            :hide_tick="true"
+            aria_name="Lower tier special leaps owned"
+            :callback="() => start_all_workers()"
+            :plus="[]"
+          />
+          <div class="col-span-4"></div>
+        </div>
         <div class="mats-row">
           <MaterialCell
             :input_column="active_profile.special_budget"
