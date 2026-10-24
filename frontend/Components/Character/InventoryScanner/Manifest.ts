@@ -451,7 +451,7 @@ export function export_manifest() {
   const store = useRosterStore();
   const config = store.roster_config;
   const profile = store.active_profile;
-  take_snapshot(config, profile.roster_id, "Before export");
+  take_snapshot(config, profile.roster_id, "Before export", profile.id);
 
   [
     profile.bound_budgets,
@@ -487,7 +487,7 @@ export function export_manifest() {
       by: profile.id,
     })),
   );
-  take_snapshot(config, profile.roster_id, "After export");
+  take_snapshot(config, profile.roster_id, "After export", profile.id);
   reset_covers();
   exported_read.value = JSON.stringify(manifest.value.read);
 }

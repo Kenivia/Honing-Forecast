@@ -18,7 +18,8 @@ def raw_uploads(include_dev=False):
         for r in json.load(open(f, encoding="utf8")):
             r["file"] = os.path.basename(f)
             rows.append(r)
-    return rows if include_dev else [r for r in rows if r["version"] != "dev"]
+    # follow-ups are "followup <version>"
+    return rows if include_dev else [r for r in rows if not r["version"].endswith("dev")]
 
 
 def content_hash(snap):
@@ -34,7 +35,7 @@ def price_of(snap, label):
 
 def load(include_dev=False):
     uploads = raw_uploads(include_dev)
-    snaps, mats, chests, raids, seen = [], [], [], [], set()
+    snaps, mats, chests, raids, gear, seen = [], [], [], [], [], set()
     for u in uploads:
         for s in u["snapshots"]:
             h = content_hash(s)
@@ -48,13 +49,25 @@ def load(include_dev=False):
             cols = [("roster", None, s["roster_owned"]), ("tradable", None, s["tradable"])]
             cols += [(band, cid, c[band]) for cid, c in s["chars"].items() for band in ("bound", "special")]
             for band, cid, col in cols:
+                off = s["chars"][cid].get("disabled", []) if band == "bound" else []
                 for label, n in col.items():
                     mats.append(dict(base, kind=s["kind"], char=cid, band=band, label=label, amount=n,
-                                     gold=n * price_of(s, label)))
+                                     gold=n * price_of(s, label), disabled=label in off))
             for cid, c in [(None, {"chests": s["roster_chests"]})] + list(s["chars"].items()):
                 for ch in c["chests"]:
                     chests.append(dict(base, char=cid, title=ch["title"], band=ch["band"], count=ch["count"],
                                        obtain_all=ch["obtain_all"], options=len(ch["options"])))
+        # one row per item per loadout, or one with the reason there is no gear
+        for cid, g in (u.get("gear") or {}).items():
+            row = dict(roster=u["roster"], region=u["region"], char=cid, upload=u["id"], received=u["received"],
+                       followup=u["version"].startswith("followup"))
+            if isinstance(g, str):
+                gear.append(dict(row, reason=g))
+                continue
+            for lo in g["loadouts"]:
+                for it in lo["items"]:
+                    gear.append(dict(row, reason="gear", ilvl=g["ilvl"], refreshed=g["refreshed"], loadout=lo["kind"],
+                                     updated=lo["updated"], loadout_ilvl=lo["ilvl"], **it))
         for cid, v in u["raids"].items():
             if isinstance(v, str):
                 raids.append(dict(roster=u["roster"], region=u["region"], char=cid, upload=u["id"], reason=v))
@@ -68,7 +81,10 @@ def load(include_dev=False):
         raids = pd.concat([logs, raids[raids.reason != "logs"].drop_duplicates(["char", "reason"])])
         raids["week"] = pd.to_datetime(raids["week"], unit="ms")
     out = dict(uploads=uploads, snaps=pd.DataFrame(snaps), mats=pd.DataFrame(mats),
-               chests=pd.DataFrame(chests), raids=raids)
+               chests=pd.DataFrame(chests), raids=raids, gear=pd.DataFrame(gear))
+    for k in ("received", "refreshed", "updated"):
+        if k in out["gear"]:
+            out["gear"][k] = pd.to_datetime(out["gear"][k], unit="ms")
     for k in ("snaps", "mats", "chests"):
         if len(out[k]):
             out[k]["time"] = pd.to_datetime(out[k]["at"], unit="ms")
@@ -77,5 +93,5 @@ def load(include_dev=False):
 
 if __name__ == "__main__":
     d = load()
-    for k in ("snaps", "mats", "chests", "raids"):
+    for k in ("snaps", "mats", "chests", "raids", "gear"):
         print(k, d[k].shape)

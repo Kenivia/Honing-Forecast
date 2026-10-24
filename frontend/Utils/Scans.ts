@@ -157,6 +157,9 @@ export interface CharSnapshot {
   tier?: number;
   normal_grid?: StatusGrid;
   adv_grid?: StatusGrid;
+  // bound labels disabled (unlimited, never deducted); `bound` keeps their typed values. Absent
+  // when none; not compared by `budgets_of`
+  disabled?: string[];
   // by payload hash, the latest few only
   results?: Record<string, SnapshotResult>;
 }
@@ -166,6 +169,8 @@ export interface Snapshot {
   at: number;
   kind: "Before export" | "After export" | "Manual";
   roster_id: string;
+  // the character exported, on export snapshots; its lostark.bible follow-up timer restarts
+  by?: string;
   roster_owned: Record<string, number>;
   tradable: Record<string, number>;
   roster_chests: ManifestChest[];
@@ -193,10 +198,14 @@ export function snapshot_of(
   config: RosterConfig,
   roster_id: string,
   kind: Snapshot["kind"],
+  by?: string,
 ): Snapshot {
   const chars: Record<string, CharSnapshot> = {};
   for (const profile of config.profiles) {
     if (profile.roster_id !== roster_id) continue;
+    const disabled = Object.keys(profile.bound_budgets.enabled).filter(
+      (label) => profile.bound_budgets.enabled[label] === false,
+    );
     chars[profile.id] = {
       name: profile.char_name,
       bound: nonzero(profile.bound_budgets),
@@ -205,6 +214,7 @@ export function snapshot_of(
       tier: profile.tier,
       normal_grid: copy(profile.normal_grid),
       adv_grid: copy(profile.adv_grid),
+      ...(disabled.length > 0 && { disabled }),
     };
   }
   const region = config.all_regions[roster_id];
@@ -212,6 +222,7 @@ export function snapshot_of(
     at: Date.now(),
     kind,
     roster_id,
+    ...(by && { by }),
     roster_owned: nonzero(config.roster_mats_owned[roster_id]),
     tradable: nonzero(config.tradable_mats_owned[roster_id]),
     roster_chests: copy(config.roster_chests[roster_id] ?? []),
@@ -230,9 +241,10 @@ export const budgets_of = (snapshot: Snapshot) =>
     snapshot.roster_owned,
     snapshot.tradable,
     snapshot.roster_chests,
-    Object.entries(snapshot.chars).map(
-      ([id, { results: _results, ...char }]) => [id, char],
-    ),
+    Object.entries(snapshot.chars).map(([id, char]) => [
+      id,
+      [char.name, char.bound, char.special, char.chests],
+    ]),
   ]);
 
 // whether a snapshot now would have the same budgets as the roster's latest
@@ -249,9 +261,10 @@ export function take_snapshot(
   config: RosterConfig,
   roster_id: string,
   kind: Snapshot["kind"],
+  by?: string,
 ) {
   if (!same_as_latest(config, roster_id))
-    config.snapshots.push(snapshot_of(config, roster_id, kind));
+    config.snapshots.push(snapshot_of(config, roster_id, kind, by));
 }
 
 // whether the roster and tradable budgets are as the latest snapshot has them

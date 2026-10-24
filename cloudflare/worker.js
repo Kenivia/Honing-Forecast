@@ -11,7 +11,10 @@ const MAX_UPLOAD = 300_000;
 // one upload's share of the lostark.bible limit
 const MAX_CHARS = 40;
 const BIBLE_REGIONS = { nae: "NA", euc: "CE" };
-const WEEK_MS = 7 * 24 * 3600 * 1000;
+const HOUR_MS = 3600 * 1000;
+const WEEK_MS = 7 * 24 * HOUR_MS;
+// an exported character is looked up again this long after its last export
+const FOLLOWUP_MS = 24 * HOUR_MS;
 // a weekly reset, Thursday 10:00 UTC
 const RESET = Date.UTC(2026, 0, 1, 10);
 
@@ -50,9 +53,9 @@ export default {
             env,
           );
         }
-        const raids = url.pathname.match(/^\/raids\/([^/]+)\/([^/]+)$/);
-        if (raids) {
-          return await handleRaids(raids[1], decodeURIComponent(raids[2]), env);
+        const bible = url.pathname.match(/^\/bible\/([^/]+)\/([^/]+)$/);
+        if (bible) {
+          return await handleBible(bible[1], decodeURIComponent(bible[2]), env);
         }
       }
 
@@ -65,6 +68,10 @@ export default {
     } catch (e) {
       return reply(`Worker error: ${e.message}`, 500);
     }
+  },
+
+  async scheduled(controller, env, ctx) {
+    await followUp(env, ctx);
   },
 };
 
@@ -112,13 +119,45 @@ async function handleMarketProxy(region, items, env) {
   return reply(await upstream.text(), 200, "application/json");
 }
 
-// A character's raids, for uploads through the cache. Passing failures are not cached.
-async function handleRaids(region, name, env) {
-  const raids = await fetchRaids(region, name, env);
-  const cache =
-    typeof raids !== "string" || raids === "private" || raids === "not found";
-  return reply(JSON.stringify(raids), 200, "application/json", cache);
+// A character's raids and gear, for uploads through the cache. Passing failures are not cached.
+async function handleBible(region, name, env) {
+  const [raids, gear] = await Promise.all([
+    fetchRaids(region, name, env),
+    fetchGear(region, name, env),
+  ]);
+  const cache = [raids, gear].every(
+    (v) => typeof v !== "string" || v === "private" || v === "not found",
+  );
+  return reply(JSON.stringify({ raids, gear }), 200, "application/json", cache);
 }
+
+// Each character's raids and gear, or why there are none, through a loopback call each, so
+// Workers Cache serves a character looked up within the hour and each has its own subrequests.
+async function lookUp(ctx, region, names) {
+  const raids = {};
+  const gear = {};
+  const bible_region = BIBLE_REGIONS[region];
+  await Promise.all(
+    Object.entries(names).map(async ([id, name]) => {
+      if (!bible_region) return (raids[id] = gear[id] = "no region");
+      if (!valid_name(name)) return (raids[id] = gear[id] = "no name");
+      const res = await ctx.exports.default
+        .fetch(
+          `https://loopback/bible/${bible_region}/${encodeURIComponent(name)}`,
+        )
+        .then((res) => res.json())
+        .catch((e) => ({
+          raids: `error ${e.message}`,
+          gear: `error ${e.message}`,
+        }));
+      raids[id] = res.raids;
+      gear[id] = res.gear;
+    }),
+  );
+  return { raids, gear };
+}
+
+const valid_name = (name) => !!name && !/^Newchar\d*$/.test(name);
 
 // One roster's snapshots, stored with each character's recent raids from lostark.bible and
 // without anything that names the character.
@@ -140,37 +179,88 @@ async function handleSnapshots(request, env, ctx) {
       delete char.name;
     }
   }
-  const raids = {};
-  const bible_region = BIBLE_REGIONS[region];
-  await Promise.all(
-    Object.entries(names)
-      .slice(0, MAX_CHARS)
-      .map(async ([id, name]) => {
-        if (!bible_region) return (raids[id] = "no region");
-        if (!name || /^Newchar\d*$/.test(name)) return (raids[id] = "no name");
-        // a loopback call, so Workers Cache serves characters looked up within the hour
-        raids[id] = await ctx.exports.default
-          .fetch(
-            `https://loopback/raids/${bible_region}/${encodeURIComponent(name)}`,
-          )
-          .then((res) => res.json())
-          .catch((e) => `error ${e.message}`);
-      }),
+  const { raids, gear } = await lookUp(
+    ctx,
+    region,
+    Object.fromEntries(Object.entries(names).slice(0, MAX_CHARS)),
+  );
+  const writes = [
+    insertUpload(env, roster, region, version, snapshots, raids, gear),
+  ];
+
+  // the exported characters' follow-ups, pushed back by every export
+  for (const id of new Set(snapshots.map((snapshot) => snapshot.by))) {
+    if (!BIBLE_REGIONS[region] || !valid_name(names[id])) continue;
+    writes.push(
+      env.DB.prepare(
+        `INSERT INTO pending (char, roster, region, version, name, due) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+         ON CONFLICT (char) DO UPDATE SET roster = ?2, region = ?3, version = ?4, name = ?5, due = ?6`,
+      ).bind(
+        id,
+        roster,
+        region,
+        String(version),
+        names[id],
+        Date.now() + FOLLOWUP_MS,
+      ),
+    );
+  }
+  await env.DB.batch(writes);
+  return reply("ok", 200, "text/plain", false);
+}
+
+const insertUpload = (env, roster, region, version, snapshots, raids, gear) =>
+  env.DB.prepare(
+    "INSERT INTO uploads (received, roster, region, version, snapshots, raids, gear) VALUES (?, ?, ?, ?, ?, ?, ?)",
+  ).bind(
+    Date.now(),
+    roster,
+    String(region),
+    String(version),
+    JSON.stringify(snapshots),
+    JSON.stringify(raids),
+    JSON.stringify(gear),
   );
 
-  await env.DB.prepare(
-    "INSERT INTO uploads (received, roster, region, version, snapshots, raids) VALUES (?, ?, ?, ?, ?, ?)",
+// The characters whose follow-up is due, looked up again and stored as an upload without
+// snapshots, one per roster. A rate-limited one stays for the next run.
+async function followUp(env, ctx) {
+  const { results } = await env.DB.prepare(
+    "SELECT * FROM pending WHERE due <= ? ORDER BY due LIMIT ?",
   )
-    .bind(
-      Date.now(),
-      roster,
-      String(region),
-      String(version),
-      JSON.stringify(snapshots),
-      JSON.stringify(raids),
-    )
-    .run();
-  return reply("ok", 200, "text/plain", false);
+    .bind(Date.now(), MAX_CHARS)
+    .all();
+  const rosters = Object.groupBy(results, (row) => row.roster);
+  for (const rows of Object.values(rosters)) {
+    const { roster, region, version } = rows[0];
+    const found = await lookUp(
+      ctx,
+      region,
+      Object.fromEntries(rows.map((row) => [row.char, row.name])),
+    );
+    const done = rows.filter((row) => found.gear[row.char] !== "rate limited");
+    if (done.length === 0) continue;
+    const pick = (by) =>
+      Object.fromEntries(done.map((row) => [row.char, by[row.char]]));
+    await env.DB.batch([
+      insertUpload(
+        env,
+        roster,
+        region,
+        `followup ${version}`,
+        [],
+        pick(found.raids),
+        pick(found.gear),
+      ),
+      // unless an export pushed it back meanwhile
+      ...done.map((row) =>
+        env.DB.prepare("DELETE FROM pending WHERE char = ? AND due = ?").bind(
+          row.char,
+          row.due,
+        ),
+      ),
+    ]);
+  }
 }
 
 // The character's recent logs, reduced to what does not identify it, or why there are none.
@@ -199,6 +289,46 @@ async function fetchRaids(region, name, env) {
     return `error ${e.message}`;
   }
 }
+
+// The character's gear levels in each loadout lostark.bible keeps (one per kind of content last
+// entered: raid, chaos dungeon), times to the hour, or why there are none.
+async function fetchGear(region, name, env) {
+  try {
+    if (!(await allow(env, "bible"))) return "rate limited";
+    const upstream = await fetch(
+      `${BIBLE_URL}/character/${region}/${encodeURIComponent(name)}/__data.json`,
+      { headers: UWUOWO_HEADERS },
+    );
+    if (!upstream.ok) return `error ${upstream.status}`;
+    const nodes = (await upstream.json()).nodes.map((node) =>
+      node?.type === "data" ? unflatten(node.data) : null,
+    );
+    const header = nodes.find((data) => data?.header)?.header;
+    const loadouts = nodes.find((data) => data && "loadouts" in data)?.loadouts;
+    if (!header || !loadouts?.length) return "not found";
+    return {
+      ilvl: header.ilvl,
+      refreshed: to_hour(header.lastRefreshTime),
+      loadouts: loadouts.map((loadout) => ({
+        kind: loadout.classification,
+        updated: to_hour(loadout.lastUpdated),
+        ilvl: loadout.itemLevel,
+        items: loadout.items
+          .filter((item) => item.data && "honing" in item.data)
+          .map((item) => ({
+            slot: item.slot,
+            id: item.id,
+            honing: item.data.honing,
+            adv: item.data.advancedHoning,
+          })),
+      })),
+    };
+  } catch (e) {
+    return `error ${e.message}`;
+  }
+}
+
+const to_hour = (ms) => Math.floor(ms / HOUR_MS) * HOUR_MS;
 
 function reply(body, status, type = "text/plain", cache = status === 200) {
   return corsResponse(

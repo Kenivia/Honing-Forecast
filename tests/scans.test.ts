@@ -10,6 +10,7 @@ import {
   snapshot_diff,
   snapshot_of,
   sum_pages,
+  take_snapshot,
 } from "@/Utils/Scans";
 import {
   currencies,
@@ -282,6 +283,38 @@ check(
 equal("grids snapshotted", last.chars[ids[0]].normal_grid, a.normal_grid);
 equal("adv grid snapshotted", last.chars[ids[0]].adv_grid, a.adv_grid);
 equal("tier snapshotted", last.chars[ids[0]].tier, a.tier);
+equal(
+  "an export snapshot names its exporter",
+  last.by,
+  store.active_profile.id,
+);
+check(
+  "a manual one names none",
+  !("by" in snapshot_of(config, a.roster_id, "Manual")),
+);
+equal("default disabled snapshotted", last.chars[ids[0]].disabled, ["Shards"]);
+a.bound_budgets.enabled["Blue"] = false;
+const off = snapshot_of(config, a.roster_id, "Manual").chars[ids[0]];
+equal("disabled snapshotted", [...off.disabled].sort(), ["Blue", "Shards"]);
+equal(
+  "a disabled cell keeps its typed value",
+  off.bound["Blue"],
+  input_column_to_num(a.bound_budgets, true)["Blue"],
+);
+take_snapshot(config, a.roster_id, "Manual");
+equal("disabling alone adds no snapshot", config.snapshots.length, count);
+const status = a.normal_grid[0][0];
+a.normal_grid[0][0] = status === 0 ? 1 : 0;
+take_snapshot(config, a.roster_id, "Manual");
+equal("a grid change alone adds no snapshot", config.snapshots.length, count);
+a.normal_grid[0][0] = status;
+a.bound_budgets.enabled["Blue"] = true;
+a.bound_budgets.enabled["Shards"] = true;
+check(
+  "nothing disabled: no flag",
+  !("disabled" in snapshot_of(config, a.roster_id, "Manual").chars[ids[0]]),
+);
+a.bound_budgets.enabled["Shards"] = false;
 
 section("character storage covered");
 as(0);

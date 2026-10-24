@@ -8,7 +8,20 @@ const PAGE = 100;
 const keep = process.argv.includes("--keep");
 const where = process.argv.includes("--local") ? "--local" : "--remote";
 
+// a freshly refreshed OAuth token is sometimes refused (403) on its first call
 function d1(command) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return d1_once(command);
+    } catch (e) {
+      if (attempt === 3) throw e;
+      console.log(`wrangler failed, retrying (${attempt})`);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 3000);
+    }
+  }
+}
+
+function d1_once(command) {
   const out = execFileSync(
     process.execPath,
     [
@@ -36,7 +49,7 @@ if (cutoff === null) {
 }
 
 const rows = [];
-for (let last = 0; ; ) {
+for (let last = 0; ;) {
   const page = d1(
     `SELECT * FROM uploads WHERE id > ${last} AND id <= ${cutoff} ORDER BY id LIMIT ${PAGE}`,
   );
@@ -45,6 +58,7 @@ for (let last = 0; ; ) {
     rows.push({
       ...row,
       snapshots: JSON.parse(row.snapshots),
+      gear: JSON.parse(row.gear ?? "null"),
       raids: JSON.parse(row.raids),
     });
   }

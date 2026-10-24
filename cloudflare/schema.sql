@@ -7,7 +7,19 @@ CREATE TABLE IF NOT EXISTS uploads (
   region TEXT,
   version TEXT,
   snapshots TEXT,
-  raids TEXT
+  raids TEXT,
+  -- gear levels per character from lostark.bible (absent before 2026-10-24: ALTER TABLE uploads ADD COLUMN gear TEXT)
+  gear TEXT
+);
+
+-- per exported character, when it is looked up again; names are kept only here, until then
+CREATE TABLE IF NOT EXISTS pending (
+  char TEXT PRIMARY KEY,
+  roster TEXT,
+  region TEXT,
+  version TEXT,
+  name TEXT,
+  due INTEGER
 );
 
 -- upstream fetches in the current minute, per source

@@ -15,3 +15,7 @@ enabled = true
 binding = "DB"
 database_name = "hf-analytics"
 database_id = "1fcbabd9-8306-413a-91d4-696f026251aa"
+
+# runs the due lostark.bible follow-ups (worker.js, followUp)
+[triggers]
+crons = ["0 * * * *"]
