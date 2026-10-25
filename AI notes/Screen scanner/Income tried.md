@@ -1,18 +1,23 @@
 # Income tried
 
-- **A top-level Snapshots page** (`/snapshots`, `SnapshotsView.vue`) listed a roster's snapshots with From / To radios (To could be now) and a character select, and showed the change between any two. Replaced by the character's Income page, which shows the change from the snapshot before only.
-- **Breaking the fit at decreases automatically** (a snapshot with any decrease starting a new run) was planned and dropped before it was built: a different chest state, or a chest opened another way than the optimizer chose, shows as a decrease too. The first version had only ignoring, with one plain line; a spend then dragged the slope unless every snapshot on one side was ignored. Runs now start where the user marks them.
-- **Queue order with the selected snapshot twice** (October 2026): it was listed first and again among the used ones, so both workers could run it and one never went idle. `queue_order` now lists each entry once.
-- **Pre-filling every manual cell** on each switch to manual (October 2026) overwrote what was typed after an untick and tick. Only cells never typed are filled now. Manual values were read with `Number()` ("1,000" saved as 0); they use the site's parser now.
-- **Every band of every row in the table** (until October 2026): char-bound and tradable Silver and tradable free taps, none of which exist in game, had cells and manual inputs. They are hidden now. Roster-bound free taps were kept visible at first, since a few roster-bound chests hold special leaps, but `owned_at` counts every free tap as char bound so the cell always read 0; it is hidden too.
-- **Storing the optimizer's chest states in a snapshot** was dropped: the states of the moment are of the old upgrades and budgets and not optimized for the snapshot. Each snapshot is optimized on its own instead, cached by payload hash.
-- **A priority queue, two runs at a time** (until October 2026): the selected snapshot, now (behind an "Include now" checkbox), the estimate's snapshots newest first, then Before export, each run cold (`queue_order`). Replaced by one chain oldest first, each run from the state of the one before, with the weeks ahead projected after now; now counts whenever it differs.
-- **A graph of the materials** (until October 2026): one material at a time (icon toggles, at first several on their own y axes), its snapshot values summed up to the chosen band, hollow until run, with the fitted line per run or the manual rate from now (`estimate_line`, `manual_line`). Dropped as redundant next to the metrics graph; the band buttons lost their "+" since nothing sums bands any more.
-- **Past points on the metrics graph** (October 2026): the estimate's snapshots were drawn before now, and the x range went back five weeks with a timeline of markers lined up with the plot area (a lower lane for Before export, a white line on the graph for the selected one). The metrics of a snapshot are under the current upgrades, which says little about the past once the upgrades change, so it was tried to store each snapshot's upgrades with their progress, run it with them, and draw only those taken with the current set (plus upgrades done since). Dropped as complicated: the graph starts at now and the timeline became a list.
-- **Now at the clock's time in the estimate, now's and the weeks' results for the session** (October 2026): the minute clock moved now's point, so the rates, so every projected week's payload hash, and leaving the page and coming back (or staying a minute) re-ran all the weeks. Now is pinned to the time its budgets were first seen, and the results are saved in the profile.
-- **Band buttons at the top of the page** (until October 2026) drove the table only, once the material graph was gone. The table has them now, and the chance graph has its own cumulative ones (as the material graph's were); its material toggles are that graph's, revived as multi-select.
-- **Chance of running out** (October 2026): the graph first drew 1 - `chance_within` over every material of the tier, juices included. It draws the chance to succeed within now, of enabled base materials only.
+Warnings for the Income page and its estimate (`Income.md`): what failed or was ruled out.
 
-## No negative income (Oct 2026)
+## The estimate
 
-Before: manual income took a leading minus, and the fitted slope went negative across a spend without a break (agent testing saw -74.6 a week). The author ruled that income is never negative: both are clamped at 0 now. Also before: "Take snapshot" did nothing silently on a duplicate, and with no upgrades the graphs drew a flat 0 line with ticks `1,1,1,0,0,-0,-1`; now the button is disabled with a note and the graphs give way to a message. The Weeks ahead box kept an invalid typed value on screen (`-4`) while running auto; it now shows what was kept.
+- **Don't break the fit at decreases automatically**: a different chest state, or a chest opened another way than the optimizer chose, shows as a decrease too. Runs start where the user marks them. Without breaks at all, a spend dragged the slope unless every snapshot on one side was ignored.
+- **Don't allow negative income**: the fitted slope went negative across a spend without a break (-74.6 a week seen) and the author ruled income is never negative. Slope and manual rate are clamped at 0.
+- **Don't place now at the clock's time in the estimate, or keep now's and the weeks' results for the session only**: the minute clock moved now's point, so the rates, so every projected week's payload hash, and leaving the page or waiting a minute re-ran all the weeks. Pin now to the time its budgets were first seen and save the results in the profile.
+- **Don't store the optimizer's chest states in a snapshot**: the states of the moment are of the old upgrades and budgets and not optimized for the snapshot. Optimize each snapshot on its own, cached by payload hash.
+- **Don't run snapshots cold in a priority order** (selected, now, estimate's snapshots newest first, then Before export, two at a time): replaced by one chain oldest first, each run starting from the state of the one before.
+
+## The table
+
+- **Don't show cells that do not exist in game** (char-bound and tradable Silver, tradable free taps, roster-bound free taps): they had inputs that meant nothing. Roster-bound free taps were kept at first since a few roster-bound chests hold special leaps, but `owned_at` counts every free tap as char bound so the cell always read 0.
+- **Don't pre-fill every manual cell on each switch to manual**: it overwrote what was typed after an untick and tick. Fill only cells never typed.
+- **Don't read typed values with `Number()`**: "1,000" saved as 0. Use `parse_locale_float`.
+
+## The graphs
+
+- **Don't draw past snapshots on the metrics graph** (the x range going back five weeks, a timeline of markers): a snapshot's metrics are under the current upgrades, which says little about the past once the upgrades change. Storing each snapshot's upgrades with their progress and running it with them was tried and dropped as too complicated; the graph starts at now.
+- **Don't graph one material's amounts per snapshot with fitted lines** (hollow until run, one material at a time): redundant next to the metrics graph.
+- **Don't draw the chance of running out as 1 - `chance_within` over every material of the tier**: juices included, it said nothing. Draw the chance to succeed within the chosen bands, for enabled base materials only.

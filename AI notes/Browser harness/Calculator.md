@@ -47,7 +47,7 @@ Any change to the grids or materials restarts it when `Auto start optimizer` is 
 
 ## Helpers
 
-`e2e/helpers.ts`, available as `hf` in `pnpm browse` scripts.
+`tests/e2e/helpers.ts`, available as `hf` in `pnpm browse` scripts.
 
 | Helper | Does |
 | --- | --- |
@@ -74,14 +74,14 @@ To inspect state directly, the whole config is one lz-string-compressed localSto
 
 ## Rigorous testing
 
-Add a spec under `e2e/`. Follow `smoke.spec.ts`:
+Add a spec under `tests/e2e/`. Follow `smoke.spec.ts`:
 
 - `watch_errors` and `stub_market` in `beforeEach`, and assert no errors in `afterEach`.
 - Drive only through helpers and role-based locators.
 - Assert ilevel and cell statuses exactly. Assert gold by relation (greater than zero, lower after adding materials) or a generous range.
 - To test persistence, wait a second for the debounced save before reloading.
 
-To refresh the price fixture, record the two Worker POST responses on a fresh load and write them to `e2e/fixtures/market.json` keyed by region slug (`nae`, `euc`).
+The price fixture is `tests/e2e/fixtures/market.json`, keyed by region slug (`nae`, `euc`), in the market API's response shape. `stub_market` fulfils `GET /market/<region>` with that region's list; if the route or the response shape changes, update both.
 
 ## Not covered yet
 

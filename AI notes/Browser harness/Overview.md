@@ -20,7 +20,7 @@ Per-section instructions:
 | Way | Use it for | Command |
 | --- | --- | --- |
 | Playwright MCP | One-off debugging when the `pw-chrome` / `pw-firefox` tools are loaded. | tools named `browser_*` |
-| `pnpm browse` | One-off debugging without MCP tools (subagents, non-interactive runs), or anything needing a loop or timing. | `pnpm browse <script.mjs> [--firefox] [--headed] [--stub]`; `BASE_URL` in the environment points it at a dev server on another port |
+| `pnpm browse` (`scanner_setup/browser/browse.mjs`) | One-off debugging without MCP tools (subagents, non-interactive runs), or anything needing a loop or timing. | `pnpm browse <script.mjs> [--firefox] [--headed] [--stub]`; `BASE_URL` in the environment points it at a dev server on another port |
 | `pnpm test:e2e` | Rigorous, repeatable checks in both browsers. | `pnpm test:e2e`, `pnpm test:e2e --project=firefox`, `pnpm test:e2e -g "name"` |
 
 ### Playwright MCP
@@ -47,11 +47,11 @@ export default async ({ page, hf }) => {
 };
 ```
 
-`page` is a Playwright page with the base URL set. `hf` is `e2e/helpers.ts`. `--stub` serves the saved market prices instead of live ones.
+`page` is a Playwright page with the base URL set. `hf` is `tests/e2e/helpers.ts`. `--stub` is meant to serve the saved market prices instead of live ones (see the stub note below).
 
 ### pnpm test:e2e
 
-Tests live in `e2e/*.spec.ts` and run in both browsers. The config starts `pnpm dev` itself, or reuses one already running. A failure leaves a trace in `test-results/`; open it with `pnpm exec playwright show-trace <trace.zip>`. `pnpm test:e2e:ui` opens the interactive runner for the user.
+Tests live in `tests/e2e/*.spec.ts` and run in both browsers. The config starts `pnpm dev` itself, or reuses one already running. A failure leaves a trace in `tests/test-results/`; open it with `pnpm exec playwright show-trace <trace.zip>`. `pnpm test:e2e:ui` opens the interactive runner for the user.
 
 Every test should start with `hf.watch_errors` and `hf.stub_market`, as `smoke.spec.ts` does.
 
@@ -59,7 +59,7 @@ Every test should start with `hf.watch_errors` and `hf.stub_market`, as `smoke.s
 
 | | One-off debugging | Rigorous testing |
 | --- | --- | --- |
-| Market prices | Live, from the Worker | Stubbed from `e2e/fixtures/market.json` |
+| Market prices | Live, from the Worker | Stubbed from `tests/e2e/fixtures/market.json` |
 | State | MCP: persists for the session. `pnpm browse`: fresh each run | Fresh profile per test |
 | Waiting | Fixed waits and re-snapshots are fine | Helpers and auto-waiting assertions only |
 | Numbers | Read and eyeball | Assert relations and ranges, never exact gold |

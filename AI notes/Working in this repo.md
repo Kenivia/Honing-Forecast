@@ -26,8 +26,7 @@ CRLF can still be introduced by Windows tools that write the platform newline:
 temporary work there and nowhere else, and clear it when done using `pnpm run remove-tmp` instead of a direct command (it may be blocked). The test
 runner also builds into `.tmp/tests/` and wipes it on each run.
 
-Do **not** invent another scratch directory in the repo root. A previous `.wip/` folder
-was picked up by a commit because it was not ignored.
+Do **not** invent another scratch directory in the repo root: it would not be ignored.
 
 ## Paths from the repo root in Rust
 
@@ -76,9 +75,9 @@ with `tests/shim.mjs` (localStorage, `self`, a stub `Worker`). `tests/helpers.ts
 <substring>` runs one suite.
 
 - `migration.test.ts`: a hand-built V7 payload through the real migration and save path.
-- `live.test.ts`: the same against `tests/V7 config`, a real 27-character save. Skips
-  itself if that file is absent.
+- `live.test.ts`: the same against `tests/V7 config`, a real save; `live_v8.test.ts` runs V8 to V9 on `tests/v8 config`; `live_v10.test.ts` loads `tests/V10 config`, a current save, which must come back as stored and survive load, save, load again. Each skips itself if its file is absent.
 - `relations.test.ts`: cross-tier conversion, bundle pricing, material deduction, a Serca character counting and spending its T4 stock.
+- `chests.test.ts`, `choices.test.ts`, `income.test.ts`, `scans.test.ts`: chest processing, taking a choice's option, income from snapshots, the manifest merge and snapshots.
 
 `pnpm test:unit` runs Vitest (`vitest.config.ts`, merged over `vite.config.ts`) with jsdom
 and `@vue/test-utils`, over `tests/unit/**/*.test.ts`, one folder per frontend module. Unlike

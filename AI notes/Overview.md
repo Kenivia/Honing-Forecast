@@ -18,8 +18,8 @@ These notes are high-level. They cover what is hard to work out from reading one
 | `cloudflare/` | A Worker that proxies and caches market prices and character lookups, and stores analytics uploads in D1 (`schema.sql`). |
 | `public/` | Static assets, changelogs, `WIP.md` (the author's roadmap), scanner config and OCR model. |
 | `scanner_setup/` | Everything that builds or calibrates the scanner config: source icons (`templates/`), game-file extraction, brightness calibration, anchor setup, the browser profiling scripts. |
-| `scripts/` | Changelog helper, the pre-deploy check and the Income page's mock save (`mock income/`); everything scanner-specific lives in `scanner_setup/` instead. |
-| `tests/` | Playwright e2e tests (`e2e/`), node-side frontend tests (migrations, the real-save fixture, cross-tier relations, `pnpm test:node`), Vitest unit and component tests (`unit/`, `pnpm test:unit`), and test fixtures (the V7 save, `test-results/`). |
+| `scripts/` | Changelog helper, the pre-deploy check, analytics pull and analysis (`analytics/`), the Income page's mock save (`mock income/`) and game-data helpers (`game_files/`, `json_parser/`, `arena/`); everything scanner-specific lives in `scanner_setup/` instead. |
+| `tests/` | Playwright e2e tests (`tests/e2e/`), node-side frontend tests (migrations, the real-save fixture, cross-tier relations, `pnpm test:node`), Vitest unit and component tests (`unit/`, `pnpm test:unit`), and test fixtures (real saves `V7 config`, `v8 config`, `V10 config`; `test-results/`). |
 | `arena_data/` | Arena scenarios and its gitignored results database, plus the Python report scripts that read it. |
 
 Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-pack output), and `ignored/` (untracked: `junkyard/`, `data_fetcher/`, `game_file_reader/`, old saddlepoint reference PDF, the overnight evaluator experiments, scanner recordings).
@@ -32,11 +32,12 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 - `pnpm test:rust` runs `cargo test -p hf-core -p hf-arena`: the valuation unit tests in `materials.rs`, plus a short Monte Carlo check and a seed-repeats check from the arena.
 - `pnpm test` runs every suite in turn: Rust, node, Vitest, then the browser tests in both browsers (those take several minutes and start `pnpm dev`, which rebuilds the wasm).
 - `pnpm arena <command>` runs the core's test harness. See `Calculator core/Arena.md`.
-- `pnpm build` chains `pnpm test:rust` (the Rust tests only) before the wasm and Vite builds and an unused-dependency check that needs nightly. `pnpm no-test-build` skips the test.
-- `pnpm deploy` only checks you are on a clean `main`, then force-pushes `main` to the `Production` branch (assumed to be what the hosted site builds from). It does not run tests.
-- `pnpm cloudflare-deploy` deploys the Worker separately.
-- `pnpm pull-analytics` downloads and deletes the analytics uploads (`Frontend/External services.md`).
+- `pnpm build` chains `pnpm test` (every suite) before the wasm and Vite builds and an unused-dependency check that needs nightly. `pnpm no-test-build` skips the tests and the check.
+- `pnpm deploy` only checks (`scripts/pre_deploy_check.ps1`) you are on a clean `main`, then force-pushes (`--force-with-lease`) `main` to the `Production` branch (assumed to be what the hosted site builds from). It does not run tests.
+- `pnpm cloudflare-deploy` deploys the Worker separately; `pnpm cloudflare-dev` runs it remotely.
+- `pnpm pull-analytics` downloads and deletes the analytics uploads, `pnpm analytics` pulls and then serves the plots (`Frontend/External services.md`).
 - `pnpm change-log` scaffolds the next changelog file in `public/change-logs`.
+- `pnpm browsers` installs the Playwright browsers; `pnpm scanner-suite`, `scanner-profile` and `scanner-compare` are the scanner's tools (`Screen scanner/`). `pnpm remove-tmp` clears `.tmp/` (`Working in this repo.md`).
 
 ## Cargo features
 
@@ -44,7 +45,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 - `wasm` gates the histogram, the progress-message bridge and browser logging and timing.
 - `run_tests` only makes `my_dbg!` print natively.
 - `trace` fills in `Probe`, the instrumentation struct. Off in wasm, where it is empty; on in the arena.
-- `my_dbg!` is an exported macro whose feature checks resolve in the *calling* crate. That is why `hf-wasm` and `hf-scanner` declare dummy `wasm` / `run_tests` features.
+- `my_dbg!` is an exported macro whose feature checks resolve in the *calling* crate. That is why `hf-wasm` declares dummy `wasm` / `run_tests` features.
 - The wasm target is built with SIMD enabled (`.cargo/config.toml`).
 
 ## Game glossary
@@ -61,7 +62,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 
 ## Index
 
-Each note describes the code as it is now. Where there is history (what was measured, tried, dropped or fixed), it is in a `<note> tried.md` beside the note. **Read a tried file only when trying something new** in its area, to avoid repeating what was already ruled out. When changing something, update the main note to the new state and put the before/after in the tried file.
+Each note describes the code as it is now. Where something was tried and failed or ruled out, a `<note> tried.md` beside the note holds a "don't try X: why" warning. **Read a tried file only when trying something new** in its area. When changing something, update the main note to the new state; add to the tried file only a warning against an alternative that failed, never a changelog.
 
 - `Calculator core/Domain model.md`: the structs and index conventions.
 - `Calculator core/Evaluation pipeline.md`: payload to result, method selection, invariants.
@@ -82,4 +83,6 @@ Each note describes the code as it is now. Where there is history (what was meas
 - `Screen scanner/Manifest.md`: the scan as materials per band and chests, merged with saved pages and other characters, the export, and the budget snapshots.
 - `Screen scanner/Income.md`: the Income page: snapshots over time, their optimizer runs, the income estimate and manual income.
 - `Screen scanner/Choices.md`: the Choices page: what taking each option of a choice (a raid's bonus chest) is worth, and adding it to the budgets.
-- `Browser harness/Overview.md`: driving the site in Chromium and Firefox, for debugging and e2e tests. One note per site section alongside it.
+- `Browser harness/Overview.md`: driving the site in Chromium and Firefox, for debugging and e2e tests. One note per site section alongside it:
+  - `Browser harness/Calculator.md`: the calculator, market and roster pages.
+  - `Browser harness/Screen scanner.md`: the scanner page, fed by an uploaded image or video.

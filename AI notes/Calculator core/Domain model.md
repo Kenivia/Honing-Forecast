@@ -5,14 +5,15 @@ How `crates/core` represents the problem. Field names on these structs are effec
 ## Structs
 
 - **`Payload`** (`payload.rs`): what JS sends. Hand-mirrored in `frontend/WasmInterface/PayloadBuilder.ts`; there is no generated binding.
-- **`PreparationOutput`** (`parser.rs`): everything derived once from the payload: the `MaterialTable`, the materials in row order, the valuation plans and their precomputed bands, and the event-adjusted `JuiceInfo`.
+- **`PreparationOutput`** (`parser.rs`): everything derived once from the payload: the `MaterialTable`, the materials in row order, the valuation plans and their precomputed bands, the chests, the free-tap budget and the event-adjusted `JuiceInfo`.
 - **`materials.rs`**: the material vocabulary. `MaterialTable` holds the labels and the label to row map; `OneMaterial` is one material's owned amounts and prices; `ValuationPlan` is what a leftover unit of each band is worth.
-- **`Upgrade`** (`upgrade.rs`): one +N to +N+1 step on one piece. Holds its probability distribution, its per-material cost supports and its `State`.
+- **`Upgrade`** (`upgrade.rs`): one +N to +N+1 step on one piece. Holds its probability distribution, its per-material cost supports (`cost_dist`) and its `State`, plus a `Spare` of the previous state's distributions (`Evaluation pipeline.md`).
 - **`State`** (`state.rs`): the decision for one upgrade, and the thing the optimizer mutates.
   - Normal honing: for each tap, the set of juice/book ids used on that tap.
   - Advanced honing: two strategy indices (juice, scroll), each meaning "use it on the first N grace or non-grace taps".
 - **`Support`** (`support.rs`): for one upgrade and one material, the amount consumed at each outcome, paired with the outcome probabilities.
-- **`StateBundle`** (`state_bundle.rs`): one complete candidate solution: all upgrades, the free-tap order (`special_state`), how the chests are opened (`chest_states`), the prepared inputs, caches and the last metric. `StateEssence` is the hashable subset (states, free-tap order, chest states).
+- **`Tuning`** (`tuning.rs`): every evaluator and optimizer knob, overridable by name from the arena. The default is production; `Tuning::reference()` is the accurate evaluator used for reported numbers.
+- **`StateBundle`** (`state_bundle.rs`): one complete candidate solution: all upgrades, the free-tap order (`special_state`), how the chests are opened (`chest_states`), the prepared inputs, caches (`special_cache`, `adv_cache`, `gold_memo`) and the last metric. `StateEssence` is the hashable subset (states, free-tap order, chest states).
 - **`Chest`** (`chest.rs`): one stack of identical chests still to be opened. See "Chests" below.
 
 ## Index conventions
@@ -61,25 +62,25 @@ A `Chest` is a count, the band it is owned in and its options, each a `label -> 
 
 ## Game data
 
-Costs and chances come from JSON embedded in the binary, under `constants/`. Only two of the JSON files are wired in, one per tier: `T4 July 2026 (Vambrace padded).json`, from a Google Sheet, and `Serca Oct 2026.json`, whose normal honing is the game's (below) and the rest the sheet's. Vambrace support is partial: it exists for normal honing and is absent from the advanced tables. Serca's juice ids are Glacier's 0, Lava's 1, then the Tremor books 2 to 5 (12-15 armour, 12-15 weapon, 16-19 armour, 16-19 weapon), the order of their labels in the frontend's `MATERIAL_TABLE`.
+Costs and chances come from JSON embedded in the binary, in `crates/core/src/constants/` (`constants.rs` picks the file per tier). Only two of the JSON files in that folder are wired in, one per tier: `T4 July 2026 (Vambrace padded).json`, from a Google Sheet, and `Serca Oct 2026.json`, whose normal honing is the game's (below) and the rest the sheet's. Vambrace support is partial: it exists for normal honing and is absent from the advanced tables. Serca's juice ids are Glacier's 0, Lava's 1, then the Tremor books 2 to 5 (12-15 armour, 12-15 weapon, 16-19 armour, 16-19 weapon), the order of their labels in the frontend's `MATERIAL_TABLE` (`Utils/Constants.ts`).
 
 ### Honing data in the game files
 
-The same numbers are in the installed game, in the SQLite tables of `EFGame/data2.lpk` (`Screen scanner/Game files.md` has how they are read). **`python scripts/game_files/honing.py`** rebuilds the normal honing of the Serca JSON from them (chances, costs, unlocks, free-tap leapstones, juice and book rows), keeps the advanced and `EVENT_*` fields of the JSON it starts from, prints which fields changed and writes `Serca Oct 2026.json`. On the client of 2026-10-21 everything it rebuilds equalled `Serca Aug 2026 (Vambrace).json`, the sheet's vambrace included, but the 16 book rows, which are new. T4 is not generated (the discount layer below).
+The same numbers are in the installed game, in the SQLite tables of `EFGame/data2.lpk` (`Screen scanner/Game files.md` has how they are read). **`python scripts/game_files/honing.py`** rebuilds the normal honing of the Serca JSON from them (chances, costs, unlocks, free-tap leapstones, juice and book rows), keeps the advanced and `EVENT_*` fields of the JSON it starts from (`Serca Aug 2026 (Vambrace).json`), prints which fields changed and writes `Serca Oct 2026.json`. T4 is not generated (the discount layer below).
 
 - **Normal honing, all there.** `ItemEnhanceCommon`, one group per gear set and piece type (411100 Serca weapon, 411101 Serca armour, 411102 Serca vambrace, 410500 and 410501 for T4; T4 has no vambrace), `SecondaryKey` 100 plus the level:
-  - `LevelUpSuccessRate` and `LevelUpFailureBonusRate` out of 10,000; the juice (`LevelUpAdditiveId0k`, `Rate0k` a unit, `Max0k` units, `MaxRate` the cap over all) out of 100,000 since the October 2026 update (10,000 before). The vambrace takes both juices, up to its max each;
+  - `LevelUpSuccessRate` and `LevelUpFailureBonusRate` out of 10,000; the juice (`LevelUpAdditiveId0k`, `Rate0k` a unit, `Max0k` units, `MaxRate` the cap over all) out of 100,000. The vambrace takes both juices, up to its max each;
   - shards, silver and gold in `LevelUpCostType/Amount` (type 18 shards, 1 silver, 2 gold);
   - unlock shards as the difference of `AccExp` between levels, unlock silver as that times `FeedSubCost`;
   - free-tap leapstones in `SpecialEnhanceMaterialAmount`.
   - Stones, leapstones and fusion are in `ItemQualityOption`, the rows whose `EnhanceCommonId` is the group (many items per group, all alike). Books are in `ItemEnhanceMaterial` under the level's `SpecialMaterialGroupId`, one row per book item (event, bound and tradable copies), `EffectType00` 1 and the chance in `EffectArg00` out of 10,000.
-- The client only holds what the installed version has: the Serca books and vambrace came with the October 2026 update.
+- The client only holds what the installed version has.
 - **Advanced honing** is in `ItemAmplificationBase` (the unlocks per ten levels) and `ItemAmplificationMaterial` (costs, success and great-success rates, juice, scrolls). Only armour was looked at.
 
 **The open part is the discount layer.** The base tables are the undiscounted costs, and the JSON has the discounted ones:
 
-- T4 normal honing gold is 780 in the base table against 624 in the JSON for +1 to +18, and equal from +19. The 624 is in `WelcomeBoostEnhance`, which `ItemQualityOption.WelcomeBoostId` points at, and which repeats every cost of the level.
-- T4 advanced honing stages 1 and 2 are undiscounted in the base table (500 Guardian Stones against 250, 3,000 shards against 2,400). `ItemAmplificationBoost` has discount rates per material and `ItemAmplificationBase` names boost ids, but which row gives the JSON's numbers was not traced.
+- T4 normal honing gold in the base table is higher than the JSON's for the low levels (and equal from +19). The JSON's number is in `WelcomeBoostEnhance`, which `ItemQualityOption.WelcomeBoostId` points at, and which repeats every cost of the level.
+- T4 advanced honing stages 1 and 2 are undiscounted in the base table (e.g. Guardian Stones, shards). `ItemAmplificationBoost` has discount rates per material and `ItemAmplificationBase` names boost ids, but which row gives the JSON's numbers was not traced.
 - Rows are gated by `ClassifyType`/`ClassifyIndex`, and the client tables alone do not say which gates are open. With no event running there is nothing live to compare an event discount against, so the `EVENT_*` rows cannot be checked now.
 
 Until that is understood, generating the T4 JSON from the game would get the permanent discounts wrong. Serca has no `WelcomeBoostId` and the game's numbers are the JSON's.

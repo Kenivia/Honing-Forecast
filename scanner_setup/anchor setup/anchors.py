@@ -16,7 +16,7 @@ The still has to be a 1440p UI (templates are kept at the reference resolution),
 whole pixels in it, and --brightness the in-game setting it was taken at. --offset is where the
 template sits relative to the root it gives: the window origin, or the UI block for the Storage
 button. A name already in the config is replaced in place. The names are looked up by the anchor
-list in crates/scanner/src/constants.rs.
+list in crates/scanner/src/anchor_to_slot/anchor_defs.rs.
 """
 
 import argparse

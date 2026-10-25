@@ -1,66 +1,42 @@
-# Evaluation pipeline: what was tried
+# Evaluation pipeline: what not to try
 
-History behind `Evaluation pipeline.md`: measurements, bugs that were fixed, and what was dropped. Only read this when trying something new on the evaluator. All of it is October 2026 unless dated otherwise.
+Warnings for `Evaluation pipeline.md`: things that failed or were ruled out. Read before trying something new on the evaluator.
 
-The overnight test of the saddlepoint's replacements is archived with its driver, results and conclusions in `ignored/core experiments/FINDINGS.md` at the repository root (gitignored). It has everything tried against the approximations' weakness with one dominant upgrade, and the code of the alternatives that were dropped (the size-biased pair, the split). Its reference was `coarse_cells=512`, within 1e-8 of flow of `max_lattice_work=2e9` on `pilot` and 17 times faster. What was measured against the code before the evaluator's speed-up is in `Arena tried.md`.
+The overnight test of the saddlepoint's replacements is archived with its driver, results and conclusions in `ignored/core experiments/FINDINGS.md` at the repository root (gitignored): everything tried against the approximations' weakness with one dominant upgrade, and the code of the dropped alternatives (the size-biased pair, the split). Earlier speed measurements are in `Arena tried.md`.
 
-## The metric's saddlepoint, and why it went
+## The metric
 
-The metric used to take the leftover from one saddlepoint (`leftover`, called "direct"), with brute force near the ends and the coarse lattice at 16 points where it found no root. Against that direct route, c8:
+- Don't put a saddlepoint back in the metric (the old "direct" leftover): its error leans optimistic and differs by state, so the optimizer prefers misjudged states. The coarse lattice has a worst error of 1.5e-4 of flow against 3.5e-3, for 1.3 times the time per evaluation, and plans came out equal or better (13k gold on `saddlepoint_out_of_range_t4_n27`).
+- Don't expect the Edgeworth leftover to be exercised: the coarse lattice never failed over 2,631 solves (98 million evaluations).
+- Don't sum the lattice's masses up to a threshold at or past the top: rounding leaves a fraction of a gold per material at a threshold of a billion, which summed over juices showed as a gain from spending nothing ("-0" / "-1" gold). Answer (1, 1) outright.
 
-- one evaluation 1.3 times as long, worst error 1.5e-4 of flow against 3.5e-3, mean 1e-5 against 5e-5;
-- solves 1.3 times as long on `pilot` and `nh_quick` (one job), 0.78 times on 175 upgrades (where the optimizer's own work dominates), 1.33 to 1.52 times in the browser;
-- plans under the reference the same within noise on `nh_dev`, `weekly_dev`, `chests` and `stress`, and some 13k gold better on `saddlepoint_out_of_range_t4_n27` (3 seeds), the case of one dominant upgrade the saddlepoint misjudges;
-- the optimizer's own number off the reference by 9.4e-5 of flow at worst, against 1.9e-3.
+## The coarse lattice
 
-The reference (c64) is 1e-6 of flow off on average and 1e-5 at worst; one evaluation at 64 points is 5 times c8's.
+- Don't pick the step per sum from a work budget: it beat a fixed `coarse_cells` per unit of time at high accuracy, but no budget was as fast as the default without falling back, and the fallback brought its errors with it.
+- Don't add a mirror (the grid of max - S): it halves a lone threshold near the top, but a material's thresholds span both sides and the tails already bound the grid, so a whole evaluation was unchanged.
+- Don't use brute force in place of the coarse lattice for small sums: same accuracy, 2% slower.
 
-The Edgeworth leftover was never reached: over 2,631 solves at c8 (98 million state evaluations, 1 billion coarse lattices) the coarse lattice never failed.
+## No root and `one_cumulant`
 
-## Tried on the coarse lattice and dropped
-
-None was worth its code.
-
-- A step chosen per sum from an estimate of the work, as fine as a budget of multiplications an outcome a threshold allows, falling back below some points a standard deviation. Per unit of time it beat a fixed `coarse_cells` once accuracy mattered (6.3 times the old direct route at a worst of 2.7e-6 of flow, against c64 at 7.0 and 6.8e-6), but no budget was as fast as c8 without falling back and bringing the fallback's errors with it.
-- A mirror, the grid of max - S where the thresholds reach less from the top. It halves the work of a lone threshold near the top, but a material's thresholds span both sides and the 1e-16 tails already bound the grid, so a whole evaluation was unchanged. A mirror of the exact lattice would admit nothing more, since its size check is on the whole range.
-- Brute force in place of the coarse lattice for small sums: same accuracy, 2% slower.
-
-## No root, and `one_cumulant`
-
-- No root used to be a panic. A weekly chain of the arena hit it under every optimizer (`arena_data/scenarios/regressions/no_root_week_inc_0022`). The Edgeworth value now stands in; nothing is known to reach it since the cause below was fixed.
-- **The cause was `one_cumulant`, not the root finder.** The evenly spaced path counts q from the end the tilt takes the weight off. Tilted hard, the weight sits at the far end, and the mean and variance come out as the difference of two nearly equal numbers: on that payload a juice of 4 upgrades (steps of 20 to 50) with 23 owned, whose biased search ran to theta near -1, where one upgrade's mean came out -2.7e-12 against 3.3e-21 and the biased K' was off by 1 at theta -1 and by 24,000 at -1.4, jumping by 0.08 within 1e-8 of theta. So there was no point with a residual under `y_value_tol`. The heavy-end path fixed it; it is rare: 120 states of `nh_quick` evaluate to the same bits and as fast as before, and `stress` on it gives the same table.
+- Don't treat "no root" as the root finder's fault: the cause was `one_cumulant` counting from the light end of the tilt. Tilted hard, mean and variance are a difference of two nearly equal numbers (off by 24,000 in K' at theta -1.4), so no point had a residual under tolerance. The heavy-end path fixes it and is free where it is not needed. Regression: `arena_data/scenarios/regressions/no_root_week_inc_0022`.
+- Don't let an id count twice in the chance while it counts once in the cost (`get_extra_arr`): such a plan scores far above any real one, and an optimizer experiment found it.
 
 ## The root finder
 
-- `taylor_skip` at 0.001: the variance read off the series was within 2e-8 of the true one over 6 million steps.
-- Before the walk on the series was held to the same limit as the step, Newton walked off the series and reported false roots: that killed 3 jobs in 7600.
-- 0.1 standard deviations failed on a sum of one bimodal upgrade, which is why the range bounds the series and not the standard deviation.
-- **An id twice on a tap used to count twice in the chance** and once in the cost, so such a plan scored far above any real one. No optimizer has made one but an experiment of October 2026 (`Optimizer tried.md`).
+- Don't hold the walk on the Taylor series to the same limit as the proposed step: Newton walked off the series and reported false roots, which killed 3 jobs in 7600. Bound where the series is read.
+- Don't bound the series by standard deviations (0.1 failed on a sum of one bimodal upgrade); bound it by the range.
 
-## Where the time went (October 2026)
+## Where the time goes
 
-After the speed-up a solve was 2.8 times faster on the `pilot` set and 5.5 times on `stress`. Of what was left, on the explore singles:
-
-- **The advanced honing distributions were 59% of it**, and 75 to 96% of a solve with advanced upgrades: 300 to 1500 cache misses in `compute_adv_dist_wrapper`, 5 to 11 ms each. A miss became 1 to 2 ms. The cost was copying: every memo hit cloned three vectors and every branch allocated three more; the one-buffer layout fixed it.
-  - Sharing one memo between the strategies of a start is another 2 to 3 times, at 60 to 160 MB while it runs. Not done.
-  - Every start position there is (some 8,400 of them, 361 strategies each) is too much to ship. The two fresh ones with double balls, 722 distributions, are 0.6 MB, which is what the wasm carries.
-- Of the rest: two fifths cumulant evaluations, an eighth the lattice, and the remainder spread thin over rebuilding supports, the memo's keys, `shape`, brute force and the free-tap probabilities.
-- **The annealer itself, outside the evaluator, was 29% of the `pilot` set** and 19% of `explore` (`decide_s`, `Arena.md`), and 12% of `pilot` after its own clean-up (`Optimizer tried.md`, "What a move costs").
-- The cumulant loop is bound by its chain of running sums, which a compiler cannot vectorise. Plain sums against a table of powers could be, at more work an outcome in scalar code. Not tried.
+- Don't clone distributions on every advanced-honing memo hit or allocate per branch: that was 59% of a solve (75 to 96% with advanced upgrades). The one-buffer layout of `compute_adv_dist_wrapper` fixed it.
+- Don't ship every advanced start position in the wasm (some 8,400 of them, 361 strategies each): too large. Only the fresh ones (0.6 MB) are built in.
+- Not done: sharing one memo between the strategies of a start is another 2 to 3 times, at 60 to 160 MB while it runs. A plain-sums-against-a-table-of-powers cumulant loop that a compiler could vectorise is untried.
 
 ## The gold distribution
 
-The site once drew a gold graph from a Monte Carlo of its own (removed in October 2025). The distribution came back as `gold_dist.rs`.
-
-- **No exact route.** The lattices are per material and the spend needs the joint of every material's total. The one exact case, every material's price flat over its whole range, is a single sum over the upgrades the lattice could answer; with plan 0 it means every owned amount is outside its range, too rare for a path of its own.
-- **Comonotone advanced honing** (taps, juice and scroll at one shared quantile of their exact marginals, stratifiable and with no simulation) was measured against the simulation on every seventh strategy of both 10/20 and 30/40, with and without double balls, gold at the dummy scenario's prices: up to 0.106 off the CDF, worst on grace scroll strategies. Dropped.
-- **Speed, natively, dummy scenario (12 upgrades, 1 advanced, 14 rows, 100k runs):** 96 ms with `StdRng` and every run played out (54 ms the advanced upgrade), 75 ms with `SmallRng` (37 ms), 37 ms with the advanced runs cached, 32 ms skipping the rows an upgrade never uses.
-- **In wasm** (a fresh character, payloads the page built), histogram alone against with the distribution, cache warm / cold:
-  - normal +16 and advanced +20, 48 upgrades of which 12 advanced: Chromium 24 against 138 / 192 ms, Firefox 38 against 175 / 309 ms;
-  - normal +22 and advanced +40, 96 upgrades of which 24 advanced: Chromium 50 against 290 / 334 ms, Firefox 71 against 330 / 383 ms.
-  - At five to six times a histogram, on every intermediate result, it was made final-state only (`Frontend/Wasm contract.md`) rather than optimised. Not tried: looping over runs on the outside, which would keep a run's totals in cache instead of sweeping an 11 MB array an upgrade; 50k runs (about half the time, 0.6% over the curve).
-- **The pity odds underflowed to 0** on the 96 upgrade setup (the luckiest was 2e-311) while they were plain chances; they are log10 now.
-
-## Thresholds past the top (Oct 2026)
-
-Before: with every stock at 999,999,999 the lattice summed every mass up to the threshold, 1 give or take rounding, and t F - mean F' at t near 3e9 left a fraction of a gold per material. Summed over the juices and books it showed as "-0" or "-1" gold spent, a gain from spending nothing. After: (1, 1) at or past the top, so that case is exactly t - mean, as the trivial path already was.
+- Don't look for an exact route: the lattices are per material and the spend needs the joint of every material's total.
+- Don't take an advanced upgrade's taps, juice and scroll at one shared quantile of their marginals (comonotone): up to 0.106 off the CDF, worst on grace scroll strategies. Play it out (`advanced_honing/sim.rs`).
+- Don't play out the advanced runs afresh per call or use `StdRng`: 96 ms native on the dummy scenario against 37 ms with cached runs and `SmallRng`.
+- Don't compute it on every intermediate result: it costs five to six times a histogram in wasm, so it is final-state only. Untried speed-ups: looping over runs on the outside to keep totals in cache, and 50k runs (half the time, 0.6% off over the curve).
+- Don't use plain chances for the pity odds: the luckiest underflowed to 0 on 96 upgrades. They are log10.
+- The site once drew a gold graph from its own Monte Carlo (removed in October 2025); this one replaces it.

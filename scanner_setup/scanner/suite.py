@@ -23,8 +23,9 @@ RECORDINGS = ROOT / "ignored/recordings"
 STILLS = ROOT / "scanner_setup/brightness"
 # 768p and 900p are small, so their numbers read worst
 STILL_FOLDERS = [
-    "720p raw", "768p raw", "900p raw", "1080p raw", "1440p raw", "2160p raw",
-    "inputs", "inputs storage", "Hover tooltips",
+    "720p raw", "768p raw", "900p raw", "1080p raw", "1440p raw/old", "2160p raw",
+    "brightness sweep inputs/1080 char inv", "brightness sweep inputs/1080p storage",
+    "Hover tooltips",
 ]
 RUNS = ROOT / "target/scanner-suite"
 BIN = ROOT / "target/release/tooltip_test.exe"
@@ -35,7 +36,7 @@ STAGE = re.compile(r'\("([a-z_/]+)", ([0-9.e-]+), ([0-9]+)\)')
 
 
 def slug(name):
-    return re.sub(r"\s+", "-", name)
+    return re.sub(r"[\s/]+", "-", name)
 
 
 def recordings():

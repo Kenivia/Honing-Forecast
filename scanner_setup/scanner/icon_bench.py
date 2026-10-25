@@ -36,7 +36,7 @@ BARE = 0.15  # what a pixel of bare background weighs against one of art, where 
 SHIFTS = [(y, x) for y in range(3) for x in range(3)]
 
 
-# the nine one-pixel shifts of the crop against the template's inside, as the scanner does it
+# the nine one-pixel shifts of the crop against the template's inside (the scanner no longer shifts)
 def shifted(image):
     h, w = image.shape[:2]
     return [image[y : y + h - 2, x : x + w - 2] for y, x in SHIFTS]

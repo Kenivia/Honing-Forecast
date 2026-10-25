@@ -1,24 +1,24 @@
-# External services: history
+# External services: don't try
 
-## Market fetch cache and failures (Oct 2026)
+Traps and ruled-out alternatives. The current state is in `External services.md`.
 
-Before:
-- A failed fetch passed the `[timestamp, response]` tuple to the parser, so prices fell back to the hard-coded table instead of the saved response.
-- `market_fetch_failed` started `true` and a cache hit required it false, so the saved response never applied on load: every reload fetched both regions.
-- Every fetch wrote all bundle keys, fallbacks included, so typed prices for unlisted items (Silver, Gold, Enhanced books, special leaps) were reset on each auto-fetch.
-- A 200 response that was not a list threw outside the try and left `is_fetching` true for the session.
-- One global `is_fetching` / `market_fetch_failed`; App.vue bypassed the in-flight guard (`ignore_fetch_cooldown`) to fetch both regions, and the status showed whichever finished last.
+## Worker
 
-After: per-region flags (the bypass argument is gone), only listed bundles are written, the cache applies on load and on failure, and parsing is inside the try. Covered by `tests/unit/market-import/market_fetcher.test.ts`.
+- Don't use the classic Cache API (`caches.default`): it does nothing on workers.dev, only on custom domains. Use Workers Cache with GET-only routes and `Cache-Control`.
+- Don't cache in KV: the free plan allows 1k KV writes a day.
+- Don't make the market a POST keyed by a hash of its body: Workers Cache keys GETs by path and query.
+- Don't leave upstream fetches unlimited or the upload's raid lookups uncached: use the cached loopback route and the per-source per-minute limits in D1.
 
-## Character import (Oct 2026)
+## Market fetch
 
-Before: imported advanced progress was `adv - floor(adv / 10)` (+25 gave 23, i.e. level 22 with 30% xp) instead of 50. The roster import had an un-awaited `setTimeout(…, 500)` that did nothing. A name change in the custom region still fetched `/character/null/…`. Results that landed after the name or region changed were written anyway.
+- Don't pass the cached `[timestamp, response]` tuple to the parser on a failed fetch: prices fall back to the hard-coded table instead of the saved response.
+- Don't start `market_fetch_failed` as `true` and require it false for a cache hit: the saved response never applies on load and every reload fetches.
+- Don't write every bundle key on a fetch, fallbacks included: typed prices for unlisted items (Silver, Gold, Enhanced books, special leaps) are reset on each auto-fetch.
+- Don't parse the response outside the try: a 200 that is not a list leaves `is_fetching` true for the session.
+- Don't keep one global `is_fetching` / `market_fetch_failed`, nor a bypass argument around the in-flight guard: the status shows whichever region finished last. Keep them per region.
 
-After: `(adv % 10) * 10` in a fresh array, the no-op is gone (the 60/min limiter spaces requests), the custom region never fetches, and late results are dropped.
+## Character import
 
-## Worker cache and limits (Oct 2026)
-
-Before: market and character responses cached in KV for an hour (free plan: 1k KV writes a day); the market was a POST keyed by a hash of its body; upload raid lookups were never cached, and nothing limited upstream fetches. The classic Cache API (`caches.default`) was ruled out: it does nothing on workers.dev, only on custom domains.
-
-After: Workers Cache, GET-only routes (market moved to `GET /market/<region>?items=`), raids through a cached loopback route, per-source per-minute limits in D1, upload bodies capped at 300 KB (was 1 MB).
+- Don't seed advanced progress as `adv - floor(adv / 10)` (+25 gave 23, level 22 at 30% xp): use `(adv % 10) * 10`.
+- Don't fetch with the custom region (`/character/null/...`), and don't write a result that lands after the name or region changed.
+- Don't add a delay to the roster import: the 60-per-minute limiter already spaces requests.

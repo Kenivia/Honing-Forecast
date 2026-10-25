@@ -23,7 +23,7 @@ from game import ROOT, load_index
 
 TEMPLATES = ROOT / "scanner_setup/templates"
 ART = TEMPLATES / "DecoyIcons"
-NEAR = 0.93  # the slot limit is 0.95, and a slot scores up to 0.02 off what its template would
+NEAR = 0.93  # the slot limit (SLOT_CONFIDENCE) is 0.935, and a slot scores up to 0.02 off what its template would
 SAME = 0.99
 TOP = 22 * 64 / 61  # rows of the 64 px art the number is over
 SIZE = (46, 29)  # what a slot's icon is compared at, at 1080p

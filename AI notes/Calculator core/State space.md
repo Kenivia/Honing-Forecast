@@ -1,10 +1,11 @@
 # State space of normal honing
 
-The shape of the metric over one upgrade's state, the streak restriction (`Optimizer.md`, "Rules a neighbour move must respect"), and how the exact best plan of one upgrade is found. The arena tools that measure it are in `crates/arena/src/space.rs` (`Arena.md`, "The state space"). What was measured with them is in `State space tried.md`; read it only when trying something new here.
+The shape of the metric over one upgrade's state, the streak restriction (`Optimizer.md`, "Rules a neighbour move must respect"), and how the exact best plan of one upgrade is found. The arena tools that measure it are in `crates/arena/src/space.rs` (`Arena.md`, "The state space"). What not to repeat is in `State space tried.md`; read it only when trying something new here.
 
 ## What a plan is
 
-- **A state has more slots than taps that matter.** Its length is the pity of the upgrade with nothing used. Anything used shortens the pity, so the slots from the pity tap on are never reached, and the pity tap itself takes nothing (the game does not allow it). Many states are the same plan. `Model::canonical` empties those slots; compare plans only after it.
+- **A state has more slots than taps that matter.** Its length is the pity of the upgrade with nothing used. Anything used shortens the pity, so the slots from the pity tap on are never reached, and the pity tap itself takes nothing (the game does not allow it), unless the chance already reached 1 before it. Many states are the same plan. `Model::canonical` empties those slots; compare plans only after it.
+- **Taps can come in blocks** that must take the same (`StateBundle::block`, `Model::block`); a plan is filled to whole blocks (`Model::filled`).
 - **A back streak is anchored to the last slot**, so it has to cross the dead slots before it does anything, and it always runs up to the tap before the pity.
 - **The pity tap is known without an evaluation.** Artisan after n taps is the start plus `ARTISAN_MULTIPLIER * rate` times the sum of the chances, so the pity depends on how many taps took each id before it and not on which. A juice usually adds the base chance and a tap past the tenth is worth twice that, hence a tap of pity for every two juices. `Model::pity` is this.
 
