@@ -27,6 +27,7 @@
     "cloudflare-dev": "wrangler dev --remote --config cloudflare/wrangler.toml",
     "pull-analytics": "node scripts/pull-analytics.mjs",
     "analytics": "pnpm run pull-analytics && python -m streamlit run scripts/analytics/app.py",
+    "market": "python -m streamlit run scripts/market/app.py",
     "remove-tmp": "node -e \"require('fs').rmSync('.tmp', { recursive: true, force: true })\""
   },
   "dependencies": {

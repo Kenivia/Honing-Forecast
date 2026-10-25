@@ -19,6 +19,7 @@ crates/wasm/pkg/*
 
 
 ignored/
+scripts/market/.cache/
 CONOUT$
 
 !.vscode/extensions.json

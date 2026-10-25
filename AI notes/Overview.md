@@ -18,7 +18,7 @@ These notes are high-level. They cover what is hard to work out from reading one
 | `cloudflare/` | A Worker that proxies and caches market prices and character lookups, and stores analytics uploads in D1 (`schema.sql`). |
 | `public/` | Static assets, changelogs, `WIP.md` (the author's roadmap), scanner config and OCR model. |
 | `scanner_setup/` | Everything that builds or calibrates the scanner config: source icons (`templates/`), game-file extraction, brightness calibration, anchor setup, the browser profiling scripts. |
-| `scripts/` | Changelog helper, the pre-deploy check, analytics pull and analysis (`analytics/`), the Income page's mock save (`mock income/`) and game-data helpers (`game_files/`, `json_parser/`, `arena/`); everything scanner-specific lives in `scanner_setup/` instead. |
+| `scripts/` | Changelog helper, the pre-deploy check, analytics pull and analysis (`analytics/`), a market price and population viewer (`market/`, `pnpm market`, `Forecasting/Market.md`), the Income page's mock save (`mock income/`) and game-data helpers (`game_files/`, `json_parser/`, `arena/`); everything scanner-specific lives in `scanner_setup/` instead. |
 | `tests/` | Playwright e2e tests (`tests/e2e/`), node-side frontend tests (migrations, the real-save fixture, cross-tier relations, `pnpm test:node`), Vitest unit and component tests (`unit/`, `pnpm test:unit`), and test fixtures (real saves `V7 config`, `v8 config`, `V10 config`; `test-results/`). |
 | `arena_data/` | Arena scenarios and its gitignored results database, plus the Python report scripts that read it. |
 
@@ -83,6 +83,8 @@ Each note describes the code as it is now. Where something was tried and failed 
 - `Screen scanner/Manifest.md`: the scan as materials per band and chests, merged with saved pages and other characters, the export, and the budget snapshots.
 - `Screen scanner/Income.md`: the Income page: snapshots over time, their optimizer runs, the income estimate and manual income.
 - `Screen scanner/Choices.md`: the Choices page: what taking each option of a choice (a raid's bonus chest) is worth, and adding it to the budgets.
+- `Forecasting/Market.md`: price and population data on file toward forecasting prices, the gap estimate, and observations so far.
+- `Forecasting/HF analytics.md`: what the site's own analytics uploads offer for forecasting so far.
 - `Browser harness/Overview.md`: driving the site in Chromium and Firefox, for debugging and e2e tests. One note per site section alongside it:
   - `Browser harness/Calculator.md`: the calculator, market and roster pages.
   - `Browser harness/Screen scanner.md`: the scanner page, fed by an uploaded image or video.
