@@ -263,7 +263,9 @@ const annotation_values = computed(() => {
 
 const special_data = computed(() => {
   const bundle = runtime.histogram.result?.state_bundle;
-  return bundle ? special_graph_data(bundle) : null;
+  return bundle
+    ? special_graph_data(bundle, roster_config.value.cumulative_graph)
+    : null;
 });
 
 function hover_annotation(x, _y, cy, material_type, color, is_last): string {
@@ -283,19 +285,25 @@ function hover_annotation(x, _y, cy, material_type, color, is_last): string {
 
   return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to use <br> ≤ <b style="color: ${color};"> ${Math.ceil(x).toLocaleString("en-US")} </b> ${material_type} `;
 }
-function special_hover_annotation(x, _y, cy, material_type, color): string {
-  let place = Math.min(
-    10,
-    Math.max(
-      Math.ceil(
-        cy < 0.5
-          ? Math.min(3, Math.abs(Math.log10(cy)))
-          : Math.abs(Math.log10(1 - cy)),
-      ),
-      3,
-    ),
-  );
-  return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to free tap <br> at least <b style="color: ${color};"> ${x + 1} </b> piece`;
+function special_hover_annotation(x, y, cy, _material_type, color): string {
+  const cumulative = roster_config.value.cumulative_graph;
+  const p = cumulative ? cy : y;
+  const pieces = x - 1;
+  let place =
+    p >= 1
+      ? 3
+      : Math.min(
+          10,
+          Math.max(
+            Math.ceil(
+              p < 0.5
+                ? Math.min(3, Math.abs(Math.log10(p)))
+                : Math.abs(Math.log10(1 - p)),
+            ),
+            3,
+          ),
+        );
+  return `<b style="color: white;">${(p * 100).toPrecision(place)}% </b> chance to free tap <br> ${cumulative ? "at least" : "exactly"} <b style="color: ${color};"> ${pieces} </b> piece${pieces === 1 ? "" : "s"}`;
 }
 
 const show_special_guide = ref(false);
@@ -552,6 +560,7 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
             style="grid-column: span 3"
             :empty_message="'No normal honing available'"
             :upside_down="true"
+            :histogram="true"
           />
         </div>
       </div>

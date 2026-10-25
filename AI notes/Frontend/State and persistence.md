@@ -116,3 +116,5 @@ The Backup section of the character control panel writes `export_config` to a JS
 ## Styling
 
 Tailwind utilities, plus a small set of shared classes in `shared.css` and colour variables in `theme.css` (dark theme only; `index.css` sets `color-scheme: dark` so native controls match). Long-form text (the guide, the change logs) uses `.prose-card` from `shared.css`. A dismiss ✕ is `Common/CloseButton.vue` (square, `size` in px). Material tables use a shared grid with subgrid rows. Naming is PascalCase for files and folders, snake_case for functions and variables. TypeScript is non-strict.
+
+The free-tap graph (`special_graph_data` in `MaterialDist/DistLines.ts`) is always drawn in steps (`MaterialGraph`'s `histogram`): the bar over [k, k+1] is k pieces tapped, from 0 to the normal upgrade count, P(at least k) when cumulative and P(exactly k) otherwise. In step mode a graph's first point gets a bar one gap wide to its left, cut at 0, so its mass is not dropped. A `histogram` graph's hover sits at the centre of each bar, since a bar is one count; the others hover at the point, the right edge, as they read "≤ x".

@@ -48,23 +48,28 @@ describe("DistLines", () => {
     ]);
   });
 
-  it("special_graph_data: one point per normal upgrade, padded with 0", () => {
+  it("special_graph_data: point k+1 is k pieces tapped, 0 to the normal upgrade count", () => {
     const normal = { is_normal_honing: true };
     const adv = { is_normal_honing: false };
-    expect(
-      special_graph_data({
-        latest_special_probs: [0.5, 0.25, 0.1],
-        upgrade_arr: [normal, adv, normal],
-      }),
-    ).toEqual([
-      [0, 0.5],
-      [1, 0.25],
+    const bundle = {
+      latest_special_probs: [0.5, 0.25, 0.1],
+      upgrade_arr: [normal, adv, normal],
+    };
+    expect(special_graph_data(bundle, true)).toEqual([
+      [1, 1],
+      [2, 0.5],
+      [3, 0.25],
+    ]);
+    expect(special_graph_data(bundle, false)).toEqual([
+      [1, 0.5],
+      [2, 0.25],
+      [3, 0.1],
     ]);
     expect(
-      special_graph_data({
-        latest_special_probs: [],
-        upgrade_arr: [normal],
-      }),
-    ).toEqual([[0, 0]]);
+      special_graph_data(
+        { latest_special_probs: [], upgrade_arr: [adv] },
+        true,
+      ),
+    ).toEqual([]);
   });
 });

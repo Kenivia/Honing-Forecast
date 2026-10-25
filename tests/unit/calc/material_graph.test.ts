@@ -59,7 +59,8 @@ describe("MaterialGraph", () => {
       .findAll("path")[1]
       .attributes("d");
     const xs = path_points(d).map(([x]) => x);
-    expect(xs).toEqual([0, 0, 60, 60, 120, 120, 180]);
+    // the first point's bar is cut to nothing at the axis
+    expect(xs).toEqual([0, 0, 0, 0, 60, 60, 120, 120, 180]);
   });
 
   it("the hover snaps to the nearest point and passes its slope and cumulative value", async () => {
@@ -86,6 +87,17 @@ describe("MaterialGraph", () => {
     );
     await w.trigger("mouseleave");
     expect(w.find(".graph-tooltip").exists()).toBe(false);
+  });
+
+  it("a histogram is hovered at the centre of each bar", async () => {
+    const tip = vi.fn((..._args: any[]) => "");
+    const w = graph({ histogram: true, tooltipTextFn: tip });
+    // bar centres at x 0, 5 and 15 of 20
+    await w.trigger("mousemove", { clientX: 50 });
+    expect(tip.mock.calls.at(-1)![0]).toBe(10);
+    expect(+w.findAll("circle").at(-1)!.attributes("cx")).toBeCloseTo(
+      WIDTH / 4,
+    );
   });
 
   it("an upside-down graph slopes the other way", async () => {

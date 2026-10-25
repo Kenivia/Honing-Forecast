@@ -131,7 +131,7 @@ describe("MaterialDist columns", () => {
     expect(rows(wrapper)).toHaveLength(25);
   });
 
-  it("pads or cuts the free-tap chances to the normal upgrades", async () => {
+  it("pads or cuts the free-tap chances to 0 to the normal upgrades tapped", async () => {
     const { wrapper, runtime } = await setup();
     const normal = { is_normal_honing: true };
     runtime.histogram.result = fake_histogram(0, {
@@ -143,9 +143,10 @@ describe("MaterialDist columns", () => {
     });
     await wrapper.vm.$nextTick();
     expect(graph(wrapper, "Special").props("data")).toEqual([
-      [0, 0.5],
-      [1, 0.25],
-      [2, 0],
+      [1, 1],
+      [2, 0.5],
+      [3, 0.25],
+      [4, 0],
     ]);
   });
 });

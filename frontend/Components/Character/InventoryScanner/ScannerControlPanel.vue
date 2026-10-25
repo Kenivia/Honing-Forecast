@@ -7,7 +7,7 @@ import { storeToRefs } from "pinia";
 
 const { roster_config } = storeToRefs(useRosterStore());
 
-const analytics_tooltip = `Sends your materials and chests owned amounts and upgrade progress to help estimate how much players earn (for a future income forecasting feature). Only the numbers are sent, not captured footage. Your character names are used to look up your recent raids and gear levels on lostark.bible, at upload and again a day after a character's last export; the names are kept until then and are not stored with the data`;
+const analytics_tooltip = `Sends your materials and chests owned amounts and upgrade progress to help estimate how much players earn (for a future income forecasting feature). Only the numbers & char names are sent, not captured footage.`;
 </script>
 <template>
   <div class="w-full items-center">

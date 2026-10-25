@@ -35,6 +35,7 @@ const props = withDefaults(
     ) => string;
     empty_message?: string;
     upside_down?: boolean;
+    histogram?: boolean;
   }>(),
   {
     graphColor: "--text-main",
@@ -48,6 +49,7 @@ const props = withDefaults(
       `<b>X:</b> ${x} <br/> <b>Y:</b> ${cy}`,
     empty_message: "This material is never used",
     upside_down: false,
+    histogram: false,
   },
 );
 
@@ -85,8 +87,7 @@ const points = computed<Point[]>(() => {
     if (index === 0) {
       const nextX = normalized[1][0];
       const dx = nextX - x;
-      const slope =
-        dx === 0 ? 0 : props.upside_down ? (y == 0 ? 0 : (1 - y) / dx) : y / dx;
+      const slope = dx === 0 ? 0 : props.upside_down ? (1 - y) / dx : y / dx;
       prevSlope = slope;
 
       return { x, y: slope, cumulativeY: y };
@@ -103,7 +104,7 @@ const points = computed<Point[]>(() => {
     const slope =
       dx === 0 ? 0 : ((y - prevY) * (props.upside_down ? -1 : 1)) / dx;
 
-    if (Math.abs(slope) < FLOAT_TOL) {
+    if (!props.histogram && Math.abs(slope) < FLOAT_TOL) {
       const out = { x, y: prevSlope, cumulativeY: y };
       prevSlope = 0;
       return out;
@@ -147,18 +148,17 @@ function interpolateY(targetX: number) {
   const list = points.value;
   if (!list.length) return GRAPH_HEIGHT;
   // console.log(targetX);
-  if (targetX < list[0].x) return GRAPH_HEIGHT;
+  if (targetX < list[0].x)
+    return stepped.value && targetX >= firstBarX.value
+      ? scaleY(list[0].y)
+      : GRAPH_HEIGHT;
 
   for (let index = 1; index < list.length; index++) {
     const prev = list[index - 1];
     const cur = list[index];
     if (targetX <= cur.x) {
       const dx = cur.x - prev.x;
-      const t = has_duplicate_y.value
-        ? 1
-        : dx === 0
-          ? 0
-          : (targetX - prev.x) / dx;
+      const t = stepped.value ? 1 : dx === 0 ? 0 : (targetX - prev.x) / dx;
       const y = prev.y + (cur.y - prev.y) * t;
       return scaleY(y);
     }
@@ -166,7 +166,9 @@ function interpolateY(targetX: number) {
 
   return scaleY(list[list.length - 1].y);
 }
-const has_duplicate_y = computed(() => {
+// step drawing when forced or when cumulative Y repeats
+const stepped = computed(() => {
+  if (props.histogram) return true;
   return (
     !props.upside_down &&
     points.value.filter(
@@ -185,11 +187,22 @@ const has_duplicate_y = computed(() => {
   );
 });
 
+// in step mode the first point gets a bar one gap wide to its left
+const firstBarX = computed(() => {
+  const pts = points.value;
+  if (pts.length < 2) return pts[0]?.x ?? 0;
+  return Math.max(0, pts[0].x - (pts[1].x - pts[0].x));
+});
+
 const linePath = computed(() => {
   if (!points.value.length) return "";
   const pts = points.value;
-  if (has_duplicate_y.value) {
-    const parts = [`M ${scaleX(pts[0].x)} ${GRAPH_HEIGHT}`];
+  if (stepped.value) {
+    const parts = [
+      `M ${scaleX(firstBarX.value)} ${GRAPH_HEIGHT}`,
+      `L ${scaleX(firstBarX.value)} ${scaleY(pts[0].y)}`,
+      `L ${scaleX(pts[0].x)} ${scaleY(pts[0].y)}`,
+    ];
     for (let i = 1; i < pts.length; i++) {
       parts.push(`L ${scaleX(pts[i - 1].x)} ${scaleY(pts[i].y)}`);
       parts.push(`L ${scaleX(pts[i].x)} ${scaleY(pts[i].y)}`);
@@ -203,9 +216,9 @@ const linePath = computed(() => {
 
 const areaPath = computed(() => {
   if (!points.value.length) return "";
-  const firstX = scaleX(points.value[0].x);
+  const firstX = scaleX(stepped.value ? firstBarX.value : points.value[0].x);
   const lastX = scaleX(points.value[points.value.length - 1].x);
-  if (has_duplicate_y.value) {
+  if (stepped.value) {
     return `${linePath.value} L ${lastX} ${GRAPH_HEIGHT} L ${firstX} ${GRAPH_HEIGHT} Z`;
   } else {
     return `${linePath.value} L ${lastX} ${GRAPH_HEIGHT} Z`;
@@ -223,15 +236,23 @@ function onMouseLeave() {
   mouseX.value = null;
 }
 
+// a histogram's point is hovered at the centre of its bar
+function hoverX(point: Point) {
+  if (!props.histogram) return point.x;
+  const index = points.value.indexOf(point);
+  const left = index === 0 ? firstBarX.value : points.value[index - 1].x;
+  return (left + point.x) / 2;
+}
+
 const hoveredPoint = computed(() => {
   if (mouseX.value === null || !points.value.length) return null;
 
   // Snap to the closest point along the X axis
   let closest = points.value[0];
-  let minDistance = Math.abs(scaleX(closest.x) - mouseX.value);
+  let minDistance = Math.abs(scaleX(hoverX(closest)) - mouseX.value);
   // console.log("before", closest);
   for (const point of points.value) {
-    const dist = Math.abs(scaleX(point.x) - mouseX.value);
+    const dist = Math.abs(scaleX(hoverX(point)) - mouseX.value);
     if (dist < minDistance) {
       minDistance = dist;
       closest = point;
@@ -400,15 +421,15 @@ onBeforeUnmount(() => {
 
         <g v-if="hoveredPoint">
           <line
-            :x1="scaleX(hoveredPoint.x)"
-            :x2="scaleX(hoveredPoint.x)"
+            :x1="scaleX(hoverX(hoveredPoint))"
+            :x2="scaleX(hoverX(hoveredPoint))"
             :y1="GRAPH_HEIGHT"
             :y2="scaleY(hoveredPoint.y)"
             stroke="var(--graph-hover-color, #ffffff)"
             stroke-width="1"
           />
           <circle
-            :cx="scaleX(hoveredPoint.x)"
+            :cx="scaleX(hoverX(hoveredPoint))"
             :cy="scaleY(hoveredPoint.y)"
             r="4"
             fill="var(--graph-hover-color, #ffffff)"
@@ -431,7 +452,7 @@ onBeforeUnmount(() => {
     <div
       v-if="hoveredPoint"
       class="graph-tooltip"
-      :style="{ left: scaleX(hoveredPoint.x) + 'px' }"
+      :style="{ left: scaleX(hoverX(hoveredPoint)) + 'px' }"
       v-html="
         props.tooltipTextFn!(
           hoveredPoint.x,

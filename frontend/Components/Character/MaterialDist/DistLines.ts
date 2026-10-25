@@ -52,16 +52,23 @@ export function owned_lines(
   ];
 }
 
-// The free-tap chances per number of pieces tapped, one per normal upgrade, padded with 0.
-export function special_graph_data(state_bundle: {
-  latest_special_probs: number[];
-  upgrade_arr: { is_normal_honing: boolean }[];
-}): [number, number][] {
+// Point k+1 is k pieces tapped, so its step bar spans [k, k+1]: P(at least k) when cumulative,
+// else P(at least k+1), which the upside-down graph differences into P(exactly k).
+export function special_graph_data(
+  state_bundle: {
+    latest_special_probs: number[];
+    upgrade_arr: { is_normal_honing: boolean }[];
+  },
+  cumulative: boolean,
+): [number, number][] {
   const count = state_bundle.upgrade_arr.filter(
     (x) => x.is_normal_honing,
   ).length;
-  return Array.from({ length: count }, (_, index) => [
-    index,
-    state_bundle.latest_special_probs[index] ?? 0,
+  if (count === 0) return [];
+  const at_least = (k: number) =>
+    k === 0 ? 1 : (state_bundle.latest_special_probs[k - 1] ?? 0);
+  return Array.from({ length: count + 1 }, (_, k) => [
+    k + 1,
+    at_least(cumulative ? k : k + 1),
   ]);
 }
