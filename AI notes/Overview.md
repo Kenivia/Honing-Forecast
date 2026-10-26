@@ -85,6 +85,7 @@ Each note describes the code as it is now. Where something was tried and failed 
 - `Screen scanner/Choices.md`: the Choices page: what taking each option of a choice (a raid's bonus chest) is worth, and adding it to the budgets.
 - `Forecasting/Market.md`: price and population data on file toward forecasting prices, the gap estimate, and observations so far.
 - `Forecasting/HF analytics.md`: what the site's own analytics uploads offer for forecasting so far.
+- `Forecasting/Community.md`: community income estimates per content (sites, their tables, how each values a run) for cross-checking.
 - `Browser harness/Overview.md`: driving the site in Chromium and Firefox, for debugging and e2e tests. One note per site section alongside it:
   - `Browser harness/Calculator.md`: the calculator, market and roster pages.
   - `Browser harness/Screen scanner.md`: the scanner page, fed by an uploaded image or video.

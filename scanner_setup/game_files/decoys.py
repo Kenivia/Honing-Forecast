@@ -8,7 +8,8 @@ Run chests.py first, and this again after it or after a change to items.json.
 
 A decoy is an icon on a rarity background some item of the game has it on. It is one when it
 comes within NEAR of a template as the scanner scores a slot at 1080p, and is not the same
-picture. The art and rarity of a material's own items are never decoys.
+picture, or when it is a chest template's art on another rarity, however far. The art and rarity
+of a material's own items are never decoys.
 Afterwards: python scanner_setup/templates/make_msg_pack.py, then pnpm run wasm.
 """
 
@@ -47,6 +48,8 @@ def main():
     chests = json.loads((TEMPLATES / "chests.json").read_text(encoding="utf-8"))
     ours = {row["icon"]: (TEMPLATES / "Icons", row["icon"], row["rarity"]) for row in items if "icon" in row}
     ours |= {f"{row['icon']}@{row['rarity']}": (TEMPLATES / "ChestIcons", row["icon"], row["rarity"]) for row in chests if row.get("top")}
+    tops = {(row["icon"], row["rarity"]) for row in chests if row.get("top")}
+    chest_art = {icon for icon, _ in tops}
     names = sorted(ours)
     backs = {path.stem: background(path.stem) for path in (TEMPLATES / "Backgrounds").glob("*.webp")}
     own = []
@@ -72,7 +75,9 @@ def main():
             chunk = icons[start : start + 500]
             images = render(arts[[at[x] for x in chunk]], backs[rarity])
             alike = 1 - np.abs(images[:, None] - own[None]).mean((2, 3, 4)) / 255
-            for found in np.flatnonzero((alike.max(1) >= NEAR) & (alike.max(1) < SAME)):
+            # under the hover highlight a chest's art on another rarity can pass as the template (Pipeline.md, "Slots")
+            kin = np.array([icon in chest_art and (icon, rarity) not in tops for icon in chunk])
+            for found in np.flatnonzero(((alike.max(1) >= NEAR) | kin) & (alike.max(1) < SAME)):
                 out.append({"icon": chunk[found], "rarity": rarity, "like": names[int(alike[found].argmax())], "alike": round(float(alike[found].max()), 3)})
     out.sort(key=lambda row: (row["icon"], row["rarity"]))
     lines = ["  " + json.dumps(row, ensure_ascii=False) for row in out]

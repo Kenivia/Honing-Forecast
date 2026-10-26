@@ -31,7 +31,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ### Misc
 
-- make special graph always hist
+- ~~make special graph always hist~~
 - *add "About" page for various stuff like credits and stuff* this will need like an overhaul of the header layout (which is definitely needed at some point but not now)
 
 - *some hoverable details on juice & whatnot* should probably generalize the tooltip thing instead of relying on v-tooltip (so i can render html in there and look butter), gonna do that at some point that's not now

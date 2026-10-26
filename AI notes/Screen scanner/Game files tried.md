@@ -10,6 +10,9 @@ Warnings behind `Game files.md`: what is not in the client, and what was ruled o
   - So chaos and guardian rates have to come from community data or our own captures.
 - **Mari's Secret Shop and the cash shop listings are not in the client either** (2026-10-25). Only their UI text is (`sys.ingameshop.*` in `GameMsg`, "Mari's Secret Shop", "The product list has been refreshed"). No table, XML or other archive holds the products. `PaidProduct` is crystal prices of paid services (no item targets), `Shop`/`ShopNpc` the NPC vendors, `DirectShop` the event and guild exchange shops, `GoldShopEntity` empty. The server sends the shop's stock.
 - **Don't look for the contents of old gear chests, "Raid: Ur'nil", the "Illusion Gift Chest", "Cryptic Treasure Chest" or "Weekly Purification Mission Reward Chest III"**: 128 live items on 29 templates are chests by category and not in `RandomBoxBase`, and 125 of them are in none of the 789 tables searched for their ids (2026-10-10). The server decides what they give; the gold ones only say so in their description.
+- **Don't look for amounts of Kurzan Front, Chaos Rift, Guardian's Shade, Haal's Hourglass or Ebony Cube** (2026-10-26, current client): `ContentsRewardDisplay` lists what each can drop with a placeholder count of 1, no rift table exists, and `ModHourglass` / `ModCube` define stages, not rewards.
+- **Don't look for the login track (attendance) rewards**: only its UI text (`sys.rollbook.*`) is in the client, no table. `PremiumAccountDailyReward` is the paid Daily Perks.
+- **No shop item is free**: no `DirectShop` row has a price of 0, so guild "free" weekly rewards are not there.
 - **Don't look for the small coin icons in the icon atlases**: only the large item art of the currencies is there (`Game files.md`, "Money").
 
 ## Ruled out

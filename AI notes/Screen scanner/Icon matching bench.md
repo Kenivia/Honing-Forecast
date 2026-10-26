@@ -17,5 +17,5 @@ An offline test of how a slot is told to be a template's icon ("close enough", `
 
 ## Not done
 
-- The bench scores the 60 nearest templates of all, not the scanner's two shortlists of 16, and only clean looks: nothing under the hover highlight.
+- The bench scores the 60 nearest templates of all, not the scanner's two shortlists of 16, and only clean looks: nothing under the hover highlight. Under it a rare chest passes as its own art on ancient, which the scanner undoes on the next clean look (`Pipeline.md`, "Slots").
 - An item level across a decoy chest: the decoy is compared with the same parts left out as the icon (`Pipeline.md`, "Overlays"). No capture has such a slot next to an icon of ours that it looks like, so this is untested.

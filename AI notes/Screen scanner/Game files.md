@@ -49,7 +49,7 @@ The honing tables (`ItemEnhanceCommon`, `ItemQualityOption`, `ItemEnhanceMateria
 
 **Which client.** The tables and atlas are from the client after the October 2026 update (archives dated 2026-10-21), and every generated file is from it. The update added the Serca vambrace (ItemEnhanceCommon group 411102), the Serca books ("Tremor"), Paradise key rows and the tables `ClassItemMapping` and `ZoneEpicGateBossChallenge*`, and stored juice rates ten times finer (out of 100,000).
 
-**Pre-update snapshot.** `ignored/pre_oct_2026_update_game_files/` holds the client as of 2026-10-19, before the update: raw `.lpk`s, every table decrypted, the extracted tables and atlas, and the tooling. Its `README.md` says what is where. Its `dump_all` decrypts any archive whole (all the tables in `data2.lpk`, about 40 s), which is how two clients were compared table by table.
+**Snapshots.** `ignored/pre_oct_2026_update_game_files/` holds the client as of 2026-10-19, before the update: raw `.lpk`s, every table decrypted, the extracted tables and atlas, and the tooling. `ignored/oct_2026_update_game_files/` is the same for the current client (2026-10-21), without the tooling. Each `README.md` says what is where. The first's `dump_all` decrypts any archive whole (all the tables in `data2.lpk`, about 40 s), which is how two clients were compared table by table; look for a table there before adding it to `extract/Program.cs`.
 
 ## The icons
 
@@ -99,6 +99,7 @@ The Serca books ("Metallurgy: Tremor [12-15]" and the like) are drawn with the H
 
 - **The pool** is every icon of a named item on every rarity some item has it on. The art and rarity of any item titled like a material of `items.json` are left out, since our material art is a lossy copy of the game's and would be its own decoy.
 - **A decoy** is a pair that renders within `NEAR` (0.93) of one of our templates and under `SAME` (0.99, the same picture, which a duplicate of our art under another name is). Rendered as a template is at 1080p, 46x29 without its outermost pixels, and scored as the scanner scores a slot. The margin under the slot limit covers a slot scoring a little off what its template would (`Icon matching bench tried.md`).
+- **A chest template's art on another rarity is a decoy however far** (still under `SAME`; 23 of them, from 0.89 up). Under the hover highlight such a slot can pass as the template, and only a decoy that wins on the next clean look undoes that (`Pipeline.md`, "Slots"). Three rarities of chest art are the same picture as a template and stay out: `use_4_220@rare` (`shop_icon_31@rare`), `use_4_225@legendary` (`use_4_224@legendary`), `use_6_182@relic` (its legendary).
 - **A row** of `decoys.json` is `icon`, `rarity`, the template it is `like` and how `alike`. The art goes to `scanner_setup/templates/DecoyIcons/<icon>.png`.
 - **A decoy is not known to be irrelevant, only not in our tables.** A chest that should count and is missing from `chests.json` becomes a decoy, and is then refused where before it was only unrecognised.
 - Most of the pool can never sit in these inventories (mounts, sail glyphs); they do no harm.
@@ -123,6 +124,17 @@ Paradise is "Hell" in the client (`TrinityInferno*`), the sekwahar "hell_drops" 
 - **Two sets for one item level**: 1730 has 1024 (T4 materials) and 1025 (Serca), both under "Hell Key V". The newest set of an item level is the highest id (what `paradise.py` takes; the sekwahar page agrees).
 - **`paradise.py`** writes one choice per mode, item level and level from the newest two seasons' `ClassifyType` 19 keys (`InfernoType` 2 and 3). A row is a `Choice` with `names` (what each option is), `options` (the main reward plus the additional rewards, by label) and `wealth` (plus the Wealth ones instead; left out where there is no Wealth, so for all of Netherworld), `difficulty` the item level, `title` the level, `band` 0 (the materials are "(Bound)" and the gold bars, category 34304, character bound). A select-one chest of materials (the stone selection chests, the advanced honing support chests) is one option per material; gold bars are their gold. What is no material is an option that gives only the additional rewards.
 - **No 1770 yet** (2026-10-21): no item asks for more than 1750, and the update left `TrinityInfernoReward` as it was. Its new key rows are events whose key items are not in `Item` yet.
+
+## Income in the client
+
+Found 2026-10-26 in the full tables of the snapshot (nothing reads them yet; queries and outputs in `ignored/income_research_2026-10-26/gamefiles/`). Rates and amounts the client lacks are in `Game files tried.md`.
+
+- **Raid clear rewards**: `StagePerReward.RewardDropIndex` (the free clear), `UnlimitRewardDropIndex` (accessories, ability stones, bracelets on every clear), `FirstClearRewardDropIndex`. **A gold entity's band is `DropEntity.NormalType`**: 2 tradable, 4 roster bound, 5 character bound (inferred, but it matches the community sheet on every gate). The weekly limit of 3 gold raids per character is `ZoneEpicGate.GoldRewardGroupId` 50001 / `GoldRewardGroupLimitCount`; the 6 gold-earning characters are in `GameMsg` text only.
+- **Paradise Hell's rules**: descents per key `TrinityInferno.JumpCount` (5 / 6 / 7), Destiny key transmutes `TrinityInfernoKeyTrans`, per-floor altars and the 63% risky descent every 10 floors `TrinityInfernoEvent`, altar effect weights `TrinityInfernoLucky` (which number is which effect is not stored), Wealth chance `TrinityInfernoReward.PlentyPropRatio` 10. Descents are uniform 1–20 by `GameMsg`. Enough to simulate the level a run ends on, except the risky descent's size.
+- **Paradise Crucible**: `TrinityDivine` (season 4 is `PrimaryKey` 4002, stage in `SecondaryKey`, unlock date in `ContentsOpen*`, 0 for open at the start), its rewards in `TrinityDivineEnergyPhase`; season dates in `ContentsSeason`. `DivineWeeklyReward` is the same leftover list on every stage. The weekly ranking chests (Hell Keys of Destiny V) are in `UnityRankingBase` (`PrimaryKey` 3).
+- **Playtime reward**: `PCRoomDailyReward`, six rows by minutes, no dates or item levels.
+- **Weekly mission rewards** (the 3 Lava / 9 Glacier choice): `GuideWeeklyMissionReward` (four choices per band, 100 points each; which band is which item level is not stored), points from `GuideMission`.
+- **Shops**: `DirectShop` (by `ShopMetaId`; `DirectShopMeta` has event dates), costs in `BarterType` / `BarterItemIndex` / `BarterQuantity`, `ConditionType1` item level and `ConditionType2` guild research, limits in `AcquireLimit` (`RefreshType` 2 is taken as weekly, `ExpeditionLimit` 1 per roster). Guild (Sylmael Bloodstone), Clear Medal (the solo mode shop), Gold Shop, coin shops and the event shops are all there. Event token drops per content are in `EventContentsReward`.
 
 ## find_icon.py
 

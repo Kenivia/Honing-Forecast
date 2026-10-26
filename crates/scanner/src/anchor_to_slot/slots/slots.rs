@@ -32,13 +32,14 @@ impl ScannerState {
                 .shifted(root),
         );
     }
-    // The icons the slot passes as, best first, then its number as captured and its icon
-    // normalised. `seen` is that icon crop where the caller has it already.
+    // The icons the slot passes as, best first, then its number as captured, its icon normalised
+    // and whether decoys vetoed every icon it passed as. `seen` is that icon crop where the caller
+    // has it already.
     pub fn check_through_all_icons(
         &mut self,
         position: Rect,
         seen: Option<OneIconConfig>,
-    ) -> (Vec<(String, f64, u8)>, OneIconConfig, OneIconConfig) {
+    ) -> (Vec<(String, f64, u8)>, OneIconConfig, OneIconConfig, bool) {
         let number_position = NUMBER_OFFSET
             .scaled(self.screen_info.effective_height)
             .shifted(position.top_left);
@@ -74,7 +75,9 @@ impl ScannerState {
                 closest_decoy[*set as usize] = closest_decoy[*set as usize].max(score);
             }
         }
+        let any_passed = !passed.is_empty();
         passed.retain(|x| x.1 >= closest_decoy[x.2 as usize]);
+        let look_alike = any_passed && passed.is_empty();
         passed.sort_by(|a, b| b.1.total_cmp(&a.1));
         let best = passed.first().map_or(0.0, |x| x.1);
         let old_limit = |name: &String| {
@@ -87,7 +90,12 @@ impl ScannerState {
             std::mem::take(&mut first) || (x.1 >= best - ALTERNATIVE && x.1 > old_limit(&x.0))
         });
 
-        (passed, self.crop_buffer(number_position), observed)
+        (
+            passed,
+            self.crop_buffer(number_position),
+            observed,
+            look_alike,
+        )
     }
 
     pub fn update_slots(&mut self) {
@@ -144,9 +152,10 @@ impl ScannerState {
                     self.slots_left = true;
                     continue;
                 }
-                let (matched, observed_number, observed_icon) = timed("slots/all_icons", || {
-                    self.check_through_all_icons(position, seen)
-                });
+                let (matched, observed_number, observed_icon, look_alike) =
+                    timed("slots/all_icons", || {
+                        self.check_through_all_icons(position, seen)
+                    });
                 let overlays = matched.first().map_or(0, |x| x.2);
                 let alternatives: Vec<String> =
                     matched.iter().skip(1).map(|x| x.0.clone()).collect();
@@ -156,14 +165,15 @@ impl ScannerState {
                     .slot_infos
                     .get(slot_address)
                     .is_none_or(|info| info.icon_name_score.is_none());
-                let display_icon = (icon_name_score.is_some() || never_recognised).then(|| {
-                    let number_height = COMBINED_NUMBER_HEIGHT * self.screen_info.scale_factor;
-                    self.crop_buffer(Rect {
-                        top_left: (left, top - number_height),
-                        height: position.height + number_height,
-                        ..position
-                    })
-                });
+                let display_icon = (icon_name_score.is_some() || never_recognised || look_alike)
+                    .then(|| {
+                        let number_height = COMBINED_NUMBER_HEIGHT * self.screen_info.scale_factor;
+                        self.crop_buffer(Rect {
+                            top_left: (left, top - number_height),
+                            height: position.height + number_height,
+                            ..position
+                        })
+                    });
                 self.changed_slots.insert(*slot_address);
                 if icon_name_score.is_some() {
                     // only overwrite if it matches another
@@ -236,13 +246,14 @@ impl ScannerState {
                     self.untie_rivals(slot_address);
                 } else {
                     // It matches nothing: empty, unknown, or covered for now, so what was known is
-                    // kept. The crop is remembered either way and the slot is matched again once it
-                    // looks different. That test is strict, or an icon the cursor is slowly leaving
-                    // would stay unrecognised.
+                    // kept, unless a decoy beat what it passed as: then it is a look-alike that an
+                    // earlier look (lit up by the hover) took for an icon. The crop is remembered
+                    // either way and the slot is matched again once it looks different. That test
+                    // is strict, or an icon the cursor is slowly leaving would stay unrecognised.
                     let mut observed_icon = observed_icon;
                     observed_icon.required_confidence = Some(UNMATCHED_UNCHANGED);
                     match self.slot_infos.get_mut(slot_address) {
-                        Some(this_slot) => {
+                        Some(this_slot) if !look_alike => {
                             this_slot.observed_number = observed_number;
                             this_slot.observed_icon = observed_icon;
                             if display_icon.is_some() {
@@ -250,7 +261,7 @@ impl ScannerState {
                             }
                             this_slot.raw_hash = raw_hash;
                         }
-                        None => {
+                        _ => {
                             self.slot_infos.insert(
                                 *slot_address,
                                 OneSlotInfo {
@@ -332,7 +343,7 @@ impl ScannerState {
         let names: Vec<String> = BASE_ICONS
             .read()
             .iter()
-            .filter(|(_, one_icon)| one_icon.tag == "Icon")
+            .filter(|(_, one_icon)| one_icon.is_slot_icon())
             .map(|(name, _)| name.clone())
             .collect();
         let mut all: Vec<(String, f64, f64, f32)> = names
