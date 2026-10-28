@@ -13,6 +13,12 @@
     "[rust]": {
         "editor.defaultFormatter": "rust-lang.rust-analyzer"
     },
+    // own target dir so it never holds the build lock; check only the saved package (hf-wasm's build script is slow)
+    "rust-analyzer.cargo.targetDir": true,
+    "rust-analyzer.check.workspace": false,
+    "files.watcherExclude": {
+        "**/target/**": true
+    },
     "[markdown]": {
         "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
     },

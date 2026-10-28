@@ -136,4 +136,4 @@ What a run does with them (`Tuning::carry`):
 
 ## Testing a change
 
-Use the arena (`Arena.md`): snapshot the variants, run them against each other, and read the gap, hit rate and counters. All randomness must come from the solver's own `rng` so that a seed repeats. `scramble` exposes the neighbour moves for making random valid states.
+Use the arena (`Arena.md`): snapshot the variants, run them against each other, and read the gap, hit rate and counters. Approaches written from scratch beside `solve` are in `optimizer/lab`, picked by `Tuning::algo` (`Optimizer lab.md`). All randomness must come from the solver's own `rng` so that a seed repeats. `scramble` exposes the neighbour moves for making random valid states.

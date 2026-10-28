@@ -39,7 +39,10 @@ import {
   used,
   value_of,
 } from "@/Utils/Income";
+import { auto_income, config_of, granted } from "@/Utils/IncomeSources";
+import { ilevel } from "@/Utils/HoningUtil";
 import IncomeGraph, { type Series } from "./IncomeGraph.vue";
+import IncomeSources from "./IncomeSources.vue";
 import { job_for, state_of, warm } from "./IncomeJobs";
 import { hash, queue_jobs, stop_jobs } from "@/WasmInterface/OptimizerJobs";
 
@@ -176,8 +179,8 @@ const band_rows = computed(() =>
   rows.value.filter((label) => has_band(label, band.value)),
 );
 
-// per week, of one band
-const auto_rate = (label: string, band_at: number) => {
+// per week, of one band, from the snapshots
+const measured_rate = (label: string, band_at: number) => {
   const slope = fit(
     series_entries.value.map((entry) => ({
       x: entry.snapshot.at,
@@ -189,18 +192,52 @@ const auto_rate = (label: string, band_at: number) => {
   return slope === null ? null : Math.max(0, slope * WEEK_MS);
 };
 
-// switching to manual fills what was never typed with the estimate
-function set_manual_mode(manual: boolean) {
-  if (manual) {
+// per week, of one band, from the sources configured below (and dated grants, not in the rate)
+const item_level = computed(
+  () => parse_locale_float(ilevel(profile.value, "achieved")) || 0,
+);
+const sources_config = computed(() =>
+  config_of(profile.value.income_sources, item_level.value),
+);
+const auto = computed(() =>
+  auto_income(
+    sources_config.value,
+    item_level.value,
+    tier.value,
+    now_snapshot.value.at,
+  ),
+);
+const auto_rate = (label: string, band_at: number) =>
+  has_band(label, band_at) ? (auto.value.rates[band_at][label] ?? 0) : 0;
+
+// Measured from the snapshots, Auto from the sources, or typed by hand
+const MODES = ["Measured", "Auto", "Manual"];
+const mode = computed(() =>
+  profile.value.income_manual
+    ? "Manual"
+    : profile.value.income_auto
+      ? "Auto"
+      : "Measured",
+);
+const rate_of = (label: string, band_at: number) =>
+  mode.value === "Manual"
+    ? manual_rate(label, band_at)
+    : mode.value === "Auto"
+      ? auto_rate(label, band_at)
+      : (measured_rate(label, band_at) ?? 0);
+// switching to manual fills what was never typed with the mode before
+function set_mode(next: string) {
+  if (next === "Manual" && mode.value !== "Manual") {
     for (const label of rows.value) {
       for (const at of [0, 1, 2]) {
         if (!has_band(label, at) || income_record(at)?.[label] !== undefined)
           continue;
-        income_record(at, true)[label] = Math.round(auto_rate(label, at) ?? 0);
+        income_record(at, true)[label] = Math.round(rate_of(label, at));
       }
     }
   }
-  profile.value.income_manual = manual;
+  profile.value.income_manual = next === "Manual";
+  if (next !== "Manual") profile.value.income_auto = next === "Auto";
 }
 
 // ============================================================================
@@ -213,12 +250,7 @@ const rates = computed(() =>
     Object.fromEntries(
       rows.value
         .filter((label) => has_band(label, at))
-        .map((label) => [
-          label,
-          profile.value.income_manual
-            ? manual_rate(label, at)
-            : (auto_rate(label, at) ?? 0),
-        ]),
+        .map((label) => [label, rate_of(label, at)]),
     ),
   ),
 );
@@ -257,6 +289,13 @@ const future = computed(() => {
       special.value,
       rates.value,
       weeks,
+      mode.value === "Auto"
+        ? granted(
+            auto.value.grants,
+            now_snapshot.value.at,
+            now_snapshot.value.at + weeks * WEEK_MS,
+          )
+        : undefined,
     );
     const job = job_for(profile.value, snapshot, true);
     const entry = {
@@ -635,15 +674,18 @@ const KIND_COLORS = {
               : "Not enough snapshots to estimate"
           }}
         </span>
-        <label class="flex items-center gap-1.5">
-          <input
-            :checked="profile.income_manual"
-            type="checkbox"
-            aria-label="Manual income"
-            @change="set_manual_mode(!profile.income_manual)"
-          />
-          Type the income by hand
-        </label>
+        <div class="flex gap-1" role="group" aria-label="Income mode">
+          <button
+            v-for="name in MODES"
+            :key="name"
+            class="generic-button"
+            :class="{ 'bg-(--gold-muted)!': mode === name }"
+            :aria-pressed="mode === name"
+            @click="set_mode(name)"
+          >
+            {{ name }}
+          </button>
+        </div>
       </div>
       <div
         class="grid grid-cols-[14rem_8rem_auto] items-center gap-x-3 gap-y-1"
@@ -677,15 +719,29 @@ const KIND_COLORS = {
                 "
               />
               <span class="text-(--text-muted)">
-                auto {{ number(auto_rate(label, band)) }}
+                measured {{ number(measured_rate(label, band)) }}, auto
+                {{ number(auto_rate(label, band)) }}
               </span>
             </template>
             <span v-else :aria-label="`${name(label)} income`">
-              {{ number(auto_rate(label, band)) }}
+              {{
+                number(
+                  mode === "Measured"
+                    ? measured_rate(label, band)
+                    : rate_of(label, band),
+                )
+              }}
             </span>
           </span>
         </template>
       </div>
     </div>
+
+    <IncomeSources
+      v-if="mode === 'Auto'"
+      :config="sources_config"
+      :result="auto"
+      :item_level="item_level"
+    />
   </div>
 </template>

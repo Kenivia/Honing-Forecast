@@ -499,7 +499,7 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
           v-if="show_debug"
           class="generic-button rounded-lg! bg-(--accent-blue)! px-4! py-1.5! hover:bg-(--accent-blue-hover)!"
         >
-          Upload image / video / capture
+          Upload capture
           <input
             type="file"
             accept="image/*,video/*,.hfcap"

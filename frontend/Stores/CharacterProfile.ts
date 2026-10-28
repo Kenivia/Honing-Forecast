@@ -16,6 +16,7 @@ import {
 import { create_status_grid } from "@/Utils/StatusGrid";
 import { KeyedUpgrades, StatusGrid } from "@/Utils/KeyedUpgrades";
 import type { ManifestChest } from "@/Utils/Chest";
+import type { SourcesConfig } from "@/Utils/IncomeSources";
 import type { CachedState } from "@/WasmInterface/PayloadBuilder";
 import {
   OptimizerOverride,
@@ -48,6 +49,9 @@ export interface CharProfile {
   chests: ManifestChest[];
   // income per week typed by hand, char bound and free taps (under the special leap label)
   income_manual: boolean;
+  // income per week from the sources configured on the Income page, when not typed by hand
+  income_auto: boolean;
+  income_sources: Partial<SourcesConfig>;
   bound_income: Record<string, number>;
   // the Income page's now: the time its budgets (a hash) were first seen, and the runs of now
   // and the weeks ahead by payload hash
@@ -92,6 +96,8 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
   }),
   chests: [],
   income_manual: false,
+  income_auto: false,
+  income_sources: {},
   bound_income: {},
   income_now: null,
   income_results: {},

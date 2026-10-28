@@ -1,0 +1,35 @@
+{
+ "_source": "Forecasting/Community.md. Kurzan Front, Chaos Rift, guardians: Tylobic's sheet (2026-10-26), per run, not rested. Ebony Cube and Haal's Hourglass: gcalc = LoaGuard, per ticket / clear; hourglass 3 LoaGuard only. Gems are recorded, not used.",
+ "chaos": [
+  { "name": "Kurzan Front", "item_level": 1640, "bag": { "Red": 366, "Blue": 934, "Leaps": 21, "Shards": 17767, "Silver": 175468 } },
+  { "name": "Kurzan Front", "item_level": 1660, "bag": { "Red": 345, "Blue": 1170, "Leaps": 27, "Shards": 23100, "Silver": 180143 } },
+  { "name": "Kurzan Front", "item_level": 1680, "bag": { "Red": 475, "Blue": 1274, "Leaps": 35, "Shards": 33684, "Silver": 197508 } },
+  { "name": "Kurzan Front", "item_level": 1700, "bag": { "Red": 630, "Blue": 1671, "Leaps": 41, "Shards": 33510, "Silver": 192386 } },
+  { "name": "Kurzan Front", "item_level": 1720, "bag": { "Red": 674, "Blue": 2181, "Leaps": 48, "Shards": 42654, "Silver": 200158 } },
+  { "name": "Chaos Rift I", "item_level": 1730, "bag": { "Serca Red": 313, "Serca Blue": 1035, "Serca Leaps": 16, "Shards": 42447, "Silver": 211350 } },
+  { "name": "Chaos Rift II", "item_level": 1750, "bag": { "Serca Red": 377, "Serca Blue": 1160, "Serca Leaps": 21, "Shards": 52297, "Silver": 232565 } },
+  { "name": "Chaos Rift III", "item_level": 1770, "bag": { "Serca Red": 469, "Serca Blue": 1422, "Serca Leaps": 27, "Shards": 63747, "Silver": 232871 } }
+ ],
+ "guardian": [
+  { "name": "Argeos", "item_level": 1640, "bag": { "Silver": 34976 }, "gems": "2-3 lvl-1" },
+  { "name": "Skolakia", "item_level": 1680, "bag": { "Silver": 40687 }, "gems": "4-5 lvl-1" },
+  { "name": "Drextalas", "item_level": 1700, "bag": { "Silver": 46295 }, "gems": "2-6 lvl-1" },
+  { "name": "Krathios", "item_level": 1720, "bag": { "Silver": 50275 }, "gems": "6-7 lvl-1" },
+  { "name": "Guardian's Shade I", "item_level": 1730, "bag": { "Silver": 55000 }, "gems": "10-11 lvl-1" },
+  { "name": "Guardian's Shade II", "item_level": 1750, "bag": { "Silver": 57500 }, "gems": "11-12 lvl-1" },
+  { "name": "Guardian's Shade III", "item_level": 1770, "bag": { "Silver": 61500 }, "gems": "15-18 lvl-1" }
+ ],
+ "cube": [
+  { "name": "Ebony Cube, 1st Unlock", "item_level": 1640, "bag": { "Leaps": 14, "Lava's Breath": 4, "Glacier's Breath": 4, "Silver": 140000 }, "gems": "9 lvl-1 (the wiki: 18)" },
+  { "name": "Ebony Cube, 2nd Unlock", "item_level": 1680, "bag": { "Leaps": 25, "Lava's Breath": 5, "Glacier's Breath": 5, "Silver": 150000 }, "gems": "18 lvl-1 (the wiki: 36)" },
+  { "name": "Ebony Cube, 3rd Unlock", "item_level": 1700, "bag": { "Leaps": 32, "Lava's Breath": 6, "Glacier's Breath": 6, "Silver": 160000 }, "gems": "24 lvl-1 (the wiki: 48)" },
+  { "name": "Ebony Cube, 4th Unlock", "item_level": 1720, "bag": { "Leaps": 41, "Lava's Breath": 8, "Glacier's Breath": 8, "Silver": 180000 }, "gems": "33 lvl-1 (the wiki: 66)" }
+ ],
+ "hourglass": [
+  { "name": "Haal's Hourglass 1", "item_level": 1730, "bag": { "Serca Leaps": 10, "Lava's Breath": 10, "Glacier's Breath": 10, "Silver": 200000 }, "gems": "45 lvl-1" },
+  { "name": "Haal's Hourglass 2", "item_level": 1750, "bag": { "Serca Leaps": 12, "Lava's Breath": 12, "Glacier's Breath": 12, "Silver": 211689 }, "gems": "54 lvl-1" },
+  { "name": "Haal's Hourglass 3", "item_level": 1770, "bag": { "Serca Leaps": 15, "Lava's Breath": 14, "Glacier's Breath": 14 }, "gems": "7 lvl-3 gem chests" }
+ ],
+ "sand_per_rift_run": 0.2,
+ "max_sand": 5
+}

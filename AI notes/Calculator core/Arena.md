@@ -82,6 +82,7 @@ The generated folders, and the commands that made them:
 | `tiny` | `pnpm arena tiny` ("The state space") |
 | `choices` (22 stars, 289 payloads), `income` (8 chains of 24) | `pnpm exec vitest run --config scripts/arena/vitest.export.config.ts`: the real save of `tests/income-fixture.json` through the pages' own job builders (`scripts/arena/export_pages.test.ts`). Choices: per character with upgrades, the bonus chests of the three raids shown and Paradise (Destiny at Base and Level 10, Netherworld at Base), as stars. Income: every snapshot, now and 12 weeks ahead. Every payload is at a streak length of 10, as the site sends |
 | `b10` | the scenarios of `speed_dev` and `speed_test` with `min_resolution` 10, as the site sends by default (names start with `b10_`) |
+| `real` (38 singles), `real_income` (22 chains of 13) | `pnpm exec vitest run --config scripts/arena/vitest.export_real.config.ts` (`export_real.test.ts`): real characters from the analytics pulls in `ignored/analytics`, each one's latest snapshot with something wanted, typed placeholders left out, up to two a roster (the one wanting most and one wanting another amount). Built as the Income page builds a payload, on a fresh profile with the snapshot's grids and disabled labels (so default valuation); a seeded random half of the characters at streak length 1, the rest 10 (`meta.min_resolution`), a character's single and chain alike. The chains are the first pick of each roster, now and 12 weeks ahead at the Income page's Auto income for its item level. Held out: sets `real_test` and `real_income_test` |
 
 `python arena_data/explore_report.py [session] [folder]` prints what a run of `explore` says: hit rate, time and when the best was found by size, by axis, by sweep level and by what happened before a chain step.
 
@@ -114,14 +115,14 @@ A set is a named list of scenarios for one purpose, in `arena_data/sets/<name>.t
 
 ## Against a fixed baseline
 
-The best known moves every time a variant finds something new, so a hit rate read today is not the one read tomorrow. A frozen snapshot (one taken before the change) is the fixed point instead: run it next to a new variant, or in a session of its own, and compare with `python arena_data/diff_report.py <sessions> [--base <label>] [--by n|kind|week] [--like text] [--strip text] [--worst 10]`.
+The best known moves every time a variant finds something new, so a hit rate read today is not the one read tomorrow. A frozen snapshot (one taken before the change) is the fixed point instead: run it next to a new variant, or in a session of its own, and compare with `python arena_data/diff_report.py <sessions> [--base <label>] [--by n|kind|week] [--like text] [--strip text] [--worst 10] [--db file]`.
 
 - **`diff` is signed**: a variant's mean over seeds less the baseline's on the same seeds, per payload, as a share of the flow of the baseline's best seed. `+` and `-` count the payloads that moved by more than `--eps`. Nothing in it depends on what else is in the database.
 - `hit`, `x10` and `gap` are still against the best any run has reached (within `eps`, within ten times it, and the mean), and so still move.
 - `spread` is the best seed less the worst of a payload, and `same` the share of payloads whose seeds all agree: the run to run variance.
 - The database keeps every run's metric and state, so all of it can be read another way later.
 
-**A run with an error is never the best known.** A state that puts the same id twice on a tap is scored well above any real plan by the evaluator, which does not check; such runs are marked as errors by hand (`error` starts with `invalid state`). Check a new kind of move for that before believing a new best.
+**A run with an error is never the best known.** A state that puts the same id twice on a tap is scored well above any real plan by the evaluator, which does not check. The driver checks every state it is sent (`optimizer::lab::check`: ids, lengths, the order, chest states, the streak-length grid) and marks a run that fails with an `error` starting `invalid state`; runs recorded before 2026-10-27 were only marked by hand. `diff_report.py` counts them per variant.
 
 ## Carrying a plan over
 
@@ -139,7 +140,7 @@ The metric assumes the plan made now is followed to the end. `pnpm arena replan 
 
 ## Stopping and resuming
 
-`run --resume` reuses the latest session started with exactly the same arguments and skips the jobs that already have a row. Ctrl-C stops cleanly: nothing a killed worker was doing is recorded. Jobs go seed by seed, so a session stopped early has covered every scenario about equally.
+`run --resume` reuses the latest session started with exactly the same arguments and skips the jobs that already have a row. Ctrl-C stops cleanly: nothing a killed worker was doing is recorded. Jobs go seed by seed, so a session stopped early has covered every scenario about equally. `--first-seed N` starts the seeds at N, to add seeds to an earlier run in a new session. A scenario of one step gives the same run chained as cold, so a set of singles only needs `--mode cold`.
 
 ## The three measurements
 

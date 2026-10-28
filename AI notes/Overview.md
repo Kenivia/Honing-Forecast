@@ -69,6 +69,7 @@ Each note describes the code as it is now. Where something was tried and failed 
 - `Calculator core/Optimizer.md`: what the annealer does and may and may not change.
 - `Calculator core/State space.md`: what a normal honing plan is, and the exact best plan of one upgrade.
 - `Calculator core/Arena.md`: the native test harness: variants, snapshots, scenarios, sets, what it measures.
+- `Calculator core/Optimizer lab.md`: optimizer approaches written from scratch in batches, the brief they are written from, `pnpm lab` and how they are judged.
 - `Working in this repo.md`: line endings, scratch space, what the type checker cannot see, and the test suites. Read before a large edit.
 - `Frontend/State and persistence.md`: the store, data scopes, localStorage and migrations.
 - `Frontend/Wasm contract.md`: payload building, worker protocol, what must match Rust.

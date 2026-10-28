@@ -142,27 +142,36 @@ export function next_in_chain<
   return { entry: chain[at], from };
 }
 
-// `now` with `weeks` of income added, rates per band by label; free taps are char bound
+// `now` with `weeks` of income added, rates per band by label, plus what `extra` gives in that time
+// (dated grants); free taps are char bound
 export function projected(
   now: Snapshot,
   char_id: string,
   special: string,
   rates: Record<string, number>[],
   weeks: number,
+  extra: Record<string, number>[] = [{}, {}, {}],
 ): Snapshot {
   const out: Snapshot = JSON.parse(JSON.stringify(now));
   const char = out.chars[char_id];
-  const add = (record: Record<string, number>, label: string, rate: number) =>
-    (record[label] = Math.max(
-      0,
-      Math.round((record[label] ?? 0) + rate * weeks),
-    ));
-  for (const [label, rate] of Object.entries(rates[0]))
-    add(label === special ? char.special : char.bound, label, rate);
-  for (const [label, rate] of Object.entries(rates[1]))
-    add(out.roster_owned, label, rate);
-  for (const [label, rate] of Object.entries(rates[2]))
-    add(out.tradable, label, rate);
+  const records = [char.bound, out.roster_owned, out.tradable];
+  for (const band of [0, 1, 2]) {
+    for (const label of new Set([
+      ...Object.keys(rates[band]),
+      ...Object.keys(extra[band]),
+    ])) {
+      const record =
+        band === 0 && label === special ? char.special : records[band];
+      record[label] = Math.max(
+        0,
+        Math.round(
+          (record[label] ?? 0) +
+            (rates[band][label] ?? 0) * weeks +
+            (extra[band][label] ?? 0),
+        ),
+      );
+    }
+  }
   out.at = now.at + weeks * WEEK_MS;
   return out;
 }

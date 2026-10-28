@@ -1,0 +1,127 @@
+[
+  {
+    "name": "b1a_real",
+    "note": "held-out real singles, baseline curve and price/surrogate at 3 efforts",
+    "cmd": "target\\arena\\bin\\lab_b1a.exe --db arena_data/lab/lab.sqlite --set real_test run lab_b1a:max_iters=24000 lab_b1a lab_b1a:max_iters=96000 lab_b1a:algo=price,lab_effort=0.5 lab_b1a:algo=price,lab_effort=1 lab_b1a:algo=price,lab_effort=2 lab_b1a:algo=surrogate,lab_effort=0.5 lab_b1a:algo=surrogate,lab_effort=1 lab_b1a:algo=surrogate,lab_effort=2 --mode cold --seeds 3 --jobs 14 --resume"
+  },
+  {
+    "name": "b1a_real_income",
+    "note": "held-out real income chains, chained",
+    "cmd": "target\\arena\\bin\\lab_b1a.exe --db arena_data/lab/lab.sqlite --set real_income_test run lab_b1a:max_iters=24000 lab_b1a lab_b1a:max_iters=96000 lab_b1a:algo=price,lab_effort=0.5 lab_b1a:algo=price,lab_effort=1 lab_b1a:algo=price,lab_effort=2 lab_b1a:algo=surrogate,lab_effort=0.5 lab_b1a:algo=surrogate,lab_effort=1 lab_b1a:algo=surrogate,lab_effort=2 --mode chained --seeds 3 --jobs 14 --resume"
+  },
+  {
+    "name": "b1a_quick",
+    "note": "quick_dev curves, cold and chained",
+    "cmd": "target\\arena\\bin\\lab_b1a.exe --db arena_data/lab/lab.sqlite --set quick_dev run lab_b1a:max_iters=24000 lab_b1a lab_b1a:max_iters=96000 lab_b1a:algo=price,lab_effort=0.5 lab_b1a:algo=price,lab_effort=1 lab_b1a:algo=price,lab_effort=2 lab_b1a:algo=surrogate,lab_effort=0.5 lab_b1a:algo=surrogate,lab_effort=1 lab_b1a:algo=surrogate,lab_effort=2 --seeds 3 --jobs 14 --resume"
+  },
+  {
+    "name": "b1b_real",
+    "note": "held-out real singles, baseline curve and memetic/cem/lns at 3 efforts",
+    "cmd": "target\\arena\\bin\\lab_b1b.exe --db arena_data/lab/lab.sqlite --set real_test run lab_b1b:max_iters=24000 lab_b1b lab_b1b:max_iters=96000 lab_b1b:algo=memetic,lab_effort=0.5 lab_b1b:algo=memetic,lab_effort=1 lab_b1b:algo=memetic,lab_effort=2 lab_b1b:algo=cem,lab_effort=0.5 lab_b1b:algo=cem,lab_effort=1 lab_b1b:algo=cem,lab_effort=2 lab_b1b:algo=lns,lab_effort=0.5 lab_b1b:algo=lns,lab_effort=1 lab_b1b:algo=lns,lab_effort=2 --mode cold --seeds 3 --jobs 14 --resume"
+  },
+  {
+    "name": "b1b_real_income",
+    "note": "held-out real income chains, chained",
+    "cmd": "target\\arena\\bin\\lab_b1b.exe --db arena_data/lab/lab.sqlite --set real_income_test run lab_b1b:max_iters=24000 lab_b1b lab_b1b:max_iters=96000 lab_b1b:algo=memetic,lab_effort=0.5 lab_b1b:algo=memetic,lab_effort=1 lab_b1b:algo=memetic,lab_effort=2 lab_b1b:algo=cem,lab_effort=0.5 lab_b1b:algo=cem,lab_effort=1 lab_b1b:algo=cem,lab_effort=2 lab_b1b:algo=lns,lab_effort=0.5 lab_b1b:algo=lns,lab_effort=1 lab_b1b:algo=lns,lab_effort=2 --mode chained --seeds 3 --jobs 14 --resume"
+  },
+  {
+    "name": "b1b_quick",
+    "note": "quick_dev curves, cold and chained",
+    "cmd": "target\\arena\\bin\\lab_b1b.exe --db arena_data/lab/lab.sqlite --set quick_dev run lab_b1b:max_iters=24000 lab_b1b lab_b1b:max_iters=96000 lab_b1b:algo=memetic,lab_effort=0.5 lab_b1b:algo=memetic,lab_effort=1 lab_b1b:algo=memetic,lab_effort=2 lab_b1b:algo=cem,lab_effort=0.5 lab_b1b:algo=cem,lab_effort=1 lab_b1b:algo=cem,lab_effort=2 lab_b1b:algo=lns,lab_effort=0.5 lab_b1b:algo=lns,lab_effort=1 lab_b1b:algo=lns,lab_effort=2 --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "ref_real",
+    "note": "existing solve at 8x iterations, a firmer best known",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set real_test run lab_b1b:max_iters=384000 --mode cold --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "ref_real_income",
+    "note": "existing solve at 8x iterations, a firmer best known",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set real_income_test run lab_b1b:max_iters=384000 --mode chained --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "ref_quick",
+    "note": "existing solve at 8x iterations, a firmer best known",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set quick_dev run lab_b1b:max_iters=384000 --mode both --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "low_a_real",
+    "note": "effort 0.125 and 0.25, with solve at 48000 to compare CPU",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set real_test run lab_b1a:max_iters=6000 lab_b1a:max_iters=12000 lab_b1a lab_b1a:algo=price,lab_effort=0.125 lab_b1a:algo=price,lab_effort=0.25 lab_b1a:algo=surrogate,lab_effort=0.125 lab_b1a:algo=surrogate,lab_effort=0.25 --mode cold --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "low_b_real",
+    "note": "effort 0.125 and 0.25, with solve at 48000 to compare CPU",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set real_test run lab_b1b:max_iters=6000 lab_b1b:max_iters=12000 lab_b1b lab_b1b:algo=memetic,lab_effort=0.125 lab_b1b:algo=memetic,lab_effort=0.25 lab_b1b:algo=cem,lab_effort=0.125 lab_b1b:algo=cem,lab_effort=0.25 lab_b1b:algo=lns,lab_effort=0.125 lab_b1b:algo=lns,lab_effort=0.25 --mode cold --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "low_a_real_income",
+    "note": "effort 0.125 and 0.25, with solve at 48000 to compare CPU",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set real_income_test run lab_b1a:max_iters=6000 lab_b1a:max_iters=12000 lab_b1a lab_b1a:algo=price,lab_effort=0.125 lab_b1a:algo=price,lab_effort=0.25 lab_b1a:algo=surrogate,lab_effort=0.125 lab_b1a:algo=surrogate,lab_effort=0.25 --mode chained --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "low_b_real_income",
+    "note": "effort 0.125 and 0.25, with solve at 48000 to compare CPU",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set real_income_test run lab_b1b:max_iters=6000 lab_b1b:max_iters=12000 lab_b1b lab_b1b:algo=memetic,lab_effort=0.125 lab_b1b:algo=memetic,lab_effort=0.25 lab_b1b:algo=cem,lab_effort=0.125 lab_b1b:algo=cem,lab_effort=0.25 lab_b1b:algo=lns,lab_effort=0.125 lab_b1b:algo=lns,lab_effort=0.25 --mode chained --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "low_a_quick",
+    "note": "effort 0.125 and 0.25, with solve at 48000 to compare CPU",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set quick_dev run lab_b1a:max_iters=6000 lab_b1a:max_iters=12000 lab_b1a lab_b1a:algo=price,lab_effort=0.125 lab_b1a:algo=price,lab_effort=0.25 lab_b1a:algo=surrogate,lab_effort=0.125 lab_b1a:algo=surrogate,lab_effort=0.25 --mode both --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "low_b_quick",
+    "note": "effort 0.125 and 0.25, with solve at 48000 to compare CPU",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set quick_dev run lab_b1b:max_iters=6000 lab_b1b:max_iters=12000 lab_b1b lab_b1b:algo=memetic,lab_effort=0.125 lab_b1b:algo=memetic,lab_effort=0.25 lab_b1b:algo=cem,lab_effort=0.125 lab_b1b:algo=cem,lab_effort=0.25 lab_b1b:algo=lns,lab_effort=0.125 lab_b1b:algo=lns,lab_effort=0.25 --mode both --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "seeds_a_real",
+    "note": "more seeds of the batch 1 variants",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set real_test run lab_b1a:max_iters=24000 lab_b1a lab_b1a:max_iters=96000 lab_b1a:algo=price,lab_effort=0.5 lab_b1a:algo=price,lab_effort=1 lab_b1a:algo=price,lab_effort=2 lab_b1a:algo=surrogate,lab_effort=0.5 lab_b1a:algo=surrogate,lab_effort=1 lab_b1a:algo=surrogate,lab_effort=2 --mode cold --first-seed 3 --seeds 7 --jobs 16 --resume"
+  },
+  {
+    "name": "seeds_b_real",
+    "note": "more seeds of the batch 1 variants",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set real_test run lab_b1b:max_iters=24000 lab_b1b lab_b1b:max_iters=96000 lab_b1b:algo=memetic,lab_effort=0.5 lab_b1b:algo=memetic,lab_effort=1 lab_b1b:algo=memetic,lab_effort=2 lab_b1b:algo=cem,lab_effort=0.5 lab_b1b:algo=cem,lab_effort=1 lab_b1b:algo=cem,lab_effort=2 lab_b1b:algo=lns,lab_effort=0.5 lab_b1b:algo=lns,lab_effort=1 lab_b1b:algo=lns,lab_effort=2 --mode cold --first-seed 3 --seeds 7 --jobs 16 --resume"
+  },
+  {
+    "name": "seeds_a_real_income",
+    "note": "more seeds of the batch 1 variants",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set real_income_test run lab_b1a:max_iters=24000 lab_b1a lab_b1a:max_iters=96000 lab_b1a:algo=price,lab_effort=0.5 lab_b1a:algo=price,lab_effort=1 lab_b1a:algo=price,lab_effort=2 lab_b1a:algo=surrogate,lab_effort=0.5 lab_b1a:algo=surrogate,lab_effort=1 lab_b1a:algo=surrogate,lab_effort=2 --mode chained --first-seed 3 --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "seeds_b_real_income",
+    "note": "more seeds of the batch 1 variants",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set real_income_test run lab_b1b:max_iters=24000 lab_b1b lab_b1b:max_iters=96000 lab_b1b:algo=memetic,lab_effort=0.5 lab_b1b:algo=memetic,lab_effort=1 lab_b1b:algo=memetic,lab_effort=2 lab_b1b:algo=cem,lab_effort=0.5 lab_b1b:algo=cem,lab_effort=1 lab_b1b:algo=cem,lab_effort=2 lab_b1b:algo=lns,lab_effort=0.5 lab_b1b:algo=lns,lab_effort=1 lab_b1b:algo=lns,lab_effort=2 --mode chained --first-seed 3 --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "regime_advanced",
+    "note": "advanced: where each prototype does well, with the 384000 reference",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set advanced run lab_b1b:max_iters=24000 lab_b1b lab_b1b:max_iters=96000 lab_b1b:max_iters=384000 lab_b1a:algo=price,lab_effort=0.5 lab_b1a:algo=price,lab_effort=1 lab_b1a:algo=price,lab_effort=2 lab_b1a:algo=surrogate,lab_effort=0.5 lab_b1a:algo=surrogate,lab_effort=1 lab_b1a:algo=surrogate,lab_effort=2 lab_b1b:algo=memetic,lab_effort=0.5 lab_b1b:algo=memetic,lab_effort=1 lab_b1b:algo=memetic,lab_effort=2 lab_b1b:algo=cem,lab_effort=0.5 lab_b1b:algo=cem,lab_effort=1 lab_b1b:algo=cem,lab_effort=2 lab_b1b:algo=lns,lab_effort=0.5 lab_b1b:algo=lns,lab_effort=1 lab_b1b:algo=lns,lab_effort=2 --mode cold --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "regime_free_taps",
+    "note": "free_taps: where each prototype does well, with the 384000 reference",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set free_taps run lab_b1b:max_iters=24000 lab_b1b lab_b1b:max_iters=96000 lab_b1b:max_iters=384000 lab_b1a:algo=price,lab_effort=0.5 lab_b1a:algo=price,lab_effort=1 lab_b1a:algo=price,lab_effort=2 lab_b1a:algo=surrogate,lab_effort=0.5 lab_b1a:algo=surrogate,lab_effort=1 lab_b1a:algo=surrogate,lab_effort=2 lab_b1b:algo=memetic,lab_effort=0.5 lab_b1b:algo=memetic,lab_effort=1 lab_b1b:algo=memetic,lab_effort=2 lab_b1b:algo=cem,lab_effort=0.5 lab_b1b:algo=cem,lab_effort=1 lab_b1b:algo=cem,lab_effort=2 lab_b1b:algo=lns,lab_effort=0.5 lab_b1b:algo=lns,lab_effort=1 lab_b1b:algo=lns,lab_effort=2 --mode cold --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "regime_juice",
+    "note": "juice: where each prototype does well, with the 384000 reference",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set juice run lab_b1b:max_iters=24000 lab_b1b lab_b1b:max_iters=96000 lab_b1b:max_iters=384000 lab_b1a:algo=price,lab_effort=0.5 lab_b1a:algo=price,lab_effort=1 lab_b1a:algo=price,lab_effort=2 lab_b1a:algo=surrogate,lab_effort=0.5 lab_b1a:algo=surrogate,lab_effort=1 lab_b1a:algo=surrogate,lab_effort=2 lab_b1b:algo=memetic,lab_effort=0.5 lab_b1b:algo=memetic,lab_effort=1 lab_b1b:algo=memetic,lab_effort=2 lab_b1b:algo=cem,lab_effort=0.5 lab_b1b:algo=cem,lab_effort=1 lab_b1b:algo=cem,lab_effort=2 lab_b1b:algo=lns,lab_effort=0.5 lab_b1b:algo=lns,lab_effort=1 lab_b1b:algo=lns,lab_effort=2 --mode cold --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "regime_small",
+    "note": "small: where each prototype does well, with the 384000 reference",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set small run lab_b1b:max_iters=24000 lab_b1b lab_b1b:max_iters=96000 lab_b1b:max_iters=384000 lab_b1a:algo=price,lab_effort=0.5 lab_b1a:algo=price,lab_effort=1 lab_b1a:algo=price,lab_effort=2 lab_b1a:algo=surrogate,lab_effort=0.5 lab_b1a:algo=surrogate,lab_effort=1 lab_b1a:algo=surrogate,lab_effort=2 lab_b1b:algo=memetic,lab_effort=0.5 lab_b1b:algo=memetic,lab_effort=1 lab_b1b:algo=memetic,lab_effort=2 lab_b1b:algo=cem,lab_effort=0.5 lab_b1b:algo=cem,lab_effort=1 lab_b1b:algo=cem,lab_effort=2 lab_b1b:algo=lns,lab_effort=0.5 lab_b1b:algo=lns,lab_effort=1 lab_b1b:algo=lns,lab_effort=2 --mode cold --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "regime_large",
+    "note": "large: where each prototype does well, with the 384000 reference",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set large run lab_b1b:max_iters=24000 lab_b1b lab_b1b:max_iters=96000 lab_b1b:max_iters=384000 lab_b1a:algo=price,lab_effort=0.5 lab_b1a:algo=price,lab_effort=1 lab_b1a:algo=price,lab_effort=2 lab_b1a:algo=surrogate,lab_effort=0.5 lab_b1a:algo=surrogate,lab_effort=1 lab_b1a:algo=surrogate,lab_effort=2 lab_b1b:algo=memetic,lab_effort=0.5 lab_b1b:algo=memetic,lab_effort=1 lab_b1b:algo=memetic,lab_effort=2 lab_b1b:algo=cem,lab_effort=0.5 lab_b1b:algo=cem,lab_effort=1 lab_b1b:algo=cem,lab_effort=2 lab_b1b:algo=lns,lab_effort=0.5 lab_b1b:algo=lns,lab_effort=1 lab_b1b:algo=lns,lab_effort=2 --mode cold --seeds 3 --jobs 16 --resume"
+  },
+  {
+    "name": "regime_speed_test",
+    "note": "speed_test: where each prototype does well, with the 384000 reference",
+    "cmd": "target\\arena\\bin\\lab_driver.exe --db arena_data/lab/lab.sqlite --set speed_test run lab_b1b:max_iters=24000 lab_b1b lab_b1b:max_iters=96000 lab_b1b:max_iters=384000 lab_b1a:algo=price,lab_effort=0.5 lab_b1a:algo=price,lab_effort=1 lab_b1a:algo=price,lab_effort=2 lab_b1a:algo=surrogate,lab_effort=0.5 lab_b1a:algo=surrogate,lab_effort=1 lab_b1a:algo=surrogate,lab_effort=2 lab_b1b:algo=memetic,lab_effort=0.5 lab_b1b:algo=memetic,lab_effort=1 lab_b1b:algo=memetic,lab_effort=2 lab_b1b:algo=cem,lab_effort=0.5 lab_b1b:algo=cem,lab_effort=1 lab_b1b:algo=cem,lab_effort=2 lab_b1b:algo=lns,lab_effort=0.5 lab_b1b:algo=lns,lab_effort=1 lab_b1b:algo=lns,lab_effort=2 --mode both --seeds 3 --jobs 16 --resume"
+  }
+]

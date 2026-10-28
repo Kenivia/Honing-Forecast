@@ -1,0 +1,3831 @@
+{
+ "raids": [
+  {
+   "group": "Belgardin, Arbiter of Death",
+   "difficulty": "Nightmare",
+   "item_level": 1780,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      0,
+      30000
+     ],
+     "medals": 1700,
+     "mats": {
+      "Shards": 12550,
+      "Serca Red": 565,
+      "Serca Blue": 1130,
+      "Serca Leaps": 12
+     },
+     "bonus": {
+      "cost": 9600,
+      "mats": {
+       "Shards": 26220,
+       "Serca Red": 1300,
+       "Serca Blue": 2600,
+       "Serca Leaps": 49
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      0,
+      45000
+     ],
+     "medals": 2700,
+     "mats": {
+      "Shards": 15180,
+      "Serca Red": 690,
+      "Serca Blue": 1380,
+      "Serca Leaps": 18,
+      "Serca Special Leap": 10
+     },
+     "bonus": {
+      "cost": 14400,
+      "mats": {
+       "Shards": 44440,
+       "Serca Red": 1980,
+       "Serca Blue": 3960,
+       "Serca Leaps": 83,
+       "Serca Special Leap": 7
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Belgardin, Arbiter of Death",
+   "difficulty": "Hard",
+   "item_level": 1770,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      0,
+      25000
+     ],
+     "medals": 1700,
+     "mats": {
+      "Shards": 10920,
+      "Serca Red": 490,
+      "Serca Blue": 980,
+      "Serca Leaps": 10
+     },
+     "bonus": {
+      "cost": 8000,
+      "mats": {
+       "Shards": 22800,
+       "Serca Red": 1130,
+       "Serca Blue": 2260,
+       "Serca Leaps": 43
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      0,
+      37000
+     ],
+     "medals": 2700,
+     "mats": {
+      "Shards": 13200,
+      "Serca Red": 600,
+      "Serca Blue": 1200,
+      "Serca Leaps": 15,
+      "Serca Special Leap": 9
+     },
+     "bonus": {
+      "cost": 11840,
+      "mats": {
+       "Shards": 38640,
+       "Serca Red": 1720,
+       "Serca Blue": 3440,
+       "Serca Leaps": 72,
+       "Serca Special Leap": 6
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Horizon Cathedral",
+   "difficulty": "Level 3",
+   "item_level": 1750,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      20000,
+      0,
+      0
+     ],
+     "medals": 0,
+     "mats": {
+      "Shards": 9100,
+      "Serca Red": 405,
+      "Serca Blue": 810,
+      "Serca Leaps": 8
+     },
+     "bonus": {
+      "cost": 6400,
+      "mats": {
+       "Shards": 19000,
+       "Serca Red": 860,
+       "Serca Blue": 1720,
+       "Serca Leaps": 36
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      30000,
+      0,
+      0
+     ],
+     "medals": 0,
+     "mats": {
+      "Shards": 11000,
+      "Serca Red": 500,
+      "Serca Blue": 1000,
+      "Serca Leaps": 12,
+      "Serca Special Leap": 6
+     },
+     "bonus": {
+      "cost": 9600,
+      "mats": {
+       "Shards": 32200,
+       "Serca Red": 1430,
+       "Serca Blue": 2860,
+       "Serca Leaps": 60,
+       "Serca Special Leap": 5
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Belgardin, Arbiter of Death",
+   "difficulty": "Normal",
+   "item_level": 1750,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      0,
+      20000
+     ],
+     "medals": 1700,
+     "mats": {
+      "Shards": 9100,
+      "Serca Red": 405,
+      "Serca Blue": 810,
+      "Serca Leaps": 8
+     },
+     "bonus": {
+      "cost": 6400,
+      "mats": {
+       "Shards": 19000,
+       "Serca Red": 860,
+       "Serca Blue": 1720,
+       "Serca Leaps": 36
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      0,
+      30000
+     ],
+     "medals": 2700,
+     "mats": {
+      "Shards": 11000,
+      "Serca Red": 500,
+      "Serca Blue": 1000,
+      "Serca Leaps": 12,
+      "Serca Special Leap": 6
+     },
+     "bonus": {
+      "cost": 9600,
+      "mats": {
+       "Shards": 32200,
+       "Serca Red": 1430,
+       "Serca Blue": 2860,
+       "Serca Leaps": 60,
+       "Serca Special Leap": 5
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Belgardin, Arbiter of Death",
+   "difficulty": "Solo",
+   "item_level": 1750,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      10000,
+      10000
+     ],
+     "medals": 1700,
+     "mats": {
+      "Shards": 9100,
+      "Serca Red": 405,
+      "Serca Blue": 810,
+      "Serca Leaps": 8
+     },
+     "bonus": {
+      "cost": 6400,
+      "mats": {
+       "Shards": 19000,
+       "Serca Red": 860,
+       "Serca Blue": 1720,
+       "Serca Leaps": 36
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      15000,
+      15000
+     ],
+     "medals": 2700,
+     "mats": {
+      "Shards": 11000,
+      "Serca Red": 500,
+      "Serca Blue": 1000,
+      "Serca Leaps": 12,
+      "Serca Special Leap": 6
+     },
+     "bonus": {
+      "cost": 9600,
+      "mats": {
+       "Shards": 32200,
+       "Serca Red": 1430,
+       "Serca Blue": 2860,
+       "Serca Leaps": 60,
+       "Serca Special Leap": 5
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Witch of Agony, Serca",
+   "difficulty": "Nightmare",
+   "item_level": 1740,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      0,
+      21000
+     ],
+     "medals": 1300,
+     "mats": {
+      "Shards": 9100,
+      "Serca Red": 405,
+      "Serca Blue": 810,
+      "Serca Leaps": 8
+     },
+     "bonus": {
+      "cost": 6720,
+      "mats": {
+       "Shards": 19000,
+       "Serca Red": 860,
+       "Serca Blue": 1720,
+       "Serca Leaps": 36
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      0,
+      33000
+     ],
+     "medals": 2100,
+     "mats": {
+      "Shards": 11000,
+      "Serca Red": 500,
+      "Serca Blue": 1000,
+      "Serca Leaps": 12,
+      "Serca Special Leap": 6
+     },
+     "bonus": {
+      "cost": 10560,
+      "mats": {
+       "Shards": 32200,
+       "Serca Red": 1430,
+       "Serca Blue": 2860,
+       "Serca Leaps": 60,
+       "Serca Special Leap": 5
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Denouement: Final Day",
+   "difficulty": "Hard",
+   "item_level": 1730,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      0,
+      16000
+     ],
+     "medals": 1300,
+     "mats": {
+      "Shards": 8300,
+      "Serca Red": 385,
+      "Serca Blue": 770,
+      "Serca Leaps": 7
+     },
+     "bonus": {
+      "cost": 5120,
+      "mats": {
+       "Shards": 17500,
+       "Serca Red": 750,
+       "Serca Blue": 1500,
+       "Serca Leaps": 30
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      0,
+      32000
+     ],
+     "medals": 2100,
+     "mats": {
+      "Shards": 10100,
+      "Serca Red": 475,
+      "Serca Blue": 950,
+      "Serca Leaps": 10,
+      "Serca Special Leap": 5
+     },
+     "bonus": {
+      "cost": 10240,
+      "mats": {
+       "Shards": 29800,
+       "Serca Red": 1320,
+       "Serca Blue": 2640,
+       "Serca Leaps": 50,
+       "Serca Special Leap": 4
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Witch of Agony, Serca",
+   "difficulty": "Hard",
+   "item_level": 1730,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      0,
+      17500
+     ],
+     "medals": 1300,
+     "mats": {
+      "Shards": 8300,
+      "Serca Red": 385,
+      "Serca Blue": 770,
+      "Serca Leaps": 7
+     },
+     "bonus": {
+      "cost": 5600,
+      "mats": {
+       "Shards": 17500,
+       "Serca Red": 750,
+       "Serca Blue": 1500,
+       "Serca Leaps": 30
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      0,
+      26500
+     ],
+     "medals": 2100,
+     "mats": {
+      "Shards": 10100,
+      "Serca Red": 475,
+      "Serca Blue": 950,
+      "Serca Leaps": 10,
+      "Serca Special Leap": 5
+     },
+     "bonus": {
+      "cost": 8480,
+      "mats": {
+       "Shards": 26820,
+       "Serca Red": 1130,
+       "Serca Blue": 2260,
+       "Serca Leaps": 45,
+       "Serca Special Leap": 4
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Horizon Cathedral",
+   "difficulty": "Level 2",
+   "item_level": 1720,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      16000,
+      0,
+      0
+     ],
+     "medals": 0,
+     "mats": {
+      "Shards": 6800,
+      "Red": 980,
+      "Blue": 1960,
+      "Leaps": 11
+     },
+     "bonus": {
+      "cost": 5120,
+      "mats": {
+       "Shards": 14250,
+       "Red": 1680,
+       "Blue": 3360,
+       "Leaps": 53
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      24000,
+      0,
+      0
+     ],
+     "medals": 0,
+     "mats": {
+      "Shards": 8600,
+      "Red": 1150,
+      "Blue": 2300,
+      "Leaps": 16,
+      "Special Leap": 17
+     },
+     "bonus": {
+      "cost": 7680,
+      "mats": {
+       "Shards": 24200,
+       "Red": 2880,
+       "Blue": 5760,
+       "Leaps": 94,
+       "Special Leap": 13
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Act 4: Fortress of Destruction",
+   "difficulty": "Hard",
+   "item_level": 1720,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      0,
+      13500
+     ],
+     "medals": 1200,
+     "mats": {
+      "Shards": 6800,
+      "Red": 980,
+      "Blue": 1960,
+      "Leaps": 11
+     },
+     "bonus": {
+      "cost": 4320,
+      "mats": {
+       "Shards": 14250,
+       "Red": 1680,
+       "Blue": 3360,
+       "Leaps": 53
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      0,
+      24500
+     ],
+     "medals": 1900,
+     "mats": {
+      "Shards": 8600,
+      "Red": 1150,
+      "Blue": 2300,
+      "Leaps": 16,
+      "Special Leap": 19
+     },
+     "bonus": {
+      "cost": 7840,
+      "mats": {
+       "Shards": 24200,
+       "Red": 2880,
+       "Blue": 5760,
+       "Leaps": 94,
+       "Special Leap": 13
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Denouement: Final Day",
+   "difficulty": "Normal",
+   "item_level": 1710,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      5500,
+      5500
+     ],
+     "medals": 1300,
+     "mats": {
+      "Shards": 6200,
+      "Red": 880,
+      "Blue": 1760,
+      "Leaps": 12
+     },
+     "bonus": {
+      "cost": 3520,
+      "mats": {
+       "Shards": 13650,
+       "Red": 1610,
+       "Blue": 3220,
+       "Leaps": 50
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      10500,
+      10500
+     ],
+     "medals": 2100,
+     "mats": {
+      "Shards": 7900,
+      "Red": 1100,
+      "Blue": 2200,
+      "Leaps": 15,
+      "Special Leap": 17
+     },
+     "bonus": {
+      "cost": 6720,
+      "mats": {
+       "Shards": 23200,
+       "Red": 2760,
+       "Blue": 5520,
+       "Leaps": 90,
+       "Special Leap": 12
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Denouement: Final Day",
+   "difficulty": "Solo",
+   "item_level": 1710,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      5500,
+      5500
+     ],
+     "medals": 1300,
+     "mats": {
+      "Shards": 6200,
+      "Red": 880,
+      "Blue": 1760,
+      "Leaps": 12
+     },
+     "bonus": {
+      "cost": 3520,
+      "mats": {
+       "Shards": 13650,
+       "Red": 1610,
+       "Blue": 3220,
+       "Leaps": 50
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      10500,
+      10500
+     ],
+     "medals": 2100,
+     "mats": {
+      "Shards": 7900,
+      "Red": 1100,
+      "Blue": 2200,
+      "Leaps": 15,
+      "Special Leap": 17
+     },
+     "bonus": {
+      "cost": 6720,
+      "mats": {
+       "Shards": 23200,
+       "Red": 2760,
+       "Blue": 5520,
+       "Leaps": 90,
+       "Special Leap": 12
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Witch of Agony, Serca",
+   "difficulty": "Normal",
+   "item_level": 1710,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      6500,
+      6500
+     ],
+     "medals": 1300,
+     "mats": {
+      "Shards": 6200,
+      "Red": 880,
+      "Blue": 1760,
+      "Leaps": 12
+     },
+     "bonus": {
+      "cost": 4160,
+      "mats": {
+       "Shards": 13650,
+       "Red": 1610,
+       "Blue": 3220,
+       "Leaps": 50
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      9500,
+      9500
+     ],
+     "medals": 2100,
+     "mats": {
+      "Shards": 7900,
+      "Red": 1100,
+      "Blue": 2200,
+      "Leaps": 15,
+      "Special Leap": 17
+     },
+     "bonus": {
+      "cost": 6080,
+      "mats": {
+       "Shards": 20880,
+       "Red": 2480,
+       "Blue": 4960,
+       "Leaps": 82,
+       "Special Leap": 12
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Witch of Agony, Serca",
+   "difficulty": "Solo",
+   "item_level": 1710,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      6500,
+      6500
+     ],
+     "medals": 1300,
+     "mats": {
+      "Shards": 6200,
+      "Red": 880,
+      "Blue": 1760,
+      "Leaps": 12
+     },
+     "bonus": {
+      "cost": 4160,
+      "mats": {
+       "Shards": 13650,
+       "Red": 1610,
+       "Blue": 3220,
+       "Leaps": 50
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      9500,
+      9500
+     ],
+     "medals": 2100,
+     "mats": {
+      "Shards": 7900,
+      "Red": 1100,
+      "Blue": 2200,
+      "Leaps": 15,
+      "Special Leap": 17
+     },
+     "bonus": {
+      "cost": 6080,
+      "mats": {
+       "Shards": 20880,
+       "Red": 2480,
+       "Blue": 4960,
+       "Leaps": 82,
+       "Special Leap": 12
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Horizon Cathedral",
+   "difficulty": "Level 1",
+   "item_level": 1700,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      13500,
+      0,
+      0
+     ],
+     "medals": 0,
+     "mats": {
+      "Shards": 5400,
+      "Red": 820,
+      "Blue": 1640,
+      "Leaps": 9
+     },
+     "bonus": {
+      "cost": 4320,
+      "mats": {
+       "Shards": 11880,
+       "Red": 1400,
+       "Blue": 2800,
+       "Leaps": 44
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      16500,
+      0,
+      0
+     ],
+     "medals": 0,
+     "mats": {
+      "Shards": 6800,
+      "Red": 960,
+      "Blue": 1920,
+      "Leaps": 12,
+      "Special Leap": 15
+     },
+     "bonus": {
+      "cost": 5280,
+      "mats": {
+       "Shards": 20160,
+       "Red": 2400,
+       "Blue": 4800,
+       "Leaps": 78,
+       "Special Leap": 10
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Act 3: Night of Storms and Darkness",
+   "difficulty": "Hard",
+   "item_level": 1700,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      2500,
+      2500
+     ],
+     "medals": 600,
+     "mats": {
+      "Shards": 3400,
+      "Red": 440,
+      "Blue": 880,
+      "Leaps": 6
+     },
+     "bonus": {
+      "cost": 1650,
+      "mats": {
+       "Shards": 5000,
+       "Red": 600,
+       "Blue": 1200,
+       "Leaps": 23
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      4000,
+      4000
+     ],
+     "medals": 700,
+     "mats": {
+      "Shards": 4000,
+      "Red": 520,
+      "Blue": 1040,
+      "Leaps": 6
+     },
+     "bonus": {
+      "cost": 2640,
+      "mats": {
+       "Shards": 7200,
+       "Red": 830,
+       "Blue": 1660,
+       "Leaps": 27
+      }
+     }
+    },
+    {
+     "gate": 3,
+     "gold": [
+      0,
+      7000,
+      7000
+     ],
+     "medals": 1400,
+     "mats": {
+      "Shards": 5600,
+      "Red": 640,
+      "Blue": 1280,
+      "Leaps": 8,
+      "Special Leap": 15
+     },
+     "bonus": {
+      "cost": 4060,
+      "mats": {
+       "Shards": 11760,
+       "Red": 1460,
+       "Blue": 2920,
+       "Leaps": 45,
+       "Special Leap": 10
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Act 4: Fortress of Destruction",
+   "difficulty": "Normal",
+   "item_level": 1700,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      5000,
+      5000
+     ],
+     "medals": 1200,
+     "mats": {
+      "Shards": 5400,
+      "Red": 820,
+      "Blue": 1640,
+      "Leaps": 9
+     },
+     "bonus": {
+      "cost": 3200,
+      "mats": {
+       "Shards": 11880,
+       "Red": 1400,
+       "Blue": 2800,
+       "Leaps": 44
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      8500,
+      8500
+     ],
+     "medals": 1900,
+     "mats": {
+      "Shards": 6800,
+      "Red": 960,
+      "Blue": 1920,
+      "Leaps": 12,
+      "Special Leap": 15
+     },
+     "bonus": {
+      "cost": 5440,
+      "mats": {
+       "Shards": 20160,
+       "Red": 2400,
+       "Blue": 4800,
+       "Leaps": 78,
+       "Special Leap": 10
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Act 4: Fortress of Destruction",
+   "difficulty": "Solo",
+   "item_level": 1700,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      5000,
+      5000
+     ],
+     "medals": 1200,
+     "mats": {
+      "Shards": 5400,
+      "Red": 820,
+      "Blue": 1640,
+      "Leaps": 9
+     },
+     "bonus": {
+      "cost": 3200,
+      "mats": {
+       "Shards": 11880,
+       "Red": 1400,
+       "Blue": 2800,
+       "Leaps": 44
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      8500,
+      8500
+     ],
+     "medals": 1900,
+     "mats": {
+      "Shards": 6800,
+      "Red": 960,
+      "Blue": 1920,
+      "Leaps": 12,
+      "Special Leap": 15
+     },
+     "bonus": {
+      "cost": 5440,
+      "mats": {
+       "Shards": 20160,
+       "Red": 2400,
+       "Blue": 4800,
+       "Leaps": 78,
+       "Special Leap": 10
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Act 2: Requiem of the Floating Nightmare",
+   "difficulty": "Hard",
+   "item_level": 1690,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      3750,
+      3750
+     ],
+     "medals": 1000,
+     "mats": {
+      "Shards": 4600,
+      "Red": 640,
+      "Blue": 1280,
+      "Leaps": 7
+     },
+     "bonus": {
+      "cost": 2400,
+      "mats": {
+       "Shards": 6000,
+       "Red": 720,
+       "Blue": 1440,
+       "Leaps": 30
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      7750,
+      7750
+     ],
+     "medals": 1300,
+     "mats": {
+      "Shards": 6000,
+      "Red": 700,
+      "Blue": 1400,
+      "Leaps": 8,
+      "Special Leap": 13
+     },
+     "bonus": {
+      "cost": 5100,
+      "mats": {
+       "Shards": 10590,
+       "Red": 1320,
+       "Blue": 2640,
+       "Leaps": 50,
+       "Special Leap": 9
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Act 1: Earth-Shattering Hellfire",
+   "difficulty": "Hard",
+   "item_level": 1680,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      2750,
+      2750
+     ],
+     "medals": 800,
+     "mats": {
+      "Shards": 4200,
+      "Red": 580,
+      "Blue": 1160,
+      "Leaps": 6
+     },
+     "bonus": {
+      "cost": 1820,
+      "mats": {
+       "Shards": 5280,
+       "Red": 610,
+       "Blue": 1220,
+       "Leaps": 18
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      6250,
+      6250
+     ],
+     "medals": 1100,
+     "mats": {
+      "Shards": 5400,
+      "Red": 660,
+      "Blue": 1320,
+      "Leaps": 7,
+      "Special Leap": 12
+     },
+     "bonus": {
+      "cost": 4150,
+      "mats": {
+       "Shards": 8930,
+       "Red": 940,
+       "Blue": 1880,
+       "Leaps": 31,
+       "Special Leap": 9
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Act 3: Night of Storms and Darkness",
+   "difficulty": "Normal",
+   "item_level": 1680,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      2000,
+      2000
+     ],
+     "medals": 600,
+     "mats": {
+      "Shards": 2600,
+      "Red": 320,
+      "Blue": 640,
+      "Leaps": 4
+     },
+     "bonus": {
+      "cost": 1300,
+      "mats": {
+       "Shards": 3680,
+       "Red": 390,
+       "Blue": 780,
+       "Leaps": 12
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      3500,
+      3500
+     ],
+     "medals": 700,
+     "mats": {
+      "Shards": 3000,
+      "Red": 400,
+      "Blue": 800,
+      "Leaps": 4
+     },
+     "bonus": {
+      "cost": 2350,
+      "mats": {
+       "Shards": 4750,
+       "Red": 530,
+       "Blue": 1060,
+       "Leaps": 15
+      }
+     }
+    },
+    {
+     "gate": 3,
+     "gold": [
+      0,
+      5000,
+      5000
+     ],
+     "medals": 1400,
+     "mats": {
+      "Shards": 4200,
+      "Red": 520,
+      "Blue": 1040,
+      "Leaps": 6,
+      "Special Leap": 11
+     },
+     "bonus": {
+      "cost": 3360,
+      "mats": {
+       "Shards": 6810,
+       "Red": 780,
+       "Blue": 1560,
+       "Leaps": 21,
+       "Special Leap": 7
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Act 3: Night of Storms and Darkness",
+   "difficulty": "Solo",
+   "item_level": 1680,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      2000,
+      2000
+     ],
+     "medals": 600,
+     "mats": {
+      "Shards": 2600,
+      "Red": 320,
+      "Blue": 640,
+      "Leaps": 4
+     },
+     "bonus": {
+      "cost": 1300,
+      "mats": {
+       "Shards": 3680,
+       "Red": 390,
+       "Blue": 780,
+       "Leaps": 12
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      3500,
+      3500
+     ],
+     "medals": 700,
+     "mats": {
+      "Shards": 3000,
+      "Red": 400,
+      "Blue": 800,
+      "Leaps": 4
+     },
+     "bonus": {
+      "cost": 2350,
+      "mats": {
+       "Shards": 4750,
+       "Red": 530,
+       "Blue": 1060,
+       "Leaps": 15
+      }
+     }
+    },
+    {
+     "gate": 3,
+     "gold": [
+      0,
+      5000,
+      5000
+     ],
+     "medals": 1400,
+     "mats": {
+      "Shards": 4200,
+      "Red": 520,
+      "Blue": 1040,
+      "Leaps": 6,
+      "Special Leap": 11
+     },
+     "bonus": {
+      "cost": 3360,
+      "mats": {
+       "Shards": 6810,
+       "Red": 780,
+       "Blue": 1560,
+       "Leaps": 21,
+       "Special Leap": 7
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Act 2: Requiem of the Floating Nightmare",
+   "difficulty": "Normal",
+   "item_level": 1670,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      2750,
+      2750
+     ],
+     "medals": 1000,
+     "mats": {
+      "Shards": 4000,
+      "Red": 540,
+      "Blue": 1080,
+      "Leaps": 5
+     },
+     "bonus": {
+      "cost": 1820,
+      "mats": {
+       "Shards": 5220,
+       "Red": 610,
+       "Blue": 1220,
+       "Leaps": 13
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      5500,
+      5500
+     ],
+     "medals": 1300,
+     "mats": {
+      "Shards": 4600,
+      "Red": 640,
+      "Blue": 1280,
+      "Leaps": 6,
+      "Special Leap": 11
+     },
+     "bonus": {
+      "cost": 3720,
+      "mats": {
+       "Shards": 8060,
+       "Red": 810,
+       "Blue": 1620,
+       "Leaps": 21,
+       "Special Leap": 7
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Act 2: Requiem of the Floating Nightmare",
+   "difficulty": "Solo",
+   "item_level": 1670,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      2750,
+      2750
+     ],
+     "medals": 1000,
+     "mats": {
+      "Shards": 4000,
+      "Red": 540,
+      "Blue": 1080,
+      "Leaps": 5
+     },
+     "bonus": {
+      "cost": 1820,
+      "mats": {
+       "Shards": 5220,
+       "Red": 610,
+       "Blue": 1220,
+       "Leaps": 13
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      5500,
+      5500
+     ],
+     "medals": 1300,
+     "mats": {
+      "Shards": 4600,
+      "Red": 640,
+      "Blue": 1280,
+      "Leaps": 6,
+      "Special Leap": 11
+     },
+     "bonus": {
+      "cost": 3720,
+      "mats": {
+       "Shards": 8060,
+       "Red": 810,
+       "Blue": 1620,
+       "Leaps": 21,
+       "Special Leap": 7
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Act 1: Earth-Shattering Hellfire",
+   "difficulty": "Normal",
+   "item_level": 1660,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      1750,
+      1750
+     ],
+     "medals": 800,
+     "mats": {
+      "Shards": 3600,
+      "Red": 480,
+      "Blue": 960,
+      "Leaps": 4
+     },
+     "bonus": {
+      "cost": 750,
+      "mats": {
+       "Shards": 2800,
+       "Red": 310,
+       "Blue": 620,
+       "Leaps": 8
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      4000,
+      4000
+     ],
+     "medals": 1100,
+     "mats": {
+      "Shards": 4400,
+      "Red": 580,
+      "Blue": 1160,
+      "Leaps": 5,
+      "Special Leap": 9
+     },
+     "bonus": {
+      "cost": 1780,
+      "mats": {
+       "Shards": 4480,
+       "Red": 460,
+       "Blue": 920,
+       "Leaps": 15,
+       "Special Leap": 7
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Act 1: Earth-Shattering Hellfire",
+   "difficulty": "Solo",
+   "item_level": 1660,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      1750,
+      1750
+     ],
+     "medals": 800,
+     "mats": {
+      "Shards": 3600,
+      "Red": 480,
+      "Blue": 960,
+      "Leaps": 4
+     },
+     "bonus": {
+      "cost": 750,
+      "mats": {
+       "Shards": 2800,
+       "Red": 310,
+       "Blue": 620,
+       "Leaps": 8
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      4000,
+      4000
+     ],
+     "medals": 1100,
+     "mats": {
+      "Shards": 4400,
+      "Red": 580,
+      "Blue": 1160,
+      "Leaps": 5,
+      "Special Leap": 9
+     },
+     "bonus": {
+      "cost": 1780,
+      "mats": {
+       "Shards": 4480,
+       "Red": 460,
+       "Blue": 920,
+       "Leaps": 15,
+       "Special Leap": 7
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Overture: Spiral of the Crimson Midnight Sun",
+   "difficulty": "Hard",
+   "item_level": 1630,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      1100,
+      1100
+     ],
+     "medals": 400,
+     "mats": {
+      "Shards": 2700,
+      "Red": 200,
+      "Blue": 400,
+      "Leaps": 2
+     },
+     "bonus": {
+      "cost": 720,
+      "mats": {
+       "Shards": 1620,
+       "Red": 240,
+       "Blue": 480,
+       "Leaps": 7
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      2500,
+      2500
+     ],
+     "medals": 550,
+     "mats": {
+      "Shards": 3800,
+      "Red": 260,
+      "Blue": 520,
+      "Leaps": 3,
+      "Special Leap": 7
+     },
+     "bonus": {
+      "cost": 1630,
+      "mats": {
+       "Shards": 2990,
+       "Red": 460,
+       "Blue": 920,
+       "Leaps": 20,
+       "Special Leap": 6
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Behemoth, the Storm Commander",
+   "difficulty": "Normal",
+   "item_level": 1620,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      1100,
+      1100
+     ],
+     "medals": 600,
+     "mats": {
+      "Shards": 2700,
+      "Red": 200,
+      "Blue": 400
+     },
+     "bonus": {
+      "cost": 720,
+      "mats": {
+       "Shards": 3800,
+       "Red": 550,
+       "Blue": 1100,
+       "Leaps": 12
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      2500,
+      2500
+     ],
+     "medals": 800,
+     "mats": {
+      "Shards": 3800,
+      "Red": 260,
+      "Blue": 520,
+      "Special Leap": 7
+     },
+     "bonus": {
+      "cost": 1630,
+      "mats": {
+       "Shards": 5800,
+       "Red": 850,
+       "Blue": 1700,
+       "Leaps": 19,
+       "Special Leap": 6
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Darkness Legion Commander",
+   "difficulty": "Hard",
+   "item_level": 1620,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      2000,
+      0
+     ],
+     "medals": 250,
+     "mats": {
+      "Shards": 1200,
+      "Red": 80,
+      "Blue": 160,
+      "Leaps": 1
+     },
+     "bonus": {
+      "cost": 500,
+      "mats": {
+       "Shards": 920,
+       "Red": 90,
+       "Blue": 180,
+       "Leaps": 1
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      2400,
+      0
+     ],
+     "medals": 300,
+     "mats": {
+      "Shards": 1400,
+      "Red": 90,
+      "Blue": 180,
+      "Leaps": 1
+     },
+     "bonus": {
+      "cost": 600,
+      "mats": {
+       "Shards": 1060,
+       "Red": 100,
+       "Blue": 200,
+       "Leaps": 2
+      }
+     }
+    },
+    {
+     "gate": 3,
+     "gold": [
+      0,
+      3600,
+      0
+     ],
+     "medals": 500,
+     "mats": {
+      "Shards": 1650,
+      "Red": 100,
+      "Blue": 200,
+      "Leaps": 1,
+      "Special Leap": 2
+     },
+     "bonus": {
+      "cost": 900,
+      "mats": {
+       "Shards": 1360,
+       "Red": 130,
+       "Blue": 260,
+       "Leaps": 3,
+       "Special Leap": 1
+      }
+     }
+    },
+    {
+     "gate": 4,
+     "gold": [
+      0,
+      5000,
+      0
+     ],
+     "medals": 0,
+     "mats": {
+      "Shards": 1800,
+      "Red": 110,
+      "Blue": 220,
+      "Leaps": 1,
+      "Special Leap": 2
+     },
+     "bonus": {
+      "cost": 1250,
+      "mats": {
+       "Shards": 1910,
+       "Red": 180,
+       "Blue": 360,
+       "Leaps": 4,
+       "Special Leap": 1
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Overture: Spiral of the Crimson Midnight Sun",
+   "difficulty": "Normal",
+   "item_level": 1620,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      1900,
+      0
+     ],
+     "medals": 400,
+     "mats": {
+      "Shards": 1800,
+      "Red": 80,
+      "Blue": 160,
+      "Leaps": 1
+     },
+     "bonus": {
+      "cost": 310,
+      "mats": {
+       "Shards": 1320,
+       "Red": 90,
+       "Blue": 180,
+       "Leaps": 2
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      4200,
+      0
+     ],
+     "medals": 550,
+     "mats": {
+      "Shards": 2100,
+      "Red": 110,
+      "Blue": 220,
+      "Leaps": 1,
+      "Special Leap": 1
+     },
+     "bonus": {
+      "cost": 700,
+      "mats": {
+       "Shards": 1900,
+       "Red": 160,
+       "Blue": 320,
+       "Leaps": 3,
+       "Special Leap": 1
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Overture: Spiral of the Crimson Midnight Sun",
+   "difficulty": "Solo",
+   "item_level": 1620,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      1900,
+      0
+     ],
+     "medals": 400,
+     "mats": {
+      "Shards": 1800,
+      "Red": 80,
+      "Blue": 160,
+      "Leaps": 1
+     },
+     "bonus": {
+      "cost": 310,
+      "mats": {
+       "Shards": 1320,
+       "Red": 90,
+       "Blue": 180,
+       "Leaps": 2
+      }
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      4200,
+      0
+     ],
+     "medals": 550,
+     "mats": {
+      "Shards": 2100,
+      "Red": 110,
+      "Blue": 220,
+      "Leaps": 1,
+      "Special Leap": 1
+     },
+     "bonus": {
+      "cost": 700,
+      "mats": {
+       "Shards": 1900,
+       "Red": 160,
+       "Blue": 320,
+       "Leaps": 3,
+       "Special Leap": 1
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "Ivory Tower of Chaos",
+   "difficulty": "Hard",
+   "item_level": 1610,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      1680,
+      420
+     ],
+     "medals": 200,
+     "mats": {},
+     "bonus": {
+      "cost": 350,
+      "mats": {}
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      1920,
+      480
+     ],
+     "medals": 250,
+     "mats": {},
+     "bonus": {
+      "cost": 500,
+      "mats": {}
+     }
+    },
+    {
+     "gate": 3,
+     "gold": [
+      0,
+      2160,
+      540
+     ],
+     "medals": 450,
+     "mats": {},
+     "bonus": {
+      "cost": 950,
+      "mats": {}
+     }
+    }
+   ]
+  },
+  {
+   "group": "Darkness Legion Commander",
+   "difficulty": "Normal",
+   "item_level": 1610,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      1600,
+      0
+     ],
+     "medals": 250,
+     "mats": {},
+     "bonus": {
+      "cost": 360,
+      "mats": {}
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      2000,
+      0
+     ],
+     "medals": 300,
+     "mats": {},
+     "bonus": {
+      "cost": 440,
+      "mats": {}
+     }
+    },
+    {
+     "gate": 3,
+     "gold": [
+      0,
+      2800,
+      0
+     ],
+     "medals": 500,
+     "mats": {},
+     "bonus": {
+      "cost": 640,
+      "mats": {}
+     }
+    }
+   ]
+  },
+  {
+   "group": "Darkness Legion Commander",
+   "difficulty": "Solo",
+   "item_level": 1610,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      1600,
+      0
+     ],
+     "medals": 250,
+     "mats": {},
+     "bonus": {
+      "cost": 360,
+      "mats": {}
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      2000,
+      0
+     ],
+     "medals": 300,
+     "mats": {},
+     "bonus": {
+      "cost": 440,
+      "mats": {}
+     }
+    },
+    {
+     "gate": 3,
+     "gold": [
+      0,
+      2800,
+      0
+     ],
+     "medals": 500,
+     "mats": {},
+     "bonus": {
+      "cost": 640,
+      "mats": {}
+     }
+    }
+   ]
+  },
+  {
+   "group": "Ivory Tower of Chaos",
+   "difficulty": "Normal",
+   "item_level": 1600,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      1100,
+      250
+     ],
+     "medals": 200,
+     "mats": {},
+     "bonus": {
+      "cost": 180,
+      "mats": {}
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      1400,
+      350
+     ],
+     "medals": 250,
+     "mats": {},
+     "bonus": {
+      "cost": 220,
+      "mats": {}
+     }
+    },
+    {
+     "gate": 3,
+     "gold": [
+      0,
+      1680,
+      420
+     ],
+     "medals": 450,
+     "mats": {},
+     "bonus": {
+      "cost": 300,
+      "mats": {}
+     }
+    }
+   ]
+  },
+  {
+   "group": "Ivory Tower of Chaos",
+   "difficulty": "Solo",
+   "item_level": 1600,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      1350,
+      0
+     ],
+     "medals": 0,
+     "mats": {},
+     "bonus": {
+      "cost": 180,
+      "mats": {}
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      1750,
+      0
+     ],
+     "medals": 0,
+     "mats": {},
+     "bonus": {
+      "cost": 220,
+      "mats": {}
+     }
+    },
+    {
+     "gate": 3,
+     "gold": [
+      0,
+      2100,
+      0
+     ],
+     "medals": 0,
+     "mats": {},
+     "bonus": {
+      "cost": 300,
+      "mats": {}
+     }
+    }
+   ]
+  },
+  {
+   "group": "Plague Legion Commander",
+   "difficulty": "Hard",
+   "item_level": 1600,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      1300,
+      200
+     ],
+     "medals": 150,
+     "mats": {},
+     "bonus": {
+      "cost": 300,
+      "mats": {}
+     }
+    },
+    {
+     "gate": 2,
+     "gold": [
+      0,
+      1640,
+      410
+     ],
+     "medals": 200,
+     "mats": {},
+     "bonus": {
+      "cost": 500,
+      "mats": {}
+     }
+    },
+    {
+     "gate": 3,
+     "gold": [
+      0,
+      1960,
+      490
+     ],
+     "medals": 400,
+     "mats": {},
+     "bonus": {
+      "cost": 700,
+      "mats": {}
+     }
+    }
+   ]
+  }
+ ],
+ "crucible": {
+  "start": "2026-07-15",
+  "end": "2027-02-03",
+  "stages": [
+   {
+    "stage": 1,
+    "opens": null,
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x5",
+      "options": [
+       {
+        "name": "Lava's Breath x5",
+        "bag": {
+         "Lava's Breath": 5
+        }
+       },
+       {
+        "name": "Glacier's Breath x15",
+        "bag": {
+         "Glacier's Breath": 15
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 500000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 1 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 1 x1",
+        "bag": {
+         "Shards": 37000,
+         "Red": 630,
+         "Blue": 4400,
+         "Leaps": 80
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 1 x1",
+        "bag": {
+         "Shards": 59000,
+         "Serca Red": 290,
+         "Serca Blue": 1900,
+         "Serca Leaps": 36
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "stage": 2,
+    "opens": null,
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x5",
+      "options": [
+       {
+        "name": "Lava's Breath x5",
+        "bag": {
+         "Lava's Breath": 5
+        }
+       },
+       {
+        "name": "Glacier's Breath x15",
+        "bag": {
+         "Glacier's Breath": 15
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 500000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 2 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 2 x1",
+        "bag": {
+         "Shards": 38000,
+         "Red": 640,
+         "Blue": 4500,
+         "Leaps": 85
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 2 x1",
+        "bag": {
+         "Shards": 60000,
+         "Serca Red": 300,
+         "Serca Blue": 2000,
+         "Serca Leaps": 37
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "stage": 3,
+    "opens": null,
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x5",
+      "options": [
+       {
+        "name": "Lava's Breath x5",
+        "bag": {
+         "Lava's Breath": 5
+        }
+       },
+       {
+        "name": "Glacier's Breath x15",
+        "bag": {
+         "Glacier's Breath": 15
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 500000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 3 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 3 x1",
+        "bag": {
+         "Shards": 39000,
+         "Red": 660,
+         "Blue": 4600,
+         "Leaps": 90
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 3 x1",
+        "bag": {
+         "Shards": 61000,
+         "Serca Red": 310,
+         "Serca Blue": 2100,
+         "Serca Leaps": 38
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "stage": 4,
+    "opens": "2026-07-22",
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x7",
+      "options": [
+       {
+        "name": "Lava's Breath x7",
+        "bag": {
+         "Lava's Breath": 7
+        }
+       },
+       {
+        "name": "Glacier's Breath x21",
+        "bag": {
+         "Glacier's Breath": 21
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 1000000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 4 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 4 x1",
+        "bag": {
+         "Shards": 40000,
+         "Red": 680,
+         "Blue": 4800,
+         "Leaps": 95
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 4 x1",
+        "bag": {
+         "Shards": 63000,
+         "Serca Red": 320,
+         "Serca Blue": 2200,
+         "Serca Leaps": 40
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "stage": 5,
+    "opens": "2026-07-29",
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x7",
+      "options": [
+       {
+        "name": "Lava's Breath x7",
+        "bag": {
+         "Lava's Breath": 7
+        }
+       },
+       {
+        "name": "Glacier's Breath x21",
+        "bag": {
+         "Glacier's Breath": 21
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 1000000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 5 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 5 x1",
+        "bag": {
+         "Shards": 41000,
+         "Red": 700,
+         "Blue": 5000,
+         "Leaps": 100
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 5 x1",
+        "bag": {
+         "Shards": 65000,
+         "Serca Red": 330,
+         "Serca Blue": 2300,
+         "Serca Leaps": 42
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "stage": 6,
+    "opens": "2026-08-05",
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x7",
+      "options": [
+       {
+        "name": "Lava's Breath x7",
+        "bag": {
+         "Lava's Breath": 7
+        }
+       },
+       {
+        "name": "Glacier's Breath x21",
+        "bag": {
+         "Glacier's Breath": 21
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 1000000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 6 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 6 x1",
+        "bag": {
+         "Shards": 44000,
+         "Red": 760,
+         "Blue": 5300,
+         "Leaps": 105
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 6 x1",
+        "bag": {
+         "Shards": 70000,
+         "Serca Red": 350,
+         "Serca Blue": 2450,
+         "Serca Leaps": 45
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "stage": 7,
+    "opens": "2026-08-12",
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x10",
+      "options": [
+       {
+        "name": "Lava's Breath x10",
+        "bag": {
+         "Lava's Breath": 10
+        }
+       },
+       {
+        "name": "Glacier's Breath x30",
+        "bag": {
+         "Glacier's Breath": 30
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 1500000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 7 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 7 x1",
+        "bag": {
+         "Shards": 48000,
+         "Red": 820,
+         "Blue": 5800,
+         "Leaps": 110
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 7 x1",
+        "bag": {
+         "Shards": 75000,
+         "Serca Red": 370,
+         "Serca Blue": 2600,
+         "Serca Leaps": 48
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "stage": 8,
+    "opens": "2026-08-19",
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x10",
+      "options": [
+       {
+        "name": "Lava's Breath x10",
+        "bag": {
+         "Lava's Breath": 10
+        }
+       },
+       {
+        "name": "Glacier's Breath x30",
+        "bag": {
+         "Glacier's Breath": 30
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 1500000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 8 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 8 x1",
+        "bag": {
+         "Shards": 52000,
+         "Red": 880,
+         "Blue": 6200,
+         "Leaps": 120
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 8 x1",
+        "bag": {
+         "Shards": 80000,
+         "Serca Red": 400,
+         "Serca Blue": 2800,
+         "Serca Leaps": 52
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "stage": 9,
+    "opens": "2026-08-26",
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x10",
+      "options": [
+       {
+        "name": "Lava's Breath x10",
+        "bag": {
+         "Lava's Breath": 10
+        }
+       },
+       {
+        "name": "Glacier's Breath x30",
+        "bag": {
+         "Glacier's Breath": 30
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 1500000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 9 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 9 x1",
+        "bag": {
+         "Shards": 56000,
+         "Red": 950,
+         "Blue": 6600,
+         "Leaps": 130
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 9 x1",
+        "bag": {
+         "Shards": 85000,
+         "Serca Red": 430,
+         "Serca Blue": 3000,
+         "Serca Leaps": 56
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "stage": 10,
+    "opens": "2026-09-02",
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x15",
+      "options": [
+       {
+        "name": "Lava's Breath x15",
+        "bag": {
+         "Lava's Breath": 15
+        }
+       },
+       {
+        "name": "Glacier's Breath x45",
+        "bag": {
+         "Glacier's Breath": 45
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 2000000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 10 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 10 x1",
+        "bag": {
+         "Shards": 60000,
+         "Red": 1000,
+         "Blue": 7200,
+         "Leaps": 140
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 10 x1",
+        "bag": {
+         "Shards": 90000,
+         "Serca Red": 470,
+         "Serca Blue": 3200,
+         "Serca Leaps": 60
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "stage": 11,
+    "opens": "2026-09-16",
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x15",
+      "options": [
+       {
+        "name": "Lava's Breath x15",
+        "bag": {
+         "Lava's Breath": 15
+        }
+       },
+       {
+        "name": "Glacier's Breath x45",
+        "bag": {
+         "Glacier's Breath": 45
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 2000000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 11 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 11 x1",
+        "bag": {
+         "Shards": 65000,
+         "Red": 1100,
+         "Blue": 7800,
+         "Leaps": 160
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 11 x1",
+        "bag": {
+         "Shards": 100000,
+         "Serca Red": 510,
+         "Serca Blue": 3400,
+         "Serca Leaps": 64
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "stage": 12,
+    "opens": "2026-09-30",
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x15",
+      "options": [
+       {
+        "name": "Lava's Breath x15",
+        "bag": {
+         "Lava's Breath": 15
+        }
+       },
+       {
+        "name": "Glacier's Breath x45",
+        "bag": {
+         "Glacier's Breath": 45
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 2000000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 12 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 12 x1",
+        "bag": {
+         "Shards": 70000,
+         "Red": 1200,
+         "Blue": 8400,
+         "Leaps": 180
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 12 x1",
+        "bag": {
+         "Shards": 110000,
+         "Serca Red": 550,
+         "Serca Blue": 3700,
+         "Serca Leaps": 70
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "stage": 13,
+    "opens": "2026-10-14",
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x15",
+      "options": [
+       {
+        "name": "Lava's Breath x15",
+        "bag": {
+         "Lava's Breath": 15
+        }
+       },
+       {
+        "name": "Glacier's Breath x45",
+        "bag": {
+         "Glacier's Breath": 45
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 2000000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 13 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 13 x1",
+        "bag": {
+         "Shards": 75000,
+         "Red": 1300,
+         "Blue": 9000,
+         "Leaps": 200
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 13 x1",
+        "bag": {
+         "Shards": 120000,
+         "Serca Red": 600,
+         "Serca Blue": 4000,
+         "Serca Leaps": 76
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "stage": 14,
+    "opens": "2026-10-28",
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x15",
+      "options": [
+       {
+        "name": "Lava's Breath x15",
+        "bag": {
+         "Lava's Breath": 15
+        }
+       },
+       {
+        "name": "Glacier's Breath x45",
+        "bag": {
+         "Glacier's Breath": 45
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 2000000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 14 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 14 x1",
+        "bag": {
+         "Shards": 80000,
+         "Red": 1400,
+         "Blue": 9600,
+         "Leaps": 220
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 14 x1",
+        "bag": {
+         "Shards": 130000,
+         "Serca Red": 650,
+         "Serca Blue": 4300,
+         "Serca Leaps": 82
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "stage": 15,
+    "opens": "2026-11-11",
+    "item_level": 1640,
+    "items": [
+     {
+      "name": "Honing Support Materials Selection Chest: Crucible x15",
+      "options": [
+       {
+        "name": "Lava's Breath x15",
+        "bag": {
+         "Lava's Breath": 15
+        }
+       },
+       {
+        "name": "Glacier's Breath x45",
+        "bag": {
+         "Glacier's Breath": 45
+        }
+       }
+      ]
+     },
+     {
+      "name": "Silver",
+      "options": [
+       {
+        "name": "Silver",
+        "bag": {
+         "Silver": 2000000
+        }
+       }
+      ]
+     },
+     {
+      "name": "Honing Material Selection Chest: Crucible Level 15 x1",
+      "options": [
+       {
+        "name": "T4 Honing Material Chest: Crucible Level 15 x1",
+        "bag": {
+         "Shards": 90000,
+         "Red": 1600,
+         "Blue": 10800,
+         "Leaps": 250
+        }
+       },
+       {
+        "name": "Thrilling Honing Material Chest: Crucible Level 15 x1",
+        "bag": {
+         "Shards": 150000,
+         "Serca Red": 750,
+         "Serca Blue": 4800,
+         "Serca Leaps": 90
+        }
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "playtime": [
+  {
+   "name": "Silver",
+   "options": [
+    {
+     "name": "Silver",
+     "bag": {
+      "Silver": 200000
+     }
+    }
+   ]
+  },
+  {
+   "name": "Destiny Destruction Stone Pouch II x1",
+   "options": [
+    {
+     "name": "Refined Obliteration Stone x300",
+     "bag": {}
+    },
+    {
+     "name": "Destiny Destruction Stone x150",
+     "bag": {
+      "Red": 150
+     }
+    },
+    {
+     "name": "Destiny Crystallized Destruction Stone x75",
+     "bag": {
+      "Serca Red": 75
+     }
+    }
+   ]
+  },
+  {
+   "name": "Destiny Guardian Stone Pouch II x2",
+   "options": [
+    {
+     "name": "Refined Protection Stone x600",
+     "bag": {}
+    },
+    {
+     "name": "Destiny Guardian Stone x300",
+     "bag": {
+      "Blue": 300
+     }
+    },
+    {
+     "name": "Destiny Crystallized Guardian Stone x150",
+     "bag": {
+      "Serca Blue": 150
+     }
+    }
+   ]
+  },
+  {
+   "name": "Honing Shard Selection Chest III x2",
+   "options": [
+    {
+     "name": "Honor Shard Pouch (M) x10",
+     "bag": {}
+    },
+    {
+     "name": "Destiny Shard Pouch (M) x2",
+     "bag": {
+      "Shards": 4000
+     }
+    }
+   ]
+  },
+  {
+   "name": "Honing Leapstone Selection Chest VIII x2",
+   "options": [
+    {
+     "name": "Radiant Honor Leapstone x40",
+     "bag": {}
+    },
+    {
+     "name": "Destiny Leapstone x20",
+     "bag": {
+      "Leaps": 20
+     }
+    },
+    {
+     "name": "Great Destiny Leapstone x10",
+     "bag": {
+      "Serca Leaps": 10
+     }
+    }
+   ]
+  },
+  {
+   "name": "Daily Honing Support Materials Selection Chest II x1",
+   "options": [
+    {
+     "name": "Solar Grace x10",
+     "bag": {}
+    },
+    {
+     "name": "Solar Blessing x5",
+     "bag": {}
+    },
+    {
+     "name": "Solar Protection x3",
+     "bag": {}
+    },
+    {
+     "name": "Glacier's Breath x3",
+     "bag": {
+      "Glacier's Breath": 3
+     }
+    },
+    {
+     "name": "Lava's Breath x1",
+     "bag": {
+      "Lava's Breath": 1
+     }
+    }
+   ]
+  }
+ ],
+ "weekly_mission": [
+  {
+   "name": "Weekly mission reward",
+   "options": [
+    {
+     "name": "Processed Chaos Stone Chest x1",
+     "bag": {}
+    },
+    {
+     "name": "Unidentified Lonesome Stone of Soaring x1, Soaring Stone Engraving Setting Kit x1",
+     "bag": {}
+    },
+    {
+     "name": "Lava's Breath x3",
+     "bag": {
+      "Lava's Breath": 3
+     }
+    },
+    {
+     "name": "Glacier's Breath x9",
+     "bag": {
+      "Glacier's Breath": 9
+     }
+    }
+   ]
+  }
+ ],
+ "shops": [
+  {
+   "shop": "Guild shop",
+   "name": "Destiny Destruction Stone x40",
+   "item_level": 1640,
+   "limit": 3,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 690,
+   "currency": "Sylmael Bloodstone",
+   "items": [
+    {
+     "name": "Destiny Destruction Stone",
+     "options": [
+      {
+       "name": "Destiny Destruction Stone",
+       "bag": {
+        "Red": 40
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Guild shop",
+   "name": "Destiny Crystallized Destruction Stone x40",
+   "item_level": 1730,
+   "limit": 3,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 690,
+   "currency": "Sylmael Bloodstone",
+   "items": [
+    {
+     "name": "Destiny Crystallized Destruction Stone",
+     "options": [
+      {
+       "name": "Destiny Crystallized Destruction Stone",
+       "bag": {
+        "Serca Red": 40
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Guild shop",
+   "name": "Destiny Guardian Stone x40",
+   "item_level": 1640,
+   "limit": 8,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 240,
+   "currency": "Sylmael Bloodstone",
+   "items": [
+    {
+     "name": "Destiny Guardian Stone",
+     "options": [
+      {
+       "name": "Destiny Guardian Stone",
+       "bag": {
+        "Blue": 40
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Guild shop",
+   "name": "Destiny Crystallized Guardian Stone x40",
+   "item_level": 1730,
+   "limit": 8,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 240,
+   "currency": "Sylmael Bloodstone",
+   "items": [
+    {
+     "name": "Destiny Crystallized Guardian Stone",
+     "options": [
+      {
+       "name": "Destiny Crystallized Guardian Stone",
+       "bag": {
+        "Serca Blue": 40
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Guild shop",
+   "name": "Tier 4 Breath Chest x1",
+   "item_level": 1640,
+   "limit": 3,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 670,
+   "currency": "Sylmael Bloodstone",
+   "items": [
+    {
+     "name": "Tier 4 Breath Chest x1",
+     "options": [
+      {
+       "name": "Tier 4 Breath Chest x1",
+       "bag": {
+        "Lava's Breath": 0.5,
+        "Glacier's Breath": 0.5
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Clear Medal shop",
+   "name": "T4 Metallurgy Selection Chest x1",
+   "item_level": 1620,
+   "limit": 3,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 600,
+   "currency": "Clear Medal",
+   "items": [
+    {
+     "name": "T4 Metallurgy Selection Chest x1",
+     "options": [
+      {
+       "name": "Metallurgy: Hellfire [11-14] x5",
+       "bag": {
+        "11-14 Weapon": 5
+       }
+      },
+      {
+       "name": "Metallurgy: Hellfire [15-18] x2",
+       "bag": {
+        "15-18 Weapon": 2
+       }
+      },
+      {
+       "name": "Metallurgy: Hellfire [19-20] x1",
+       "bag": {
+        "19-20 Weapon": 1
+       }
+      },
+      {
+       "name": "Artisan's Metallurgy: Level 1 x10",
+       "bag": {
+        "Scroll 1 Weapon": 10
+       }
+      },
+      {
+       "name": "Artisan's Metallurgy: Level 2 x5",
+       "bag": {
+        "Scroll 2 Weapon": 5
+       }
+      },
+      {
+       "name": "Artisan's Metallurgy: Level 3 x2",
+       "bag": {
+        "Scroll 3 Weapon": 2
+       }
+      },
+      {
+       "name": "Artisan's Metallurgy: Level 4 x1",
+       "bag": {
+        "Scroll 4 Weapon": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Clear Medal shop",
+   "name": "T4 Tailoring Selection Chest x1",
+   "item_level": 1620,
+   "limit": 15,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 200,
+   "currency": "Clear Medal",
+   "items": [
+    {
+     "name": "T4 Tailoring Selection Chest x1",
+     "options": [
+      {
+       "name": "Tailoring: Hellfire [11-14] x5",
+       "bag": {
+        "11-14 Armor": 5
+       }
+      },
+      {
+       "name": "Tailoring: Hellfire [15-18] x2",
+       "bag": {
+        "15-18 Armor": 2
+       }
+      },
+      {
+       "name": "Tailoring: Hellfire [19-20] x1",
+       "bag": {
+        "19-20 Armor": 1
+       }
+      },
+      {
+       "name": "Artisan's Tailoring: Level 1 x10",
+       "bag": {
+        "Scroll 1 Armor": 10
+       }
+      },
+      {
+       "name": "Artisan's Tailoring: Level 2 x5",
+       "bag": {
+        "Scroll 2 Armor": 5
+       }
+      },
+      {
+       "name": "Artisan's Tailoring: Level 3 x2",
+       "bag": {
+        "Scroll 3 Armor": 2
+       }
+      },
+      {
+       "name": "Artisan's Tailoring: Level 4 x1",
+       "bag": {
+        "Scroll 4 Armor": 1
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Clear Medal shop",
+   "name": "Destiny Destruction Stone Pouch x1",
+   "item_level": 1640,
+   "limit": 10,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 50,
+   "currency": "Clear Medal",
+   "items": [
+    {
+     "name": "Destiny Destruction Stone",
+     "options": [
+      {
+       "name": "Destiny Destruction Stone",
+       "bag": {
+        "Red": 200
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Clear Medal shop",
+   "name": "Destiny Guardian Stone Pouch x1",
+   "item_level": 1640,
+   "limit": 30,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 50,
+   "currency": "Clear Medal",
+   "items": [
+    {
+     "name": "Destiny Guardian Stone",
+     "options": [
+      {
+       "name": "Destiny Guardian Stone",
+       "bag": {
+        "Blue": 200
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Clear Medal shop",
+   "name": "Crystallized Destiny Destruction Stone Pouch x1",
+   "item_level": 1730,
+   "limit": 5,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 70,
+   "currency": "Clear Medal",
+   "items": [
+    {
+     "name": "Destiny Crystallized Destruction Stone",
+     "options": [
+      {
+       "name": "Destiny Crystallized Destruction Stone",
+       "bag": {
+        "Serca Red": 200
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Clear Medal shop",
+   "name": "Crystallized Destiny Guardian Stone Pouch x1",
+   "item_level": 1730,
+   "limit": 15,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 70,
+   "currency": "Clear Medal",
+   "items": [
+    {
+     "name": "Destiny Crystallized Guardian Stone",
+     "options": [
+      {
+       "name": "Destiny Crystallized Guardian Stone",
+       "bag": {
+        "Serca Blue": 200
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Clear Medal shop",
+   "name": "Destiny Leapstone Chest x1",
+   "item_level": 1640,
+   "limit": 10,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 50,
+   "currency": "Clear Medal",
+   "items": [
+    {
+     "name": "Destiny Leapstone",
+     "options": [
+      {
+       "name": "Destiny Leapstone",
+       "bag": {
+        "Leaps": 10
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Clear Medal shop",
+   "name": "Great Destiny Leapstone Chest x1",
+   "item_level": 1730,
+   "limit": 5,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 70,
+   "currency": "Clear Medal",
+   "items": [
+    {
+     "name": "Great Destiny Leapstone",
+     "options": [
+      {
+       "name": "Great Destiny Leapstone",
+       "bag": {
+        "Serca Leaps": 10
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Clear Medal shop",
+   "name": "Destiny Shard Pouch (S) x1",
+   "item_level": 1640,
+   "limit": 20,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 50,
+   "currency": "Clear Medal",
+   "items": [
+    {
+     "name": "Destiny Shard",
+     "options": [
+      {
+       "name": "Destiny Shard",
+       "bag": {
+        "Shards": 1000
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Clear Medal shop",
+   "name": "Abidos Fusion Material x10",
+   "item_level": 1640,
+   "limit": 10,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 50,
+   "currency": "Clear Medal",
+   "items": [
+    {
+     "name": "Abidos Fusion Material",
+     "options": [
+      {
+       "name": "Abidos Fusion Material",
+       "bag": {
+        "Fusion": 10
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Clear Medal shop",
+   "name": "Superior Abidos Fusion Material x10",
+   "item_level": 1730,
+   "limit": 5,
+   "weekly": true,
+   "per_roster": false,
+   "cost": 70,
+   "currency": "Clear Medal",
+   "items": [
+    {
+     "name": "Superior Abidos Fusion Material",
+     "options": [
+      {
+       "name": "Superior Abidos Fusion Material",
+       "bag": {
+        "Serca Fusion": 10
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Arktober Festival",
+   "name": "Honing Support Selection Chest III x1",
+   "item_level": 0,
+   "limit": 10,
+   "weekly": true,
+   "per_roster": true,
+   "cost": 10,
+   "currency": "Arktober Special Token",
+   "start": "2026-10-21",
+   "end": "2026-11-18",
+   "items": [
+    {
+     "name": "Honing Support Selection Chest III x1",
+     "options": [
+      {
+       "name": "Lava's Breath x3",
+       "bag": {
+        "Lava's Breath": 3
+       }
+      },
+      {
+       "name": "Glacier's Breath x9",
+       "bag": {
+        "Glacier's Breath": 9
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Arktober Festival",
+   "name": "Destiny Guardian Stone Pouch III x3",
+   "item_level": 0,
+   "limit": 15,
+   "weekly": true,
+   "per_roster": true,
+   "cost": 10,
+   "currency": "Arktober Special Token",
+   "start": "2026-10-21",
+   "end": "2026-11-18",
+   "items": [
+    {
+     "name": "Destiny Guardian Stone Pouch III x3",
+     "options": [
+      {
+       "name": "Destiny Guardian Stone x450",
+       "bag": {
+        "Blue": 450
+       }
+      },
+      {
+       "name": "Destiny Crystallized Guardian Stone x225",
+       "bag": {
+        "Serca Blue": 225
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Arktober Festival",
+   "name": "Destiny Destruction Stone Pouch III x1",
+   "item_level": 0,
+   "limit": 15,
+   "weekly": true,
+   "per_roster": true,
+   "cost": 10,
+   "currency": "Arktober Special Token",
+   "start": "2026-10-21",
+   "end": "2026-11-18",
+   "items": [
+    {
+     "name": "Destiny Destruction Stone Pouch III x1",
+     "options": [
+      {
+       "name": "Destiny Destruction Stone x150",
+       "bag": {
+        "Red": 150
+       }
+      },
+      {
+       "name": "Destiny Crystallized Destruction Stone x75",
+       "bag": {
+        "Serca Red": 75
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Arktober Festival",
+   "name": "Honing Fusion Material Selection Chest III x1",
+   "item_level": 0,
+   "limit": 15,
+   "weekly": true,
+   "per_roster": true,
+   "cost": 10,
+   "currency": "Arktober Special Token",
+   "start": "2026-10-21",
+   "end": "2026-11-18",
+   "items": [
+    {
+     "name": "Honing Fusion Material Selection Chest III x1",
+     "options": [
+      {
+       "name": "Abidos Fusion Material x10",
+       "bag": {
+        "Fusion": 10
+       }
+      },
+      {
+       "name": "Superior Abidos Fusion Material x5",
+       "bag": {
+        "Serca Fusion": 5
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Arktober Festival",
+   "name": "Destiny Shard Pouch (M) x1",
+   "item_level": 0,
+   "limit": 15,
+   "weekly": true,
+   "per_roster": true,
+   "cost": 5,
+   "currency": "Arktober Special Token",
+   "start": "2026-10-21",
+   "end": "2026-11-18",
+   "items": [
+    {
+     "name": "Destiny Shard",
+     "options": [
+      {
+       "name": "Destiny Shard",
+       "bag": {
+        "Shards": 2000
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "shop": "Arktober Festival",
+   "name": "Honing Leapstone Selection Chest IX x1",
+   "item_level": 0,
+   "limit": 15,
+   "weekly": true,
+   "per_roster": true,
+   "cost": 5,
+   "currency": "Arktober Special Token",
+   "start": "2026-10-21",
+   "end": "2026-11-18",
+   "items": [
+    {
+     "name": "Honing Leapstone Selection Chest IX x1",
+     "options": [
+      {
+       "name": "Destiny Leapstone x10",
+       "bag": {
+        "Leaps": 10
+       }
+      },
+      {
+       "name": "Great Destiny Leapstone x5",
+       "bag": {
+        "Serca Leaps": 5
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

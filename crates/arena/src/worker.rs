@@ -8,7 +8,8 @@ use crate::monte_carlo::{McRow, McSpec, check};
 use crate::scenario::Scenario;
 use cpu_time::ThreadTime;
 use hf_core::chest::ChestStates;
-use hf_core::optimizer::{Previous, scramble, solve};
+use hf_core::optimizer::lab::solve;
+use hf_core::optimizer::{Previous, scramble};
 use hf_core::probe::{COUNTER_NAMES, Probe};
 use hf_core::state::OneState;
 use hf_core::state_bundle::StateBundle;
@@ -262,12 +263,16 @@ pub fn main() {
 mod tests {
     use super::*;
     use crate::scenario::dummy;
+    use hf_core::optimizer::lab::{ALGOS, check};
 
-    fn short_solve(seed: u64) -> (f64, String) {
-        let mut state_bundle = StateBundle::init_from_payload(dummy().steps[0].clone());
+    fn short_solve(seed: u64, algo: &str, step: usize) -> (f64, String) {
+        let mut state_bundle = StateBundle::init_from_payload(dummy().steps[step].clone());
         state_bundle.tuning.max_iters = 300;
+        state_bundle.tuning.algo = algo.to_string();
+        state_bundle.tuning.lab_effort = 0.05;
         let mut rng = StdRng::seed_from_u64(seed);
         let best = solve(&mut rng, state_bundle, None, &mut Probe::default()).best;
+        assert_eq!(check::invalid(&best), None, "{algo}");
         (
             best.metric,
             serde_json::to_string(&Essence::of(&best)).unwrap(),
@@ -277,8 +282,22 @@ mod tests {
     /// comparing variants depends on a seed giving the same run every time
     #[test]
     fn a_seed_repeats_exactly() {
-        assert_eq!(short_solve(7), short_solve(7));
-        assert_ne!(short_solve(7).1, short_solve(8).1);
+        assert_eq!(short_solve(7, "", 0), short_solve(7, "", 0));
+        assert_ne!(short_solve(7, "", 0).1, short_solve(8, "", 0).1);
+    }
+
+    /// every lab algorithm repeats a seed and returns a valid state, on every dummy step
+    #[test]
+    fn lab_algos_repeat_and_are_valid() {
+        for algo in ALGOS {
+            for step in 0..dummy().steps.len() {
+                assert_eq!(
+                    short_solve(7, algo, step),
+                    short_solve(7, algo, step),
+                    "{algo}"
+                );
+            }
+        }
     }
 
     /// a plan put in a blob comes back onto the same upgrades as it was

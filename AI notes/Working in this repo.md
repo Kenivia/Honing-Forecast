@@ -36,6 +36,16 @@ the root as `concat!(env!("HF_ROOT"), "/scanner_setup/...")` for `include_str!`,
 arena's and scanner's `ROOT` (`env!("HF_ROOT")`) at runtime, never with chains of `../`. A build
 outside the repo (an archived copy) needs `.cargo/config.toml` with it.
 
+## rust-analyzer and `target/`
+
+`.vscode/settings.json` gives rust-analyzer its own `target/rust-analyzer`
+(`cargo.targetDir: true`), so its checks never hold the build lock CLI builds need. It also
+checks only the saved file's package (`check.workspace: false`): a workspace check rebuilds
+`hf-core` with codegen for `crates/wasm/build.rs` and reruns that precompute, about 35 s per
+`hf-core` save. Errors in dependent crates show only once you save a file there or build. VS Code
+does not watch `target/`. Cargo never removes stale builds: `target/` reached 35 GB with ~90
+copies of each crate before a `cargo clean` on 2026-10-27, so clean it again when it grows.
+
 ## Checks
 
 | Command              | What it covers                                                           |

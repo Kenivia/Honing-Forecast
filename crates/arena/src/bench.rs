@@ -74,7 +74,7 @@ pub fn run(scenarios: &[Scenario], args: &Args, tuning: &Tuning) {
                     let mut probe = Probe::default();
                     let mut rng = StdRng::seed_from_u64(seed);
                     let start = Instant::now();
-                    let solved = hf_core::optimizer::solve(&mut rng, base, None, &mut probe);
+                    let solved = hf_core::optimizer::lab::solve(&mut rng, base, None, &mut probe);
                     return vec![(
                         name.clone(),
                         solved.best.metric,

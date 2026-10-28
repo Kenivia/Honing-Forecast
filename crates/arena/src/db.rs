@@ -170,7 +170,7 @@ pub fn add_run(
     out: &StepResult,
     (metric_ref, gross, flow): (f64, f64, f64),
     samples: usize,
-) {
+) -> i64 {
     conn.execute(
         "INSERT INTO run(session_id, snapshot_id, variant, step_id, kind, source, seed, chained,
             tuning, cpu_s, wall_s, metric, metric_ref, state, blob_bytes, counters, gross, flow,
@@ -234,6 +234,7 @@ pub fn add_run(
         ])
         .unwrap();
     }
+    run_id
 }
 
 /// One re-plan of a path: what the plan carried over was worth and what the new one is.

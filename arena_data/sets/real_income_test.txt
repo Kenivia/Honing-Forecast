@@ -1,0 +1,23 @@
+# held out: income chains of real characters, now and 12 weeks ahead at the Income page's Auto income, half at streak length 1 (scripts/arena/export_real.test.ts); never tuned on
+realinc_04b85565_9357e8
+realinc_064b3304_174848
+realinc_07f47ad0_30bfd5
+realinc_08927991_ae7180
+realinc_0caa8c6c_7ffffe
+realinc_16ca4a20_ee3a64
+realinc_27a2bc40_d88533
+realinc_2f76be5b_d7fea5
+realinc_3fefdbd9_758400
+realinc_46b6a0d3_1ac5d5
+realinc_58923cff_1aa69d
+realinc_5ac2a762_70b77c
+realinc_8f8ac564_8bb1fc
+realinc_bbe1eb3e_92cf96
+realinc_bf435db3_c19c47
+realinc_c9ece293_193232
+realinc_cd27be97_38323a
+realinc_d3327186_9bed6c
+realinc_d4d89712_0a5e7b
+realinc_f667ab09_09d6aa
+realinc_f9392886_841654
+realinc_fbaad097_2f44e4

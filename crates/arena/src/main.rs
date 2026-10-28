@@ -115,6 +115,9 @@ enum Cmd {
         common: Common,
         #[arg(long, default_value_t = 5)]
         seeds: u64,
+        /// the seeds are first_seed..first_seed + seeds
+        #[arg(long, default_value_t = 0)]
+        first_seed: u64,
         #[arg(long, value_enum, default_value = "both")]
         mode: Mode,
         /// monte carlo check the result of the first seed
@@ -338,11 +341,21 @@ fn score(reference: &StateBundle, essence: &Essence) -> (f64, f64, f64) {
     )
 }
 
+/// Why a worker's state is not a plan the game allows, under the streak length it ran with.
+/// The evaluator scores some such states above any real plan.
+fn invalid(reference: &StateBundle, out: &StepResult) -> Option<String> {
+    let mut state_bundle = reference.clone();
+    state_bundle.tuning.streak_length = out.tuning["streak_length"].as_u64().unwrap_or(0) as usize;
+    out.essence.apply(&mut state_bundle);
+    hf_core::optimizer::lab::check::invalid(&state_bundle)
+        .map(|why| format!("invalid state: {why}"))
+}
+
 fn run_jobs(
     cli: &Cli,
     common: &Common,
     kind: Kind,
-    seeds: u64,
+    seeds: std::ops::Range<u64>,
     modes: &[bool],
     mc_first_seed: bool,
     resume: bool,
@@ -394,7 +407,7 @@ fn run_jobs(
     // that a session stopped early has covered every scenario about equally.
     let finished = db::finished_jobs(&conn, session_id);
     let mut jobs: Vec<(usize, usize, Job)> = Vec::new();
-    for seed in 0..seeds {
+    for seed in seeds.clone() {
         for (scenario_index, scenario) in scenarios.iter().enumerate() {
             for &chained in modes {
                 for (variant_index, variant) in variants.iter().enumerate() {
@@ -502,7 +515,15 @@ fn run_jobs(
             };
             for (out, metric_ref) in results.iter().zip(scored) {
                 key.step_id = step_ids[*scenario_index][out.step];
-                db::add_run(&transaction, &key, out, metric_ref, common.mc.samples);
+                let run_id = db::add_run(&transaction, &key, out, metric_ref, common.mc.samples);
+                if let Some(why) = invalid(&references[*scenario_index][out.step], out) {
+                    transaction
+                        .execute(
+                            "UPDATE run SET error = ?1 WHERE id = ?2",
+                            rusqlite::params![why, run_id],
+                        )
+                        .unwrap();
+                }
             }
             if !output.status.success() {
                 let last_step = results.last().map_or(0, |out| out.step);
@@ -612,6 +633,7 @@ fn main() {
         Cmd::Run {
             common,
             seeds,
+            first_seed,
             mode,
             mc,
             eps,
@@ -622,7 +644,8 @@ fn main() {
                 Mode::Chained => &[true],
                 Mode::Both => &[false, true],
             };
-            let session = run_jobs(&cli, common, Kind::Optimize, *seeds, modes, *mc, *resume);
+            let seeds = *first_seed..*first_seed + *seeds;
+            let session = run_jobs(&cli, common, Kind::Optimize, seeds, modes, *mc, *resume);
             let conn = db::open(&cli.db);
             let selection = Selection {
                 session: Some(session),
@@ -635,7 +658,7 @@ fn main() {
             let kind = Kind::Verify {
                 scrambles: *scrambles,
             };
-            let session = run_jobs(&cli, common, kind, 1, &[false], false, false);
+            let session = run_jobs(&cli, common, kind, 0..1, &[false], false, false);
             let conn = db::open(&cli.db);
             let selection = Selection {
                 session: Some(session),

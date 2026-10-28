@@ -117,6 +117,12 @@ pub struct Tuning {
     pub elites: usize,
     /// the carried plans that are polished, best first; the best of them is gone on from
     pub warm_polish: usize,
+
+    // optimizer lab (`optimizer/lab`)
+    /// the lab algorithm `optimizer::lab::solve` runs; empty for `solve`
+    pub algo: String,
+    /// what a lab algorithm scales its work by, 1 being about the CPU of `solve`
+    pub lab_effort: f64,
 }
 
 impl Default for Tuning {
@@ -175,6 +181,8 @@ impl Default for Tuning {
             quick_settle: 1e-3,
             elites: 0,
             warm_polish: 1,
+            algo: String::new(),
+            lab_effort: 1.0,
         }
     }
 }

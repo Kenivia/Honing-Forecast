@@ -1,6 +1,6 @@
 # Community
 
-What the community has on income per piece of content (Chaos Rift, Kurzan Front, Guardian Raid, cube, hourglass, hell, raid bonus loot): every site looked at, what it had or lacked, and its tables as read, so they can be cross-checked. Gathered 2026-10-25 and 10-26. Nothing here is used by the site yet.
+What the community has on income per piece of content (Chaos Rift, Kurzan Front, Guardian Raid, cube, hourglass, hell, raid bonus loot): every site looked at, what it had or lacked, and its tables as read, so they can be cross-checked. Gathered 2026-10-25 and 10-26. The Income page's Auto income uses Tylobic's Kurzan Front, rift and guardian rows and the cube and hourglass rows, copied into `frontend/Data/income_community.json` (`Screen scanner/Income.md`).
 
 ## Sites
 

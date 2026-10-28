@@ -2,7 +2,7 @@
 See `AI notes/Calculator core/Arena.md`, "Against a fixed baseline".
 
     python arena_data/diff_report.py 50,51 [--base v0] [--by n|kind|week] [--worst 10]
-        [--only text] [--like text] [--strip text]
+        [--only text] [--like text] [--strip text] [--db arena_data/lab/lab.sqlite]
 
 The sessions may be several; the baseline's runs are its cold ones in any of them, and a variant
 is compared with it on the seeds they share. `--only` keeps the scenarios whose name has the
@@ -20,10 +20,11 @@ ap.add_argument('--only', default='')
 ap.add_argument('--like', default='')
 ap.add_argument('--strip', default='')
 ap.add_argument('--eps', type=float, default=1e-4)
+ap.add_argument('--db', default='arena_data/arena.sqlite')
 args = ap.parse_args()
 EPS = args.eps
 sessions = [int(x) for x in args.sessions.split(',')]
-c = sqlite3.connect('file:arena_data/arena.sqlite?mode=ro', uri=True)
+c = sqlite3.connect(f'file:{args.db}?mode=ro', uri=True)
 marks = ','.join('?' * len(sessions))
 rows = c.execute(f"""select r.variant, r.chained, r.step_id, r.seed, r.metric_ref, r.flow, r.cpu_s, s.scenario, s.step,
     json_extract(r.counters, '$.StatesEvaluated')
@@ -105,6 +106,11 @@ for label in sorted(groups):
 print("diff: mean over seeds less the baseline's, positive is better; +/-: payloads better or worse by more than eps;")
 print("hit, x10, gap: against the best any run has reached, within eps and ten times it; spread: best seed less worst;")
 print("same: payloads whose seeds all agree; x, evals: cpu time and evaluations over the baseline's")
+
+# runs left out above: invalid states and workers that died
+for variant, count, invalid in c.execute(f"""select variant, count(*), sum(error like 'invalid state%') from run
+    where session_id in ({marks}) and kind = 'optimize' and error is not null group by variant""", sessions):
+    print(f"{variant}: {count} runs with an error, {invalid} of them invalid states")
 
 if args.worst:
     for variant in sorted(runs):

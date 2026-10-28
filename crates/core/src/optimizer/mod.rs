@@ -14,6 +14,7 @@
 //! Variants are compared with the arena (crates/arena): constants live in `Tuning`, and a
 //! code change is a snapshot of the working tree.
 
+pub mod lab;
 mod neighbour;
 mod one_batch;
 pub mod response;

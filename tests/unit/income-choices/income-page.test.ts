@@ -51,6 +51,10 @@ const open = () => {
   return wrapper;
 };
 const markers = () => wrapper.findAll('[aria-label="Snapshots"] button');
+const manual_button = () =>
+  wrapper
+    .findAll('[aria-label="Income mode"] button')
+    .find((button) => button.text() === "Manual");
 const text_of = (label: string) =>
   wrapper.find(`[aria-label="${label}"]`).text();
 const last_queue = () =>
@@ -195,7 +199,7 @@ describe("Income page", () => {
     add(NOW - 2 * WEEK_MS, 0);
     add(NOW - WEEK_MS, 70);
     open();
-    await wrapper.find('[aria-label="Manual income"]').trigger("change");
+    await manual_button().trigger("click");
     const profile = store.active_profile;
     expect(profile.income_manual).toBe(true);
     expect(profile.bound_income.Red).toBe(70);
@@ -211,7 +215,7 @@ describe("Income page", () => {
 
   it("manual income takes a thousands separator and is never negative", async () => {
     open();
-    await wrapper.find('[aria-label="Manual income"]').trigger("change");
+    await manual_button().trigger("click");
     await wrapper.find('input[aria-label="Red income"]').setValue("1,000");
     expect(store.roster_config.roster_income[store.active_profile.roster_id][1].Red).toBe(1000);
     await wrapper.find('input[aria-label="Red income"]').setValue("-5");
@@ -224,7 +228,7 @@ describe("Income page", () => {
     const profile = store.active_profile;
     profile.bound_income.Red = 3;
     open();
-    await wrapper.find('[aria-label="Manual income"]').trigger("change");
+    await manual_button().trigger("click");
     expect(profile.bound_income.Red).toBe(3);
     expect(profile.bound_income.Blue).toBe(0);
   });

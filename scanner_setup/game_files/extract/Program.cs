@@ -3,7 +3,7 @@ using LostArk.Archive.Core.Archives;
 // Decrypts the tables the scripts read out of the game's archives: extract <game folder> <output folder>
 var game = args[0];
 var output = args[1];
-string[] tables = ["Item", "GameMsg", "RandomBoxBase", "RandomBoxEntity", "DropBase", "DropEntity", "Money", "StagePerReward", "PaidActionCost", "ZoneEpicGate", "ContentsRequirement", "ItemEnhanceCommon", "ItemQualityOption", "ItemEnhanceMaterial", "TrinityInferno", "TrinityInfernoReward"];
+string[] tables = ["Item", "GameMsg", "RandomBoxBase", "RandomBoxEntity", "DropBase", "DropEntity", "Money", "StagePerReward", "PaidActionCost", "ZoneEpicGate", "ContentsRequirement", "ItemEnhanceCommon", "ItemQualityOption", "ItemEnhanceMaterial", "TrinityInferno", "TrinityInfernoReward", "TrinityDivine", "TrinityDivineEnergyPhase", "PCRoomDailyReward", "GuideWeeklyMissionReward", "DirectShop", "DirectShopMeta", "AcquireLimit", "ContentsSeason"];
 var wanted = tables.Select(table => $"TableData/EFTable_{table}.db").Append("XmlData/IconInfo.loa").ToArray();
 
 Directory.CreateDirectory(output);

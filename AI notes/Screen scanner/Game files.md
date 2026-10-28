@@ -8,7 +8,7 @@
 4. `python scanner_setup/templates/make_msg_pack.py` and `pnpm run wasm`, as for any change to the tables.
 5. `bonus_chests.py` writes `frontend/Data/bonus_chests.json`, the raids' bonus chests as choices for the Choices page ("Bonus chests" below). It needs only the tables.
 
-Two more read the same tables through `game.py` but live in `scripts/game_files/`: `honing.py` (the Serca honing constants, "Honing data in the game files" in `Calculator core/Domain model.md`) and `paradise.py`, which writes `frontend/Data/paradise.json` ("Paradise" below).
+Three more read the same tables through `game.py` but live in `scripts/game_files/`: `honing.py` (the Serca honing constants, "Honing data in the game files" in `Calculator core/Domain model.md`), `paradise.py`, which writes `frontend/Data/paradise.json` ("Paradise" below), and `income.py`, which writes `frontend/Data/income.json` ("Income in the client" below).
 
 `game.py` is what they share (`table`, `text`, `box`, `listed`, `icon_info`, `icon_art`, `load_index`). `find_icon.py` is for looking: it says which icon a slot in a capture is drawn with.
 
@@ -26,7 +26,7 @@ Claude Code will not run a downloaded exe on its own: `umodel_lostark_v7.exe` is
 
 ## What extract.py writes
 
-- **`scanner_setup/game_files/tables/`**: sixteen of the SQLite tables in `EFGame/data2.lpk`, decrypted, and `IconInfo.loa` from `data3.lpk`. The list is in `extract/Program.cs`; a script that needs another table has to add it there. The scripts open the `.db` files as they are (`game.table`).
+- **`scanner_setup/game_files/tables/`**: 24 of the SQLite tables in `EFGame/data2.lpk`, decrypted, and `IconInfo.loa` from `data3.lpk`. The list is in `extract/Program.cs`; a script that needs another table has to add it there. The scripts open the `.db` files as they are (`game.table`).
 - **`scanner_setup/game_files/atlas/`**: the textures of the `EFUI_IconAtlas_*` packages as PNG, in `<package>/Texture2D/<sheet>.png`. umodel takes a package by its real name only with `-nameresolve`; on disk the files have scrambled names.
 
 Vite watches the whole project, so big folders are in `server.watch.ignored` in `vite.config.ts` (`scanner_setup/game_files`, `scanner_setup/brightness`, `scanner_setup/codex`, `ignored`, `crates`, `target`).
@@ -127,7 +127,7 @@ Paradise is "Hell" in the client (`TrinityInferno*`), the sekwahar "hell_drops" 
 
 ## Income in the client
 
-Found 2026-10-26 in the full tables of the snapshot (nothing reads them yet; queries and outputs in `ignored/income_research_2026-10-26/gamefiles/`). Rates and amounts the client lacks are in `Game files tried.md`.
+Found 2026-10-26 in the full tables of the snapshot (queries and outputs in `ignored/income_research_2026-10-26/gamefiles/`). `income.py` reads the raid gates, the Crucible, the playtime reward, the weekly mission reward and the guild, Clear Medal and live event shops into `frontend/Data/income.json` for the Income page's Auto income (`Income.md`): an item is its options (a select-one chest one per pick, a random one its average), a gate its gold by band, Clear Medals, materials and bonus chest. The live event shops are listed by `DirectShopMeta` id in the script (`EVENT_SHOPS`), so a new event needs adding there. Rates and amounts the client lacks are in `Game files tried.md`.
 
 - **Raid clear rewards**: `StagePerReward.RewardDropIndex` (the free clear), `UnlimitRewardDropIndex` (accessories, ability stones, bracelets on every clear), `FirstClearRewardDropIndex`. **A gold entity's band is `DropEntity.NormalType`**: 2 tradable, 4 roster bound, 5 character bound (inferred, but it matches the community sheet on every gate). The weekly limit of 3 gold raids per character is `ZoneEpicGate.GoldRewardGroupId` 50001 / `GoldRewardGroupLimitCount`; the 6 gold-earning characters are in `GameMsg` text only.
 - **Paradise Hell's rules**: descents per key `TrinityInferno.JumpCount` (5 / 6 / 7), Destiny key transmutes `TrinityInfernoKeyTrans`, per-floor altars and the 63% risky descent every 10 floors `TrinityInfernoEvent`, altar effect weights `TrinityInfernoLucky` (which number is which effect is not stored), Wealth chance `TrinityInfernoReward.PlentyPropRatio` 10. Descents are uniform 1–20 by `GameMsg`. Enough to simulate the level a run ends on, except the risky descent's size.
