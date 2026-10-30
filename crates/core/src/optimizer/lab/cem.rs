@@ -1,5 +1,5 @@
 //! Cross-entropy method: a probability model over the decisions, sampled in batches and refit
-//! to the best of each batch, then polished by best responses. See `arena_data/lab/attempts/cem.md`.
+//! to the best of each batch, then polished by best responses. See `arena_data/lab/iteration1/attempts/cem.md`.
 
 use super::super::response::{Model, Response};
 use super::super::{Previous, Solved};

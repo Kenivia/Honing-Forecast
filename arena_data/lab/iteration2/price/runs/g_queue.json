@@ -1,0 +1,47 @@
+[
+ {
+  "name": "g_real",
+  "note": "held-out real singles",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set real_test run i2c:kick_stall=32,kick_types=window i2c:kick_stall=32,kick_types=chest i2c:kick_stall=32,kick_types=adv i2c:kick_stall=32,kick_types=piece i2c:kick_stall=8 i2c:kick_stall=96 i2c:max_iters=24000,kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kwindow --mode cold --seeds 10 --jobs 16 --resume"
+ },
+ {
+  "name": "g_quick",
+  "note": "order basins (chain_0017, single_3300)",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set quick_dev run i2c:kick_stall=32,kick_types=window i2c:kick_stall=32,kick_types=chest i2c:kick_stall=32,kick_types=adv i2c:kick_stall=32,kick_types=piece i2c:kick_stall=8 i2c:kick_stall=96 i2c:max_iters=24000,kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kwindow --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "g_speed",
+  "note": "serca lone upgrades, order basins",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set speed_test run i2c:kick_stall=32,kick_types=window i2c:kick_stall=32,kick_types=chest i2c:kick_stall=32,kick_types=adv i2c:kick_stall=32,kick_types=piece i2c:kick_stall=8 i2c:kick_stall=96 i2c:max_iters=24000,kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kwindow --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "g_advanced",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set advanced run i2c:kick_stall=32,kick_types=window i2c:kick_stall=32,kick_types=chest i2c:kick_stall=32,kick_types=adv i2c:kick_stall=32,kick_types=piece i2c:kick_stall=8 i2c:kick_stall=96 i2c:max_iters=24000,kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kwindow --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "g_free_taps",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set free_taps run i2c:kick_stall=32,kick_types=window i2c:kick_stall=32,kick_types=chest i2c:kick_stall=32,kick_types=adv i2c:kick_stall=32,kick_types=piece i2c:kick_stall=8 i2c:kick_stall=96 i2c:max_iters=24000,kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kwindow --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "g_juice",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set juice run i2c:kick_stall=32,kick_types=window i2c:kick_stall=32,kick_types=chest i2c:kick_stall=32,kick_types=adv i2c:kick_stall=32,kick_types=piece i2c:kick_stall=8 i2c:kick_stall=96 i2c:max_iters=24000,kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kwindow --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "g_small",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set small run i2c:kick_stall=32,kick_types=window i2c:kick_stall=32,kick_types=chest i2c:kick_stall=32,kick_types=adv i2c:kick_stall=32,kick_types=piece i2c:kick_stall=8 i2c:kick_stall=96 i2c:max_iters=24000,kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kwindow --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "g_large",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set large run i2c:kick_stall=32,kick_types=window i2c:kick_stall=32,kick_types=chest i2c:kick_stall=32,kick_types=adv i2c:kick_stall=32,kick_types=piece i2c:kick_stall=8 i2c:kick_stall=96 i2c:max_iters=24000,kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kwindow --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "g_income",
+  "note": "held-out real income chains, seeds 0-2",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set real_income_test run i2c:kick_stall=32,kick_types=window i2c:kick_stall=32,kick_types=chest i2c:kick_stall=32,kick_types=adv i2c:kick_stall=32,kick_types=piece i2c:kick_stall=8 i2c:kick_stall=96 i2c:max_iters=24000,kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kwindow --mode chained --seeds 3 --jobs 16 --resume"
+ }
+]

@@ -10,7 +10,7 @@
 //! the prices or the state. The true metric checks every proposal before it is kept, and the
 //! true best response polishes where the surrogate has nothing better; the last share of the
 //! budget also tries wider responses and single block flips ranked by the true response.
-//! See `arena_data/lab/attempts/surrogate.md`.
+//! See `arena_data/lab/iteration1/attempts/surrogate.md`.
 
 use super::evaluate;
 use crate::advanced_honing::utils::MAX_ADV_STATE;

@@ -35,7 +35,13 @@ Things worth knowing about its shape:
 5. **Leaving early**: once `agree_exit` results have ended on the same metric, or once the first `unanimous` have and none elsewhere; or, going on from a plan (below), once `carry_stall` chains in a row have not bettered it. Too few agreeing chains leave on a plan that is reliably not the best on small payloads.
 6. **Merge** (`merge`): the best chain's result takes from each other chain's, where the metric agrees, its free tap order, its plans for a whole piece type (they share juices and books), and its plan for each upgrade.
 7. **Exchange** (`exchange`, in `refine`): uses of a juice or a book go from one upgrade to another that takes the same, in growing amounts: the last taps that take it of the one, the first that do not of the other. Then the polishes again, and again while it moves anything. Under a streak length (`exchange_blocks`) the amounts are blocks, and both plans are put back on the grid (`State::snap_to_block`) before the metric decides.
-8. **Order kicks** (`order_kicks`, off): a window of the best state's free tap order is shuffled and polished, and the result is kept where better; this many times. A lab experiment (`Optimizer lab.md`, iteration 2); it did nothing, so it is left off.
+8. **Kick loop** (`kick_loop`, off: `kick_stall` 0): the best state takes a kick, is polished, and the result is kept where better, until `kick_stall` kicks in a row gain nothing. The kicks (`kick_types`) are taken at random:
+   - `window`: a window of the free tap order, starting within the free taps' reach, is shuffled, and the upgrades in it are re-planned (responses) before the polish. Without that re-plan, `order_polish` puts them straight back. They are taken before the evaluation, since that cleans the order.
+   - `chest`: a stack is opened at random.
+   - `adv`: an advanced upgrade gets a random plan.
+   - `piece`: a piece type's normal upgrades all take their response at once.
+
+   At 32 it loses no payload. It reaches order basins that the chains miss, at x1.2–2.3 the CPU. A lab result (`Optimizer lab results.md`), not yet on.
 
 A chained run (`Previous`, see "Chained runs") puts the plan of the run before in front of all this.
 
@@ -83,7 +89,7 @@ Inside a response:
 
 - **One id a pool, then two** (`response_mixed`, on): the search over every plan keeps to one id a pool. From what it finds, or from the plan the upgrade has where that is better, each pool then takes its best taps with any two of its ids, a tap taking either (`improve`), where the table fits. A regular book on the first taps and an enhanced one after is the usual case; without it a state with such a plan is one the responses cannot keep.
 - **`response_joint`**: an upgrade with two pools is searched over both at once while that is at most this many steps, and pool by pool from its plan past that (`Response::improve`).
-- **`response_points`**: where the lattice does not answer, what an amount of a material is worth is taken at that many amounts and joined by lines. Default 128. At 16, the lines picked the wrong plan for some lone upgrades, by up to 0.96% of flow. Raising it costs no measurable CPU (`arena_data/lab/iteration2/findings.md`).
+- **`response_points`**: where the lattice does not answer, what an amount of a material is worth is taken at that many amounts and joined by lines. Default 128. At 16, the lines picked the wrong plan for some lone upgrades, by up to 0.96% of flow. Raising it costs no measurable CPU (`arena_data/lab/iteration2/price/report.md`).
 - The recursion's table is kept between responses in a thread local, stamped, because most of it is never reached and clearing it was most of a response.
 
 ## Streak length

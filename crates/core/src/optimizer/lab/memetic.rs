@@ -2,7 +2,7 @@
 //! structure (piece types, pieces or upgrades with their free tap places, chest stacks), each
 //! improved by a short local search (best responses, advanced, order and chest moves) before it
 //! competes by crowding; restarts by prices when it converges, the best polished in between.
-//! See `arena_data/lab/attempts/memetic.md`.
+//! See `arena_data/lab/iteration1/attempts/memetic.md`.
 
 use super::check;
 use crate::advanced_honing::utils::MAX_ADV_STATE;

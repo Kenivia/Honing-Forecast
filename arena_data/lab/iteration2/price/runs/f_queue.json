@@ -1,0 +1,47 @@
+[
+ {
+  "name": "f_real",
+  "note": "held-out real singles",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set real_test run i2c:kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=chestboth i2c:algo=price,lab_effort=1,lab_off=kchest i2c:algo=price,lab_effort=1,lab_off=kadv i2c:algo=price,lab_effort=1,lab_off=kexchange i2c:algo=price,lab_effort=1,lab_off=kpiece i2c:algo=price,lab_effort=1,lab_off=kperturb i2c:algo=price,lab_effort=1,lab_on=fromsolve i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices --mode cold --seeds 10 --jobs 16 --resume"
+ },
+ {
+  "name": "f_quick",
+  "note": "order basins (chain_0017, single_3300)",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set quick_dev run i2c:kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=chestboth i2c:algo=price,lab_effort=1,lab_off=kchest i2c:algo=price,lab_effort=1,lab_off=kadv i2c:algo=price,lab_effort=1,lab_off=kexchange i2c:algo=price,lab_effort=1,lab_off=kpiece i2c:algo=price,lab_effort=1,lab_off=kperturb i2c:algo=price,lab_effort=1,lab_on=fromsolve i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "f_speed",
+  "note": "serca lone upgrades, order basins",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set speed_test run i2c:kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=chestboth i2c:algo=price,lab_effort=1,lab_off=kchest i2c:algo=price,lab_effort=1,lab_off=kadv i2c:algo=price,lab_effort=1,lab_off=kexchange i2c:algo=price,lab_effort=1,lab_off=kpiece i2c:algo=price,lab_effort=1,lab_off=kperturb i2c:algo=price,lab_effort=1,lab_on=fromsolve i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "f_advanced",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set advanced run i2c:kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=chestboth i2c:algo=price,lab_effort=1,lab_off=kchest i2c:algo=price,lab_effort=1,lab_off=kadv i2c:algo=price,lab_effort=1,lab_off=kexchange i2c:algo=price,lab_effort=1,lab_off=kpiece i2c:algo=price,lab_effort=1,lab_off=kperturb i2c:algo=price,lab_effort=1,lab_on=fromsolve i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "f_free_taps",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set free_taps run i2c:kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=chestboth i2c:algo=price,lab_effort=1,lab_off=kchest i2c:algo=price,lab_effort=1,lab_off=kadv i2c:algo=price,lab_effort=1,lab_off=kexchange i2c:algo=price,lab_effort=1,lab_off=kpiece i2c:algo=price,lab_effort=1,lab_off=kperturb i2c:algo=price,lab_effort=1,lab_on=fromsolve i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "f_juice",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set juice run i2c:kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=chestboth i2c:algo=price,lab_effort=1,lab_off=kchest i2c:algo=price,lab_effort=1,lab_off=kadv i2c:algo=price,lab_effort=1,lab_off=kexchange i2c:algo=price,lab_effort=1,lab_off=kpiece i2c:algo=price,lab_effort=1,lab_off=kperturb i2c:algo=price,lab_effort=1,lab_on=fromsolve i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "f_small",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set small run i2c:kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=chestboth i2c:algo=price,lab_effort=1,lab_off=kchest i2c:algo=price,lab_effort=1,lab_off=kadv i2c:algo=price,lab_effort=1,lab_off=kexchange i2c:algo=price,lab_effort=1,lab_off=kpiece i2c:algo=price,lab_effort=1,lab_off=kperturb i2c:algo=price,lab_effort=1,lab_on=fromsolve i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "f_large",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set large run i2c:kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=chestboth i2c:algo=price,lab_effort=1,lab_off=kchest i2c:algo=price,lab_effort=1,lab_off=kadv i2c:algo=price,lab_effort=1,lab_off=kexchange i2c:algo=price,lab_effort=1,lab_off=kpiece i2c:algo=price,lab_effort=1,lab_off=kperturb i2c:algo=price,lab_effort=1,lab_on=fromsolve i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "f_income",
+  "note": "held-out real income chains, seeds 0-2",
+  "cmd": "target\\arena\\bin\\i2c.exe --db arena_data/lab/iteration2/i2.sqlite --set real_income_test run i2c:kick_stall=32 i2c:algo=price,lab_effort=1,lab_on=chestboth i2c:algo=price,lab_effort=1,lab_off=kchest i2c:algo=price,lab_effort=1,lab_off=kadv i2c:algo=price,lab_effort=1,lab_off=kexchange i2c:algo=price,lab_effort=1,lab_off=kpiece i2c:algo=price,lab_effort=1,lab_off=kperturb i2c:algo=price,lab_effort=1,lab_on=fromsolve i2c:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices --mode chained --seeds 3 --jobs 16 --resume"
+ }
+]

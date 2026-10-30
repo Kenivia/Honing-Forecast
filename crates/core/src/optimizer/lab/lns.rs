@@ -4,7 +4,7 @@
 //! gives) and rebuild it jointly with the rest fixed: an emptied start, a noisy price start, or
 //! a ladder of prices whose plans are combined, then best responses in turn until none moves.
 //! Record-to-record acceptance; neighbourhoods weighted by what they gain for their work.
-//! See `arena_data/lab/attempts/lns.md`.
+//! See `arena_data/lab/iteration1/attempts/lns.md`.
 
 use super::{check, evaluate};
 use crate::advanced_honing::utils::MAX_ADV_STATE;

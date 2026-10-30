@@ -2,7 +2,7 @@
 See `AI notes/Calculator core/Arena.md`, "Against a fixed baseline".
 
     python arena_data/diff_report.py 50,51 [--base v0] [--by n|kind|week] [--worst 10]
-        [--only text] [--like text] [--strip text] [--db arena_data/lab/iteration1/rerun.sqlite]
+        [--only text] [--like text] [--strip text] [--db arena_data/lab/runs.sqlite]
 
 The sessions may be several; the baseline's runs are its cold ones in any of them, and a variant
 is compared with it on the seeds they share. `--only` keeps the scenarios whose name has the

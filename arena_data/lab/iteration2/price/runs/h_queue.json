@@ -1,0 +1,47 @@
+[
+ {
+  "name": "h_real",
+  "note": "held-out real singles",
+  "cmd": "target\\arena\\bin\\i2d.exe --db arena_data/lab/iteration2/i2.sqlite --set real_test run i2d:kick_stall=32,kick_types=windowr i2d:kick_stall=32,kick_types=windowr+chest+adv+piece --mode cold --seeds 10 --jobs 16 --resume"
+ },
+ {
+  "name": "h_quick",
+  "note": "order basins",
+  "cmd": "target\\arena\\bin\\i2d.exe --db arena_data/lab/iteration2/i2.sqlite --set quick_dev run i2d:kick_stall=32,kick_types=windowr i2d:kick_stall=32,kick_types=windowr+chest+adv+piece --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "h_speed",
+  "note": "order basins",
+  "cmd": "target\\arena\\bin\\i2d.exe --db arena_data/lab/iteration2/i2.sqlite --set speed_test run i2d:kick_stall=32,kick_types=windowr i2d:kick_stall=32,kick_types=windowr+chest+adv+piece --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "h_advanced",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2d.exe --db arena_data/lab/iteration2/i2.sqlite --set advanced run i2d:kick_stall=32,kick_types=windowr i2d:kick_stall=32,kick_types=windowr+chest+adv+piece --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "h_free_taps",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2d.exe --db arena_data/lab/iteration2/i2.sqlite --set free_taps run i2d:kick_stall=32,kick_types=windowr i2d:kick_stall=32,kick_types=windowr+chest+adv+piece --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "h_juice",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2d.exe --db arena_data/lab/iteration2/i2.sqlite --set juice run i2d:kick_stall=32,kick_types=windowr i2d:kick_stall=32,kick_types=windowr+chest+adv+piece --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "h_small",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2d.exe --db arena_data/lab/iteration2/i2.sqlite --set small run i2d:kick_stall=32,kick_types=windowr i2d:kick_stall=32,kick_types=windowr+chest+adv+piece --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "h_large",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2d.exe --db arena_data/lab/iteration2/i2.sqlite --set large run i2d:kick_stall=32,kick_types=windowr i2d:kick_stall=32,kick_types=windowr+chest+adv+piece --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "h_income",
+  "note": "income chains",
+  "cmd": "target\\arena\\bin\\i2d.exe --db arena_data/lab/iteration2/i2.sqlite --set real_income_test run i2d:kick_stall=32,kick_types=windowr i2d:kick_stall=32,kick_types=windowr+chest+adv+piece --mode chained --seeds 3 --jobs 16 --resume"
+ }
+]
