@@ -19,6 +19,7 @@ use smallvec::smallvec;
 
 use priority_queue::DoublePriorityQueue;
 use rand::Rng;
+use rand::seq::SliceRandom;
 use std::collections::BTreeMap;
 
 use super::one_batch::SolverStateBundle;
@@ -648,6 +649,9 @@ pub fn solve<R: Rng>(
     let mut best = results[0].clone();
     let merged = tuning.merge && merge(&mut best, &results[1..], probe);
     refine(rng, &mut best, merged, probe);
+    if tuning.order_kicks > 0 {
+        order_kicks(rng, &mut best, probe);
+    }
     best.tuning = tuning;
     // the other plans the chains ended on, for a run that goes on from this one
     let mut elites: Vec<&StateBundle> = Vec::new();
@@ -686,6 +690,27 @@ fn refine<R: Rng>(rng: &mut R, best: &mut StateBundle, mut moved: bool, probe: &
             break;
         }
         moved = false;
+    }
+}
+
+/// Kicks of the best state's free tap order, a window of it shuffled, each polished and kept
+/// where better (`Tuning::order_kicks`).
+fn order_kicks<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
+    let len = best.special_state.len();
+    if len < 2 || !best.affords_a_free_tap() {
+        return;
+    }
+    for _ in 0..best.tuning.order_kicks {
+        let mut kicked = best.clone();
+        let at = rng.random_range(0..len - 1);
+        let end = (at + 2 + rng.random_range(0..4)).min(len);
+        kicked.special_state[at..end].shuffle(rng);
+        kicked.tuning.max_iters = 0;
+        kicked.metric = kicked.metric_router(probe);
+        let polished = anneal(rng, &mut kicked, probe, 1, 1, f64::NEG_INFINITY);
+        if polished.metric > best.metric + best.metric.abs() * 1e-12 {
+            *best = polished;
+        }
     }
 }
 

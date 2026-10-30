@@ -1,0 +1,97 @@
+[
+ {
+  "name": "r_real",
+  "note": "held-out real singles, seeds 0-9",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set real_test run lab_r1:max_iters=6000 lab_r1:max_iters=12000 lab_r1:max_iters=24000 lab_r1 lab_r1:max_iters=96000 lab_r1:response_points=16 lab_r1:algo=price,lab_effort=0.125 lab_r1:algo=price,lab_effort=0.25 lab_r1:algo=price,lab_effort=0.5 lab_r1:algo=price,lab_effort=1 lab_r1:algo=price,lab_effort=2 lab_r1:algo=surrogate,lab_effort=0.125 lab_r1:algo=surrogate,lab_effort=0.25 lab_r1:algo=surrogate,lab_effort=0.5 lab_r1:algo=surrogate,lab_effort=1 lab_r1:algo=surrogate,lab_effort=2 lab_r1:algo=memetic,lab_effort=0.125 lab_r1:algo=memetic,lab_effort=0.25 lab_r1:algo=memetic,lab_effort=0.5 lab_r1:algo=memetic,lab_effort=1 lab_r1:algo=memetic,lab_effort=2 lab_r1:algo=cem,lab_effort=0.125 lab_r1:algo=cem,lab_effort=0.25 lab_r1:algo=cem,lab_effort=0.5 lab_r1:algo=cem,lab_effort=1 lab_r1:algo=cem,lab_effort=2 lab_r1:algo=lns,lab_effort=0.125 lab_r1:algo=lns,lab_effort=0.25 lab_r1:algo=lns,lab_effort=0.5 lab_r1:algo=lns,lab_effort=1 lab_r1:algo=lns,lab_effort=2 --mode cold --seeds 10 --jobs 16 --resume"
+ },
+ {
+  "name": "r_small",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set small run lab_r1:max_iters=6000 lab_r1:max_iters=12000 lab_r1:max_iters=24000 lab_r1 lab_r1:max_iters=96000 lab_r1:response_points=16 lab_r1:algo=price,lab_effort=0.125 lab_r1:algo=price,lab_effort=0.25 lab_r1:algo=price,lab_effort=0.5 lab_r1:algo=price,lab_effort=1 lab_r1:algo=price,lab_effort=2 lab_r1:algo=surrogate,lab_effort=0.125 lab_r1:algo=surrogate,lab_effort=0.25 lab_r1:algo=surrogate,lab_effort=0.5 lab_r1:algo=surrogate,lab_effort=1 lab_r1:algo=surrogate,lab_effort=2 lab_r1:algo=memetic,lab_effort=0.125 lab_r1:algo=memetic,lab_effort=0.25 lab_r1:algo=memetic,lab_effort=0.5 lab_r1:algo=memetic,lab_effort=1 lab_r1:algo=memetic,lab_effort=2 lab_r1:algo=cem,lab_effort=0.125 lab_r1:algo=cem,lab_effort=0.25 lab_r1:algo=cem,lab_effort=0.5 lab_r1:algo=cem,lab_effort=1 lab_r1:algo=cem,lab_effort=2 lab_r1:algo=lns,lab_effort=0.125 lab_r1:algo=lns,lab_effort=0.25 lab_r1:algo=lns,lab_effort=0.5 lab_r1:algo=lns,lab_effort=1 lab_r1:algo=lns,lab_effort=2 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "r_advanced",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set advanced run lab_r1:max_iters=6000 lab_r1:max_iters=12000 lab_r1:max_iters=24000 lab_r1 lab_r1:max_iters=96000 lab_r1:response_points=16 lab_r1:algo=price,lab_effort=0.125 lab_r1:algo=price,lab_effort=0.25 lab_r1:algo=price,lab_effort=0.5 lab_r1:algo=price,lab_effort=1 lab_r1:algo=price,lab_effort=2 lab_r1:algo=surrogate,lab_effort=0.125 lab_r1:algo=surrogate,lab_effort=0.25 lab_r1:algo=surrogate,lab_effort=0.5 lab_r1:algo=surrogate,lab_effort=1 lab_r1:algo=surrogate,lab_effort=2 lab_r1:algo=memetic,lab_effort=0.125 lab_r1:algo=memetic,lab_effort=0.25 lab_r1:algo=memetic,lab_effort=0.5 lab_r1:algo=memetic,lab_effort=1 lab_r1:algo=memetic,lab_effort=2 lab_r1:algo=cem,lab_effort=0.125 lab_r1:algo=cem,lab_effort=0.25 lab_r1:algo=cem,lab_effort=0.5 lab_r1:algo=cem,lab_effort=1 lab_r1:algo=cem,lab_effort=2 lab_r1:algo=lns,lab_effort=0.125 lab_r1:algo=lns,lab_effort=0.25 lab_r1:algo=lns,lab_effort=0.5 lab_r1:algo=lns,lab_effort=1 lab_r1:algo=lns,lab_effort=2 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "r_juice",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set juice run lab_r1:max_iters=6000 lab_r1:max_iters=12000 lab_r1:max_iters=24000 lab_r1 lab_r1:max_iters=96000 lab_r1:response_points=16 lab_r1:algo=price,lab_effort=0.125 lab_r1:algo=price,lab_effort=0.25 lab_r1:algo=price,lab_effort=0.5 lab_r1:algo=price,lab_effort=1 lab_r1:algo=price,lab_effort=2 lab_r1:algo=surrogate,lab_effort=0.125 lab_r1:algo=surrogate,lab_effort=0.25 lab_r1:algo=surrogate,lab_effort=0.5 lab_r1:algo=surrogate,lab_effort=1 lab_r1:algo=surrogate,lab_effort=2 lab_r1:algo=memetic,lab_effort=0.125 lab_r1:algo=memetic,lab_effort=0.25 lab_r1:algo=memetic,lab_effort=0.5 lab_r1:algo=memetic,lab_effort=1 lab_r1:algo=memetic,lab_effort=2 lab_r1:algo=cem,lab_effort=0.125 lab_r1:algo=cem,lab_effort=0.25 lab_r1:algo=cem,lab_effort=0.5 lab_r1:algo=cem,lab_effort=1 lab_r1:algo=cem,lab_effort=2 lab_r1:algo=lns,lab_effort=0.125 lab_r1:algo=lns,lab_effort=0.25 lab_r1:algo=lns,lab_effort=0.5 lab_r1:algo=lns,lab_effort=1 lab_r1:algo=lns,lab_effort=2 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "r_free_taps",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set free_taps run lab_r1:max_iters=6000 lab_r1:max_iters=12000 lab_r1:max_iters=24000 lab_r1 lab_r1:max_iters=96000 lab_r1:response_points=16 lab_r1:algo=price,lab_effort=0.125 lab_r1:algo=price,lab_effort=0.25 lab_r1:algo=price,lab_effort=0.5 lab_r1:algo=price,lab_effort=1 lab_r1:algo=price,lab_effort=2 lab_r1:algo=surrogate,lab_effort=0.125 lab_r1:algo=surrogate,lab_effort=0.25 lab_r1:algo=surrogate,lab_effort=0.5 lab_r1:algo=surrogate,lab_effort=1 lab_r1:algo=surrogate,lab_effort=2 lab_r1:algo=memetic,lab_effort=0.125 lab_r1:algo=memetic,lab_effort=0.25 lab_r1:algo=memetic,lab_effort=0.5 lab_r1:algo=memetic,lab_effort=1 lab_r1:algo=memetic,lab_effort=2 lab_r1:algo=cem,lab_effort=0.125 lab_r1:algo=cem,lab_effort=0.25 lab_r1:algo=cem,lab_effort=0.5 lab_r1:algo=cem,lab_effort=1 lab_r1:algo=cem,lab_effort=2 lab_r1:algo=lns,lab_effort=0.125 lab_r1:algo=lns,lab_effort=0.25 lab_r1:algo=lns,lab_effort=0.5 lab_r1:algo=lns,lab_effort=1 lab_r1:algo=lns,lab_effort=2 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "r_real_income_a",
+  "note": "held-out real income chains, seeds 0-2",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set real_income_test run lab_r1:max_iters=6000 lab_r1:max_iters=12000 lab_r1:max_iters=24000 lab_r1 lab_r1:max_iters=96000 lab_r1:response_points=16 lab_r1:algo=price,lab_effort=0.125 lab_r1:algo=price,lab_effort=0.25 lab_r1:algo=price,lab_effort=0.5 lab_r1:algo=price,lab_effort=1 lab_r1:algo=price,lab_effort=2 lab_r1:algo=surrogate,lab_effort=0.125 lab_r1:algo=surrogate,lab_effort=0.25 lab_r1:algo=surrogate,lab_effort=0.5 lab_r1:algo=surrogate,lab_effort=1 lab_r1:algo=surrogate,lab_effort=2 lab_r1:algo=memetic,lab_effort=0.125 lab_r1:algo=memetic,lab_effort=0.25 lab_r1:algo=memetic,lab_effort=0.5 lab_r1:algo=memetic,lab_effort=1 lab_r1:algo=memetic,lab_effort=2 lab_r1:algo=cem,lab_effort=0.125 lab_r1:algo=cem,lab_effort=0.25 lab_r1:algo=cem,lab_effort=0.5 lab_r1:algo=cem,lab_effort=1 lab_r1:algo=cem,lab_effort=2 lab_r1:algo=lns,lab_effort=0.125 lab_r1:algo=lns,lab_effort=0.25 lab_r1:algo=lns,lab_effort=0.5 lab_r1:algo=lns,lab_effort=1 lab_r1:algo=lns,lab_effort=2 --mode chained --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "r_quick",
+  "note": "dev curves, cold and chained",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set quick_dev run lab_r1:max_iters=6000 lab_r1:max_iters=12000 lab_r1:max_iters=24000 lab_r1 lab_r1:max_iters=96000 lab_r1:response_points=16 lab_r1:algo=price,lab_effort=0.125 lab_r1:algo=price,lab_effort=0.25 lab_r1:algo=price,lab_effort=0.5 lab_r1:algo=price,lab_effort=1 lab_r1:algo=price,lab_effort=2 lab_r1:algo=surrogate,lab_effort=0.125 lab_r1:algo=surrogate,lab_effort=0.25 lab_r1:algo=surrogate,lab_effort=0.5 lab_r1:algo=surrogate,lab_effort=1 lab_r1:algo=surrogate,lab_effort=2 lab_r1:algo=memetic,lab_effort=0.125 lab_r1:algo=memetic,lab_effort=0.25 lab_r1:algo=memetic,lab_effort=0.5 lab_r1:algo=memetic,lab_effort=1 lab_r1:algo=memetic,lab_effort=2 lab_r1:algo=cem,lab_effort=0.125 lab_r1:algo=cem,lab_effort=0.25 lab_r1:algo=cem,lab_effort=0.5 lab_r1:algo=cem,lab_effort=1 lab_r1:algo=cem,lab_effort=2 lab_r1:algo=lns,lab_effort=0.125 lab_r1:algo=lns,lab_effort=0.25 lab_r1:algo=lns,lab_effort=0.5 lab_r1:algo=lns,lab_effort=1 lab_r1:algo=lns,lab_effort=2 --mode both --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "r_large",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set large run lab_r1:max_iters=6000 lab_r1:max_iters=12000 lab_r1:max_iters=24000 lab_r1 lab_r1:max_iters=96000 lab_r1:response_points=16 lab_r1:algo=price,lab_effort=0.125 lab_r1:algo=price,lab_effort=0.25 lab_r1:algo=price,lab_effort=0.5 lab_r1:algo=price,lab_effort=1 lab_r1:algo=price,lab_effort=2 lab_r1:algo=surrogate,lab_effort=0.125 lab_r1:algo=surrogate,lab_effort=0.25 lab_r1:algo=surrogate,lab_effort=0.5 lab_r1:algo=surrogate,lab_effort=1 lab_r1:algo=surrogate,lab_effort=2 lab_r1:algo=memetic,lab_effort=0.125 lab_r1:algo=memetic,lab_effort=0.25 lab_r1:algo=memetic,lab_effort=0.5 lab_r1:algo=memetic,lab_effort=1 lab_r1:algo=memetic,lab_effort=2 lab_r1:algo=cem,lab_effort=0.125 lab_r1:algo=cem,lab_effort=0.25 lab_r1:algo=cem,lab_effort=0.5 lab_r1:algo=cem,lab_effort=1 lab_r1:algo=cem,lab_effort=2 lab_r1:algo=lns,lab_effort=0.125 lab_r1:algo=lns,lab_effort=0.25 lab_r1:algo=lns,lab_effort=0.5 lab_r1:algo=lns,lab_effort=1 lab_r1:algo=lns,lab_effort=2 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "r_speed_test",
+  "note": "regime, cold and chained",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set speed_test run lab_r1:max_iters=6000 lab_r1:max_iters=12000 lab_r1:max_iters=24000 lab_r1 lab_r1:max_iters=96000 lab_r1:response_points=16 lab_r1:algo=price,lab_effort=0.125 lab_r1:algo=price,lab_effort=0.25 lab_r1:algo=price,lab_effort=0.5 lab_r1:algo=price,lab_effort=1 lab_r1:algo=price,lab_effort=2 lab_r1:algo=surrogate,lab_effort=0.125 lab_r1:algo=surrogate,lab_effort=0.25 lab_r1:algo=surrogate,lab_effort=0.5 lab_r1:algo=surrogate,lab_effort=1 lab_r1:algo=surrogate,lab_effort=2 lab_r1:algo=memetic,lab_effort=0.125 lab_r1:algo=memetic,lab_effort=0.25 lab_r1:algo=memetic,lab_effort=0.5 lab_r1:algo=memetic,lab_effort=1 lab_r1:algo=memetic,lab_effort=2 lab_r1:algo=cem,lab_effort=0.125 lab_r1:algo=cem,lab_effort=0.25 lab_r1:algo=cem,lab_effort=0.5 lab_r1:algo=cem,lab_effort=1 lab_r1:algo=cem,lab_effort=2 lab_r1:algo=lns,lab_effort=0.125 lab_r1:algo=lns,lab_effort=0.25 lab_r1:algo=lns,lab_effort=0.5 lab_r1:algo=lns,lab_effort=1 lab_r1:algo=lns,lab_effort=2 --mode both --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "r_real_income_b",
+  "note": "held-out real income chains, seeds 3-5",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set real_income_test run lab_r1:max_iters=6000 lab_r1:max_iters=12000 lab_r1:max_iters=24000 lab_r1 lab_r1:max_iters=96000 lab_r1:response_points=16 lab_r1:algo=price,lab_effort=0.125 lab_r1:algo=price,lab_effort=0.25 lab_r1:algo=price,lab_effort=0.5 lab_r1:algo=price,lab_effort=1 lab_r1:algo=price,lab_effort=2 lab_r1:algo=surrogate,lab_effort=0.125 lab_r1:algo=surrogate,lab_effort=0.25 lab_r1:algo=surrogate,lab_effort=0.5 lab_r1:algo=surrogate,lab_effort=1 lab_r1:algo=surrogate,lab_effort=2 lab_r1:algo=memetic,lab_effort=0.125 lab_r1:algo=memetic,lab_effort=0.25 lab_r1:algo=memetic,lab_effort=0.5 lab_r1:algo=memetic,lab_effort=1 lab_r1:algo=memetic,lab_effort=2 lab_r1:algo=cem,lab_effort=0.125 lab_r1:algo=cem,lab_effort=0.25 lab_r1:algo=cem,lab_effort=0.5 lab_r1:algo=cem,lab_effort=1 lab_r1:algo=cem,lab_effort=2 lab_r1:algo=lns,lab_effort=0.125 lab_r1:algo=lns,lab_effort=0.25 lab_r1:algo=lns,lab_effort=0.5 lab_r1:algo=lns,lab_effort=1 lab_r1:algo=lns,lab_effort=2 --mode chained --seeds 3 --first-seed 3 --jobs 16 --resume"
+ },
+ {
+  "name": "ref_real_test",
+  "note": "solve at 384000, only for a firmer best known",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set real_test run lab_r1:max_iters=384000 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "ref_real_income_test",
+  "note": "solve at 384000, only for a firmer best known",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set real_income_test run lab_r1:max_iters=384000 --mode chained --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "ref_quick_dev",
+  "note": "solve at 384000, only for a firmer best known",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set quick_dev run lab_r1:max_iters=384000 --mode both --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "ref_small",
+  "note": "solve at 384000, only for a firmer best known",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set small run lab_r1:max_iters=384000 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "ref_advanced",
+  "note": "solve at 384000, only for a firmer best known",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set advanced run lab_r1:max_iters=384000 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "ref_juice",
+  "note": "solve at 384000, only for a firmer best known",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set juice run lab_r1:max_iters=384000 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "ref_free_taps",
+  "note": "solve at 384000, only for a firmer best known",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set free_taps run lab_r1:max_iters=384000 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "ref_large",
+  "note": "solve at 384000, only for a firmer best known",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set large run lab_r1:max_iters=384000 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "ref_speed_test",
+  "note": "solve at 384000, only for a firmer best known",
+  "cmd": "target\\arena\\bin\\lab_r1.exe --db arena_data/lab/iteration1/rerun.sqlite --set speed_test run lab_r1:max_iters=384000 --mode both --seeds 3 --jobs 16 --resume"
+ }
+]

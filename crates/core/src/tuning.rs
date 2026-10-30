@@ -97,6 +97,9 @@ pub struct Tuning {
     pub greedy_order: bool,
     /// rounds of the shadow price start (`optimizer/shadow.rs`) every fresh chain goes on from; 0 for none
     pub shadow_start: usize,
+    /// kicks of the best state's free tap order after the chains (a window shuffled), each
+    /// polished and kept where better; 0 for none
+    pub order_kicks: usize,
 
     // chained runs
     pub max_blob_bytes: usize,
@@ -123,6 +126,10 @@ pub struct Tuning {
     pub algo: String,
     /// what a lab algorithm scales its work by, 1 being about the CPU of `solve`
     pub lab_effort: f64,
+    /// pieces a lab algorithm leaves out, joined by `+` (each algorithm names its own)
+    pub lab_off: String,
+    /// pieces a lab algorithm adds, joined by `+`
+    pub lab_on: String,
 }
 
 impl Default for Tuning {
@@ -152,7 +159,7 @@ impl Default for Tuning {
             response_kick: 0.0,
             response_steps: 700.0,
             response_joint: 20000,
-            response_points: 16,
+            response_points: 128,
             response_every: 0,
             response_polish: 3,
             response_mixed: true,
@@ -172,6 +179,7 @@ impl Default for Tuning {
             order_reach: true,
             greedy_order: true,
             shadow_start: 4,
+            order_kicks: 0,
             max_blob_bytes: 5 * 1024 * 1024,
             carry: true,
             carry_iters: 1.0,
@@ -183,6 +191,8 @@ impl Default for Tuning {
             warm_polish: 1,
             algo: String::new(),
             lab_effort: 1.0,
+            lab_off: String::new(),
+            lab_on: String::new(),
         }
     }
 }

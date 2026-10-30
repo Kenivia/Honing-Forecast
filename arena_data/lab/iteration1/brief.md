@@ -1,10 +1,10 @@
 # Optimizer lab: the problem
 
-You are writing an optimizer for Honing Forecast, a Lost Ark honing calculator, from scratch. One overarching approach is given to you in `arena_data/lab/archetypes.md`; the details are yours. Make it a decent attempt at that approach: something that works on every kind of payload, keeps every rule below, and spends its budget well. It will be judged later, against the existing optimizer, on payloads you never see.
+You are writing an optimizer for Honing Forecast, a Lost Ark honing calculator, from scratch. One overarching approach is given to you in `arena_data/lab/iteration1/archetypes.md`; the details are yours. Make it a decent attempt at that approach: something that works on every kind of payload, keeps every rule below, and spends its budget well. It will be judged later, against the existing optimizer, on payloads you never see.
 
 ## Ground rules
 
-- **Do not read the existing optimizer**: nothing under `crates/core/src/optimizer/` except `response.rs`, `lab/mod.rs` and `lab/check.rs`; not `AI notes/Calculator core/Optimizer.md` or any `* tried.md` note; not other attempts under `lab/` or `arena_data/lab/attempts/`; not the git history of those files. The point is a fresh look.
+- **Do not read the existing optimizer**: nothing under `crates/core/src/optimizer/` except `response.rs`, `lab/mod.rs` and `lab/check.rs`; not `AI notes/Calculator core/Optimizer.md` or any `* tried.md` note; not other attempts under `lab/` or `arena_data/lab/iteration1/attempts/`; not the git history of those files. The point is a fresh look.
 - Worth reading: `AI notes/Overview.md`, `AI notes/Calculator core/Domain model.md`, `Evaluation pipeline.md`, `State space.md`, and `Arena.md` for running things. Any code outside the optimizer folder.
 - **Write only your own module**: `crates/core/src/optimizer/lab/<name>.rs` (or a `lab/<name>/` folder), plus three lines in `lab/mod.rs`: the `mod`, its name in `ALGOS`, and its arm in `solve`'s match. Nothing else in the repo. If you need something private elsewhere, copy what you need into your module or say so in your note.
 - Repo conventions: keep comments brief and top level; `unwrap` freely, this is not a library; run `rustfmt --edition 2024` on your files. Never commit. Never write to `docs/` or `CLAUDE.md`.
@@ -88,7 +88,7 @@ After the whole batch is written, everything runs against the existing optimizer
 
 - Build `cargo build --release -p hf-arena`; test `cargo test --release -p hf-arena lab_` (every name in `ALGOS` repeats a seed and returns a valid state on the dummy scenario).
 - Try it against the existing optimizer (`current` with no `algo` is the existing one), in a database of your own:
-  `./target/release/hf-arena.exe --db arena_data/lab/dev_<name>.sqlite --set pilot run current current:algo=<name> --seeds 2 --jobs 12`
-  then `python arena_data/diff_report.py <session> --db arena_data/lab/dev_<name>.sqlite --base current`. Add `--mode cold` for a quicker look; `lab_effort=0.5` etc. go after the algo, comma separated (`current:algo=<name>,lab_effort=2`). Before you finish, one seed of `--set quick_dev` (about 380 payloads, a few minutes) at each of 0.5, 1 and 2.
+  `./target/release/hf-arena.exe --db arena_data/lab/iteration1/dev_<name>.sqlite --set pilot run current current:algo=<name> --seeds 2 --jobs 12`
+  then `python arena_data/diff_report.py <session> --db arena_data/lab/iteration1/dev_<name>.sqlite --base current`. Add `--mode cold` for a quicker look; `lab_effort=0.5` etc. go after the algo, comma separated (`current:algo=<name>,lab_effort=2`). Before you finish, one seed of `--set quick_dev` (about 380 payloads, a few minutes) at each of 0.5, 1 and 2.
 - `pilot` and `quick_dev` are smoke tests, not targets: the judging is on other payloads.
-- Stop when it is a decent attempt: valid everywhere, sensible at the three budgets, the idea given a fair shot. Then write `arena_data/lab/attempts/<name>.md` (60 lines at most): the algorithm as built, its constants, the dev numbers with their session ids, where it is weak, and what you would try next.
+- Stop when it is a decent attempt: valid everywhere, sensible at the three budgets, the idea given a fair shot. Then write `arena_data/lab/iteration1/attempts/<name>.md` (60 lines at most): the algorithm as built, its constants, the dev numbers with their session ids, where it is weak, and what you would try next.

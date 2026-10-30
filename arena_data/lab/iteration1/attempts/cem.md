@@ -17,7 +17,7 @@
 - **Polish** (up to 12 passes, stops when a pass gains less than 1e-7): `Response::of` + `better(.., response_joint)` on every normal upgrade in random order; advanced indices moved by ±1 and ±2; the order rebuilt greedily one place at a time over the reach of the free taps (+2, at most 10), then every move of one upgrade into or out of that reach; per chest stack, every chest on one option, then moves between two options repeated while they gain, with the step halving down to 1.
 - **Budget**: `lab_effort * (10000 + 1300 * upgrades)` evaluations. A response counts as `response.work(response_steps)`.
 
-## Dev numbers (`arena_data/lab/dev_cem.sqlite`)
+## Dev numbers (`arena_data/lab/iteration1/dev_cem.sqlite`)
 
 quick_dev, 1 seed, session 7, against `current` (349 payloads, cold / chained):
 

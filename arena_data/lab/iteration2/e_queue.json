@@ -1,0 +1,47 @@
+[
+ {
+  "name": "e_real",
+  "note": "held-out real singles",
+  "cmd": "target\\arena\\bin\\i2b.exe --db arena_data/lab/iteration2/i2.sqlite --set real_test run i2b i2b:order_kicks=16 i2b:order_kicks=64 i2b:algo=price,lab_effort=1 i2b:algo=price,lab_effort=1,lab_off=kchest+kadv+kexchange+kpiece+kperturb i2b:algo=price,lab_effort=1,lab_off=kwindow i2b:algo=price,lab_effort=1,lab_on=advall i2b:algo=price,lab_effort=1,lab_on=chestrand i2b:algo=price,lab_effort=1,lab_on=chestrand,lab_off=kchest+kadv+kexchange+kpiece+kperturb --mode cold --seeds 10 --jobs 16 --resume"
+ },
+ {
+  "name": "e_quick",
+  "note": "order basins (chain_0017, single_3300)",
+  "cmd": "target\\arena\\bin\\i2b.exe --db arena_data/lab/iteration2/i2.sqlite --set quick_dev run i2b i2b:order_kicks=16 i2b:order_kicks=64 i2b:algo=price,lab_effort=1 i2b:algo=price,lab_effort=1,lab_off=kchest+kadv+kexchange+kpiece+kperturb i2b:algo=price,lab_effort=1,lab_off=kwindow i2b:algo=price,lab_effort=1,lab_on=advall i2b:algo=price,lab_effort=1,lab_on=chestrand i2b:algo=price,lab_effort=1,lab_on=chestrand,lab_off=kchest+kadv+kexchange+kpiece+kperturb --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "e_speed",
+  "note": "serca lone upgrades, order basins",
+  "cmd": "target\\arena\\bin\\i2b.exe --db arena_data/lab/iteration2/i2.sqlite --set speed_test run i2b i2b:order_kicks=16 i2b:order_kicks=64 i2b:algo=price,lab_effort=1 i2b:algo=price,lab_effort=1,lab_off=kchest+kadv+kexchange+kpiece+kperturb i2b:algo=price,lab_effort=1,lab_off=kwindow i2b:algo=price,lab_effort=1,lab_on=advall i2b:algo=price,lab_effort=1,lab_on=chestrand i2b:algo=price,lab_effort=1,lab_on=chestrand,lab_off=kchest+kadv+kexchange+kpiece+kperturb --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "e_advanced",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2b.exe --db arena_data/lab/iteration2/i2.sqlite --set advanced run i2b i2b:order_kicks=16 i2b:order_kicks=64 i2b:algo=price,lab_effort=1 i2b:algo=price,lab_effort=1,lab_off=kchest+kadv+kexchange+kpiece+kperturb i2b:algo=price,lab_effort=1,lab_off=kwindow i2b:algo=price,lab_effort=1,lab_on=advall i2b:algo=price,lab_effort=1,lab_on=chestrand i2b:algo=price,lab_effort=1,lab_on=chestrand,lab_off=kchest+kadv+kexchange+kpiece+kperturb --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "e_free_taps",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2b.exe --db arena_data/lab/iteration2/i2.sqlite --set free_taps run i2b i2b:order_kicks=16 i2b:order_kicks=64 i2b:algo=price,lab_effort=1 i2b:algo=price,lab_effort=1,lab_off=kchest+kadv+kexchange+kpiece+kperturb i2b:algo=price,lab_effort=1,lab_off=kwindow i2b:algo=price,lab_effort=1,lab_on=advall i2b:algo=price,lab_effort=1,lab_on=chestrand i2b:algo=price,lab_effort=1,lab_on=chestrand,lab_off=kchest+kadv+kexchange+kpiece+kperturb --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "e_juice",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2b.exe --db arena_data/lab/iteration2/i2.sqlite --set juice run i2b i2b:order_kicks=16 i2b:order_kicks=64 i2b:algo=price,lab_effort=1 i2b:algo=price,lab_effort=1,lab_off=kchest+kadv+kexchange+kpiece+kperturb i2b:algo=price,lab_effort=1,lab_off=kwindow i2b:algo=price,lab_effort=1,lab_on=advall i2b:algo=price,lab_effort=1,lab_on=chestrand i2b:algo=price,lab_effort=1,lab_on=chestrand,lab_off=kchest+kadv+kexchange+kpiece+kperturb --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "e_small",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2b.exe --db arena_data/lab/iteration2/i2.sqlite --set small run i2b i2b:order_kicks=16 i2b:order_kicks=64 i2b:algo=price,lab_effort=1 i2b:algo=price,lab_effort=1,lab_off=kchest+kadv+kexchange+kpiece+kperturb i2b:algo=price,lab_effort=1,lab_off=kwindow i2b:algo=price,lab_effort=1,lab_on=advall i2b:algo=price,lab_effort=1,lab_on=chestrand i2b:algo=price,lab_effort=1,lab_on=chestrand,lab_off=kchest+kadv+kexchange+kpiece+kperturb --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "e_large",
+  "note": "regime",
+  "cmd": "target\\arena\\bin\\i2b.exe --db arena_data/lab/iteration2/i2.sqlite --set large run i2b i2b:order_kicks=16 i2b:order_kicks=64 i2b:algo=price,lab_effort=1 i2b:algo=price,lab_effort=1,lab_off=kchest+kadv+kexchange+kpiece+kperturb i2b:algo=price,lab_effort=1,lab_off=kwindow i2b:algo=price,lab_effort=1,lab_on=advall i2b:algo=price,lab_effort=1,lab_on=chestrand i2b:algo=price,lab_effort=1,lab_on=chestrand,lab_off=kchest+kadv+kexchange+kpiece+kperturb --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "e_income",
+  "note": "held-out real income chains, seeds 0-2",
+  "cmd": "target\\arena\\bin\\i2b.exe --db arena_data/lab/iteration2/i2.sqlite --set real_income_test run i2b i2b:order_kicks=16 i2b:order_kicks=64 i2b:algo=price,lab_effort=1 i2b:algo=price,lab_effort=1,lab_off=kchest+kadv+kexchange+kpiece+kperturb i2b:algo=price,lab_effort=1,lab_off=kwindow i2b:algo=price,lab_effort=1,lab_on=advall i2b:algo=price,lab_effort=1,lab_on=chestrand i2b:algo=price,lab_effort=1,lab_on=chestrand,lab_off=kchest+kadv+kexchange+kpiece+kperturb --mode chained --seeds 3 --jobs 16 --resume"
+ }
+]

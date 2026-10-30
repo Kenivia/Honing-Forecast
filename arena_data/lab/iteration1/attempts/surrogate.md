@@ -1,6 +1,6 @@
 # surrogate: moment surrogate, verified by the true metric
 
-Code: `crates/core/src/optimizer/lab/surrogate.rs` (registered in `lab/mod.rs`). Dev db: `arena_data/lab/dev_surrogate.sqlite`.
+Code: `crates/core/src/optimizer/lab/surrogate.rs` (registered in `lab/mod.rs`). Dev db: `arena_data/lab/iteration1/dev_surrogate.sqlite`.
 
 ## Algorithm as built
 

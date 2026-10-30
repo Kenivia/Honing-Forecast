@@ -39,6 +39,15 @@ const POLISH_ROUNDS: usize = 8;
 const ORDER_TOL: f64 = 1e-4;
 /// an order move that loses less than this share is tried again with the moved upgrade replanned
 const REPLAN_GAP: f64 = 2e-3;
+/// the kicks by where their share of a roll ends, and their names for `Tuning::lab_off`
+const KICKS: [(f64, &str); 6] = [
+    (0.15, "kchest"),
+    (0.3, "kwindow"),
+    (0.45, "kadv"),
+    (0.65, "kexchange"),
+    (0.8, "kpiece"),
+    (1.0, "kperturb"),
+];
 
 fn gain(new: f64, old: f64) -> bool {
     old == f64::NEG_INFINITY || new > old + old.abs() * 1e-10 + 1e-9
@@ -73,6 +82,25 @@ fn adv_plan(mut id: usize, slots: usize) -> Vec<usize> {
 }
 
 impl Run {
+    /// a piece left out by `Tuning::lab_off`
+    fn off(&self, piece: &str) -> bool {
+        self.sb.tuning.lab_off.split('+').any(|name| name == piece)
+    }
+
+    /// a piece added by `Tuning::lab_on`
+    fn on(&self, piece: &str) -> bool {
+        self.sb.tuning.lab_on.split('+').any(|name| name == piece)
+    }
+
+    /// whether the kick a roll draws is left out
+    fn kick_off(&self, roll: f64) -> bool {
+        let at = KICKS
+            .iter()
+            .position(|&(end, _)| roll < end)
+            .unwrap_or(KICKS.len() - 1);
+        self.off(KICKS[at].1)
+    }
+
     fn eval(&mut self, probe: &mut Probe) -> f64 {
         let mut changed = 0;
         for (hash, upgrade) in self.hashes.iter_mut().zip(&self.sb.upgrade_arr) {
@@ -349,7 +377,7 @@ impl Run {
 
     /// moves of one upgrade to a free tap position that is reached, first improvement
     fn order_moves(&mut self, probe: &mut Probe) {
-        if !self.sb.affords_a_free_tap() || self.normal.len() < 2 {
+        if self.off("order") || !self.sb.affords_a_free_tap() || self.normal.len() < 2 {
             return;
         }
         self.sb.compute_special_probs(false);
@@ -374,7 +402,7 @@ impl Run {
             .collect();
         moves.shuffle(&mut self.rng);
         moves.truncate(((40 + 6 * n) as f64 * self.effort.sqrt()) as usize);
-        let mut replans = reach + 2;
+        let mut replans = if self.off("replan") { 0 } else { reach + 2 };
         for (from, to) in moves {
             if self.work >= self.budget {
                 break;
@@ -425,8 +453,18 @@ impl Run {
             pairs.truncate((12.0 * self.effort.sqrt()) as usize + 2);
             for (a, b) in pairs {
                 let have = self.sb.chest_states[&key][a];
-                let mut amount = have;
-                while amount > 0 {
+                // all of it, then random amounts or a third at a time
+                let mut amounts = vec![have];
+                if self.on("chestrand") {
+                    if have > 1 {
+                        amounts.extend((0..4).map(|_| self.rng.random_range(1..have)));
+                    }
+                } else {
+                    while amounts.last().unwrap() / 3 > 0 {
+                        amounts.push(amounts.last().unwrap() / 3);
+                    }
+                }
+                for amount in amounts.into_iter().filter(|&amount| amount > 0) {
                     if self.work >= self.budget {
                         return;
                     }
@@ -441,7 +479,6 @@ impl Run {
                     }
                     self.sb.set_chest_state(&old);
                     self.sb.metric = old_metric;
-                    amount /= 3;
                 }
             }
         }
@@ -773,7 +810,7 @@ pub fn solve<R: Rng>(
     let prices = run.shadow(probe);
 
     // the free tap order by leapstone efficiency
-    if run.sb.affords_a_free_tap() {
+    if !run.off("ratio") && run.sb.affords_a_free_tap() {
         let metric = run.sb.metric;
         let old = run.sb.special_state.clone();
         run.sb.special_state = ratio_order(&run, &prices);
@@ -790,7 +827,7 @@ pub fn solve<R: Rng>(
         let limit = run.budget * PRICE_SHARE;
         let kinked = run.bounds().iter().any(|&(lo, hi)| hi - lo > 1e-9);
         let mut count = 0;
-        while run.work < limit * 0.7 && (kinked || count < 4) {
+        while !run.off("prices") && run.work < limit * 0.7 && (kinked || count < 4) {
             run.restore(&incumbent, probe);
             let start = if count < 2 {
                 prices.clone()
@@ -834,10 +871,14 @@ pub fn solve<R: Rng>(
     let mut stall = 0;
     let stall_max = (30.0 + 40.0 * effort) as usize;
     let kick_end = run.budget * (1.0 - FINAL_SHARE);
-    while run.work < kick_end && stall < stall_max {
+    let kicks = !run.off("kicks") && KICKS.iter().any(|&(_, name)| !run.off(name));
+    while kicks && run.work < kick_end && stall < stall_max {
         let best = run.best.clone();
         run.restore(&best.1, probe);
-        let roll = run.rng.random::<f64>();
+        let mut roll = run.rng.random::<f64>();
+        while run.kick_off(roll) {
+            roll = run.rng.random::<f64>();
+        }
         if roll < 0.15
             && run
                 .sb
@@ -860,22 +901,37 @@ pub fn solve<R: Rng>(
             let state = run.sb.prep_output.chests[&key].random_state(&mut run.rng);
             states.insert(key, state);
             run.sb.set_chest_state(&states);
-        } else if roll < 0.3 && run.sb.affords_a_free_tap() {
+        } else if roll < 0.3 && !run.off("kwindow") && run.sb.affords_a_free_tap() {
             // a window of the free tap order shuffled
             let len = run.sb.special_state.len();
             let at = run.rng.random_range(0..len);
             let end = (at + 2 + run.rng.random_range(0..4)).min(len);
             run.sb.special_state[at..end].shuffle(&mut run.rng);
-        } else if roll < 0.45 && !run.adv.is_empty() {
+        } else if roll < 0.45 && !run.off("kadv") && !run.adv.is_empty() {
             // one advanced upgrade anywhere
             let index = run.adv[run.rng.random_range(0..run.adv.len())];
             let slots = run.sb.upgrade_arr[index].state.payload.len();
-            let plan = (0..slots)
+            let plan: Vec<_> = (0..slots)
                 .map(|_| smallvec![run.rng.random_range(0..=MAX_ADV_STATE)])
                 .collect();
-            run.sb.upgrade_arr[index].state.update_payload(plan);
-        } else if roll < 0.65 && run.exchange(probe) {
-        } else if roll < 0.8 && !run.normal.is_empty() {
+            // or every advanced upgrade of its piece type on that plan, the normal ones then responding
+            let which: Vec<usize> = if run.on("advall") && run.rng.random_bool(0.5) {
+                let piece = run.sb.upgrade_arr[index].piece_type_usize;
+                run.adv
+                    .iter()
+                    .copied()
+                    .filter(|&i| run.sb.upgrade_arr[i].piece_type_usize == piece)
+                    .collect()
+            } else {
+                vec![index]
+            };
+            for i in which {
+                let len = run.sb.upgrade_arr[i].state.payload.len();
+                let mine = (0..len).map(|k| plan[k.min(slots - 1)].clone()).collect();
+                run.sb.upgrade_arr[i].state.update_payload(mine);
+            }
+        } else if roll < 0.65 && !run.off("kexchange") && run.exchange(probe) {
+        } else if roll < 0.8 && !run.off("kpiece") && !run.normal.is_empty() {
             // the upgrades of a piece type all take their true response at once
             let piece = run.sb.upgrade_arr[run.normal[run.rng.random_range(0..run.normal.len())]]
                 .piece_type_usize;
@@ -897,7 +953,7 @@ pub fn solve<R: Rng>(
             for (&index, plan) in which.iter().zip(&found) {
                 run.set_plan(index, plan);
             }
-        } else {
+        } else if !run.off("kperturb") {
             let shadow = run.shadow(probe);
             let kicked = run.perturbed(&shadow, 0.5);
             let mut which: Vec<usize> = (0..n).collect();

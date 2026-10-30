@@ -13,7 +13,8 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Misc UI
 
-- rework tooltips 
+- rework tooltips
+- allow non-mains to ignore roster chests / mats
 
 - need to add the UI for choices and hard code some examples
   - ~~need to get paradise data from somewhere~~

@@ -22,6 +22,12 @@ textarea,
 optgroup {
   font: inherit;
 }
+/* Edge draws the open list white unless options are coloured explicitly */
+option,
+optgroup {
+  background-color: var(--bg-input);
+  color: var(--text-main);
+}
 html {
   font-weight: 400;
   color-scheme: dark;
