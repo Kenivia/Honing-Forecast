@@ -1,0 +1,7 @@
+set        variant                                 runs mean diff%   worst%    best%  wins losses     =    cpu  evals
+cpu_check  ft_c                                     150    0.00000   0.0000   0.0000     0      0  100%  1.000  1.000
+cpu_check  ft_c:special_tol=1e-4,special_fold=4     150   -0.00040  -0.0300   0.0013     0      1   78%  0.941  1.004
+cpu_check  ft_c:special_tol=1e-5,special_fold=2     150   -0.00004  -0.0047   0.0013     0      0   77%  0.907  0.989
+cpu_check  ft_c                                   mean   1.50e-05 p99|.|  4.53e-05 max|.|  4.77e-05
+cpu_check  ft_c:special_tol=1e-4,special_fold=4   mean   1.51e-05 p99|.|  4.53e-05 max|.|  4.77e-05
+cpu_check  ft_c:special_tol=1e-5,special_fold=2   mean   1.50e-05 p99|.|  4.53e-05 max|.|  4.78e-05

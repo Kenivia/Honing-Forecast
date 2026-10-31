@@ -18,7 +18,7 @@ use crate::constants::{FLOAT_TOL, SPECIAL_TOL, float_tol};
 use crate::materials::NUM_BASE_MATS;
 use crate::optimizer::response::{Model, Response};
 use crate::optimizer::{Previous, Solved};
-use crate::probe::Probe;
+use crate::probe::{Clock, Probe};
 use crate::state::OneState;
 use crate::state_bundle::{StateBundle, StateEssence};
 use rand::rngs::SmallRng;
@@ -28,10 +28,6 @@ use smallvec::{SmallVec, smallvec};
 use statrs::function::erf::erfc;
 use std::cell::{Cell, RefCell};
 
-/// the leftover takes the third and fourth cumulants (Edgeworth), not the normal alone
-const SKEW: bool = true;
-/// match the surrogate's marginal prices to the true shadow prices
-const CALIBRATE: bool = true;
 /// amounts a surrogate table is worked out at, the rest on straight lines
 const POINTS: usize = 24;
 /// rounds of a surrogate descent
@@ -56,6 +52,61 @@ const FLIP_SHARE: f64 = 0.25;
 /// what the surrogate's work counts for: gold functions and recursion steps an evaluation
 const GOLDS_PER_EVAL: f64 = 6000.0;
 const STEPS_PER_EVAL: f64 = 2000.0;
+
+/// where a restart comes from, for the trace and `lab_off`
+#[derive(Clone, Copy, PartialEq)]
+enum Kick {
+    First,
+    Price,
+    Empty,
+    Rand,
+    Piece,
+    Last,
+    Chest,
+}
+const KICK_NAMES: [&str; 7] = [
+    "sur_k_first",
+    "sur_k_price",
+    "sur_k_empty",
+    "sur_k_rand",
+    "sur_k_piece",
+    "sur_k_last",
+    "sur_k_chest",
+];
+
+/// the move that found a new best, for the trace
+#[derive(Clone, Copy, PartialEq)]
+enum Move {
+    Start,
+    Descent,
+    Sur,
+    Blend,
+    True,
+    Flip,
+    Adv,
+    Order,
+    Chest,
+}
+const MOVE_NAMES: [&str; 9] = [
+    "sur_m_start",
+    "sur_m_descent",
+    "sur_m_sur",
+    "sur_m_blend",
+    "sur_m_true",
+    "sur_m_flip",
+    "sur_m_adv",
+    "sur_m_order",
+    "sur_m_chest",
+];
+
+#[cfg(feature = "trace")]
+fn since(clock: Clock) -> f64 {
+    clock.elapsed().as_secs_f64()
+}
+#[cfg(not(feature = "trace"))]
+fn since(_clock: Clock) -> f64 {
+    0.0
+}
 
 #[derive(Clone, Copy, Default, Debug)]
 struct Mom {
@@ -137,7 +188,7 @@ fn leftover(t: f64, m: &Mom) -> f64 {
     let z = (t - m.mean) / s;
     let cdf = 0.5 * erfc(-z / std::f64::consts::SQRT_2);
     let pdf = (-0.5 * z * z).exp() / (2.0 * std::f64::consts::PI).sqrt();
-    let series = if SKEW {
+    let series = if USE_SKEW.get() {
         let (g3, g4) = (m.k3 / (s * s * s), m.k4 / (m.var * m.var));
         1.0 + g3 / 6.0 * z
             + g4 / 24.0 * (z * z - 1.0)
@@ -174,10 +225,11 @@ fn sampled(amounts: &[f64], f: impl Fn(f64) -> f64) -> Vec<f64> {
     if last == 0 {
         return vec![f(amounts[0])];
     }
-    let mut points: Vec<usize> = if amounts.len() <= POINTS {
+    let count = USE_POINTS.get();
+    let mut points: Vec<usize> = if amounts.len() <= count {
         (0..=last).collect()
     } else {
-        (0..POINTS).map(|p| p * last / (POINTS - 1)).collect()
+        (0..count).map(|p| p * last / (count - 1)).collect()
     };
     points.dedup();
     let values: Vec<f64> = points.iter().map(|&at| f(amounts[at])).collect();
@@ -203,6 +255,8 @@ struct Sur {
     corr: Vec<f64>,
     price: Vec<f64>,
     rows: usize,
+    calibrated: bool,
+    wide: bool,
 }
 
 impl Sur {
@@ -219,6 +273,8 @@ impl Sur {
             corr: vec![0.0; rows],
             price: vec![0.0; rows],
             rows,
+            calibrated: !b.tuning.lab_off.split('+').any(|name| name == "calib"),
+            wide: b.tuning.lab_on.split('+').any(|name| name == "calibwide"),
         }
     }
 
@@ -298,13 +354,24 @@ impl Sur {
         let agg = self.sums();
         for row in 0..self.rows.min(shadow.len()) {
             self.price[row] = shadow[row];
-            if !CALIBRATE {
+            if !self.calibrated {
                 continue;
             }
             let mut slope = 0.0;
+            // the width of `shadow_prices`
+            let used: f64 = self
+                .w
+                .iter()
+                .enumerate()
+                .map(|(slot, &(_, w))| w * agg[slot][row].mean)
+                .sum();
             for (slot, &(_, w)) in self.w.iter().enumerate() {
                 let m = &agg[slot][row];
-                let h = 0.5f64.max(1e-4 * m.mean.abs()).max(1e-3 * m.var.sqrt());
+                let h = if self.wide {
+                    (0.01 * used).max(1.0)
+                } else {
+                    0.5f64.max(1e-4 * m.mean.abs()).max(1e-3 * m.var.sqrt())
+                };
                 slope += w
                     * (gold_of(&bands[row], &m.shift(h)) - gold_of(&bands[row], &m.shift(-h)))
                     / (2.0 * h);
@@ -415,6 +482,9 @@ thread_local! {
     static MEMO: RefCell<Memo> = RefCell::new(Memo::default());
     /// what the surrogate has cost on this thread, in evaluations
     static COST: Cell<f64> = const { Cell::new(0.0) };
+    /// the leftover takes the third and fourth cumulants (Edgeworth), not the normal alone
+    static USE_SKEW: Cell<bool> = const { Cell::new(true) };
+    static USE_POINTS: Cell<usize> = const { Cell::new(POINTS) };
 }
 
 struct Kept {
@@ -828,14 +898,48 @@ struct Run {
     cost0: f64,
     /// the last phase, where the true metric also checks single block flips
     flipping: bool,
+    /// surrogate-ranked moves of a kind the true metric checks
+    top: usize,
+    /// descents step by the true response
+    true_descent: bool,
+    kick: Kick,
+    what: Move,
+    /// gain of the best by the restart it came from, and by the move, past the first restart
+    by_kick: [f64; 7],
+    by_move: [f64; 9],
+    /// seconds in the whole solve, then in descents, kick and repair, polishes, true responses
+    clock: Clock,
+    timers: [f64; 4],
+    best_at: f64,
+    best_round: f64,
+    round: usize,
 }
 
 impl Run {
+    /// a piece left out by `Tuning::lab_off`
+    fn off(&self, piece: &str) -> bool {
+        self.b.tuning.lab_off.split('+').any(|name| name == piece)
+    }
+
+    /// a piece added by `Tuning::lab_on`
+    fn on(&self, piece: &str) -> bool {
+        self.b.tuning.lab_on.split('+').any(|name| name == piece)
+    }
+
     fn eval(&mut self, probe: &mut Probe) -> f64 {
         self.work += 1.0;
         let metric = evaluate(&mut self.b, probe);
         self.b.metric = metric;
         if metric > self.best.1 {
+            if self.best.1.is_finite() {
+                let gain = metric - self.best.1;
+                self.by_kick[self.kick as usize] += gain;
+                if self.kick != Kick::First {
+                    self.by_move[self.what as usize] += gain;
+                }
+                self.best_at = since(self.clock);
+                self.best_round = self.round as f64;
+            }
             self.best = (self.b.to_essence(), metric);
         }
         metric
@@ -943,12 +1047,15 @@ impl Run {
 
     /// a normal upgrade's surrogate best plan; checked by the true metric where `verify`
     fn sur_normal(&mut self, u: usize, verify: bool, probe: &mut Probe) -> bool {
+        if !verify && self.true_descent {
+            return self.true_step(u, probe);
+        }
         let Some(table) = self.sur.table(&self.b, u) else {
             return false;
         };
         let model = &table.model;
         let current = model.indices(&self.b.upgrade_arr[u].state.payload);
-        let (_, mut found) = if self.flipping {
+        let (_, mut found) = if self.flipping && !self.off("widest") {
             widest(
                 model,
                 &current,
@@ -977,6 +1084,7 @@ impl Run {
             self.set_payload(u, old);
             return false;
         }
+        self.what = Move::Sur;
         let t1 = self.eval(probe);
         self.agree.add(g1 - g0, t1 - t0, t0.abs().max(1.0));
         if better_than(t1, t0) {
@@ -988,8 +1096,44 @@ impl Run {
         self.blend(u, &model, &current, &found, probe)
     }
 
+    /// a descent's step by the true response, with no check by the metric
+    fn true_step(&mut self, u: usize, probe: &mut Probe) -> bool {
+        let block = self.b.block();
+        let model = Model::of(
+            &self.b.upgrade_arr[u],
+            &self.b.prep_output.juice_info,
+            block,
+        );
+        if model.pools.iter().all(|pool| pool.is_empty()) {
+            return false;
+        }
+        let response = Response::of(&mut self.b, u, probe);
+        let model = &response.model;
+        let current = model.indices(&self.b.upgrade_arr[u].state.payload);
+        let found = model.filled(&response.better(&current, self.b.tuning.response_joint).1);
+        self.work += response.work(self.b.tuning.response_steps);
+        if model.canonical(&found) == model.canonical(&current)
+            || response.score(&found) <= response.score(&current) + 1e-12 * self.scale()
+        {
+            return false;
+        }
+        let plan = model.plan(&found);
+        self.set_payload(u, plan);
+        true
+    }
+
     /// the true best response of a normal upgrade
     fn true_normal(&mut self, u: usize, probe: &mut Probe) -> bool {
+        if self.off("truepolish") {
+            return false;
+        }
+        let clock = probe.clock();
+        let moved = self.true_normal_timed(u, probe);
+        self.timers[3] += since(clock);
+        moved
+    }
+
+    fn true_normal_timed(&mut self, u: usize, probe: &mut Probe) -> bool {
         let model = Model::of(
             &self.b.upgrade_arr[u],
             &self.b.prep_output.juice_info,
@@ -1002,7 +1146,7 @@ impl Run {
         let model = &response.model;
         let current = model.indices(&self.b.upgrade_arr[u].state.payload);
         // the wide search of plans is paid in steps, so the true response takes it last only
-        let (_, mut found) = if self.flipping {
+        let (_, mut found) = if self.flipping && !self.off("widest") {
             widest(
                 model,
                 &current,
@@ -1025,6 +1169,7 @@ impl Run {
             let old = self.b.upgrade_arr[u].state.payload.clone();
             let t0 = self.b.metric;
             self.set_payload(u, plan);
+            self.what = Move::True;
             let t1 = self.eval(probe);
             if better_than(t1, t0) {
                 return true;
@@ -1035,7 +1180,9 @@ impl Run {
                 return true;
             }
         }
-        self.flipping && self.flips(u, &model, &current, &|at| response.score(at), probe)
+        self.flipping
+            && !self.off("flip")
+            && self.flips(u, &model, &current, &|at| response.score(at), probe)
     }
 
     /// Every block of the live taps given another choice of one pool, ranked by a response's
@@ -1069,6 +1216,7 @@ impl Run {
         let old = self.b.upgrade_arr[u].state.payload.clone();
         let t0 = self.b.metric;
         let mut best: Option<(f64, Vec<OneState>)> = None;
+        self.what = Move::Flip;
         for (_, plan) in ranked.into_iter().take(FLIP_TOP) {
             let plan = model.plan(&model.filled(&plan));
             self.set_payload(u, plan.clone());
@@ -1101,6 +1249,10 @@ impl Run {
         found: &[usize],
         probe: &mut Probe,
     ) -> bool {
+        if self.off("blend") {
+            return false;
+        }
+        self.what = Move::Blend;
         let pool_of = |option: usize, pool: usize| {
             option / model.strides[pool] % (model.pools[pool].len() + 1) * model.strides[pool]
         };
@@ -1176,7 +1328,7 @@ impl Run {
         }
         let t0 = self.b.metric;
         let mut best: Option<(f64, usize)> = None;
-        for (at, (g, c)) in ranked.iter().take(TOP).enumerate() {
+        for (at, (g, c)) in ranked.iter().take(self.top).enumerate() {
             apply(self, Some(c));
             let t = self.eval(probe);
             self.agree.add(g - g0, t - t0, t0.abs().max(1.0));
@@ -1214,7 +1366,31 @@ impl Run {
         let apply = move |run: &mut Run, c: Option<&Vec<OneState>>| {
             run.set_payload(u, c.cloned().unwrap_or_else(|| old.clone()))
         };
+        self.what = Move::Adv;
         self.choose(ranked, g0, verify, probe, &apply)
+    }
+
+    /// each entry of an advanced upgrade's strategy takes the best of its values, by the truth
+    fn adv_true(&mut self, u: usize, probe: &mut Probe) -> bool {
+        let start = self.b.metric;
+        let mut payload = self.b.upgrade_arr[u].state.payload.clone();
+        self.what = Move::Adv;
+        for slot in 0..payload.len() {
+            let kept = payload[slot][0];
+            let mut best = (self.b.metric, kept);
+            for v in (0..=MAX_ADV_STATE).filter(|&v| v != kept) {
+                payload[slot] = smallvec![v];
+                self.set_payload(u, payload.clone());
+                let t = self.eval(probe);
+                if better_than(t, best.0) {
+                    best = (t, v);
+                }
+            }
+            payload[slot] = smallvec![best.1];
+            self.set_payload(u, payload.clone());
+            self.b.metric = best.0;
+        }
+        better_than(self.b.metric, start)
     }
 
     fn greedy_order(&self) -> Vec<usize> {
@@ -1265,7 +1441,11 @@ impl Run {
         let n = old.len();
         let budget = self.b.prep_output.special_budget;
         let reach = (self.sur.w.last().unwrap().0 + 1).min(n - 1);
-        let mut candidates: Vec<Vec<usize>> = vec![self.greedy_order()];
+        let mut candidates: Vec<Vec<usize>> = if self.off("greedy") {
+            Vec::new()
+        } else {
+            vec![self.greedy_order()]
+        };
         for i in 0..n {
             let up = &self.b.upgrade_arr[old[i]];
             if !up.is_normal_honing || up.special_cost > budget {
@@ -1295,6 +1475,7 @@ impl Run {
         }
         self.set_order(&old);
         let apply = move |run: &mut Run, c: Option<&Vec<usize>>| run.set_order(c.unwrap_or(&old));
+        self.what = Move::Order;
         self.choose(ranked, g0, verify, probe, &apply)
     }
 
@@ -1334,6 +1515,7 @@ impl Run {
         let apply = move |run: &mut Run, c: Option<&crate::chest::ChestStates>| {
             run.set_chests(c.unwrap_or(&old))
         };
+        self.what = Move::Chest;
         let moved = self.choose(ranked, g0, verify, probe, &apply);
         self.prune();
         moved
@@ -1403,6 +1585,8 @@ impl Run {
     }
 
     fn descend(&mut self, rounds: usize, probe: &mut Probe) {
+        let clock = probe.clock();
+        let (adv, order, chest) = (!self.off("dadv"), !self.off("dorder"), !self.off("dchest"));
         for _ in 0..rounds {
             let mut moved = false;
             let mut normals = self.normals.clone();
@@ -1410,16 +1594,16 @@ impl Run {
             for u in normals {
                 moved |= self.sur_normal(u, false, probe);
             }
-            for u in self.advs.clone() {
+            for u in self.advs.clone().into_iter().filter(|_| adv) {
                 moved |= self.adv_move(u, false, probe);
             }
-            for _ in 0..3 {
+            for _ in 0..if order { 3 } else { 0 } {
                 if !self.order_move(false, probe) {
                     break;
                 }
                 moved = true;
             }
-            for _ in 0..4 {
+            for _ in 0..if chest { 4 } else { 0 } {
                 if !self.chest_move(false, probe) {
                     break;
                 }
@@ -1429,11 +1613,21 @@ impl Run {
                 break;
             }
         }
+        self.timers[0] += since(clock);
     }
 
     /// moves the true metric keeps, the surrogate's first
     fn polish(&mut self, probe: &mut Probe) {
+        let clock = probe.clock();
+        self.polish_timed(probe);
+        self.timers[2] += since(clock);
+    }
+
+    fn polish_timed(&mut self, probe: &mut Probe) {
+        let sur = !self.off("surpolish");
+        let (adv, order, chest) = (!self.off("padv"), !self.off("porder"), !self.off("pchest"));
         while self.spent() < self.budget {
+            self.what = Move::Start;
             self.eval(probe);
             self.calibrate(probe);
             let mut moved = false;
@@ -1443,15 +1637,19 @@ impl Run {
                 if self.spent() >= self.budget {
                     return;
                 }
-                if self.sur_normal(u, true, probe) || self.true_normal(u, probe) {
+                if sur && self.sur_normal(u, true, probe) || self.true_normal(u, probe) {
                     moved = true;
                 }
             }
-            for u in self.advs.clone() {
-                moved |= self.adv_move(u, true, probe);
+            for u in self.advs.clone().into_iter().filter(|_| adv) {
+                moved |= if self.on("advtrue") {
+                    self.adv_true(u, probe)
+                } else {
+                    self.adv_move(u, true, probe)
+                };
             }
-            moved |= self.order_move(true, probe);
-            moved |= self.chest_move(true, probe);
+            moved |= order && self.order_move(true, probe);
+            moved |= chest && self.chest_move(true, probe);
             if !moved {
                 break;
             }
@@ -1459,34 +1657,46 @@ impl Run {
     }
 
     /// somewhere else to start from, near the best or not
-    fn perturb(&mut self, round: usize) {
+    fn perturb(&mut self, kick: Kick) {
         let block = self.b.block();
-        match round % 3 {
-            1 => {
-                for u in self.normals.clone() {
+        match kick {
+            Kick::Empty | Kick::Chest => {
+                for u in self
+                    .normals
+                    .clone()
+                    .into_iter()
+                    .filter(|_| kick == Kick::Empty)
+                {
                     let len = self.b.upgrade_arr[u].state.len();
                     self.b.upgrade_arr[u]
                         .state
                         .update_payload(vec![smallvec![]; len]);
                 }
-                for u in self.advs.clone() {
+                for u in self
+                    .advs
+                    .clone()
+                    .into_iter()
+                    .filter(|_| kick == Kick::Empty)
+                {
                     let len = self.b.upgrade_arr[u].state.len();
                     self.b.upgrade_arr[u]
                         .state
                         .update_payload(vec![smallvec![0]; len]);
                 }
-                let states = self
-                    .b
-                    .prep_output
-                    .chests
-                    .iter()
-                    .map(|(key, chest)| (key.clone(), chest.random_state(&mut self.rng)))
-                    .collect();
-                self.b.set_chest_state(&states);
+                if !self.on("keepchest") {
+                    let states = self
+                        .b
+                        .prep_output
+                        .chests
+                        .iter()
+                        .map(|(key, chest)| (key.clone(), chest.random_state(&mut self.rng)))
+                        .collect();
+                    self.b.set_chest_state(&states);
+                }
             }
-            2 => {
+            Kick::Rand => {
                 for u in self.normals.clone() {
-                    if self.rng.random::<f64>() > 0.3 {
+                    if self.on("randorder") || self.rng.random::<f64>() > 0.3 {
                         continue;
                     }
                     let up = &self.b.upgrade_arr[u];
@@ -1506,7 +1716,7 @@ impl Run {
                     self.b.upgrade_arr[u].state.update_payload(plan);
                 }
                 let n = self.b.special_state.len();
-                for _ in 0..2 {
+                for _ in 0..if self.on("randplan") { 0 } else { 2 } {
                     let i = self.rng.random_range(0..n);
                     let j = self.rng.random_range(0..n.min(4));
                     let x = self.b.special_state.remove(i);
@@ -1524,13 +1734,25 @@ impl Run {
                     }
                 }
                 let mut states = self.b.chest_states.clone();
+                let stacks = self
+                    .b
+                    .prep_output
+                    .chests
+                    .iter()
+                    .filter(|(_, chest)| chest.options.len() > 1)
+                    .count();
+                let at = if self.on("anystack") && stacks > 0 {
+                    self.rng.random_range(0..stacks)
+                } else {
+                    0
+                };
                 if let Some((key, chest)) = self
                     .b
                     .prep_output
                     .chests
                     .iter()
                     .filter(|(_, chest)| chest.options.len() > 1)
-                    .nth(0)
+                    .nth(at)
                 {
                     states.insert(key.clone(), chest.random_state(&mut self.rng));
                 }
@@ -1539,13 +1761,55 @@ impl Run {
         }
     }
 
+    /// a descent under prices kicked at random
+    fn price_kick(&mut self, probe: &mut Probe) {
+        let kept = self.sur.corr.clone();
+        for row in 0..self.sur.rows {
+            if self.rng.random::<f64>() < 0.5 {
+                let factor = (KICK * (self.rng.random::<f64>() * 2.0 - 1.0)).exp();
+                self.sur.corr[row] -= (factor - 1.0) * self.sur.price[row];
+            }
+        }
+        self.descend(DESCENT, probe);
+        self.sur.corr = kept;
+    }
+
     fn main(&mut self, effort: f64, probe: &mut Probe) {
         let stall_max = (STALL * effort).ceil().max(1.0) as usize;
         let mut stall = 0;
+        // every other restart a kick of the prices, the rest a kick of the state
+        let descent = !self.off("descent");
+        let rotation: Vec<Kick> = [
+            (Kick::Price, "pricekick"),
+            (Kick::Empty, "pempty"),
+            (Kick::Price, "pricekick"),
+            (Kick::Rand, "prand"),
+            (Kick::Price, "pricekick"),
+            (Kick::Piece, "ppiece"),
+        ]
+        .iter()
+        .filter(|(kick, name)| !self.off(name) && (descent || *kick != Kick::Price))
+        .map(|pair| {
+            if pair.0 == Kick::Empty && self.on("keepplans") {
+                Kick::Chest
+            } else {
+                pair.0
+            }
+        })
+        .collect();
         for round in 0.. {
-            if round > 0 && (self.spent() >= self.budget || stall >= stall_max) {
+            if round > 0
+                && (self.spent() >= self.budget || stall >= stall_max || rotation.is_empty())
+            {
                 break;
             }
+            self.round = round;
+            self.kick = if round == 0 {
+                Kick::First
+            } else {
+                rotation[(round - 1) % rotation.len()]
+            };
+            self.what = Move::Start;
             let before = self.best.1;
             let start = self.best.0.clone();
             self.load(&start);
@@ -1553,27 +1817,27 @@ impl Run {
             let t0 = self.eval(probe);
             self.calibrate(probe);
             let g0 = self.sur.total(&self.b);
-            // every other restart a kick of the prices, the rest a kick of the state
-            if round > 0 && round % 2 == 1 {
-                let kept = self.sur.corr.clone();
-                for row in 0..self.sur.rows {
-                    if self.rng.random::<f64>() < 0.5 {
-                        let factor = (KICK * (self.rng.random::<f64>() * 2.0 - 1.0)).exp();
-                        self.sur.corr[row] -= (factor - 1.0) * self.sur.price[row];
-                    }
-                }
-                self.descend(DESCENT, probe);
-                self.sur.corr = kept;
+            if self.kick == Kick::Price {
+                self.price_kick(probe);
             } else if round > 0 {
-                self.perturb(round / 2);
+                self.perturb(self.kick);
                 self.sur.refresh_all(&mut self.b);
             }
-            self.descend(DESCENT, probe);
-            if self.kick_repair(effort, probe) {
+            if descent {
                 self.descend(DESCENT, probe);
+                let clock = probe.clock();
+                let repaired = !self.off("kickrepair") && self.kick_repair(effort, probe);
+                self.timers[1] += since(clock);
+                if repaired {
+                    self.descend(DESCENT, probe);
+                }
             }
             let g1 = self.sur.total(&self.b);
+            self.what = Move::Descent;
             let t1 = self.eval(probe);
+            if round == 0 {
+                put(probe, "sur_first", t1);
+            }
             if g1 != g0 {
                 self.agree.add(g1 - g0, t1 - t0, t0.abs().max(1.0));
             }
@@ -1583,8 +1847,13 @@ impl Run {
                 self.eval(probe);
             }
             self.polish(probe);
+            if round == 0 {
+                put(probe, "sur_first_polished", self.best.1);
+            }
             if better_than(self.best.1, before) {
                 stall = 0;
+                probe.at((since(self.clock) * 1000.0) as i64);
+                put(probe, "sur_best", self.best.1);
             } else {
                 stall += 1;
             }
@@ -1597,6 +1866,86 @@ fn put(probe: &mut Probe, key: &'static str, value: f64) {
     if value.is_finite() {
         probe.put(key, value);
     }
+}
+
+impl Run {
+    fn new(b: StateBundle, seed: u64, budget: f64, probe: &mut Probe) -> Run {
+        let names = |list: &str, piece: &str| list.split('+').any(|name| name == piece);
+        USE_SKEW.set(!names(&b.tuning.lab_off, "skew"));
+        USE_POINTS.set(if names(&b.tuning.lab_on, "points128") {
+            128
+        } else if names(&b.tuning.lab_on, "points512") {
+            512
+        } else {
+            POINTS
+        });
+        let top = if names(&b.tuning.lab_on, "top8") {
+            8
+        } else {
+            TOP
+        };
+        let true_descent = names(&b.tuning.lab_on, "truedescent");
+        let n = b.upgrade_arr.len();
+        let sur = Sur::new(&b);
+        Run {
+            normals: (0..n)
+                .filter(|&u| b.upgrade_arr[u].is_normal_honing)
+                .collect(),
+            flipping: false,
+            cost0: COST.get(),
+            advs: (0..n)
+                .filter(|&u| !b.upgrade_arr[u].is_normal_honing)
+                .collect(),
+            best: (b.to_essence(), f64::NEG_INFINITY),
+            b,
+            sur,
+            rng: SmallRng::seed_from_u64(seed),
+            work: 0.0,
+            budget,
+            agree: Agree::default(),
+            top,
+            true_descent,
+            kick: Kick::First,
+            what: Move::Start,
+            by_kick: [0.0; 7],
+            by_move: [0.0; 9],
+            clock: probe.clock(),
+            timers: [0.0; 4],
+            best_at: 0.0,
+            best_round: 0.0,
+            round: 0,
+        }
+    }
+}
+
+/// For `solve`: a state as it is, kicked (`price`, `empty`, `chest`, `rand`, or `none`) and
+/// taken down a descent on the surrogate. Its metric is not set.
+pub fn kicked<R: Rng>(
+    rng: &mut R,
+    state: &StateBundle,
+    kind: &str,
+    probe: &mut Probe,
+) -> StateBundle {
+    let mut run = Run::new(state.clone(), rng.random(), f64::INFINITY, probe);
+    USE_POINTS.set(128);
+    run.sur.refresh_all(&mut run.b);
+    run.eval(probe);
+    run.calibrate(probe);
+    let kick = match kind {
+        "price" => Kick::Price,
+        "empty" => Kick::Empty,
+        "chest" => Kick::Chest,
+        "rand" => Kick::Rand,
+        _ => Kick::First,
+    };
+    if kick == Kick::Price {
+        run.price_kick(probe);
+    } else if kick != Kick::First {
+        run.perturb(kick);
+        run.sur.refresh_all(&mut run.b);
+    }
+    run.descend(DESCENT, probe);
+    run.b
 }
 
 pub fn solve<R: Rng>(
@@ -1615,27 +1964,20 @@ pub fn solve<R: Rng>(
     }
     let effort = b.tuning.lab_effort.max(0.0);
     let n = b.upgrade_arr.len();
-    let carried: Vec<StateEssence> = previous
+    let mut carried: Vec<StateEssence> = previous
         .map(|p| p.carried(&b).iter().map(|c| c.to_essence()).collect())
         .unwrap_or_default();
-    let sur = Sur::new(&b);
-    let mut run = Run {
-        normals: (0..n)
-            .filter(|&u| b.upgrade_arr[u].is_normal_honing)
-            .collect(),
-        flipping: false,
-        cost0: COST.get(),
-        advs: (0..n)
-            .filter(|&u| !b.upgrade_arr[u].is_normal_honing)
-            .collect(),
-        best: (b.to_essence(), f64::NEG_INFINITY),
-        b,
-        sur,
-        rng: SmallRng::seed_from_u64(rng.random()),
-        work: 0.0,
-        budget: effort * (BASE_EVALS + PER_UPGRADE * n as f64),
-        agree: Agree::default(),
-    };
+    // solve's result as one more carried plan, its cost apart from the budget
+    let names = |list: &str, piece: &str| list.split('+').any(|name| name == piece);
+    if names(&b.tuning.lab_on, "fromsolve") {
+        let mut plain = b.clone();
+        plain.tuning.algo = String::new();
+        let solved = crate::optimizer::solve(rng, plain, previous, probe).best;
+        carried.push(solved.to_essence());
+    }
+    let budget = effort * (BASE_EVALS + PER_UPGRADE * n as f64);
+    let seed = rng.random();
+    let mut run = Run::new(b, seed, budget, probe);
     // the given and carried plans, on the block grid
     run.fix();
     run.eval(probe);
@@ -1647,12 +1989,16 @@ pub fn solve<R: Rng>(
     let full = run.budget;
     run.budget = full * (1.0 - FLIP_SHARE);
     run.main(effort, probe);
+    let main_s = since(run.clock);
     run.budget = full;
-    run.flipping = true;
-    let best = run.best.0.clone();
-    run.load(&best);
-    run.sur.refresh_all(&mut run.b);
-    run.polish(probe);
+    if !run.off("last") {
+        run.flipping = true;
+        run.kick = Kick::Last;
+        let best = run.best.0.clone();
+        run.load(&best);
+        run.sur.refresh_all(&mut run.b);
+        run.polish(probe);
+    }
 
     let best = run.best.0.clone();
     run.load(&best);
@@ -1674,6 +2020,21 @@ pub fn solve<R: Rng>(
     put(probe, "sur_level", (raw - metric) / metric.abs().max(1.0));
     put(probe, "sur_work", run.work);
     put(probe, "sur_spent", run.spent());
+    put(probe, "sur_rounds", (run.round + 1) as f64);
+    put(probe, "sur_best_round", run.best_round);
+    put(probe, "sur_best_at", run.best_at);
+    put(probe, "sur_main_s", main_s);
+    put(probe, "sur_all_s", since(run.clock));
+    put(probe, "sur_descent_s", run.timers[0]);
+    put(probe, "sur_repair_s", run.timers[1]);
+    put(probe, "sur_polish_s", run.timers[2]);
+    put(probe, "sur_true_s", run.timers[3]);
+    for (name, gain) in KICK_NAMES.iter().zip(run.by_kick) {
+        put(probe, name, gain);
+    }
+    for (name, gain) in MOVE_NAMES.iter().zip(run.by_move) {
+        put(probe, name, gain);
+    }
     Solved {
         best: run.b,
         blob: Vec::new(),

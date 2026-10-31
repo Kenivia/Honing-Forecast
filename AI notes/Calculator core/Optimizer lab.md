@@ -122,6 +122,7 @@ Keep it to about 10 minutes. Anything longer is a batch.
 - **Noise.** Treat effects under about 0.01% of flow as null, unless they repeat on the same payloads across sets or seeds. The random stream shifts with any change, so check a "loss" seed by seed before believing it. `Optimizer lab results.md` lists the noisy payloads.
 - **Judge on** `real_test` (38 real characters) and `real_income_test` (22 real income chains), which no attempt saw, plus `quick_dev` and the regime sets (`advanced`, `free_taps`, `juice`, `small`, `large`, `speed_test`) for where each does well. The real sets come from the analytics pulls (`Arena.md`, "Generated scenarios").
 - **The best known is over all of `runs.sqlite`**, so it moves as results come in.
+- **The free tap cut changed on 2026-10-31** (`Evaluation pipeline.md`), after every snapshot listed below. A later build does not repeat them seed by seed and runs `solve` about 5 to 10% cheaper, so it needs a fresh `solve` baseline for the repeat check and for matched CPU. Older `metric_ref` values stay comparable: they differ by at most 2.3e-6 of flow, far under the noise.
 
 ## What is in `runs.sqlite`
 

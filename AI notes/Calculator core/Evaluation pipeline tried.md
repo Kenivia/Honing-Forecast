@@ -10,6 +10,16 @@ The overnight test of the saddlepoint's replacements is archived with its driver
 - Don't expect the Edgeworth leftover to be exercised: the coarse lattice never failed over 2,631 solves (98 million evaluations).
 - Don't sum the lattice's masses up to a threshold at or past the top: rounding leaves a fraction of a gold per material at a threshold of a billion, which summed over juices showed as a gain from spending nothing ("-0" / "-1" gold). Answer (1, 1) outright.
 
+## The free tap cut
+
+Evidence: `arena_data/lab/iteration2/free_tap_cut/report.md`.
+
+- Don't look to the old cut (1e-7, its mass lost) for noise in the optimizer: its error had a p99 of 7.6e-8 of flow against 4e-5 for the coarse lattice, and no order move over 2e-8 of flow changed sign.
+- Don't make the cut flat at 1e-4, folded or not: where free taps cover nearly everything the rare outcomes are the cost, and the optimizer's error reached 1.2e-2 of flow with up to 0.65% lost (`ft_high`). `tol * (1 - p_max)`, folded, stays at 1.8e-5.
+- Don't expect much from raising it further: a state has about 6 live outcomes and 1 or 2 go, about 5 to 10% of CPU. Past 1e-4 the factor's error grows to 2.4e-4 at 3e-4, for no clear gain.
+- Don't keep the mean of k with a linear correction when folding, or cut on cumulative tail mass: neither beats a plain fold.
+- Don't add a finer threshold to the final polish: returned states are as close to the reference as before.
+
 ## The coarse lattice
 
 - Don't pick the step per sum from a work budget: it beat a fixed `coarse_cells` per unit of time at high accuracy, but no budget was as fast as the default without falling back, and the fallback brought its errors with it.

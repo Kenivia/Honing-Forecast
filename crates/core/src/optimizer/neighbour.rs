@@ -1,7 +1,6 @@
 use std::cmp::Ordering::{Equal, Greater, Less};
 
 use crate::advanced_honing::utils::MAX_ADV_STATE;
-use crate::constants::SPECIAL_TOL;
 use crate::constants::juice_info::JuiceInfo;
 // use crate::my_dbg;
 use crate::probe::Probe;
@@ -150,12 +149,7 @@ impl SolverStateBundle {
         if mutate_special && order_reach {
             // any upgrade, to a place a free tap can get to
             let u_len = self.state_bundle.special_state.len();
-            let reach = self
-                .state_bundle
-                .special_probs()
-                .iter()
-                .rposition(|&chance| chance >= SPECIAL_TOL)
-                .unwrap_or(0);
+            let reach = self.state_bundle.skip_weights().last().map_or(0, |x| x.0);
             let idx1: usize = self.rng.random_range(0..u_len);
             let idx2: usize = self.rng.random_range(0..=reach.min(u_len - 1));
             let elem = self.state_bundle.special_state.remove(idx1);

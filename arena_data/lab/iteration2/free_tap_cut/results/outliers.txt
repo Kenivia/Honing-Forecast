@@ -1,0 +1,47 @@
+worst by fold at 1e-4
+single_1007_serca_n5:0            ord3    n  5 budget   32222 flow       54622 metric      17288768 fold1e-4   5.5e-03 cur1e-7  -3.6e-10
+    p 1.8e-12 3.4e-05 2.3e-05 3.8e-05 6.3e-05 1.0e+00
+    G 1.11e+07 1.16e+07 1.57e+07 1.62e+07 1.68e+07 1.73e+07
+single_1134_serca_n24:0           ord7    n 24 budget   61456 flow     1672110 metric       4655122 fold1e-4   6.9e-04 cur1e-7   9.2e-07
+    p 3.5e-09 6.8e-08 5.0e-05 6.0e-06 6.8e-06 2.0e-05 2.6e-05 3.5e-05 4.5e-05 6.0e-05 7.8e-05 2.2e-04
+    G -2.6e+07 -2.12e+07 -1.49e+07 -7.79e+06 -7.45e+06 -7.12e+06 -6.45e+06 -5.78e+06 -5.08e+06 -4.43e+06 -3.74e+06 -3.05e+06
+single_1024_t4_n2:0               given   n  2 budget    3947 flow        6842 metric         74611 fold1e-4   2.7e-04 cur1e-7   0.0e+00
+    p 3.3e-06 4.3e-05 1.0e+00
+    G -451 3.73e+04 7.46e+04
+single_1164_serca_n25:0           given   n 25 budget  202315 flow      239120 metric      99427548 fold1e-4   2.1e-04 cur1e-7   0.0e+00
+    p 5.4e-07 7.5e-06 1.0e+00
+    G 8.81e+07 9.36e+07 9.94e+07
+single_1079_serca_n23:0           given   n 23 budget   21413 flow      525885 metric        -56202 fold1e-4   1.9e-04 cur1e-7   1.0e-06
+    p 1.1e-12 4.7e-09 7.8e-08 6.8e-07 5.4e-05 3.7e-05 3.9e-04 1.4e-03 3.9e-03 9.0e-03 1.8e-02 8.0e-02
+    G -7.81e+06 -7.2e+06 -6.41e+06 -5.54e+06 -4.59e+06 -3.28e+06 -3e+06 -2.5e+06 -1.99e+06 -1.46e+06 -9.25e+05 -4.33e+05
+single_1222_serca_n17:0           given   n 17 budget   18103 flow       88651 metric       5847817 fold1e-4   1.6e-04 cur1e-7   9.6e-07
+    p 2.2e-11 4.9e-08 7.3e-07 5.7e-06 2.7e-04 1.0e+00
+    G -2.95e+06 -1.71e+06 -8.2e+04 1.7e+06 3.61e+06 5.85e+06
+
+real and page cases 6982 payloads 319
+names ['Kenipope_bonus', 'Keniwei', 'Keniwei_bonus', 'Toneema_bonus', 'real_04b85565_9357e8', 'real_064b3304_174848', 'real_0caa8c6c_5f0388', 'real_0caa8c6c_7ffffe', 'real_16ca4a20_08bcc1', 'real_16ca4a20_ee3a64', 'real_27a2bc40_2991b9', 'real_27a2bc40_d88533']
+real states 6982 outcomes at 1e-7 mean 6.21 median 6 p90 10 max 30
+  cur    1e-07 p50  0.0e+00 p99  3.4e-08 p99.9  8.1e-08 max  9.7e-08 outcomes   6.21 ratio  1.00
+  cur    1e-06 p50  0.0e+00 p99  4.4e-07 p99.9  6.6e-07 max  8.7e-07 outcomes   5.91 ratio  0.95
+  cur    1e-05 p50  0.0e+00 p99  5.9e-06 p99.9  7.2e-06 max  1.1e-05 outcomes   5.61 ratio  0.90
+  fold   1e-05 p50  2.2e-17 p99  2.3e-07 p99.9  5.2e-07 max  1.7e-06 outcomes   5.61 ratio  0.90
+  fold   1e-04 p50  2.7e-08 p99  2.9e-06 p99.9  6.3e-06 max  1.7e-05 outcomes   5.12 ratio  0.82
+  fold   1e-03 p50  1.0e-06 p99  4.4e-05 p99.9  9.5e-05 max  1.6e-04 outcomes   4.49 ratio  0.72
+  mean   1e-04 p50  9.7e-10 p99  2.2e-06 p99.9  7.9e-06 max  1.3e-05 outcomes   5.12 ratio  0.82
+  mean   1e-03 p50  7.7e-08 p99  9.6e-05 p99.9  1.5e-04 max  4.9e-04 outcomes   4.49 ratio  0.72
+generated states 15106 outcomes at 1e-7 mean 5.97 median 5 p90 11 max 34
+  cur    1e-07 p50  0.0e+00 p99  1.0e-07 p99.9  1.8e-06 max  2.3e-06 outcomes   5.97 ratio  1.00
+  cur    1e-06 p50  0.0e+00 p99  1.6e-06 p99.9  1.2e-05 max  2.6e-04 outcomes   5.82 ratio  0.98
+  cur    1e-05 p50  0.0e+00 p99  1.4e-05 p99.9  2.4e-04 max  3.1e-03 outcomes   5.61 ratio  0.94
+  fold   1e-05 p50  0.0e+00 p99  2.4e-06 p99.9  1.5e-05 max  8.1e-04 outcomes   5.62 ratio  0.94
+  fold   1e-04 p50  0.0e+00 p99  3.4e-05 p99.9  1.6e-03 max  5.5e-03 outcomes   5.28 ratio  0.88
+  fold   1e-03 p50  0.0e+00 p99  5.5e-04 p99.9  4.8e-03 max  7.1e-03 outcomes   4.83 ratio  0.81
+  mean   1e-04 p50  0.0e+00 p99  2.1e-05 p99.9  1.6e-03 max  5.5e-03 outcomes   5.28 ratio  0.88
+  mean   1e-03 p50  0.0e+00 p99  4.0e-04 p99.9  4.8e-03 max  9.9e-03 outcomes   4.83 ratio  0.81
+
+budget regime: mean outcomes and error by the chance no upgrade is left (p at the top outcome) 
+  skipped share 0.0-0.1: states  11548 outcomes   5.06 ->   4.20 at fold 1e-4; p99 err  3.2e-08 ->  6.3e-06; max  1.0e-07 ->  2.6e-05
+  skipped share 0.1-0.3: states   4815 outcomes   7.31 ->   6.75 at fold 1e-4; p99 err  3.0e-08 ->  6.0e-06; max  1.7e-06 ->  5.9e-05
+  skipped share 0.3-0.6: states   3001 outcomes   7.01 ->   6.29 at fold 1e-4; p99 err  9.2e-08 ->  1.3e-05; max  2.7e-07 ->  4.9e-05
+  skipped share 0.6-0.9: states   2075 outcomes   7.13 ->   6.16 at fold 1e-4; p99 err  2.9e-07 ->  3.0e-05; max  9.2e-07 ->  2.6e-04
+  skipped share 0.9-1.0: states    649 outcomes   6.16 ->   4.42 at fold 1e-4; p99 err  2.1e-06 ->  4.8e-03; max  2.3e-06 ->  5.5e-03

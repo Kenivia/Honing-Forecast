@@ -1,0 +1,18 @@
+free_taps: solves 12 wall 57.2s dp 15.9s share of total 0.277; per solve median 0.014 p90 0.294 max 0.483; calls/solve 3746
+    single_0071_serca_n19:0              wall   31.62 dp  15.28 (0.48) calls   16541 budget 46865 us/call 923
+    single_0041_serca_n19:0              wall    1.32 dp   0.41 (0.31) calls   10044 budget 3966 us/call 41
+    single_0099_serca_n10:0              wall    0.87 dp   0.06 (0.06) calls    1583 budget 6236 us/call 35
+    single_0009_t4_n9:0                  wall    2.34 dp   0.05 (0.02) calls    6267 budget 1415 us/call 8
+    single_0027_t4_n20:0                 wall   16.89 dp   0.03 (0.00) calls    4642 budget 1097 us/call 7
+real_test: solves 38 wall 94.7s dp 2.1s share of total 0.023; per solve median 0.000 p90 0.005 max 0.062; calls/solve 1813
+    real_fbaad097_2f44e4:0               wall   18.38 dp   1.15 (0.06) calls   20470 budget 3646 us/call 56
+    real_46b6a0d3_1ac5d5:0               wall   20.84 dp   0.90 (0.04) calls   19984 budget 2654 us/call 45
+    real_0caa8c6c_7ffffe:0               wall    7.40 dp   0.06 (0.01) calls    7515 budget 661 us/call 8
+    real_064b3304_174848:0               wall    4.23 dp   0.01 (0.00) calls    3056 budget 1986 us/call 3
+    real_d3327186_9bed6c:0               wall    2.12 dp   0.01 (0.00) calls     748 budget 6274 us/call 9
+speed_test: solves 215 wall 368.1s dp 27.5s share of total 0.075; per solve median 0.001 p90 0.016 max 0.695; calls/solve 2288
+    single_1134_serca_n24:0              wall   28.32 dp  17.52 (0.62) calls   10680 budget 61456 us/call 1640
+    chain_1042_t4_n29:1                  wall   10.08 dp   1.67 (0.17) calls   17753 budget 6476 us/call 94
+    chain_1042_t4_n29:2                  wall   10.44 dp   1.64 (0.16) calls   16220 budget 7040 us/call 101
+    chain_1042_t4_n29:0                  wall   10.32 dp   1.62 (0.16) calls   16626 budget 6588 us/call 97
+    sweep_0_chest_optional_4_t4_n12:0    wall    2.06 dp   1.43 (0.69) calls    8028 budget 27987 us/call 178

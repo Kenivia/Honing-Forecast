@@ -3,6 +3,7 @@
 //! The default is production. The arena overrides fields by name, so a new knob only
 //! needs a field here and a read where the constant used to be.
 
+use crate::constants::SPECIAL_FLOOR;
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 
@@ -30,6 +31,9 @@ pub struct Tuning {
     pub coarse_cells: f64,
     /// multiplications a coarse lattice may take before the Edgeworth series answers instead
     pub max_coarse_work: usize,
+    /// free tap outcomes under this chance, times the chance of any but the likeliest outcome,
+    /// are not evaluated (`StateBundle::skip_weights`)
+    pub special_tol: f64,
 
     // optimizer
     pub max_iters: i64,
@@ -100,6 +104,13 @@ pub struct Tuning {
     /// kicks of the best state's free tap order after the chains (a window shuffled), each
     /// polished and kept where better; 0 for none
     pub order_kicks: usize,
+    /// every other chain's start also goes down a descent on the surrogate
+    pub sur_start: bool,
+    /// after the chains, restarts of the best state on the surrogate, each polished and kept
+    /// where better, until this many in a row gain nothing; 0 for none
+    pub sur_stall: usize,
+    /// the kinds of those restarts in turn, joined by `+`: `price`, `empty`, `chest`, `rand`
+    pub sur_kinds: String,
 
     // chained runs
     pub max_blob_bytes: usize,
@@ -144,6 +155,7 @@ impl Default for Tuning {
             max_memo_size: 1 << 16,
             coarse_cells: 8.0,
             max_coarse_work: 20_000_000,
+            special_tol: 1e-4,
 
             max_iters: 48000,
             max_best_size: 10,
@@ -180,6 +192,9 @@ impl Default for Tuning {
             greedy_order: true,
             shadow_start: 4,
             order_kicks: 0,
+            sur_start: false,
+            sur_stall: 0,
+            sur_kinds: "price+rand+chest".to_string(),
             max_blob_bytes: 5 * 1024 * 1024,
             carry: true,
             carry_iters: 1.0,
@@ -198,10 +213,12 @@ impl Default for Tuning {
 }
 
 impl Tuning {
-    /// What reported metrics are scored with: the coarse lattice at 64 points, where the optimizer has 8
+    /// What reported metrics are scored with: the coarse lattice at 64 points, where the optimizer
+    /// has 8, and nearly every free tap outcome
     pub fn reference() -> Tuning {
         Tuning {
             coarse_cells: 64.0,
+            special_tol: SPECIAL_FLOOR,
             ..Tuning::default()
         }
     }

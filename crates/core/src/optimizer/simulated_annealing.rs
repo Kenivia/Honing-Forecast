@@ -11,7 +11,6 @@ use crate::state_bundle::StateEssence;
 use crate::timer::Timer;
 
 use crate::advanced_honing::utils::MAX_ADV_STATE;
-use crate::constants::SPECIAL_TOL;
 use crate::state::OneState;
 use ahash::AHashSet;
 use ordered_float::OrderedFloat;
@@ -343,11 +342,7 @@ fn order_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64
         for place in 0..count {
             // an upgrade past the last one a free tap can reach is as good as not in the order
             state_bundle.compute_special_probs(false);
-            let reach = state_bundle
-                .special_probs()
-                .iter()
-                .rposition(|&chance| chance >= SPECIAL_TOL)
-                .unwrap_or(0);
+            let reach = state_bundle.skip_weights().last().map_or(0, |x| x.0);
             if place > reach {
                 break;
             }
@@ -585,6 +580,9 @@ pub fn solve<R: Rng>(
     if tuning.shadow_start > 0 {
         super::shadow_start(&mut shadowed, tuning.shadow_start, probe);
     }
+    if tuning.sur_start {
+        shadowed = super::lab::surrogate::kicked(rng, &shadowed, "none", probe);
+    }
 
     // Several shorter chains share the evaluations, each polished, and the best is kept. The
     // first goes on from a carried plan where there is one, the rest start afresh.
@@ -652,6 +650,9 @@ pub fn solve<R: Rng>(
     if tuning.order_kicks > 0 {
         order_kicks(rng, &mut best, probe);
     }
+    if tuning.sur_stall > 0 {
+        sur_loop(rng, &mut best, probe);
+    }
     best.tuning = tuning;
     // the other plans the chains ended on, for a run that goes on from this one
     let mut elites: Vec<&StateBundle> = Vec::new();
@@ -710,6 +711,27 @@ fn order_kicks<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
         let polished = anneal(rng, &mut kicked, probe, 1, 1, f64::NEG_INFINITY);
         if polished.metric > best.metric + best.metric.abs() * 1e-12 {
             *best = polished;
+        }
+    }
+}
+
+/// Restarts of the best state on the surrogate, each polished and kept where better, until
+/// `Tuning::sur_stall` in a row gain nothing (`Tuning::sur_kinds`).
+fn sur_loop<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
+    let kinds: Vec<String> = best.tuning.sur_kinds.split('+').map(String::from).collect();
+    let (mut stall, mut round) = (0, 0);
+    while stall < best.tuning.sur_stall {
+        let kind = &kinds[round % kinds.len()];
+        round += 1;
+        let mut kicked = super::lab::surrogate::kicked(rng, best, kind, probe);
+        kicked.tuning.max_iters = 0;
+        kicked.metric = kicked.metric_router(probe);
+        let polished = anneal(rng, &mut kicked, probe, 1, 1, f64::NEG_INFINITY);
+        if polished.metric > best.metric + best.metric.abs() * 1e-12 {
+            *best = polished;
+            stall = 0;
+        } else {
+            stall += 1;
         }
     }
 }

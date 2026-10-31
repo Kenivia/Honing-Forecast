@@ -7,17 +7,35 @@
 //!
 //! Admittedly dynamic programming is one of these things that I never really understood so this is algorithm is vibe coded
 //! but this matches experimental result so at least it's working
-use crate::constants::{IGNORE_PROB_TOL, SPECIAL_TOL};
+use crate::constants::{IGNORE_PROB_TOL, SPECIAL_FLOOR};
 use crate::state_bundle::StateBundle;
 use num::Integer;
 use std::f64;
 use std::mem::swap;
-use std::ops::Range;
 
 impl StateBundle {
     pub fn special_probs(&self) -> &Vec<f64> {
         // we don't automatically call compute_special here cos that'd need &mut self
         &self.special_cache[&self.prep_output.special_budget][&self.special_state]
+    }
+
+    /// The free tap outcomes worth evaluating, with their weights. An outcome cut hands its chance
+    /// to the nearest one kept. The cut shrinks with the chance of any but the likeliest outcome:
+    /// where free taps cover nearly everything, the rare outcomes are the cost.
+    pub fn skip_weights(&self) -> Vec<(usize, f64)> {
+        let probs = self.special_probs();
+        if probs.is_empty() {
+            return Vec::new();
+        }
+        let likeliest = probs.iter().fold(0.0, |a: f64, &b| a.max(b));
+        let tol = (self.tuning.special_tol * (1.0 - likeliest)).max(SPECIAL_FLOOR);
+        let low = probs.iter().position(|&p| p >= tol).unwrap();
+        let high = probs.iter().rposition(|&p| p >= tol).unwrap();
+        let mut out: Vec<(usize, f64)> = (low..=high).map(|k| (k, probs[k])).collect();
+        let last = out.len() - 1;
+        out[0].1 += probs[..low].iter().sum::<f64>();
+        out[last].1 += probs[high + 1..].iter().sum::<f64>();
+        out
     }
     fn gcd_special(&self) -> i64 {
         let mut out: i64 = 1;
@@ -210,13 +228,8 @@ impl StateBundle {
         let sum: f64 = actual_out.iter().sum();
         let length = actual_out.len();
         actual_out[length - 1] += 1.0 - sum; // the prob that we fail everything is not included, we add it to the last entry
-        // my_dbg!(&actual_out);
-        if !preserve_tail {
-            eliminate_tail(0..actual_out.len(), &mut actual_out);
-            eliminate_tail(actual_out.len()..0, &mut actual_out);
-        }
-
-        // my_dbg!(&actual_out);
+        // rounding leaves entries a hair under zero
+        actual_out.iter_mut().for_each(|p| *p = p.max(0.0));
 
         if preserve_tail {
             return Some(
@@ -233,40 +246,5 @@ impl StateBundle {
                 .insert(self.special_state.clone(), actual_out);
             return None;
         }
-    }
-}
-
-/// Incredibly crude thingy to try and mitigate the effect of ignoring small chances
-/// idk how mathematically sound this is but let's just hope its fine (at least it should be better than just plain ignoring them)
-///
-/// empirically this allows us to drop special tol to 1e-4
-/// BUT that's evaluated on optimized states which often don't have small tails anyway
-/// so all we know is that a tol of 1e-4 is good enough to make the optimizer find the same non-small tailed optima
-///
-/// the optimizer is often incentivized to NOT have trailing small tails because higher upgrades are often more efficient
-/// so this is kinda completely useless (hence why special tol is left at 1e-7) but whatever
-fn eliminate_tail(range: Range<usize>, actual_out: &mut Vec<f64>) {
-    let mut cur_weighted_index: f64 = 0.0;
-    let mut cur_sum: f64 = 0.0;
-    for index in range {
-        // rounding leaves entries a hair under zero, which would put the mean index out of range
-        let this = actual_out[index].max(0.0);
-        if this > SPECIAL_TOL {
-            if cur_sum > 0.0 {
-                let actual_index = (cur_weighted_index / cur_sum as f64).round() as usize;
-                actual_out[actual_index] = cur_sum;
-            }
-
-            break;
-        }
-        cur_weighted_index += this * index as f64;
-        cur_sum += this;
-
-        if cur_sum > SPECIAL_TOL {
-            let actual_index = (cur_weighted_index / cur_sum as f64).round() as usize;
-            actual_out[actual_index] = cur_sum;
-            break; // i mean we don't HAVE to break here but this guarantees that we're never fucking with more than SPECIAL_TOL of the distribution
-        }
-        actual_out[index] = 0.0;
     }
 }

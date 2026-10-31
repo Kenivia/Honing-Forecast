@@ -1,0 +1,27 @@
+free_taps states 24 with free tap outcomes 24 total ms 3.8
+  1e-7_0   total 1.000  multi-outcome states 1.000  median state 1.000
+  1e-6_0   total 0.994  multi-outcome states 0.994  median state 0.993
+  1e-5_0   total 0.944  multi-outcome states 0.944  median state 0.968
+  1e-7_2   total 0.968  multi-outcome states 0.968  median state 0.971
+  1e-5_2   total 0.926  multi-outcome states 0.926  median state 0.951
+  1e-4_2   total 0.927  multi-outcome states 0.927  median state 0.946
+  1e-3_2   total 0.827  multi-outcome states 0.827  median state 0.868
+  dp as a share of one memo-off evaluation: median 0.1524 p90 3.6085 max 4.4914
+real_test states 76 with free tap outcomes 40 total ms 7.7
+  1e-7_0   total 1.000  multi-outcome states 1.000  median state 1.000
+  1e-6_0   total 0.968  multi-outcome states 0.966  median state 0.981
+  1e-5_0   total 0.910  multi-outcome states 0.900  median state 0.943
+  1e-7_2   total 0.980  multi-outcome states 0.981  median state 0.983
+  1e-5_2   total 0.893  multi-outcome states 0.883  median state 0.932
+  1e-4_2   total 0.842  multi-outcome states 0.824  median state 0.900
+  1e-3_2   total 0.771  multi-outcome states 0.742  median state 0.843
+  dp as a share of one memo-off evaluation: median 0.0396 p90 0.1071 max 0.1849
+speed_test states 430 with free tap outcomes 363 total ms 37.9
+  1e-7_0   total 1.000  multi-outcome states 1.000  median state 1.000
+  1e-6_0   total 0.974  multi-outcome states 0.973  median state 1.000
+  1e-5_0   total 0.926  multi-outcome states 0.924  median state 0.983
+  1e-7_2   total 1.008  multi-outcome states 1.008  median state 1.000
+  1e-5_2   total 0.931  multi-outcome states 0.928  median state 0.983
+  1e-4_2   total 0.849  multi-outcome states 0.844  median state 0.958
+  1e-3_2   total 0.772  multi-outcome states 0.765  median state 0.852
+  dp as a share of one memo-off evaluation: median 0.0626 p90 1.7472 max 93.5705

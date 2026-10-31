@@ -1,0 +1,43 @@
+set        variant                                 runs mean diff%   worst%    best%  wins losses     =    cpu  evals
+ft_high    ft_c                                     355    0.00000   0.0000   0.0000     0      0  100%  1.000  1.000
+ft_high    ft_c:special_tol=1e-4,special_fold=4     355    0.00015  -0.0006   0.0057     0      0   56%  0.990  1.024
+ft_high    ft_c:special_tol=3e-4,special_fold=4     355    0.00007  -0.0011   0.0057     0      0   52%  0.952  1.004
+
+quick_dev  ft_c                                    1047    0.00000   0.0000   0.0000     0      0  100%  1.000  1.000
+quick_dev  ft_c:special_tol=1e-4,special_fold=4    1047    0.00004  -0.0463   0.0651     5      4   81%  0.948  1.017
+quick_dev  ft_c:special_tol=3e-4,special_fold=4    1047   -0.00140  -0.1377   0.0194     1      9   80%  0.907  1.008
+
+speed_test ft_c                                     645    0.00000   0.0000   0.0000     0      0  100%  1.000  1.000
+speed_test ft_c:special_tol=1e-4,special_fold=4     645    0.00003  -0.0091   0.0096     0      0   71%  0.940  1.001
+speed_test ft_c:special_tol=3e-4,special_fold=4     645    0.00006  -0.0192   0.0230     2      1   71%  0.939  1.012
+
+real_test  ft_c                                     190    0.00000   0.0000   0.0000     0      0  100%  1.000  1.000
+real_test  ft_c:special_tol=1e-4,special_fold=4     190    0.00005  -0.0004   0.0016     0      0   79%  0.946  0.992
+real_test  ft_c:special_tol=3e-4,special_fold=4     190    0.00002  -0.0008   0.0019     0      0   75%  0.942  0.992
+
+optimizer metric less reference, / flow, of the returned state
+ft_high    ft_c                                   mean  -1.25e-06 p99|.|  7.66e-05 max|.|  1.06e-04
+ft_high    ft_c:special_tol=1e-4,special_fold=4   mean   6.23e-07 p99|.|  7.74e-05 max|.|  1.50e-04
+ft_high    ft_c:special_tol=3e-4,special_fold=4   mean   5.27e-06 p99|.|  5.34e-05 max|.|  6.24e-05
+quick_dev  ft_c                                   mean   3.78e-07 p99|.|  3.63e-05 max|.|  1.00e-04
+quick_dev  ft_c:special_tol=1e-4,special_fold=4   mean   6.74e-07 p99|.|  3.63e-05 max|.|  1.00e-04
+quick_dev  ft_c:special_tol=3e-4,special_fold=4   mean   1.50e-06 p99|.|  5.21e-05 max|.|  1.00e-04
+speed_test ft_c                                   mean   1.16e-06 p99|.|  3.77e-05 max|.|  8.83e-05
+speed_test ft_c:special_tol=1e-4,special_fold=4   mean   1.25e-06 p99|.|  3.77e-05 max|.|  8.83e-05
+speed_test ft_c:special_tol=3e-4,special_fold=4   mean   1.35e-06 p99|.|  3.77e-05 max|.|  8.43e-05
+real_test  ft_c                                   mean   3.07e-06 p99|.|  2.94e-05 max|.|  3.29e-05
+real_test  ft_c:special_tol=1e-4,special_fold=4   mean   3.09e-06 p99|.|  2.96e-05 max|.|  3.30e-05
+real_test  ft_c:special_tol=3e-4,special_fold=4   mean   3.21e-06 p99|.|  2.99e-05 max|.|  3.25e-05
+set        variant                                 runs mean diff%   worst%    best%  wins losses     =    cpu  evals
+real_incomeft_b                                     858    0.00000   0.0000   0.0000     0      0  100%  1.000  1.000
+real_incomeft_b:special_tol=1e-4,special_fold=2     858    0.00002  -0.0054   0.0040     0      0   45%  0.897  0.992
+real_incomeft_b:special_tol=1e-5,special_fold=2     858   -0.00003  -0.0080   0.0040     0      0   54%  0.951  0.991
+real_incomeft_b:special_tol=3e-4,special_fold=2     858   -0.00006  -0.0109   0.0040     0      1   43%  0.826  0.970
+real_incomeft_c:special_tol=1e-4,special_fold=4     858    0.00001  -0.0040   0.0040     0      0   50%  0.873  0.995
+real_incomeft_c:special_tol=3e-4,special_fold=4     858   -0.00003  -0.0040   0.0040     0      0   46%  0.823  0.979
+real_incomeft_b                                   mean   1.62e-06 p99|.|  3.83e-05 max|.|  4.85e-05
+real_incomeft_b:special_tol=1e-4,special_fold=2   mean   1.39e-06 p99|.|  3.83e-05 max|.|  4.85e-05
+real_incomeft_b:special_tol=1e-5,special_fold=2   mean   1.48e-06 p99|.|  3.83e-05 max|.|  4.85e-05
+real_incomeft_b:special_tol=3e-4,special_fold=2   mean   1.27e-06 p99|.|  4.17e-05 max|.|  4.85e-05
+real_incomeft_c:special_tol=1e-4,special_fold=4   mean   1.53e-06 p99|.|  4.16e-05 max|.|  4.85e-05
+real_incomeft_c:special_tol=3e-4,special_fold=4   mean   1.65e-06 p99|.|  4.17e-05 max|.|  4.85e-05

@@ -1,0 +1,47 @@
+set        variant                                 runs mean diff%   worst%    best%  wins losses     =    cpu  evals
+free_taps  ft_a                                      60    0.00000   0.0000   0.0000     0      0  100%  1.000  1.000
+free_taps  ft_a:special_fold=2                       60    0.00016  -0.0001   0.0020     0      0   83%  1.003  1.059
+free_taps  ft_a:special_tol=1e-3,special_fold=2      60   -0.00043  -0.0050   0.0003     0      0   55%  0.895  1.065
+free_taps  ft_a:special_tol=1e-4,special_fold=2      60   -0.00546  -0.0709   0.0051     0      1   63%  0.932  1.015
+free_taps  ft_a:special_tol=1e-5                     60    0.00037  -0.0000   0.0044     0      0   65%  0.972  1.031
+free_taps  ft_a:special_tol=1e-5,special_fold=2      60    0.00042  -0.0002   0.0052     0      0   70%  0.974  1.067
+free_taps  ft_a:special_tol=1e-6                     60    0.00034  -0.0000   0.0040     0      0   88%  0.974  1.025
+
+real_test  ft_a                                     190    0.00000   0.0000   0.0000     0      0  100%  1.000  1.000
+real_test  ft_a:special_fold=2                      190   -0.00001  -0.0018   0.0006     0      0   89%  0.983  0.995
+real_test  ft_a:special_tol=1e-3,special_fold=2     190    0.00522  -0.0006   0.1977     1      0   66%  0.872  0.990
+real_test  ft_a:special_tol=1e-4,special_fold=2     190    0.00001  -0.0005   0.0006     0      0   76%  0.929  0.990
+real_test  ft_a:special_tol=1e-5                    190   -0.00000  -0.0007   0.0005     0      0   79%  0.948  0.991
+real_test  ft_a:special_tol=1e-5,special_fold=2     190    0.00001  -0.0007   0.0006     0      0   78%  0.942  0.993
+real_test  ft_a:special_tol=1e-6                    190   -0.00001  -0.0005   0.0004     0      0   87%  0.974  1.000
+
+quick_dev  ft_a                                     698    0.00000   0.0000   0.0000     0      0  100%  1.000  1.000
+quick_dev  ft_a:special_fold=2                      698    0.00007  -0.0752   0.1199     6      5   89%  1.009  1.008
+quick_dev  ft_a:special_tol=1e-3,special_fold=2     698   -0.00206  -0.2305   0.0870     3     12   75%  0.869  1.038
+quick_dev  ft_a:special_tol=1e-4,special_fold=2     698    0.00037  -0.1207   0.2939     5      5   78%  0.896  0.999
+quick_dev  ft_a:special_tol=1e-5                    698   -0.00066  -0.1360   0.1199     5      6   80%  0.985  1.016
+quick_dev  ft_a:special_tol=1e-5,special_fold=2     698   -0.00001  -0.1397   0.1199     6      4   83%  0.943  0.999
+quick_dev  ft_a:special_tol=1e-6                    698   -0.00049  -0.0913   0.0224     3      6   85%  0.985  1.005
+
+optimizer metric less reference, / flow, of the returned state
+free_taps  ft_a                                   mean  -6.92e-06 p99|.|  9.91e-05 max|.|  1.06e-04
+free_taps  ft_a:special_fold=2                    mean  -7.89e-06 p99|.|  1.21e-04 max|.|  1.50e-04
+free_taps  ft_a:special_tol=1e-3,special_fold=2   mean   7.30e-06 p99|.|  1.36e-04 max|.|  1.80e-04
+free_taps  ft_a:special_tol=1e-4,special_fold=2   mean  -6.13e-06 p99|.|  7.85e-05 max|.|  7.92e-05
+free_taps  ft_a:special_tol=1e-5                  mean  -4.97e-06 p99|.|  7.89e-05 max|.|  7.90e-05
+free_taps  ft_a:special_tol=1e-5,special_fold=2   mean  -6.10e-06 p99|.|  7.76e-05 max|.|  7.76e-05
+free_taps  ft_a:special_tol=1e-6                  mean  -6.11e-06 p99|.|  7.88e-05 max|.|  8.05e-05
+real_test  ft_a                                   mean   3.08e-06 p99|.|  2.94e-05 max|.|  3.29e-05
+real_test  ft_a:special_fold=2                    mean   3.06e-06 p99|.|  2.84e-05 max|.|  2.96e-05
+real_test  ft_a:special_tol=1e-3,special_fold=2   mean   1.64e-06 p99|.|  3.02e-05 max|.|  3.09e-05
+real_test  ft_a:special_tol=1e-4,special_fold=2   mean   3.11e-06 p99|.|  2.96e-05 max|.|  3.31e-05
+real_test  ft_a:special_tol=1e-5                  mean   3.16e-06 p99|.|  3.00e-05 max|.|  3.40e-05
+real_test  ft_a:special_tol=1e-5,special_fold=2   mean   3.16e-06 p99|.|  3.24e-05 max|.|  3.29e-05
+real_test  ft_a:special_tol=1e-6                  mean   3.09e-06 p99|.|  2.83e-05 max|.|  2.96e-05
+quick_dev  ft_a                                   mean   3.41e-07 p99|.|  3.63e-05 max|.|  1.00e-04
+quick_dev  ft_a:special_fold=2                    mean   3.62e-07 p99|.|  3.63e-05 max|.|  1.00e-04
+quick_dev  ft_a:special_tol=1e-3,special_fold=2   mean   1.47e-05 p99|.|  5.52e-04 max|.|  6.93e-04
+quick_dev  ft_a:special_tol=1e-4,special_fold=2   mean   2.14e-06 p99|.|  8.51e-05 max|.|  1.40e-04
+quick_dev  ft_a:special_tol=1e-5                  mean   8.50e-07 p99|.|  3.96e-05 max|.|  1.00e-04
+quick_dev  ft_a:special_tol=1e-5,special_fold=2   mean   3.39e-07 p99|.|  3.63e-05 max|.|  1.00e-04
+quick_dev  ft_a:special_tol=1e-6                  mean   4.60e-07 p99|.|  3.65e-05 max|.|  1.00e-04

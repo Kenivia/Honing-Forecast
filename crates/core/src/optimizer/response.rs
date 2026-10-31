@@ -6,7 +6,7 @@
 //! tap backwards. See `AI notes/Calculator core/State space.md`.
 
 use crate::constants::juice_info::JuiceInfo;
-use crate::constants::{ARTISAN_MULTIPLIER, FLOAT_TOL, SPECIAL_TOL};
+use crate::constants::{ARTISAN_MULTIPLIER, FLOAT_TOL};
 use crate::materials::NUM_BASE_MATS;
 use crate::probe::Probe;
 use crate::state::{OneState, get_pool_ids};
@@ -406,11 +406,9 @@ impl Response {
             .position(|&u_index| u_index == index)
             .unwrap();
         let skips: Vec<(usize, f64)> = state_bundle
-            .special_probs()
-            .iter()
-            .copied()
-            .enumerate()
-            .filter(|&(skip, weight)| weight >= SPECIAL_TOL && skip <= place)
+            .skip_weights()
+            .into_iter()
+            .filter(|&(skip, _)| skip <= place)
             .collect();
 
         // evaluations of one outcome of one row off the lattice, and rows that needed any

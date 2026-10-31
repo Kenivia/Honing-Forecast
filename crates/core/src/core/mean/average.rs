@@ -1,4 +1,4 @@
-use crate::constants::{FLOAT_TOL, SPECIAL_TOL, float_tol};
+use crate::constants::{FLOAT_TOL, float_tol};
 use crate::core::probability::cumulants::KsTuple;
 use crate::core::probability::shape::Shape;
 use crate::probe::{Counter, Probe};
@@ -56,7 +56,7 @@ impl StateBundle {
         self.compute_special_probs(false);
         probe.count(Counter::StatesEvaluated);
 
-        let skips = self.live_skips();
+        let skips = self.skip_weights();
         let mut memo = std::mem::take(&mut self.gold_memo);
         let sums = if self.tuning.max_memo_size > 0 && !skips.is_empty() {
             self.memo_sums(&skips)
@@ -99,7 +99,7 @@ impl StateBundle {
         let mut gold_breakdown: Vec<Vec<f64>> = vec![vec![0.0; num_mats]; num_plans];
         let mut avg_used: Vec<f64> = vec![0.0; num_mats];
         let mut metric_per_plan: Vec<f64> = vec![0.0; num_plans];
-        let skips = self.live_skips();
+        let skips = self.skip_weights();
         let mut memo = std::mem::take(&mut self.gold_memo);
         let sums = if self.tuning.max_memo_size > 0 && !skips.is_empty() {
             self.memo_sums(&skips)
@@ -132,16 +132,6 @@ impl StateBundle {
         self.gold_memo = memo;
 
         (metric_per_plan, avg_used, gold_breakdown)
-    }
-
-    /// the free tap outcomes worth evaluating, with their probabilities
-    fn live_skips(&self) -> Vec<(usize, f64)> {
-        self.special_probs()
-            .iter()
-            .copied()
-            .enumerate()
-            .filter(|&(_, special_prob)| special_prob >= SPECIAL_TOL)
-            .collect()
     }
 
     /// One material's average gold over the free tap outcomes.

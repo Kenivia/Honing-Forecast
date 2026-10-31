@@ -19,6 +19,8 @@ The optimizer and the histogram share the same evaluation code, so a change to t
 3. Compute the free-tap outcome probabilities: the chance that exactly the first k upgrades in the free-tap order get skipped.
 4. For each material and each free-tap outcome, compute the expected gold for that material, then take the weighted sum.
 
+**The outcomes step 4 walks are cut where the weights are read** (`skip_weights`, `special.rs`). `special_cache` keeps every chance as the DP gave it. An outcome under `Tuning::special_tol * (1 - p_max)`, never under `SPECIAL_FLOOR`, is cut, and its chance goes to the nearest outcome kept, so the weights sum to 1. The factor is there because where free taps cover nearly everything, the rare outcomes are the cost. The memo needs no key for it, since a result is per outcome and does not depend on the weights. The same list gives the `reach` of order moves, `shadow_prices` and `Response::of`. `SPECIAL_TOL` is now only for the ends of the graphs.
+
 Step 4 needs, at each price threshold t, the expected leftover E[(t - S)+] = t F(t) - mean F'(t), where F' is the size-biased distribution function. That is the whole computational problem. The histogram also needs the plain F(t) alone.
 
 ## What an evaluation does not redo
@@ -56,7 +58,7 @@ The code is in two folders of `crates/core/src/core`: `mean/` for the metric (`a
 
 **The approximations are the weak part, not their implementation.** They are asymptotic in the number of comparable upgrades, and the pity tap puts a large share of an upgrade's probability on its last outcome, so with one upgrade outweighing the rest they can be badly off in a probability with nothing to flag it, and their error leans optimistic. The lattices are what make that case right.
 
-**The optimizer and what is reported use different evaluators.** The optimizer uses the default tuning. Every number a person or the arena judges by is `Tuning::reference()`, a finer coarse lattice: the histogram's `metric_per_plan` (`histogram.rs` swaps the tuning around `ui_average_gold_metric` only, so the distribution graphs and chances are the plain probability either way), the arena's `metric_ref` and its Monte Carlo checks.
+**The optimizer and what is reported use different evaluators.** The optimizer uses the default tuning. Every number a person or the arena judges by is `Tuning::reference()`, a finer coarse lattice with nearly every free-tap outcome (`special_tol` at the floor): the histogram's `metric_per_plan` (`histogram.rs` swaps the tuning around `ui_average_gold_metric` only, so the distribution graphs and chances are the plain probability either way), the arena's `metric_ref` and its Monte Carlo checks.
 
 `FLOAT_TOL` is smaller than the gap between f64s for large values, so thresholds are compared with `float_tol(value)`; with the bare constant a threshold equal to a reachable total counts as short of it.
 

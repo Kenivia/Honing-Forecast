@@ -24,7 +24,8 @@ pub fn float_tol(value: f64) -> f64 {
     FLOAT_TOL.max(value.abs() * 1e-12)
 }
 pub const IGNORE_PROB_TOL: f64 = 1e-14; // mostly for adv honing, 10 is known to cause problems, 12 shoudl be fine? using 14 to be giga safe
-pub const SPECIAL_TOL: f64 = 1e-7;
+pub const SPECIAL_TOL: f64 = 1e-7; // the ends of the graphs; what the metric keeps is `Tuning::special_tol`
+pub const SPECIAL_FLOOR: f64 = 1e-11; // the least `Tuning::special_tol` ever comes to
 pub const BUCKET_COUNT: usize = 50;
 
 pub const DATA: Lazy<Vec<Data>> = Lazy::new(|| {

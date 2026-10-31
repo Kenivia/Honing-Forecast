@@ -1,0 +1,28 @@
+all 22088
+  cur 1e-7           p50  0.0e+00 p99  7.6e-08 p99.9  1.5e-06 max  2.3e-06 outcomes   6.05 ratio  1.00
+  fold 1e-5          p50  0.0e+00 p99  1.7e-06 p99.9  1.4e-05 max  8.1e-04 outcomes   5.62 ratio  0.93
+  fold 1e-4          p50  0.0e+00 p99  2.1e-05 p99.9  5.5e-04 max  5.5e-03 outcomes   5.23 ratio  0.87
+  rel 1e-04          p50  0.0e+00 p99  3.4e-06 p99.9  1.3e-05 max  1.8e-05 outcomes   5.50 ratio  0.91
+  rel 3e-04          p50  0.0e+00 p99  1.4e-05 p99.9  4.2e-05 max  2.4e-04 outcomes   5.32 ratio  0.88
+  rel 1e-03          p50  0.0e+00 p99  6.2e-05 p99.9  2.5e-04 max  6.9e-04 outcomes   5.07 ratio  0.84
+real 6982
+  cur 1e-7           p50  0.0e+00 p99  3.4e-08 p99.9  8.1e-08 max  9.7e-08 outcomes   6.21 ratio  1.00
+  fold 1e-5          p50  2.2e-17 p99  2.3e-07 p99.9  5.2e-07 max  1.7e-06 outcomes   5.61 ratio  0.90
+  fold 1e-4          p50  2.7e-08 p99  2.9e-06 p99.9  6.3e-06 max  1.7e-05 outcomes   5.12 ratio  0.82
+  rel 1e-04          p50  6.1e-10 p99  2.0e-06 p99.9  3.0e-06 max  4.0e-06 outcomes   5.38 ratio  0.87
+  rel 3e-04          p50  1.0e-08 p99  3.4e-06 p99.9  1.1e-05 max  2.0e-05 outcomes   5.12 ratio  0.82
+  rel 1e-03          p50  1.2e-07 p99  1.5e-05 p99.9  2.6e-05 max  7.5e-05 outcomes   4.84 ratio  0.78
+covered (share>=0.8) 1227
+  cur 1e-7           p50  0.0e+00 p99  1.9e-06 p99.9  2.2e-06 max  2.3e-06 outcomes   6.90 ratio  1.00
+  fold 1e-5          p50  0.0e+00 p99  1.5e-05 p99.9  4.8e-04 max  8.1e-04 outcomes   6.13 ratio  0.89
+  fold 1e-4          p50  4.3e-14 p99  4.8e-03 p99.9  5.5e-03 max  5.5e-03 outcomes   5.56 ratio  0.81
+  rel 1e-04          p50  0.0e+00 p99  1.4e-05 p99.9  1.6e-05 max  1.6e-05 outcomes   6.36 ratio  0.92
+  rel 3e-04          p50  0.0e+00 p99  4.1e-05 p99.9  7.9e-05 max  2.4e-04 outcomes   6.15 ratio  0.89
+  rel 1e-03          p50  2.0e-13 p99  2.5e-04 p99.9  6.9e-04 max  6.9e-04 outcomes   5.77 ratio  0.84
+order moves 12053
+  cur 1e-7     p99  3.7e-08 max  1.9e-06 flips>1e-5    0 worst flip  1.9e-08
+  fold 1e-5    p99  5.7e-07 max  4.4e-05 flips>1e-5    0 worst flip  7.1e-07
+  fold 1e-4    p99  7.3e-06 max  7.1e-04 flips>1e-5    3 worst flip  7.1e-04
+  rel 1e-4     p99  2.6e-06 max  1.8e-05 flips>1e-5    0 worst flip  5.0e-06
+  rel 3e-4     p99  7.3e-06 max  4.7e-05 flips>1e-5    1 worst flip  1.1e-05
+  rel 1e-3     p99  4.8e-05 max  6.9e-04 flips>1e-5    5 worst flip  1.8e-05

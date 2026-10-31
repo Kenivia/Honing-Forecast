@@ -3,7 +3,7 @@
 //! settle. The prices are the running average of each round's. The best state seen is kept.
 
 use super::response::Response;
-use crate::constants::{FLOAT_TOL, SPECIAL_TOL};
+use crate::constants::FLOAT_TOL;
 use crate::probe::Probe;
 use crate::state::OneState;
 use crate::state_bundle::StateBundle;
@@ -13,13 +13,7 @@ impl StateBundle {
     /// What one more unit of each material costs, by row, over the free tap outcomes. Reads
     /// the supports and free tap probabilities of the last evaluation.
     pub fn shadow_prices(&self, probe: &mut Probe) -> Vec<f64> {
-        let skips: Vec<(usize, f64)> = self
-            .special_probs()
-            .iter()
-            .copied()
-            .enumerate()
-            .filter(|&(_, weight)| weight >= SPECIAL_TOL)
-            .collect();
+        let skips = self.skip_weights();
         let counts: Vec<usize> = skips.iter().map(|skip| skip.0).collect();
         let prep = &self.prep_output;
         prep.bands[prep.optimizer_plan]

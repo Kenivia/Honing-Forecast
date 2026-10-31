@@ -1,0 +1,570 @@
+diff -ruN --strip-trailing-cr -x target ft0/crates/arena/src/bench.rs ft/crates/arena/src/bench.rs
+--- ft0/crates/arena/src/bench.rs	2026-10-30 18:09:40.000000000 +0000
++++ ft/crates/arena/src/bench.rs	2026-10-31 11:46:58.370792300 +0000
+@@ -73,12 +73,22 @@
+                 if let Some(seed) = args.solve {
+                     let mut probe = Probe::default();
+                     let mut rng = StdRng::seed_from_u64(seed);
++                    use hf_core::core::mean::special::{DP_CALLS, DP_NS};
++                    use std::sync::atomic::Ordering::Relaxed;
++                    let (ns, calls) = (DP_NS.load(Relaxed), DP_CALLS.load(Relaxed));
+                     let start = Instant::now();
+                     let solved = hf_core::optimizer::lab::solve(&mut rng, base, None, &mut probe);
++                    let wall = start.elapsed().as_secs_f64();
++                    println!(
++                        "DP\t{name}\t{wall:.4}\t{:.4}\t{}\t{}",
++                        (DP_NS.load(Relaxed) - ns) as f64 / 1e9,
++                        DP_CALLS.load(Relaxed) - calls,
++                        solved.best.prep_output.special_budget,
++                    );
+                     return vec![(
+                         name.clone(),
+                         solved.best.metric,
+-                        start.elapsed().as_secs_f64(),
++                        wall,
+                         probe.data.counts.to_vec(),
+                         f64::NAN,
+                     )];
+diff -ruN --strip-trailing-cr -x target ft0/crates/arena/src/main.rs ft/crates/arena/src/main.rs
+--- ft0/crates/arena/src/main.rs	2026-10-30 18:09:40.000000000 +0000
++++ ft/crates/arena/src/main.rs	2026-10-31 11:00:03.070279700 +0000
+@@ -14,6 +14,7 @@
+ mod report;
+ mod scenario;
+ mod space;
++mod special_dump;
+ mod stress;
+ mod worker;
+ 
+@@ -222,6 +223,11 @@
+     },
+     /// score the runs recorded before there was `Tuning::reference` with it, and fill in `gross` and `flow`
+     Rescore,
++    /// free tap chances and the gold of every outcome, per state
++    SpecialDump {
++        #[command(flatten)]
++        args: special_dump::Args,
++    },
+     /// time the evaluator alone
+     Bench {
+         #[command(flatten)]
+@@ -819,6 +825,10 @@
+             });
+             replan::report(&conn, session);
+         }
++        Cmd::SpecialDump { args } => {
++            let scenarios = scenarios(&cli, &args.filter);
++            special_dump::run(&scenarios, args);
++        }
+         Cmd::Bench { args } => {
+             let overrides = args
+                 .tuning
+diff -ruN --strip-trailing-cr -x target ft0/crates/arena/src/special_dump.rs ft/crates/arena/src/special_dump.rs
+--- ft0/crates/arena/src/special_dump.rs	1970-01-01 00:00:00.000000000 +0000
++++ ft/crates/arena/src/special_dump.rs	2026-10-31 11:00:03.098085500 +0000
+@@ -0,0 +1,154 @@
++//! Free tap chances and the gold of every outcome, per state, for working out any cut offline.
++
++use crate::scenario::Scenario;
++use crate::worker::Essence;
++use hf_core::optimizer::scramble;
++use hf_core::probe::Probe;
++use hf_core::state_bundle::StateBundle;
++use hf_core::tuning::Tuning;
++use rand::prelude::*;
++use rayon::prelude::*;
++use serde_json::json;
++use std::collections::BTreeMap;
++use std::io::Write;
++use std::path::PathBuf;
++use std::time::Instant;
++
++#[derive(clap::Args)]
++pub struct Args {
++    #[arg(long)]
++    pub states: Option<PathBuf>,
++    #[arg(long)]
++    pub out: PathBuf,
++    #[arg(long, default_value_t = 16)]
++    pub jobs: usize,
++    /// order moves of the best state
++    #[arg(long, default_value_t = 12)]
++    pub orders: usize,
++    /// single random moves of the best state
++    #[arg(long, default_value_t = 6)]
++    pub moves: usize,
++    #[arg(long, default_value = "")]
++    pub filter: String,
++    #[arg(long, default_value_t = 1e-12)]
++    pub floor: f64,
++}
++
++fn golds(state: &mut StateBundle, outcomes: &[usize], tuning: Tuning) -> Vec<f64> {
++    state.tuning = tuning;
++    state.outcome_golds(outcomes, &mut Probe::default())
++}
++
++fn row(name: &str, label: &str, state: &StateBundle, floor: f64) -> serde_json::Value {
++    let mut state = state.clone();
++    state.tuning = Tuning::default();
++    state.update_prob_dist();
++    state.update_cost_dist();
++    state.compute_special_probs(false);
++    let probs = state.special_probs().clone();
++    let outcomes: Vec<usize> = (0..probs.len()).filter(|&k| probs[k] >= floor).collect();
++    let def = golds(&mut state, &outcomes, Tuning::default());
++    let reference = golds(&mut state, &outcomes, Tuning::reference());
++    // the free tap chances alone, from nothing
++    let mut timed = state.clone();
++    let start = Instant::now();
++    let mut reps = 0;
++    while reps < 3 || start.elapsed().as_secs_f64() < 0.002 {
++        timed.special_cache.clear();
++        timed.special_done = None;
++        timed.compute_special_probs(false);
++        reps += 1;
++    }
++    let dp_s = start.elapsed().as_secs_f64() / reps as f64;
++    let mut plain = state.clone();
++    plain.tuning = Tuning::default();
++    json!({
++        "name": name, "label": label,
++        "n": state.upgrade_arr.len(),
++        "normal": state.upgrade_arr.iter().filter(|u| u.is_normal_honing).count(),
++        "budget": state.prep_output.special_budget,
++        "costs": state.special_state.iter().map(|&i| state.upgrade_arr[i].special_cost).collect::<Vec<_>>(),
++        "chances": state.special_state.iter().map(|&i| state.upgrade_arr[i].base_chance).collect::<Vec<_>>(),
++        "flow": crate::carry::flow(&plain),
++        "p": probs, "k": outcomes, "g_def": def, "g_ref": reference, "dp_s": dp_s,
++    })
++}
++
++pub fn run(scenarios: &[Scenario], args: &Args) {
++    let given: BTreeMap<String, Vec<Essence>> = args
++        .states
++        .as_ref()
++        .map(|path| serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap())
++        .unwrap_or_default();
++    let steps: Vec<(String, &hf_core::payload::Payload)> = scenarios
++        .iter()
++        .flat_map(|scenario| {
++            scenario
++                .steps
++                .iter()
++                .enumerate()
++                .map(|(step, payload)| (format!("{}:{step}", scenario.name), payload))
++        })
++        .collect();
++    let pool = rayon::ThreadPoolBuilder::new()
++        .num_threads(args.jobs)
++        .build()
++        .unwrap();
++    let file = std::sync::Mutex::new(std::fs::File::create(&args.out).unwrap());
++    pool.install(|| {
++        steps.par_iter().for_each(|(name, payload)| {
++            let mut filled = (*payload).clone();
++            crate::adv_table::fill(&mut filled);
++            let base = StateBundle::init_from_payload(filled);
++            if base.upgrade_arr.is_empty() {
++                return;
++            }
++            let mut rng = StdRng::seed_from_u64(name.bytes().fold(7u64, |seed, byte| {
++                seed.wrapping_mul(131).wrapping_add(byte as u64)
++            }));
++            let mut states: Vec<(String, StateBundle)> = vec![("given".to_string(), base.clone())];
++            for moves in [20, 200] {
++                states.push((format!("scr{moves}"), scramble(&mut rng, base.clone(), moves)));
++            }
++            let mut anchor = states[1].1.clone();
++            if let Some(best) = given.get(name).and_then(|list| list.first()) {
++                let mut this = base.clone();
++                best.apply(&mut this);
++                anchor = this.clone();
++                states.push(("best".to_string(), this));
++            } else {
++                states.push(("anchor".to_string(), anchor.clone()));
++            }
++            if anchor.affords_a_free_tap() {
++                anchor.update_prob_dist();
++                anchor.update_cost_dist();
++                anchor.compute_special_probs(false);
++                let reach = anchor
++                    .special_probs()
++                    .iter()
++                    .rposition(|&chance| chance >= 1e-7)
++                    .unwrap_or(0);
++                let len = anchor.special_state.len();
++                for index in 0..args.orders {
++                    let mut this = anchor.clone();
++                    let elem = this.special_state.remove(rng.random_range(0..len));
++                    this.special_state
++                        .insert(rng.random_range(0..=reach.min(len - 1)), elem);
++                    this.clean_special_state();
++                    states.push((format!("ord{index}"), this));
++                }
++                for index in 0..args.moves {
++                    states.push((format!("mov{index}"), scramble(&mut rng, anchor.clone(), 1)));
++                }
++            }
++            let rows: Vec<String> = states
++                .iter()
++                .map(|(label, state)| row(name, label, state, args.floor).to_string())
++                .collect();
++            let mut file = file.lock().unwrap();
++            for line in rows {
++                writeln!(file, "{line}").unwrap();
++            }
++        });
++    });
++}
+diff -ruN --strip-trailing-cr -x target ft0/crates/core/src/core/mean/average.rs ft/crates/core/src/core/mean/average.rs
+--- ft0/crates/core/src/core/mean/average.rs	2026-10-30 18:09:40.000000000 +0000
++++ ft/crates/core/src/core/mean/average.rs	2026-10-31 11:00:03.063332700 +0000
+@@ -1,4 +1,4 @@
+-use crate::constants::{FLOAT_TOL, SPECIAL_TOL, float_tol};
++use crate::constants::{FLOAT_TOL, float_tol};
+ use crate::core::probability::cumulants::KsTuple;
+ use crate::core::probability::shape::Shape;
+ use crate::probe::{Counter, Probe};
+@@ -136,12 +136,45 @@
+ 
+     /// the free tap outcomes worth evaluating, with their probabilities
+     fn live_skips(&self) -> Vec<(usize, f64)> {
+-        self.special_probs()
++        self.skip_weights()
++    }
++
++    /// The average gold given exactly these free tap outcomes, one each
++    pub fn outcome_golds(&mut self, outcomes: &[usize], probe: &mut Probe) -> Vec<f64> {
++        self.update_prob_dist();
++        self.update_cost_dist();
++        self.compute_special_probs(false);
++        let mut memo = std::mem::take(&mut self.gold_memo);
++        let tuning_key = self.tuning.evaluator_key();
++        let plan_bands = &self.prep_output.bands[self.prep_output.optimizer_plan];
++        let out = outcomes
+             .iter()
+-            .copied()
+-            .enumerate()
+-            .filter(|&(_, special_prob)| special_prob >= SPECIAL_TOL)
+-            .collect()
++            .map(|&k| {
++                let skips = [(k, 1.0)];
++                let sums = if self.tuning.max_memo_size > 0 {
++                    self.memo_sums(&skips)
++                } else {
++                    Vec::new()
++                };
++                plan_bands
++                    .iter()
++                    .enumerate()
++                    .map(|(row, pairs)| {
++                        self.material_average_gold(
++                            &mut memo,
++                            row as i64,
++                            &skips,
++                            pairs,
++                            sums.get(row).map(|sums| &sums[..]),
++                            tuning_key,
++                            probe,
++                        )
++                    })
++                    .sum()
++            })
++            .collect();
++        self.gold_memo = memo;
++        out
+     }
+ 
+     /// One material's average gold over the free tap outcomes.
+diff -ruN --strip-trailing-cr -x target ft0/crates/core/src/core/mean/mod.rs ft/crates/core/src/core/mean/mod.rs
+--- ft0/crates/core/src/core/mean/mod.rs	2026-10-30 18:09:40.000000000 +0000
++++ ft/crates/core/src/core/mean/mod.rs	2026-10-31 11:46:58.403937700 +0000
+@@ -1,4 +1,4 @@
+ //! The average gold metric: exact and coarse lattices, and the free tap outcomes it is summed over
+ pub mod average;
+ mod lattice;
+-mod special;
++pub mod special;
+diff -ruN --strip-trailing-cr -x target ft0/crates/core/src/core/mean/special.rs ft/crates/core/src/core/mean/special.rs
+--- ft0/crates/core/src/core/mean/special.rs	2026-10-30 18:09:40.000000000 +0000
++++ ft/crates/core/src/core/mean/special.rs	2026-10-31 13:11:06.820172800 +0000
+@@ -7,18 +7,87 @@
+ //!
+ //! Admittedly dynamic programming is one of these things that I never really understood so this is algorithm is vibe coded
+ //! but this matches experimental result so at least it's working
+-use crate::constants::{IGNORE_PROB_TOL, SPECIAL_TOL};
++use crate::constants::IGNORE_PROB_TOL;
+ use crate::state_bundle::StateBundle;
+ use num::Integer;
+ use std::f64;
+ use std::mem::swap;
+ use std::ops::Range;
+ 
++pub static DP_NS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
++pub static DP_CALLS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
++struct DpTimer(std::time::Instant);
++impl Drop for DpTimer {
++    fn drop(&mut self) {
++        let spent = self.0.elapsed().as_nanos() as u64;
++        DP_NS.fetch_add(spent, std::sync::atomic::Ordering::Relaxed);
++        DP_CALLS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
++    }
++}
++
+ impl StateBundle {
+     pub fn special_probs(&self) -> &Vec<f64> {
+         // we don't automatically call compute_special here cos that'd need &mut self
+         &self.special_cache[&self.prep_output.special_budget][&self.special_state]
+     }
++
++    /// what production stored for no free taps at all
++    pub fn first_after_merge(&self) -> f64 {
++        let mut probs = self.special_probs().clone();
++        if self.tuning.special_fold == 0 {
++            eliminate_tail(0..probs.len(), &mut probs, self.tuning.special_tol);
++        }
++        probs[0]
++    }
++
++    /// The free tap outcomes evaluated, with their weights, by `Tuning::special_fold`
++    pub fn skip_weights(&self) -> Vec<(usize, f64)> {
++        let mut tol = self.tuning.special_tol;
++        let mut probs: Vec<f64> = self.special_probs().iter().map(|p| p.max(0.0)).collect();
++        if self.tuning.special_fold == 4 {
++            // the mass that is not the most likely outcome is what the cost is made of
++            tol = (tol * (1.0 - probs.iter().fold(0.0f64, |a, &b| a.max(b)))).max(1e-11);
++        }
++        if probs.is_empty() {
++            return Vec::new();
++        }
++        if self.tuning.special_fold == 0 {
++            eliminate_tail(0..probs.len(), &mut probs, tol);
++            return probs
++                .iter()
++                .copied()
++                .enumerate()
++                .filter(|&(_, p)| p >= tol)
++                .collect();
++        }
++        let low = probs.iter().position(|&p| p >= tol).unwrap();
++        let high = probs.iter().rposition(|&p| p >= tol).unwrap();
++        let mut out: Vec<(usize, f64)> = (low..=high).map(|k| (k, probs[k])).collect();
++        let last = out.len() - 1;
++        let below: f64 = probs[..low].iter().sum();
++        let above: f64 = probs[high + 1..].iter().sum();
++        match self.tuning.special_fold {
++            1 => {
++                let kept: f64 = out.iter().map(|x| x.1).sum();
++                out.iter_mut().for_each(|x| x.1 /= kept);
++            }
++            _ => {
++                out[0].1 += below;
++                out[last].1 += above;
++                if self.tuning.special_fold == 3 && last > 0 {
++                    let low_moved: f64 = (0..low).map(|k| probs[k] * (low - k) as f64).sum();
++                    let high_moved: f64 = (high + 1..probs.len())
++                        .map(|k| probs[k] * (k - high) as f64)
++                        .sum();
++                    out[0].1 += low_moved;
++                    out[1].1 -= low_moved;
++                    out[last].1 += high_moved;
++                    out[last - 1].1 -= high_moved;
++                }
++            }
++        }
++        out
++    }
+     fn gcd_special(&self) -> i64 {
+         let mut out: i64 = 1;
+         for (index, upgrade) in self.upgrade_arr.iter().enumerate() {
+@@ -79,6 +148,7 @@
+             return None;
+         }
+ 
++        let _timed = DpTimer(std::time::Instant::now());
+         let prep_output = &self.prep_output;
+ 
+         let m = self
+@@ -211,11 +281,6 @@
+         let length = actual_out.len();
+         actual_out[length - 1] += 1.0 - sum; // the prob that we fail everything is not included, we add it to the last entry
+         // my_dbg!(&actual_out);
+-        if !preserve_tail {
+-            eliminate_tail(0..actual_out.len(), &mut actual_out);
+-            eliminate_tail(actual_out.len()..0, &mut actual_out);
+-        }
+-
+         // my_dbg!(&actual_out);
+ 
+         if preserve_tail {
+@@ -245,13 +310,13 @@
+ ///
+ /// the optimizer is often incentivized to NOT have trailing small tails because higher upgrades are often more efficient
+ /// so this is kinda completely useless (hence why special tol is left at 1e-7) but whatever
+-fn eliminate_tail(range: Range<usize>, actual_out: &mut Vec<f64>) {
++fn eliminate_tail(range: Range<usize>, actual_out: &mut Vec<f64>, tol: f64) {
+     let mut cur_weighted_index: f64 = 0.0;
+     let mut cur_sum: f64 = 0.0;
+     for index in range {
+         // rounding leaves entries a hair under zero, which would put the mean index out of range
+         let this = actual_out[index].max(0.0);
+-        if this > SPECIAL_TOL {
++        if this > tol {
+             if cur_sum > 0.0 {
+                 let actual_index = (cur_weighted_index / cur_sum as f64).round() as usize;
+                 actual_out[actual_index] = cur_sum;
+@@ -262,7 +327,7 @@
+         cur_weighted_index += this * index as f64;
+         cur_sum += this;
+ 
+-        if cur_sum > SPECIAL_TOL {
++        if cur_sum > tol {
+             let actual_index = (cur_weighted_index / cur_sum as f64).round() as usize;
+             actual_out[actual_index] = cur_sum;
+             break; // i mean we don't HAVE to break here but this guarantees that we're never fucking with more than SPECIAL_TOL of the distribution
+diff -ruN --strip-trailing-cr -x target ft0/crates/core/src/optimizer/neighbour.rs ft/crates/core/src/optimizer/neighbour.rs
+--- ft0/crates/core/src/optimizer/neighbour.rs	2026-10-30 18:09:40.000000000 +0000
++++ ft/crates/core/src/optimizer/neighbour.rs	2026-10-31 11:46:58.454264100 +0000
+@@ -1,7 +1,6 @@
+ use std::cmp::Ordering::{Equal, Greater, Less};
+ 
+ use crate::advanced_honing::utils::MAX_ADV_STATE;
+-use crate::constants::SPECIAL_TOL;
+ use crate::constants::juice_info::JuiceInfo;
+ // use crate::my_dbg;
+ use crate::probe::Probe;
+@@ -137,7 +136,7 @@
+         }
+         let tuning = &self.state_bundle.tuning;
+         let (special_floor, order_reach) = (tuning.special_floor, tuning.order_reach);
+-        let reached = 1.0 - self.state_bundle.special_probs()[0];
++        let reached = 1.0 - self.state_bundle.first_after_merge();
+         // a first upgrade that is out of reach says nothing of the others
+         let floor = if self.state_bundle.affords_a_free_tap() {
+             special_floor
+@@ -150,12 +149,7 @@
+         if mutate_special && order_reach {
+             // any upgrade, to a place a free tap can get to
+             let u_len = self.state_bundle.special_state.len();
+-            let reach = self
+-                .state_bundle
+-                .special_probs()
+-                .iter()
+-                .rposition(|&chance| chance >= SPECIAL_TOL)
+-                .unwrap_or(0);
++            let reach = self.state_bundle.skip_weights().last().map_or(0, |x| x.0);
+             let idx1: usize = self.rng.random_range(0..u_len);
+             let idx2: usize = self.rng.random_range(0..=reach.min(u_len - 1));
+             let elem = self.state_bundle.special_state.remove(idx1);
+diff -ruN --strip-trailing-cr -x target ft0/crates/core/src/optimizer/response.rs ft/crates/core/src/optimizer/response.rs
+--- ft0/crates/core/src/optimizer/response.rs	2026-10-30 18:09:40.000000000 +0000
++++ ft/crates/core/src/optimizer/response.rs	2026-10-31 11:00:03.063332700 +0000
+@@ -6,7 +6,7 @@
+ //! tap backwards. See `AI notes/Calculator core/State space.md`.
+ 
+ use crate::constants::juice_info::JuiceInfo;
+-use crate::constants::{ARTISAN_MULTIPLIER, FLOAT_TOL, SPECIAL_TOL};
++use crate::constants::{ARTISAN_MULTIPLIER, FLOAT_TOL};
+ use crate::materials::NUM_BASE_MATS;
+ use crate::probe::Probe;
+ use crate::state::{OneState, get_pool_ids};
+@@ -406,11 +406,9 @@
+             .position(|&u_index| u_index == index)
+             .unwrap();
+         let skips: Vec<(usize, f64)> = state_bundle
+-            .special_probs()
+-            .iter()
+-            .copied()
+-            .enumerate()
+-            .filter(|&(skip, weight)| weight >= SPECIAL_TOL && skip <= place)
++            .skip_weights()
++            .into_iter()
++            .filter(|&(skip, _)| skip <= place)
+             .collect();
+ 
+         // evaluations of one outcome of one row off the lattice, and rows that needed any
+diff -ruN --strip-trailing-cr -x target ft0/crates/core/src/optimizer/shadow.rs ft/crates/core/src/optimizer/shadow.rs
+--- ft0/crates/core/src/optimizer/shadow.rs	2026-10-30 18:09:40.000000000 +0000
++++ ft/crates/core/src/optimizer/shadow.rs	2026-10-31 11:00:03.063332700 +0000
+@@ -3,7 +3,7 @@
+ //! settle. The prices are the running average of each round's. The best state seen is kept.
+ 
+ use super::response::Response;
+-use crate::constants::{FLOAT_TOL, SPECIAL_TOL};
++use crate::constants::FLOAT_TOL;
+ use crate::probe::Probe;
+ use crate::state::OneState;
+ use crate::state_bundle::StateBundle;
+@@ -13,13 +13,7 @@
+     /// What one more unit of each material costs, by row, over the free tap outcomes. Reads
+     /// the supports and free tap probabilities of the last evaluation.
+     pub fn shadow_prices(&self, probe: &mut Probe) -> Vec<f64> {
+-        let skips: Vec<(usize, f64)> = self
+-            .special_probs()
+-            .iter()
+-            .copied()
+-            .enumerate()
+-            .filter(|&(_, weight)| weight >= SPECIAL_TOL)
+-            .collect();
++        let skips: Vec<(usize, f64)> = self.skip_weights();
+         let counts: Vec<usize> = skips.iter().map(|skip| skip.0).collect();
+         let prep = &self.prep_output;
+         prep.bands[prep.optimizer_plan]
+diff -ruN --strip-trailing-cr -x target ft0/crates/core/src/optimizer/simulated_annealing.rs ft/crates/core/src/optimizer/simulated_annealing.rs
+--- ft0/crates/core/src/optimizer/simulated_annealing.rs	2026-10-30 18:09:40.000000000 +0000
++++ ft/crates/core/src/optimizer/simulated_annealing.rs	2026-10-31 11:00:03.063332700 +0000
+@@ -11,7 +11,6 @@
+ use crate::timer::Timer;
+ 
+ use crate::advanced_honing::utils::MAX_ADV_STATE;
+-use crate::constants::SPECIAL_TOL;
+ use crate::state::OneState;
+ use ahash::AHashSet;
+ use ordered_float::OrderedFloat;
+@@ -343,11 +342,7 @@
+         for place in 0..count {
+             // an upgrade past the last one a free tap can reach is as good as not in the order
+             state_bundle.compute_special_probs(false);
+-            let reach = state_bundle
+-                .special_probs()
+-                .iter()
+-                .rposition(|&chance| chance >= SPECIAL_TOL)
+-                .unwrap_or(0);
++            let reach = state_bundle.skip_weights().last().map_or(0, |x| x.0);
+             if place > reach {
+                 break;
+             }
+diff -ruN --strip-trailing-cr -x target ft0/crates/core/src/tuning.rs ft/crates/core/src/tuning.rs
+--- ft0/crates/core/src/tuning.rs	2026-10-30 18:09:40.000000000 +0000
++++ ft/crates/core/src/tuning.rs	2026-10-31 11:00:03.063332700 +0000
+@@ -30,6 +30,11 @@
+     pub coarse_cells: f64,
+     /// multiplications a coarse lattice may take before the Edgeworth series answers instead
+     pub max_coarse_work: usize,
++    /// free tap outcomes under this chance are not evaluated
++    pub special_tol: f64,
++    /// what becomes of their chance: 0 lost, 1 renormalised, 2 folded onto the nearest outcome
++    /// kept, 3 folded keeping the mean count
++    pub special_fold: usize,
+ 
+     // optimizer
+     pub max_iters: i64,
+@@ -144,6 +149,8 @@
+             max_memo_size: 1 << 16,
+             coarse_cells: 8.0,
+             max_coarse_work: 20_000_000,
++            special_tol: 1e-7,
++            special_fold: 0,
+ 
+             max_iters: 48000,
+             max_best_size: 10,
+@@ -202,6 +209,8 @@
+     pub fn reference() -> Tuning {
+         Tuning {
+             coarse_cells: 64.0,
++            special_tol: 1e-11,
++            special_fold: 2,
+             ..Tuning::default()
+         }
+     }
