@@ -1,0 +1,30 @@
+[
+ {
+  "name": "d_real_test",
+  "cmd": "target\\arena\\bin\\sur_d.exe --db arena_data/lab/runs.sqlite --set real_test run sur_d sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach+truedescent sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,lab_off=descent sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,lab_off=skew+calib sur_d:sur_stall=32,sur_kinds=price+rand+chest+empty,lab_on=randreach sur_d:sur_stall=32,lab_on=randboth sur_d:sur_stall=16,sur_kinds=price+rand+chest+empty,lab_on=randreach --mode cold --seeds 10 --jobs 16 --resume"
+ },
+ {
+  "name": "d_quick_dev",
+  "cmd": "target\\arena\\bin\\sur_d.exe --db arena_data/lab/runs.sqlite --set quick_dev run sur_d sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach+truedescent sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,lab_off=descent sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,lab_off=skew+calib sur_d:sur_stall=32,sur_kinds=price+rand+chest+empty,lab_on=randreach sur_d:sur_stall=32,lab_on=randboth sur_d:sur_stall=16,sur_kinds=price+rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "d_speed_test",
+  "cmd": "target\\arena\\bin\\sur_d.exe --db arena_data/lab/runs.sqlite --set speed_test run sur_d sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach+truedescent sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,lab_off=descent sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,lab_off=skew+calib sur_d:sur_stall=32,sur_kinds=price+rand+chest+empty,lab_on=randreach sur_d:sur_stall=32,lab_on=randboth sur_d:sur_stall=16,sur_kinds=price+rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "d_large",
+  "cmd": "target\\arena\\bin\\sur_d.exe --db arena_data/lab/runs.sqlite --set large run sur_d sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach+truedescent sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,lab_off=descent sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,lab_off=skew+calib sur_d:sur_stall=32,sur_kinds=price+rand+chest+empty,lab_on=randreach sur_d:sur_stall=32,lab_on=randboth sur_d:sur_stall=16,sur_kinds=price+rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "d_advanced",
+  "cmd": "target\\arena\\bin\\sur_d.exe --db arena_data/lab/runs.sqlite --set advanced run sur_d sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach+truedescent sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,lab_off=descent sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,lab_off=skew+calib sur_d:sur_stall=32,sur_kinds=price+rand+chest+empty,lab_on=randreach sur_d:sur_stall=32,lab_on=randboth sur_d:sur_stall=16,sur_kinds=price+rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "d_free_taps",
+  "cmd": "target\\arena\\bin\\sur_d.exe --db arena_data/lab/runs.sqlite --set free_taps run sur_d sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach+truedescent sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,lab_off=descent sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,lab_off=skew+calib sur_d:sur_stall=32,sur_kinds=price+rand+chest+empty,lab_on=randreach sur_d:sur_stall=32,lab_on=randboth sur_d:sur_stall=16,sur_kinds=price+rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "d_juice",
+  "cmd": "target\\arena\\bin\\sur_d.exe --db arena_data/lab/runs.sqlite --set juice run sur_d sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach+truedescent sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,lab_off=descent sur_d:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,lab_off=skew+calib sur_d:sur_stall=32,sur_kinds=price+rand+chest+empty,lab_on=randreach sur_d:sur_stall=32,lab_on=randboth sur_d:sur_stall=16,sur_kinds=price+rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ }
+]

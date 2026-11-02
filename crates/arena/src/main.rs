@@ -31,11 +31,14 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::time::{Duration, Instant};
 use worker::{Essence, Job, Kind, StepResult};
 
 const ROOT: &str = env!("HF_ROOT");
 /// the binary that is running, as opposed to a snapshot
 const CURRENT: &str = "current";
+/// how long a run's thread goes between readings of the machine's speed
+const READ_EVERY: Duration = Duration::from_secs(300);
 
 #[derive(Parser)]
 struct Cli {
@@ -462,12 +465,20 @@ fn run_jobs(
     ctrlc::set_handler(|| STOPPED.store(true, Ordering::Relaxed)).unwrap();
     // in order, which a parallel iterator would not keep
     let next = AtomicUsize::new(0);
-    pool.broadcast(|_| {
+    // each thread's last reading of the machine's speed, taken under the load of the run
+    let readings = Mutex::new(vec![0.0; threads]);
+    pool.broadcast(|context| {
+        let mut read_at: Option<Instant> = None;
         while let Some((scenario_index, variant_index, job)) =
             jobs.get(next.fetch_add(1, Ordering::Relaxed))
         {
             if STOPPED.load(Ordering::Relaxed) {
                 return;
+            }
+            if read_at.is_none_or(|at| at.elapsed() >= READ_EVERY) {
+                let reading = worker::reference_s();
+                readings.lock().unwrap()[context.index()] = reading;
+                read_at = Some(Instant::now());
             }
             let variant = &variants[*variant_index];
             let mut child = Command::new(&variant.exe)
@@ -492,11 +503,23 @@ fn run_jobs(
                 return;
             }
 
-            let results: Vec<StepResult> = String::from_utf8_lossy(&output.stdout)
+            let mut results: Vec<StepResult> = String::from_utf8_lossy(&output.stdout)
                 .lines()
                 // a worker that panics may have printed something else
                 .filter_map(|line| serde_json::from_str(line).ok())
                 .collect();
+            let read: Vec<f64> = readings
+                .lock()
+                .unwrap()
+                .iter()
+                .copied()
+                .filter(|&reading| reading > 0.0)
+                .collect();
+            let reference_us = read.iter().sum::<f64>() / read.len() as f64 * 1e6;
+            for out in &mut results {
+                out.counters
+                    .insert("ReferenceUs".to_string(), reference_us as i64);
+            }
             let scored: Vec<(f64, f64, f64)> = results
                 .iter()
                 .map(|out| score(&references[*scenario_index][out.step], &out.essence))

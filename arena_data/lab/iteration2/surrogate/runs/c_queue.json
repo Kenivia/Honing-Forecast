@@ -1,0 +1,34 @@
+[
+ {
+  "name": "c_real_test",
+  "cmd": "target\\arena\\bin\\sur_c.exe --db arena_data/lab/runs.sqlite --set real_test run sur_c sur_c:max_iters=96000 sur_c:algo=surrogate,lab_effort=1,lab_on=points128 sur_c:algo=surrogate,lab_effort=1,lab_on=points128+skipw sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach sur_c:algo=surrogate,lab_effort=1,lab_on=points128+fromsolve sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach+fromsolve sur_c:sur_stall=8 sur_c:sur_stall=16 sur_c:sur_stall=32 sur_c:sur_stall=8,lab_on=randreach sur_c:sur_stall=16,lab_on=randreach sur_c:sur_stall=32,lab_on=randreach sur_c:sur_stall=32,lab_on=skipw sur_c:sur_stall=32,sur_kinds=price+rand+empty,lab_on=randreach --mode cold --seeds 10 --jobs 16 --resume"
+ },
+ {
+  "name": "c_quick_dev",
+  "cmd": "target\\arena\\bin\\sur_c.exe --db arena_data/lab/runs.sqlite --set quick_dev run sur_c sur_c:max_iters=96000 sur_c:algo=surrogate,lab_effort=1,lab_on=points128 sur_c:algo=surrogate,lab_effort=1,lab_on=points128+skipw sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach sur_c:algo=surrogate,lab_effort=1,lab_on=points128+fromsolve sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach+fromsolve sur_c:sur_stall=8 sur_c:sur_stall=16 sur_c:sur_stall=32 sur_c:sur_stall=8,lab_on=randreach sur_c:sur_stall=16,lab_on=randreach sur_c:sur_stall=32,lab_on=randreach sur_c:sur_stall=32,lab_on=skipw sur_c:sur_stall=32,sur_kinds=price+rand+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "c_speed_test",
+  "cmd": "target\\arena\\bin\\sur_c.exe --db arena_data/lab/runs.sqlite --set speed_test run sur_c sur_c:max_iters=96000 sur_c:algo=surrogate,lab_effort=1,lab_on=points128 sur_c:algo=surrogate,lab_effort=1,lab_on=points128+skipw sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach sur_c:algo=surrogate,lab_effort=1,lab_on=points128+fromsolve sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach+fromsolve sur_c:sur_stall=8 sur_c:sur_stall=16 sur_c:sur_stall=32 sur_c:sur_stall=8,lab_on=randreach sur_c:sur_stall=16,lab_on=randreach sur_c:sur_stall=32,lab_on=randreach sur_c:sur_stall=32,lab_on=skipw sur_c:sur_stall=32,sur_kinds=price+rand+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "c_large",
+  "cmd": "target\\arena\\bin\\sur_c.exe --db arena_data/lab/runs.sqlite --set large run sur_c sur_c:max_iters=96000 sur_c:algo=surrogate,lab_effort=1,lab_on=points128 sur_c:algo=surrogate,lab_effort=1,lab_on=points128+skipw sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach sur_c:algo=surrogate,lab_effort=1,lab_on=points128+fromsolve sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach+fromsolve sur_c:sur_stall=8 sur_c:sur_stall=16 sur_c:sur_stall=32 sur_c:sur_stall=8,lab_on=randreach sur_c:sur_stall=16,lab_on=randreach sur_c:sur_stall=32,lab_on=randreach sur_c:sur_stall=32,lab_on=skipw sur_c:sur_stall=32,sur_kinds=price+rand+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "c_advanced",
+  "cmd": "target\\arena\\bin\\sur_c.exe --db arena_data/lab/runs.sqlite --set advanced run sur_c sur_c:max_iters=96000 sur_c:algo=surrogate,lab_effort=1,lab_on=points128 sur_c:algo=surrogate,lab_effort=1,lab_on=points128+skipw sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach sur_c:algo=surrogate,lab_effort=1,lab_on=points128+fromsolve sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach+fromsolve sur_c:sur_stall=8 sur_c:sur_stall=16 sur_c:sur_stall=32 sur_c:sur_stall=8,lab_on=randreach sur_c:sur_stall=16,lab_on=randreach sur_c:sur_stall=32,lab_on=randreach sur_c:sur_stall=32,lab_on=skipw sur_c:sur_stall=32,sur_kinds=price+rand+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "c_free_taps",
+  "cmd": "target\\arena\\bin\\sur_c.exe --db arena_data/lab/runs.sqlite --set free_taps run sur_c sur_c:max_iters=96000 sur_c:algo=surrogate,lab_effort=1,lab_on=points128 sur_c:algo=surrogate,lab_effort=1,lab_on=points128+skipw sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach sur_c:algo=surrogate,lab_effort=1,lab_on=points128+fromsolve sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach+fromsolve sur_c:sur_stall=8 sur_c:sur_stall=16 sur_c:sur_stall=32 sur_c:sur_stall=8,lab_on=randreach sur_c:sur_stall=16,lab_on=randreach sur_c:sur_stall=32,lab_on=randreach sur_c:sur_stall=32,lab_on=skipw sur_c:sur_stall=32,sur_kinds=price+rand+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "c_juice",
+  "cmd": "target\\arena\\bin\\sur_c.exe --db arena_data/lab/runs.sqlite --set juice run sur_c sur_c:max_iters=96000 sur_c:algo=surrogate,lab_effort=1,lab_on=points128 sur_c:algo=surrogate,lab_effort=1,lab_on=points128+skipw sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach sur_c:algo=surrogate,lab_effort=1,lab_on=points128+fromsolve sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach+fromsolve sur_c:sur_stall=8 sur_c:sur_stall=16 sur_c:sur_stall=32 sur_c:sur_stall=8,lab_on=randreach sur_c:sur_stall=16,lab_on=randreach sur_c:sur_stall=32,lab_on=randreach sur_c:sur_stall=32,lab_on=skipw sur_c:sur_stall=32,sur_kinds=price+rand+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "c_small",
+  "cmd": "target\\arena\\bin\\sur_c.exe --db arena_data/lab/runs.sqlite --set small run sur_c sur_c:max_iters=96000 sur_c:algo=surrogate,lab_effort=1,lab_on=points128 sur_c:algo=surrogate,lab_effort=1,lab_on=points128+skipw sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach sur_c:algo=surrogate,lab_effort=1,lab_on=points128+fromsolve sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach+fromsolve sur_c:sur_stall=8 sur_c:sur_stall=16 sur_c:sur_stall=32 sur_c:sur_stall=8,lab_on=randreach sur_c:sur_stall=16,lab_on=randreach sur_c:sur_stall=32,lab_on=randreach sur_c:sur_stall=32,lab_on=skipw sur_c:sur_stall=32,sur_kinds=price+rand+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ }
+]

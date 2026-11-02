@@ -41,6 +41,8 @@ const PER_UPGRADE: f64 = 3000.0;
 const STALL: f64 = 40.0;
 /// a price kick multiplies prices by up to e to this, either way
 const KICK: f64 = 0.7;
+/// the spread of the log of the price noise of `noisy`
+const NOISE: f64 = 0.1;
 /// plans taking an id combination on every tap a response also improves from
 const START_COMBOS: usize = 12;
 /// kick and repair trials a restart makes, at effort 1
@@ -256,7 +258,6 @@ struct Sur {
     price: Vec<f64>,
     rows: usize,
     calibrated: bool,
-    wide: bool,
 }
 
 impl Sur {
@@ -274,7 +275,6 @@ impl Sur {
             price: vec![0.0; rows],
             rows,
             calibrated: !b.tuning.lab_off.split('+').any(|name| name == "calib"),
-            wide: b.tuning.lab_on.split('+').any(|name| name == "calibwide"),
         }
     }
 
@@ -359,19 +359,9 @@ impl Sur {
             }
             let mut slope = 0.0;
             // the width of `shadow_prices`
-            let used: f64 = self
-                .w
-                .iter()
-                .enumerate()
-                .map(|(slot, &(_, w))| w * agg[slot][row].mean)
-                .sum();
             for (slot, &(_, w)) in self.w.iter().enumerate() {
                 let m = &agg[slot][row];
-                let h = if self.wide {
-                    (0.01 * used).max(1.0)
-                } else {
-                    0.5f64.max(1e-4 * m.mean.abs()).max(1e-3 * m.var.sqrt())
-                };
+                let h = 0.5f64.max(1e-4 * m.mean.abs()).max(1e-3 * m.var.sqrt());
                 slope += w
                     * (gold_of(&bands[row], &m.shift(h)) - gold_of(&bands[row], &m.shift(-h)))
                     / (2.0 * h);
@@ -899,7 +889,6 @@ struct Run {
     /// the last phase, where the true metric also checks single block flips
     flipping: bool,
     /// surrogate-ranked moves of a kind the true metric checks
-    top: usize,
     /// descents step by the true response
     true_descent: bool,
     kick: Kick,
@@ -1317,6 +1306,20 @@ impl Run {
         probe: &mut Probe,
         apply: &dyn Fn(&mut Run, Option<&C>),
     ) -> bool {
+        // in a descent with `trueorder`: every candidate by the true metric
+        if !verify && self.on("trueorder") {
+            let mut best = (self.eval(probe), None);
+            for (at, (_, c)) in ranked.iter().enumerate() {
+                apply(self, Some(c));
+                let t = self.eval(probe);
+                if better_than(t, best.0) {
+                    best = (t, Some(at));
+                }
+            }
+            apply(self, best.1.map(|at| &ranked[at].1));
+            self.b.metric = best.0;
+            return best.1.is_some();
+        }
         ranked.retain(|c| better_than(c.0, g0));
         ranked.sort_by(|a, b| b.0.total_cmp(&a.0));
         if ranked.is_empty() {
@@ -1328,7 +1331,7 @@ impl Run {
         }
         let t0 = self.b.metric;
         let mut best: Option<(f64, usize)> = None;
-        for (at, (g, c)) in ranked.iter().take(self.top).enumerate() {
+        for (at, (g, c)) in ranked.iter().take(TOP).enumerate() {
             apply(self, Some(c));
             let t = self.eval(probe);
             self.agree.add(g - g0, t - t0, t0.abs().max(1.0));
@@ -1368,29 +1371,6 @@ impl Run {
         };
         self.what = Move::Adv;
         self.choose(ranked, g0, verify, probe, &apply)
-    }
-
-    /// each entry of an advanced upgrade's strategy takes the best of its values, by the truth
-    fn adv_true(&mut self, u: usize, probe: &mut Probe) -> bool {
-        let start = self.b.metric;
-        let mut payload = self.b.upgrade_arr[u].state.payload.clone();
-        self.what = Move::Adv;
-        for slot in 0..payload.len() {
-            let kept = payload[slot][0];
-            let mut best = (self.b.metric, kept);
-            for v in (0..=MAX_ADV_STATE).filter(|&v| v != kept) {
-                payload[slot] = smallvec![v];
-                self.set_payload(u, payload.clone());
-                let t = self.eval(probe);
-                if better_than(t, best.0) {
-                    best = (t, v);
-                }
-            }
-            payload[slot] = smallvec![best.1];
-            self.set_payload(u, payload.clone());
-            self.b.metric = best.0;
-        }
-        better_than(self.b.metric, start)
     }
 
     fn greedy_order(&self) -> Vec<usize> {
@@ -1587,11 +1567,12 @@ impl Run {
     fn descend(&mut self, rounds: usize, probe: &mut Probe) {
         let clock = probe.clock();
         let (adv, order, chest) = (!self.off("dadv"), !self.off("dorder"), !self.off("dchest"));
+        let plans = !self.off("dplan");
         for _ in 0..rounds {
             let mut moved = false;
             let mut normals = self.normals.clone();
             normals.shuffle(&mut self.rng);
-            for u in normals {
+            for u in normals.into_iter().filter(|_| plans) {
                 moved |= self.sur_normal(u, false, probe);
             }
             for u in self.advs.clone().into_iter().filter(|_| adv) {
@@ -1642,11 +1623,7 @@ impl Run {
                 }
             }
             for u in self.advs.clone().into_iter().filter(|_| adv) {
-                moved |= if self.on("advtrue") {
-                    self.adv_true(u, probe)
-                } else {
-                    self.adv_move(u, true, probe)
-                };
+                moved |= self.adv_move(u, true, probe);
             }
             moved |= order && self.order_move(true, probe);
             moved |= chest && self.chest_move(true, probe);
@@ -1716,9 +1693,14 @@ impl Run {
                     self.b.upgrade_arr[u].state.update_payload(plan);
                 }
                 let n = self.b.special_state.len();
+                let reach = (self.sur.w.last().unwrap().0 + 1).min(n);
                 for _ in 0..if self.on("randplan") { 0 } else { 2 } {
                     let i = self.rng.random_range(0..n);
-                    let j = self.rng.random_range(0..n.min(4));
+                    // anywhere a free tap reaches, or the first four places
+                    let wide = self.on("randreach");
+                    let j = self
+                        .rng
+                        .random_range(0..if wide { reach } else { n.min(4) });
                     let x = self.b.special_state.remove(i);
                     self.b.special_state.insert(j, x);
                 }
@@ -1734,25 +1716,12 @@ impl Run {
                     }
                 }
                 let mut states = self.b.chest_states.clone();
-                let stacks = self
-                    .b
-                    .prep_output
-                    .chests
-                    .iter()
-                    .filter(|(_, chest)| chest.options.len() > 1)
-                    .count();
-                let at = if self.on("anystack") && stacks > 0 {
-                    self.rng.random_range(0..stacks)
-                } else {
-                    0
-                };
                 if let Some((key, chest)) = self
                     .b
                     .prep_output
                     .chests
                     .iter()
-                    .filter(|(_, chest)| chest.options.len() > 1)
-                    .nth(at)
+                    .find(|(_, chest)| chest.options.len() > 1)
                 {
                     states.insert(key.clone(), chest.random_state(&mut self.rng));
                 }
@@ -1874,16 +1843,9 @@ impl Run {
         USE_SKEW.set(!names(&b.tuning.lab_off, "skew"));
         USE_POINTS.set(if names(&b.tuning.lab_on, "points128") {
             128
-        } else if names(&b.tuning.lab_on, "points512") {
-            512
         } else {
             POINTS
         });
-        let top = if names(&b.tuning.lab_on, "top8") {
-            8
-        } else {
-            TOP
-        };
         let true_descent = names(&b.tuning.lab_on, "truedescent");
         let n = b.upgrade_arr.len();
         let sur = Sur::new(&b);
@@ -1903,7 +1865,6 @@ impl Run {
             work: 0.0,
             budget,
             agree: Agree::default(),
-            top,
             true_descent,
             kick: Kick::First,
             what: Move::Start,
@@ -1918,8 +1879,8 @@ impl Run {
     }
 }
 
-/// For `solve`: a state as it is, kicked (`price`, `empty`, `chest`, `rand`, or `none`) and
-/// taken down a descent on the surrogate. Its metric is not set.
+/// For `solve`: a state as it is, kicked (`price`, `empty`, `chest` or `rand`) and taken down a
+/// descent on the surrogate. Its metric is not set.
 pub fn kicked<R: Rng>(
     rng: &mut R,
     state: &StateBundle,
@@ -1935,16 +1896,42 @@ pub fn kicked<R: Rng>(
         "price" => Kick::Price,
         "empty" => Kick::Empty,
         "chest" => Kick::Chest,
-        "rand" => Kick::Rand,
-        _ => Kick::First,
+        _ => Kick::Rand,
     };
     if kick == Kick::Price {
         run.price_kick(probe);
-    } else if kick != Kick::First {
+    } else {
         run.perturb(kick);
         run.sur.refresh_all(&mut run.b);
     }
-    run.descend(DESCENT, probe);
+    // true responses on prices perturbed at random: a kick like the surrogate's error
+    let noise = if run.on("noisy3") {
+        3.0 * NOISE
+    } else if run.on("noisy") {
+        NOISE
+    } else {
+        0.0
+    };
+    let kept = run.b.prep_output.bands.clone();
+    if noise > 0.0 {
+        let plan = run.b.prep_output.optimizer_plan;
+        for row in 0..run.b.prep_output.bands[plan].len() {
+            // only where the surrogate is not exact
+            if is_linear(&run.b.prep_output.bands[plan][row]) {
+                continue;
+            }
+            let factor = (noise * 3f64.sqrt() * (run.rng.random::<f64>() * 2.0 - 1.0)).exp();
+            for band in run.b.prep_output.bands[plan][row].iter_mut() {
+                band.1 *= factor;
+            }
+        }
+    }
+    if !run.off("descent") {
+        run.descend(DESCENT, probe);
+    }
+    if noise > 0.0 {
+        run.b.prep_output.bands = kept;
+    }
     run.b
 }
 

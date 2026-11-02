@@ -78,10 +78,11 @@ pnpm lab iteration2/surrogate/a
   - **Paths**: commands run under `cmd` on Windows, so an executable's path needs backslashes (`target\arena\bin\<snapshot>.exe`). The driver is the snapshot's own exe, so a build meanwhile cannot touch it.
 - **A variant** is `<label>:key=val,...`; any `Tuning` field can be set by name. `--filter` is a plain substring, not a regex.
 - **Only one job at a time uses the CPU**, or the `cpu_s` of a session means nothing.
+- **Compare `cpu_s` only inside one timeframe**, against a plain baseline in the same batch; a restart or a stopped fan moves it by 10%. Keep the baseline in every batch. `ref` in `cmp.py` compares across batches, for sessions that have the reading.
 
 **Tools**, run from the repo root. Every number is in % of flow.
 
-- `tools/cmp.py <base> [variant regex] [set,set] [chained 0|1] [scratch db]`: variants per set against a base, matched by scenario, step and seed. Columns: mean diff per payload, worst and best payload, wins and losses over 0.01%, hit (within 0.01% of the best known), mean gap, evaluations and CPU as ratios. The re-run's other variants show only when the regex names them. Sets are matched by name, so a base must have run on the same set.
+- `tools/cmp.py <base> [variant regex] [set,set] [chained 0|1] [scratch db]`: variants per set against a base, matched by scenario, step and seed. Columns: mean diff per payload, worst and best payload, wins and losses over 0.01%, hit (within 0.01% of the best known), mean gap, evaluations and CPU as ratios, and `ref`, the CPU ratio corrected for the machine's speed, when both sides have the reading (`Arena.md`, "The three measurements"). The re-run's other variants show only when the regex names them. Sets are matched by name, so a base must have run on the same set.
 - `tools/pay.py <A> <B> [k] [scenario substring] [chained 0|1] [scratch db]`: payload by payload, A against B, with both gaps, the number of upgrades and the number of seeds.
 - `tools/rerun_summary.py [variant regex]`: the re-run on its own, every variant against `solve` 48k, with hit, gap and CPU.
 
@@ -122,7 +123,10 @@ Keep it to about 10 minutes. Anything longer is a batch.
 - **Noise.** Treat effects under about 0.01% of flow as null, unless they repeat on the same payloads across sets or seeds. The random stream shifts with any change, so check a "loss" seed by seed before believing it. `Optimizer lab results.md` lists the noisy payloads.
 - **Judge on** `real_test` (38 real characters) and `real_income_test` (22 real income chains), which no attempt saw, plus `quick_dev` and the regime sets (`advanced`, `free_taps`, `juice`, `small`, `large`, `speed_test`) for where each does well. The real sets come from the analytics pulls (`Arena.md`, "Generated scenarios").
 - **The best known is over all of `runs.sqlite`**, so it moves as results come in.
-- **The free tap cut changed on 2026-10-31** (`Evaluation pipeline.md`), after every snapshot listed below. A later build does not repeat them seed by seed and runs `solve` about 5 to 10% cheaper, so it needs a fresh `solve` baseline for the repeat check and for matched CPU. Older `metric_ref` values stay comparable: they differ by at most 2.3e-6 of flow, far under the noise.
+- **The free tap cut changed on 2026-10-31** (`Evaluation pipeline.md`). Snapshots before `cut_a` used the old cut.
+  - **Stored `metric_ref` values stay valid.** All 414,624 were rescored at the new reference: at most 2.2e-6 of flow, and no hit changes.
+  - **Builds since do not repeat older snapshots seed by seed.** Use `cut_a` for the repeat check, and put `solve` in the batch for matched CPU, which is about 5 to 15% cheaper.
+  - **Gains on order-basin payloads against `lab_r1` run high**, since the new cut alone lifts `solve` there. The detail is in `iteration2/free_tap_cut/report.md`.
 
 ## What is in `runs.sqlite`
 
@@ -131,6 +135,8 @@ Keep it to about 10 minutes. Anything longer is a batch.
 | `lab_r1` | The re-run of iteration 1. Default of 128 `response_points`, all five attempts in one exe, so that each session has `solve` and all attempts together. **The baseline**; `lab_r1` alone is `solve` 48k. |
 | `i2a`–`i2g` | The `price` investigation. |
 | `i2h`, `i2i` | Registered, no stored runs. `i2i` is the final kick loop's code, and repeats `i2g` exactly (57 of 57 runs). |
+| `sur_a`, `sur_b` | The `surrogate` investigation, old cut. |
+| `cut_a` | `solve` at 48k and 96k and each attempt at effort 1, at the new cut (a2d2c0f2). **The baseline for new builds**; `cut_a` alone is `solve` 48k. |
 
 The re-run in detail, about 22 hours at 16 jobs, each set one session:
 

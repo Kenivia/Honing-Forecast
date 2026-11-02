@@ -176,6 +176,22 @@ fn time_evaluation(state_bundle: &mut StateBundle) -> f64 {
     cpu.elapsed().as_secs_f64() / reps as f64
 }
 
+/// CPU seconds of fixed work on this thread, about one under load. Free of hf-core, so that a
+/// faster build does not read as a faster machine. Changing it breaks every old reading.
+pub fn reference_s() -> f64 {
+    let mut cells = vec![1.5_f64; 1 << 17];
+    let (mut index, mut sum) = (0, 0.0_f64);
+    let cpu = ThreadTime::now();
+    for _ in 0..60_000_000 {
+        index = (index * 5 + 1) & (cells.len() - 1);
+        sum += cells[index].ln();
+        cells[index] = (sum.abs() + 1.5).sqrt();
+    }
+    let seconds = cpu.elapsed().as_secs_f64();
+    std::hint::black_box(sum);
+    seconds
+}
+
 pub fn run_job(job: &Job) {
     let tuning = tuning_with(&job.overrides);
     let mut previous: Option<Previous> = None;

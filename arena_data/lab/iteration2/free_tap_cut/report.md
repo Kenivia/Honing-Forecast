@@ -72,6 +72,67 @@ Its share of a solve, one thread, `bench --solve`: `real_test` 2.3% (worst 6.2%)
 - Later builds of the copy repeat each other: 1,942 of 1,942 states.
 - 27,457 runs, 27 of them errors, all in the first `head` runs: the pristine copy had no advanced table. Those runs were done again.
 
+## After adoption: what it did to the lab's data
+
+Checked at a2d2c0f2 with snapshot `cut_a`. Tables are in `results/`: `rescore_head.txt`, `movers_a.txt`, `cut_cause.txt`, `reach_only.txt`.
+
+**Stored metrics stay valid.** Every stored state (414,624 over 918 steps) was rescored at HEAD's `Tuning::reference`, on a copy of `runs.sqlite`, and compared with its stored `metric_ref`.
+
+| Check | Result |
+|---|---|
+| Largest move | 2.23e-6 of flow (`single_0031_serca_n36`) |
+| p99 | 5.2e-8 |
+| Over 1e-5 | 0 |
+| Hit (1e-4 of flow) changing either way | 0 of 414,624 |
+| Largest move of a step's best known | 3.9e-7 |
+
+`gross` moves up to 3.4e-4 of gross, and no lab tool reads it.
+
+**Search on average does not move.** Batch `a` (`cut_a`), each variant against its stored twin, in mean % of flow. Wins and losses are over 0.01%:
+
+| Variant | real_test | income | quick_dev | speed_test | large | wins / losses, all 918 steps |
+|---|---|---|---|---|---|---|
+| `solve` 48k | -0.0000 | +0.0000 | +0.0007 | +0.0000 | +0.0033 | 8 / 3 |
+| `solve` 96k | +0.0000 | -0.0000 | +0.0003 | +0.0000 | +0.0041 | 8 / 2 |
+| `price` 1 | -0.0000 | -0.0000 | +0.0002 | -0.0006 | +0.0061 | 6 / 4 |
+| `surrogate` 1 | -0.0000 | -0.0000 | -0.0002 | -0.0000 | -0.0020 | 1 / 4 |
+| `memetic` 1 | -0.0000 | -0.0001 | +0.0004 | +0.0000 | -0.0030 | 6 / 9 |
+| `cem` 1 | +0.0002 | -0.0001 | +0.0008 | +0.0040 | -0.0146 | 18 / 13 |
+| `lns` 1 | +0.0000 | +0.0001 | +0.0021 | +0.0012 | -0.0270 | 14 / 5 |
+
+No sign test passes 5% (the lowest is `lns`, p=0.06, leaning to the new cut). `real_test` has 0 wins and 0 losses on every variant. The large rows on `large` are 10 payloads with bimodal seeds.
+
+CPU against the twins is x0.75–1.07, mostly x0.85–0.95, lowest on `large`. That crosses sessions, so it is only a rough guide.
+
+**But the cut does steer the search on a few payloads, and upwards.** Same build, 10 seeds, production cut against `special_tol=1e-7`:
+
+| Payload | Algo | Hits, production | Hits, 1e-7 | Mean gap, production | Mean gap, 1e-7 |
+|---|---|---|---|---|---|
+| `single_1033_serca_n21` | `lns` | 10/10 | 0/10 | 0 | 0.098 |
+| `b10_single_1033_serca_n21` | `lns` | 10/10 | 2/10 | 0 | 0.083 |
+| `b10_chain_0017:2` | `solve` | 6/10 | 0/10 | 0.060 | 0.158 |
+| `b10_single_3300` | `solve` | 4/10 | 1/10 | 0.095 | 0.198 |
+| `b10_chain_0017:0` | `solve` | 8/10 | 6/10 | 0.005 | 0.053 |
+| `single_3300` | `solve` | 9/10 | 9/10 | 0.011 | 0.011 |
+| `single_0071_serca_n19` | `price` | 3/10 stuck at 1.2 | 1/10 stuck at 1.2 | 0.385 | 0.143 |
+
+- These gaps of 0.1% are far over the cut's own error of 1.8e-5, so it is the path that changes, not the score.
+- The `single_0071` trap is at both cuts, so it is not caused by this.
+- `single_1033` at `lab_r1` is 0.098 on all 3 seeds, so 1e-7 does stand in for the old cut.
+
+**It is not the reach of order moves.** A build with the production cut and the old reach (`cut_x`) gives the same result on all 12 payloads. A probe found the two reaches differ on 0 of 73,747 moves (`b10_chain_0017`) and 1 of 29,669 (`single_1033`). The high end of the outcomes stops at the budget before it gets small; what gets cut is the low end, the outcomes where almost nothing is skipped. So the effect is through the weights or the responses, and that part is not pinned down. Not tested: with the low end cut, an upgrade near the front of the order may cost nothing to the optimizer, so moves there are neutral and the search can drift across them.
+
+**What this does to earlier claims.** Gains measured against `lab_r1` on order-basin payloads are somewhat high, since `solve` now reaches part of them itself. The stored kick loop against each `solve`:
+
+| Set | vs `lab_r1` | vs `cut_a` |
+|---|---|---|
+| quick_dev | +0.0023 (14 wins, 0 losses) | +0.0016 (12 wins, 1 loss) |
+| large | +0.0121 | +0.0089 |
+| real_test | +0.0056 | +0.0056 |
+| speed_test | +0.0007 | +0.0007 |
+
+The kick loop itself has not been run at the new cut, since `price/final.patch` no longer applies at HEAD.
+
 ## Files
 
 `final.patch` is the experiment as it ended against HEAD (the knobs, `special_dump`, the DP timer), not a proposed change. `scripts/` has the dump, the analysis and the batches, with paths to the scratchpad of the session. `results/` has the printed tables.

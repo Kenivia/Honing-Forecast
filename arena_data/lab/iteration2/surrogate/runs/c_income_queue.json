@@ -1,0 +1,6 @@
+[
+ {
+  "name": "c_income_real_income_test",
+  "cmd": "target\\arena\\bin\\sur_c.exe --db arena_data/lab/runs.sqlite --set real_income_test run sur_c sur_c:sur_stall=16,lab_on=randreach sur_c:sur_stall=32,lab_on=randreach sur_c:algo=surrogate,lab_effort=1,lab_on=points128+randreach --mode chained --seeds 3 --jobs 16 --resume"
+ }
+]

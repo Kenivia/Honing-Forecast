@@ -1,0 +1,24 @@
+states 414624 unchanged exactly 341642
+  |d metric_ref| / flow p50: 0.000e+00
+  |d metric_ref| / flow p90: 4.435e-10
+  |d metric_ref| / flow p99: 5.192e-08
+  |d metric_ref| / flow p99.9: 2.150e-06
+  |d metric_ref| / flow p100: 2.228e-06
+  signed mean -7.092e-09, min -2.228e-06, max 1.937e-07
+  |d gross|/gross max 3.398e-04; |d flow|/flow max 2.946e-06
+  over 1e-6: 1014  over 1e-5: 0  over 1e-4 (noise line): 0
+largest:
+  single_0031_serca_n36:0                    -2.228e-06 metric 591395 flow 698417 sur_b:algo=surrogate,lab_effort=1,lab_on
+  single_0031_serca_n36:0                    -2.228e-06 metric 591395 flow 698417 sur_a:algo=surrogate,lab_effort=1,lab_on
+  single_0031_serca_n36:0                    -2.228e-06 metric 591395 flow 698417 sur_a:algo=surrogate,lab_effort=1,lab_of
+  single_0031_serca_n36:0                    -2.228e-06 metric 591395 flow 698417 sur_b:algo=surrogate,lab_effort=1,lab_on
+  single_0031_serca_n36:0                    -2.228e-06 metric 591395 flow 698417 lab_r1:algo=memetic,lab_effort=2
+  single_0031_serca_n36:0                    -2.228e-06 metric 591395 flow 698417 sur_a:algo=surrogate,lab_effort=1,lab_on
+  single_0031_serca_n36:0                    -2.228e-06 metric 591395 flow 698417 lab_r1:algo=memetic,lab_effort=2
+  single_0031_serca_n36:0                    -2.228e-06 metric 591395 flow 698417 lab_r1:algo=memetic,lab_effort=2
+  single_0031_serca_n36:0                    -2.228e-06 metric 591395 flow 698417 sur_a:algo=surrogate,lab_effort=1,lab_of
+  b10_single_0031_serca_n36:0                -2.226e-06 metric 591334 flow 698481 sur_a:algo=surrogate,lab_effort=1,lab_of
+  b10_single_0031_serca_n36:0                -2.224e-06 metric 591334 flow 698481 sur_a:algo=surrogate,lab_effort=1,lab_of
+  b10_single_0031_serca_n36:0                -2.224e-06 metric 591334 flow 698481 sur_a:algo=surrogate,lab_effort=1,lab_of
+gap to the step best (% of flow basis): max change 1.848e-06, p99 8.754e-09; hit flips at 1e-4 of flow: 0 of 414624
+best known, new best above the old best rescored: max 3.914e-07 single_0031_serca_n36:0 ; steps over 1e-6: 0 of 918

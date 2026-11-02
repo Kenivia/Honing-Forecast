@@ -41,7 +41,14 @@ Things worth knowing about its shape:
    - `adv`: an advanced upgrade gets a random plan.
    - `piece`: a piece type's normal upgrades all take their response at once.
 
-   At 32 it loses no payload. It reaches order basins that the chains miss, at x1.2–2.3 the CPU. A lab result (`Optimizer lab results.md`), not yet on.
+   At 32 it loses no payload. It reaches order basins that the chains miss, at x1.2–2.3 the CPU. A lab result (`Optimizer lab results.md`), not yet on; its code is in `arena_data/lab/iteration2/price/final.patch`, not in the tree.
+9. **Surrogate loop** (`sur_loop`, off: `sur_stall` 0): the best state takes a kick (`sur_kinds`), goes down a descent on the moment surrogate of `optimizer/lab/surrogate.rs`, is polished, and is kept where better, until `sur_stall` kicks in a row gain nothing.
+   - The descent: every normal upgrade's response, plus advanced, order and chest moves ranked on the surrogate, in rounds, none of them checked. The order moves among the plans let it reach a new basin before `order_polish` puts the order back; the descent usually ends on it.
+   - The kicks: `price` (prices kicked), `rand` (random plans and two order insertions, within reach with the lab switch `randreach`), `chest`, `empty`.
+   - `sur_screen` polishes one round first, and in full only where that beats the best: 13–24% less CPU, same gain.
+   - With the lab switches `truedescent+trueorder+noisy` the descent uses no surrogate, at +30–87% the CPU.
+
+   At `sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach` it loses no payload, at x2.0–3.3 the CPU. A lab result (`Optimizer lab results.md`), not yet on.
 
 A chained run (`Previous`, see "Chained runs") puts the plan of the run before in front of all this.
 

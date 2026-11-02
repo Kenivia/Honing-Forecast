@@ -1,0 +1,18 @@
+[
+ {
+  "name": "e_regime_advanced",
+  "cmd": "target\\arena\\bin\\sur_e.exe --db arena_data/lab/runs.sqlite --set advanced run sur_e sur_e:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach sur_e:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach+truedescent,lab_off=dorder+dadv+dchest sur_e:sur_stall=32,sur_kinds=lprice+rand+chest+empty,lab_on=randreach+truedescent+d1+skipchest,lab_off=dorder+dadv+dchest sur_e:sur_stall=16,sur_kinds=lprice+rand+chest+empty,lab_on=randreach+truedescent+d1+skipchest,lab_off=dorder+dadv+dchest --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "e_regime_free_taps",
+  "cmd": "target\\arena\\bin\\sur_e.exe --db arena_data/lab/runs.sqlite --set free_taps run sur_e sur_e:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach sur_e:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach+truedescent,lab_off=dorder+dadv+dchest sur_e:sur_stall=32,sur_kinds=lprice+rand+chest+empty,lab_on=randreach+truedescent+d1+skipchest,lab_off=dorder+dadv+dchest sur_e:sur_stall=16,sur_kinds=lprice+rand+chest+empty,lab_on=randreach+truedescent+d1+skipchest,lab_off=dorder+dadv+dchest --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "e_regime_juice",
+  "cmd": "target\\arena\\bin\\sur_e.exe --db arena_data/lab/runs.sqlite --set juice run sur_e sur_e:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach sur_e:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach+truedescent,lab_off=dorder+dadv+dchest sur_e:sur_stall=32,sur_kinds=lprice+rand+chest+empty,lab_on=randreach+truedescent+d1+skipchest,lab_off=dorder+dadv+dchest sur_e:sur_stall=16,sur_kinds=lprice+rand+chest+empty,lab_on=randreach+truedescent+d1+skipchest,lab_off=dorder+dadv+dchest --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "e_regime_small",
+  "cmd": "target\\arena\\bin\\sur_e.exe --db arena_data/lab/runs.sqlite --set small run sur_e sur_e:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach sur_e:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach+truedescent,lab_off=dorder+dadv+dchest sur_e:sur_stall=32,sur_kinds=lprice+rand+chest+empty,lab_on=randreach+truedescent+d1+skipchest,lab_off=dorder+dadv+dchest sur_e:sur_stall=16,sur_kinds=lprice+rand+chest+empty,lab_on=randreach+truedescent+d1+skipchest,lab_off=dorder+dadv+dchest --mode cold --seeds 3 --jobs 16 --resume"
+ }
+]

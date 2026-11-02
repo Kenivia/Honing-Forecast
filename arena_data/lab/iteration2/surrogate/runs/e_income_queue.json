@@ -1,0 +1,6 @@
+[
+ {
+  "name": "e_income_real_income_test",
+  "cmd": "target\\arena\\bin\\sur_e.exe --db arena_data/lab/runs.sqlite --set real_income_test run sur_e sur_e:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach sur_e:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach+truedescent,lab_off=dorder+dadv+dchest sur_e:sur_stall=32,sur_kinds=lprice+rand+chest+empty,lab_on=randreach+truedescent+d1+skipchest,lab_off=dorder+dadv+dchest --mode chained --seeds 3 --jobs 16 --resume"
+ }
+]

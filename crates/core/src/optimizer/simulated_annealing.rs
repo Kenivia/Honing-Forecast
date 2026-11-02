@@ -580,9 +580,6 @@ pub fn solve<R: Rng>(
     if tuning.shadow_start > 0 {
         super::shadow_start(&mut shadowed, tuning.shadow_start, probe);
     }
-    if tuning.sur_start {
-        shadowed = super::lab::surrogate::kicked(rng, &shadowed, "none", probe);
-    }
 
     // Several shorter chains share the evaluations, each polished, and the best is kept. The
     // first goes on from a carried plan where there is one, the rest start afresh.
@@ -726,8 +723,20 @@ fn sur_loop<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
         let mut kicked = super::lab::surrogate::kicked(rng, best, kind, probe);
         kicked.tuning.max_iters = 0;
         kicked.metric = kicked.metric_router(probe);
-        let polished = anneal(rng, &mut kicked, probe, 1, 1, f64::NEG_INFINITY);
-        if polished.metric > best.metric + best.metric.abs() * 1e-12 {
+        // one round of the polishes first, all of them only where that beats the best
+        let screen = best.tuning.sur_screen;
+        if screen {
+            kicked.tuning.polish_rounds = 1;
+            kicked.tuning.response_polish = 1;
+        }
+        let mut polished = anneal(rng, &mut kicked, probe, 1, 1, f64::NEG_INFINITY);
+        polished.tuning = best.tuning.clone();
+        polished.tuning.max_iters = 0;
+        let better = |p: &StateBundle| p.metric > best.metric + best.metric.abs() * 1e-12;
+        if screen && better(&polished) {
+            polished = anneal(rng, &mut polished, probe, 1, 1, f64::NEG_INFINITY);
+        }
+        if better(&polished) {
             *best = polished;
             stall = 0;
         } else {

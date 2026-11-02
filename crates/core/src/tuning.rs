@@ -104,13 +104,13 @@ pub struct Tuning {
     /// kicks of the best state's free tap order after the chains (a window shuffled), each
     /// polished and kept where better; 0 for none
     pub order_kicks: usize,
-    /// every other chain's start also goes down a descent on the surrogate
-    pub sur_start: bool,
     /// after the chains, restarts of the best state on the surrogate, each polished and kept
     /// where better, until this many in a row gain nothing; 0 for none
     pub sur_stall: usize,
     /// the kinds of those restarts in turn, joined by `+`: `price`, `empty`, `chest`, `rand`
     pub sur_kinds: String,
+    /// such a restart is polished one round first, and in full only where that beats the best
+    pub sur_screen: bool,
 
     // chained runs
     pub max_blob_bytes: usize,
@@ -192,9 +192,9 @@ impl Default for Tuning {
             greedy_order: true,
             shadow_start: 4,
             order_kicks: 0,
-            sur_start: false,
             sur_stall: 0,
             sur_kinds: "price+rand+chest".to_string(),
+            sur_screen: false,
             max_blob_bytes: 5 * 1024 * 1024,
             carry: true,
             carry_iters: 1.0,
