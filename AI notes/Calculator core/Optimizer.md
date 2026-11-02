@@ -41,7 +41,7 @@ Things worth knowing about its shape:
    - `adv`: an advanced upgrade gets a random plan.
    - `piece`: a piece type's normal upgrades all take their response at once.
 
-   At 32 it loses no payload. It reaches order basins that the chains miss, at x1.2–2.3 the CPU. A lab result (`Optimizer lab results.md`), not yet on; its code is in `arena_data/lab/iteration2/price/final.patch`, not in the tree.
+   At 32 it loses no payload. It reaches order basins that the chains miss, at x1.2–2.3 the CPU. A lab result (`Optimizer lab results.md`), not yet on. Its window kick takes the free taps' reach from `skip_weights`, as `solve` does since the free tap cut; it has not yet been run at that cut.
 9. **Surrogate loop** (`sur_loop`, off: `sur_stall` 0): the best state takes a kick (`sur_kinds`), goes down a descent on the moment surrogate of `optimizer/lab/surrogate.rs`, is polished, and is kept where better, until `sur_stall` kicks in a row gain nothing.
    - The descent: every normal upgrade's response, plus advanced, order and chest moves ranked on the surrogate, in rounds, none of them checked. The order moves among the plans let it reach a new basin before `order_polish` puts the order back; the descent usually ends on it.
    - The kicks: `price` (prices kicked), `rand` (random plans and two order insertions, within reach with the lab switch `randreach`), `chest`, `empty`.

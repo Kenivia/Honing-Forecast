@@ -453,16 +453,15 @@ impl Run {
             pairs.truncate((12.0 * self.effort.sqrt()) as usize + 2);
             for (a, b) in pairs {
                 let have = self.sb.chest_states[&key][a];
-                // all of it, then random amounts or a third at a time
+                // all of it, then a third at a time, random amounts or both
                 let mut amounts = vec![have];
-                if self.on("chestrand") {
-                    if have > 1 {
-                        amounts.extend((0..4).map(|_| self.rng.random_range(1..have)));
-                    }
-                } else {
+                if !self.on("chestrand") {
                     while amounts.last().unwrap() / 3 > 0 {
                         amounts.push(amounts.last().unwrap() / 3);
                     }
+                }
+                if (self.on("chestrand") || self.on("chestboth")) && have > 1 {
+                    amounts.extend((0..4).map(|_| self.rng.random_range(1..have)));
                 }
                 for amount in amounts.into_iter().filter(|&amount| amount > 0) {
                     if self.work >= self.budget {
@@ -745,7 +744,18 @@ pub fn solve<R: Rng>(
     let adv: Vec<usize> = (0..n).filter(|&i| models[i].is_none()).collect();
     let effort = sb.tuning.lab_effort.max(0.01);
     let budget = effort * (BASE_WORK + UPGRADE_WORK * n as f64);
-    let carried: Vec<StateBundle> = previous.map_or(Vec::new(), |p| p.carried(&sb));
+    let mut carried: Vec<StateBundle> = previous.map_or(Vec::new(), |p| p.carried(&sb));
+    // solve's result as one more carried plan, its cost apart from the budget
+    if sb
+        .tuning
+        .lab_on
+        .split('+')
+        .any(|piece| piece == "fromsolve")
+    {
+        let mut plain = sb.clone();
+        plain.tuning.algo = String::new();
+        carried.push(crate::optimizer::solve(rng, plain, previous, probe).best);
+    }
 
     // the given state, on the grid as it is and by streaks
     on_grid(&mut sb, &models, false);

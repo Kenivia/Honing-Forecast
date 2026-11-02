@@ -644,8 +644,8 @@ pub fn solve<R: Rng>(
     let mut best = results[0].clone();
     let merged = tuning.merge && merge(&mut best, &results[1..], probe);
     refine(rng, &mut best, merged, probe);
-    if tuning.order_kicks > 0 {
-        order_kicks(rng, &mut best, probe);
+    if tuning.kick_stall > 0 {
+        kick_loop(rng, &mut best, probe);
     }
     if tuning.sur_stall > 0 {
         sur_loop(rng, &mut best, probe);
@@ -691,23 +691,108 @@ fn refine<R: Rng>(rng: &mut R, best: &mut StateBundle, mut moved: bool, probe: &
     }
 }
 
-/// Kicks of the best state's free tap order, a window of it shuffled, each polished and kept
-/// where better (`Tuning::order_kicks`).
-fn order_kicks<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
+/// Kicks of the best state, each polished and kept where better, until `Tuning::kick_stall` in a
+/// row gain nothing (`Tuning::kick_types`).
+fn kick_loop<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
     let len = best.special_state.len();
-    if len < 2 || !best.affords_a_free_tap() {
+    let stacks: Vec<String> = best
+        .prep_output
+        .chests
+        .iter()
+        .filter(|(_, chest)| chest.options.len() > 1 && chest.count > 0)
+        .map(|(key, _)| key.clone())
+        .collect();
+    let adv: Vec<usize> = (0..len)
+        .filter(|&i| !best.upgrade_arr[i].is_normal_honing)
+        .collect();
+    let normal: Vec<usize> = (0..len)
+        .filter(|&i| best.upgrade_arr[i].is_normal_honing)
+        .collect();
+    let types: Vec<String> = best
+        .tuning
+        .kick_types
+        .split('+')
+        .filter(|kind| match *kind {
+            "window" => len > 1 && best.affords_a_free_tap(),
+            "chest" => !stacks.is_empty(),
+            "adv" => !adv.is_empty(),
+            "piece" => !normal.is_empty(),
+            _ => false,
+        })
+        .map(String::from)
+        .collect();
+    if types.is_empty() {
         return;
     }
-    for _ in 0..best.tuning.order_kicks {
+    let mut stall = 0;
+    while stall < best.tuning.kick_stall {
         let mut kicked = best.clone();
-        let at = rng.random_range(0..len - 1);
-        let end = (at + 2 + rng.random_range(0..4)).min(len);
-        kicked.special_state[at..end].shuffle(rng);
+        match types[rng.random_range(0..types.len())].as_str() {
+            "window" => {
+                // a window starting within the free taps' reach shuffled, its upgrades re-planned
+                // for their new places before the polish can move them back
+                kicked.compute_special_probs(false);
+                let last = kicked.skip_weights().last().map_or(0, |x| x.0);
+                let at = rng.random_range(0..(last + 1).min(len - 1));
+                let end = (at + 2 + rng.random_range(0..4)).min(len);
+                kicked.special_state[at..end].shuffle(rng);
+                // taken before the evaluation, which can change the order
+                let moved = kicked.special_state[at..end].to_vec();
+                kicked.metric = kicked.metric_router(probe);
+                for index in moved {
+                    if kicked.upgrade_arr[index].is_normal_honing {
+                        respond_one(&mut kicked, index, probe);
+                    }
+                }
+            }
+            "chest" => {
+                let key = &stacks[rng.random_range(0..stacks.len())];
+                let mut states = kicked.chest_states.clone();
+                states.insert(
+                    key.clone(),
+                    kicked.prep_output.chests[key].random_state(rng),
+                );
+                kicked.set_chest_state(&states);
+            }
+            "adv" => {
+                let index = adv[rng.random_range(0..adv.len())];
+                let plan = (0..kicked.upgrade_arr[index].state.payload.len())
+                    .map(|_| smallvec![rng.random_range(0..=MAX_ADV_STATE)])
+                    .collect();
+                kicked.upgrade_arr[index].state.update_payload(plan);
+            }
+            _ => {
+                let piece =
+                    kicked.upgrade_arr[normal[rng.random_range(0..normal.len())]].piece_type_usize;
+                let which: Vec<usize> = normal
+                    .iter()
+                    .copied()
+                    .filter(|&i| kicked.upgrade_arr[i].piece_type_usize == piece)
+                    .collect();
+                kicked.metric = kicked.metric_router(probe);
+                let plans: Vec<Vec<OneState>> = which
+                    .iter()
+                    .map(|&index| {
+                        let response = Response::of(&mut kicked, index, probe);
+                        let before = &kicked.upgrade_arr[index].state.payload;
+                        let now = response.model.canonical(&response.model.indices(before));
+                        let plan = response.better(&now, kicked.tuning.response_joint).1;
+                        response.model.plan(&plan)
+                    })
+                    .collect();
+                for (&index, plan) in which.iter().zip(plans) {
+                    kicked.upgrade_arr[index].state.update_payload(plan);
+                }
+            }
+        }
         kicked.tuning.max_iters = 0;
         kicked.metric = kicked.metric_router(probe);
         let polished = anneal(rng, &mut kicked, probe, 1, 1, f64::NEG_INFINITY);
         if polished.metric > best.metric + best.metric.abs() * 1e-12 {
             *best = polished;
+            stall = 0;
+        } else {
+            stall += 1;
         }
     }
 }

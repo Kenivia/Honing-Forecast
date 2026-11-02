@@ -101,9 +101,14 @@ pub struct Tuning {
     pub greedy_order: bool,
     /// rounds of the shadow price start (`optimizer/shadow.rs`) every fresh chain goes on from; 0 for none
     pub shadow_start: usize,
-    /// kicks of the best state's free tap order after the chains (a window shuffled), each
-    /// polished and kept where better; 0 for none
-    pub order_kicks: usize,
+    /// after the chains, kicks of the best state, each polished and kept where better, until this
+    /// many in a row gain nothing; 0 for none
+    pub kick_stall: usize,
+    /// the kinds of those kicks, joined by `+`: `window` (of the free tap order within reach,
+    /// shuffled and its upgrades re-planned),
+    /// `chest` (a stack opened at random), `adv` (an advanced upgrade's plan at random), `piece`
+    /// (a piece type's normal upgrades all take their response at once)
+    pub kick_types: String,
     /// after the chains, restarts of the best state on the surrogate, each polished and kept
     /// where better, until this many in a row gain nothing; 0 for none
     pub sur_stall: usize,
@@ -191,7 +196,8 @@ impl Default for Tuning {
             order_reach: true,
             greedy_order: true,
             shadow_start: 4,
-            order_kicks: 0,
+            kick_stall: 0,
+            kick_types: "window+chest+adv+piece".to_string(),
             sur_stall: 0,
             sur_kinds: "price+rand+chest".to_string(),
             sur_screen: false,
