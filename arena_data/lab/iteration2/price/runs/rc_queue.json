@@ -1,0 +1,10 @@
+[
+ {
+  "name": "rc_quick_dev",
+  "cmd": "target\\arena\\bin\\pr_a.exe --db arena_data/lab/runs.sqlite --set quick_dev run pr_a pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kicks pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+order pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kchest pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kadv pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kexchange pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kpiece pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kperturb --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "rc_speed_test",
+  "cmd": "target\\arena\\bin\\pr_a.exe --db arena_data/lab/runs.sqlite --set speed_test run pr_a pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kicks pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+order pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kchest pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kadv pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kexchange pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kpiece pr_a:algo=price,lab_effort=1,lab_on=fromsolve,lab_off=prices+kperturb --mode cold --seeds 3 --jobs 16 --resume"
+ }
+]

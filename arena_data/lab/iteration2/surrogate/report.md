@@ -17,6 +17,8 @@
 
 Scripts are in `scripts/`. All numbers are % of flow.
 
+**Old free tap cut in sections 1–5.** The re-run (`lab_r1`), the smoke of section 3 and batches `a` and `b` (`sur_a`, `sur_b`) ran before the cut of 2026-10-31. Comparisons inside them stand; their gains on order-basin payloads run high. Batches `c`–`g` are at the new cut and carry the verdict.
+
 ## 0. State of the work
 
 | Round | Snapshot | Batch | Tests | Status |

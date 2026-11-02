@@ -1,0 +1,38 @@
+[
+ {
+  "name": "rd_pilot",
+  "cmd": "target\\arena\\bin\\pr_a.exe --db arena_data/lab/runs.sqlite --set pilot run pr_a pr_a:response_points=16 pr_a:algo=price,lab_effort=1 pr_a:algo=price,lab_effort=1,response_points=16 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "rd_ascend_small_16",
+  "cmd": "target\\arena\\bin\\pr_a.exe --db arena_data/lab/runs.sqlite --set small ascend --tuning response_points=16 --out arena_data\\lab\\iteration2\\price\\results\\ascend_small_16.jsonl"
+ },
+ {
+  "name": "rd_ascend_small_32",
+  "cmd": "target\\arena\\bin\\pr_a.exe --db arena_data/lab/runs.sqlite --set small ascend --tuning response_points=32 --out arena_data\\lab\\iteration2\\price\\results\\ascend_small_32.jsonl"
+ },
+ {
+  "name": "rd_ascend_small_64",
+  "cmd": "target\\arena\\bin\\pr_a.exe --db arena_data/lab/runs.sqlite --set small ascend --tuning response_points=64 --out arena_data\\lab\\iteration2\\price\\results\\ascend_small_64.jsonl"
+ },
+ {
+  "name": "rd_ascend_small_128",
+  "cmd": "target\\arena\\bin\\pr_a.exe --db arena_data/lab/runs.sqlite --set small ascend --tuning response_points=128 --out arena_data\\lab\\iteration2\\price\\results\\ascend_small_128.jsonl"
+ },
+ {
+  "name": "rd_ascend_speed_test_16",
+  "cmd": "target\\arena\\bin\\pr_a.exe --db arena_data/lab/runs.sqlite --set speed_test ascend --tuning response_points=16 --out arena_data\\lab\\iteration2\\price\\results\\ascend_speed_test_16.jsonl"
+ },
+ {
+  "name": "rd_ascend_speed_test_128",
+  "cmd": "target\\arena\\bin\\pr_a.exe --db arena_data/lab/runs.sqlite --set speed_test ascend --tuning response_points=128 --out arena_data\\lab\\iteration2\\price\\results\\ascend_speed_test_128.jsonl"
+ },
+ {
+  "name": "rd_ascend_real_test_16",
+  "cmd": "target\\arena\\bin\\pr_a.exe --db arena_data/lab/runs.sqlite --set real_test ascend --tuning response_points=16 --out arena_data\\lab\\iteration2\\price\\results\\ascend_real_test_16.jsonl"
+ },
+ {
+  "name": "rd_ascend_real_test_128",
+  "cmd": "target\\arena\\bin\\pr_a.exe --db arena_data/lab/runs.sqlite --set real_test ascend --tuning response_points=128 --out arena_data\\lab\\iteration2\\price\\results\\ascend_real_test_128.jsonl"
+ }
+]

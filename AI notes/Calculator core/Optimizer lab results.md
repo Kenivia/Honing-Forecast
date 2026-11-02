@@ -7,7 +7,7 @@ What the lab has found, by topic. How the lab works is in `Optimizer lab.md`; wh
 - `lab_r1`: `solve` 48k.
 - `lab_r1:max_iters=96000`: `solve` at 96k.
 - `i2g:kick_stall=32,kick_types=windowq+chest+adv+piece`: the kick loop. For new runs `i2i:kick_stall=32` is the same behaviour, but it has no stored runs.
-- `cut_a`: `solve` 48k at the free tap cut of 2026-10-31; `cut_a:max_iters=96000` is 96k. Every build since repeats this one, not those above. The three above used the old cut. Their metrics stay comparable, but on order-basin payloads the new cut alone lifts `solve`, so the kick loop's gains are quick_dev +0.0016 and `large` +0.0089 against `cut_a` (real_test and `speed_test` unchanged). The table below is against `lab_r1`. Evidence: `iteration2/free_tap_cut/report.md`.
+- `cut_a`: `solve` 48k at the free tap cut of 2026-10-31; `cut_a:max_iters=96000` is 96k. Every build since repeats this one, not those above. The three above used the old cut. Their metrics stay comparable, but on order-basin payloads the new cut alone lifts `solve`, so gains measured against `lab_r1` run high there. Every row below is against `cut_a` or a plain baseline that repeats it. Evidence: `iteration2/free_tap_cut/report.md`.
 
 ## Prototypes
 
@@ -22,12 +22,12 @@ What the lab has found, by topic. How the lab works is in `Optimizer lab.md`; wh
 | Piece | Status | Gain | Cost | Evidence |
 |---|---|---|---|---|
 | `response_points` 128 | **In production** | Up to 0.96 on lone upgrades; `small` +0.007 | None measurable | `price` report 1 |
-| Kick loop, `kick_stall=32`, all four kick types | Candidate; in tree, off (`kick_stall` 0); not yet run at the new cut | quick_dev +0.0023 (hit 94.7 → 97.1), `large` +0.012, real_test +0.006, `speed_test` +0.0007, income 0; no payload lost | x1.2–2.3 CPU | `price` report 8–10 |
+| Kick loop, `kick_stall=32`, all four kick types | Candidate; in tree, off (`kick_stall` 0); not yet run at the new cut | Old-cut runs (`i2g`) against `cut_a`: quick_dev +0.0016 (12 wins, 1 loss), `large` +0.0089, real_test +0.0056, `speed_test` +0.0007, income 0 | x1.2–2.3 CPU, old cut | `price` report 8–10, `free_tap_cut` report |
 | Surrogate loop after `solve`: `sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach` | Candidate; in tree, off (`sur_stall` 0) | Against `cut_a`: real_test +0.0064 (hit 96.6 → 97.9), quick_dev +0.0018 (95.5 → 97.3), `speed_test` +0.0016, `large` +0.0066, advanced, free_taps and juice to 100, income +0.0002; no payload lost | x2.0–3.3 CPU | `surrogate` report 5–11 |
 | Screened polish in that loop: `sur_screen=true` | Candidate with it | Same gain within 0.01 on every payload (10-seed gap sum 0.288 against 0.276) | 13–24% less CPU than the loop | `surrogate` report 10 |
 | Chest amounts from the grid plus 4 random draws | Candidate; `price` `chestboth` only, not in `solve` yet | Fixes `single_1104_serca_n1` and `single_1166_serca_n1` | None measurable | `price` report 7–8 |
 
-Against `solve` at 96k the kick loop is ahead (`large` +0.0073, quick_dev +0.0011, real_test +0.0016) at x0.8–1.3 the CPU.
+At the old cut, against `solve` at 96k in the same batch, the kick loop was ahead (`large` +0.0073, quick_dev +0.0011, real_test +0.0016) at x0.8–1.3 the CPU.
 
 ## What makes a result good
 

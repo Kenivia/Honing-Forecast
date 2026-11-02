@@ -4,6 +4,8 @@
 
 Batches are in `runs/`, and runs are in `arena_data/lab/runs.sqlite` under the snapshots named below.
 
+**Old free tap cut.** Every number below ran before the cut of 2026-10-31 (snapshots `lab_r1`, `i2a`–`i2g`), against `lab_r1`. Gains on order-basin payloads run high there, and CPU is comparable only inside a batch. What changed is in `iteration2/free_tap_cut/report.md`.
+
 ## 1. The best response is inexact where the lattice does not answer (`response_points`)
 
 `Response` takes a material's worth exactly where the lattice answers. Elsewhere it samples 16 evenly spaced amounts (`Tuning::response_points`) and joins them by straight lines (`StateBundle::worth` in `response.rs`). On some payloads that line misses the true worth by enough to pick the wrong plan.
