@@ -50,3 +50,7 @@ Evidence: `arena_data/lab/iteration2/free_tap_cut/report.md`.
 - Don't compute it on every intermediate result: it costs five to six times a histogram in wasm, so it is final-state only. Untried speed-ups: looping over runs on the outside to keep totals in cache, and 50k runs (half the time, 0.6% off over the curve).
 - Don't use plain chances for the pity odds: the luckiest underflowed to 0 on 96 upgrades. They are log10.
 - The site once drew a gold graph from its own Monte Carlo (removed in October 2025); this one replaces it.
+
+## Sampling one P(G > t)
+
+- Don't expect variance reduction to help the gold graph: a separate study, `C:\Users\Kenivia\Documents\VSC\Monte carlo` (see its README), found that importance sampling needs about 400x fewer samples than plain Monte Carlo at P(G > t) = 0.0017. But its proposal is built for a single t, so it only pays off if one tail probability is needed. Per-upgrade rejection sampling never beat plain sampling.

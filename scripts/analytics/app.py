@@ -1,14 +1,15 @@
 # Local site showing every plot in plot.py: pnpm analytics (pulls first), or streamlit run app.py
 import streamlit as st
 
-from load import load
+from load import BANDS, load
 from plot import PLOTS
 
 st.set_page_config(page_title="HF analytics", layout="wide")
 d = st.cache_data(load)()
+bands = st.sidebar.multiselect("Material bands", BANDS, BANDS)
 for name, plot in PLOTS.items():
     st.header(name)
-    fig, table = plot(d)
+    fig, table = plot(d, bands) if name == "materials" else plot(d)
     if fig is None:
         st.write("no data")
         continue

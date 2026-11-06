@@ -128,7 +128,7 @@ Keep it to about 10 minutes. Anything longer is a batch.
   - **Builds since do not repeat older snapshots seed by seed.** Use `cut_a` for the repeat check, and put `solve` in the batch for matched CPU, which is about 5 to 15% cheaper.
   - **Gains on order-basin payloads against `lab_r1` run high**, since the new cut alone lifts `solve` there. The detail is in `iteration2/free_tap_cut/report.md`.
   - **CPU ratios inside a batch carry over.** Against `solve` 48k in the same session, every prototype at effort 1 and `solve` 96k cost the same at both cuts within about ±0.05, up to +0.09 on `free_taps`. Absolute `cpu_s` does not carry over: `solve` 48k is x0.78–1.03 per run at the same evaluations, mixed with machine state.
-  - **The effort curves exist only at the old cut** (`lab_r1`: efforts 0.125–2 against `solve` 6k–96k). `cut_a` has effort 1, `solve` 48k and 96k.
+  - **The effort curves are re-run at the new cut** in `pr_a` (batch `iteration2/price/runs/ra`): `price`, `memetic`, `cem` and `lns` at efforts 0.25–2 (`price` also 0.125) against `solve` 6k–96k; table in `price` report 11. `surrogate`'s is at the old cut only.
 
 ## What is in `runs.sqlite`
 
@@ -136,10 +136,11 @@ Keep it to about 10 minutes. Anything longer is a batch.
 |---|---|
 | `lab_r1` | The re-run of iteration 1. Default of 128 `response_points`, all five attempts in one exe, so that each session has `solve` and all attempts together. **The baseline**; `lab_r1` alone is `solve` 48k. |
 | `i2a`–`i2g` | The `price` investigation. |
-| `i2h`, `i2i` | Registered, no stored runs. `i2i` is the final kick loop's code, and repeats `i2g` exactly (57 of 57 runs). The kick loop has no runs at the new cut. |
+| `i2h`, `i2i` | Registered, no stored runs. `i2i` is the final kick loop's code, and repeats `i2g` exactly (57 of 57 runs). |
 | `sur_a`, `sur_b` | The `surrogate` investigation, old cut. |
 | `sur_c`–`sur_g` | The `surrogate` investigation, new cut. From `sur_e` on, runs carry the `ReferenceUs` reading. |
 | `cut_a` | `solve` at 48k and 96k and each attempt at effort 1, at the new cut (a2d2c0f2). **The baseline for new builds**; `cut_a` alone is `solve` 48k. |
+| `pr_a` | The `price` re-run at the new cut (code of 97e7115d), batches `ra`–`rd`: `solve` 6k–96k, every prototype but `surrogate` at efforts 0.25–2, the kick loop and its variants, `price`'s ablations, and `ascend` by `response_points`. Repeats `cut_a` exactly. |
 
 The re-run in detail, about 22 hours at 16 jobs, each set one session:
 

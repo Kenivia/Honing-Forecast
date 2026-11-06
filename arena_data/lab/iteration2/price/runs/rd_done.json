@@ -1,0 +1,11 @@
+{
+  "rd_pilot": "2026-11-06T01:06",
+  "rd_ascend_small_16": "2026-11-06T01:07",
+  "rd_ascend_small_32": "2026-11-06T01:07",
+  "rd_ascend_small_64": "2026-11-06T01:07",
+  "rd_ascend_small_128": "2026-11-06T01:08",
+  "rd_ascend_speed_test_16": "2026-11-06T01:41",
+  "rd_ascend_speed_test_128": "2026-11-06T02:01",
+  "rd_ascend_real_test_16": "2026-11-06T02:05",
+  "rd_ascend_real_test_128": "2026-11-06T02:08"
+}

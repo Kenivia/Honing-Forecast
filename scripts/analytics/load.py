@@ -43,7 +43,7 @@ def load(include_dev=False):
                 continue
             seen.add(h)
             base = dict(roster=u["roster"], region=u["region"], version=u["version"], at=s["at"], hash=h)
-            snaps.append(dict(base, upload=u["id"], received=u["received"], kind=s["kind"],
+            snaps.append(dict(base, upload=u["id"], received=u["received"], kind=s["kind"], by=s.get("by"),
                               chars=len(s["chars"]), ignored=bool(s.get("ignored")),
                               has_grids=any("normal_grid" in c for c in s["chars"].values())))
             cols = [("roster", None, s["roster_owned"]), ("tradable", None, s["tradable"])]
@@ -52,7 +52,8 @@ def load(include_dev=False):
                 off = s["chars"][cid].get("disabled", []) if band == "bound" else []
                 for label, n in col.items():
                     mats.append(dict(base, kind=s["kind"], char=cid, band=band, label=label, amount=n,
-                                     gold=n * price_of(s, label), disabled=label in off))
+                                     gold=n * price_of(s, label), disabled=label in off,
+                                     tier=s["chars"][cid].get("tier") if cid else None))
             for cid, c in [(None, {"chests": s["roster_chests"]})] + list(s["chars"].items()):
                 for ch in c["chests"]:
                     chests.append(dict(base, char=cid, title=ch["title"], band=ch["band"], count=ch["count"],

@@ -6,8 +6,9 @@ What the lab has found, by topic. How the lab works is in `Optimizer lab.md`; wh
 
 - `lab_r1`: `solve` 48k.
 - `lab_r1:max_iters=96000`: `solve` at 96k.
-- `i2g:kick_stall=32,kick_types=windowq+chest+adv+piece`: the kick loop. For new runs `i2i:kick_stall=32` is the same behaviour, but it has no stored runs.
+- `i2g:kick_stall=32,kick_types=windowq+chest+adv+piece`: the kick loop at the old cut.
 - `cut_a`: `solve` 48k at the free tap cut of 2026-10-31; `cut_a:max_iters=96000` is 96k. Every build since repeats this one, not those above. The three above used the old cut. Their metrics stay comparable, but on order-basin payloads the new cut alone lifts `solve`, so gains measured against `lab_r1` run high there. Every row below is against `cut_a` or a plain baseline that repeats it. Evidence: `iteration2/free_tap_cut/report.md`.
+- `pr_a`: the `price` re-run at the new cut (batches `price/runs/ra`–`rd`); repeats `cut_a` on all 7,948 shared runs. It holds `solve` 6k–96k, the effort curves of `price`, `memetic`, `cem` and `lns` (0.25–2), and the kick loop (`pr_a:kick_stall=32`) with its variants. The curves are in `price` report 11.
 
 ## Prototypes
 
@@ -22,18 +23,18 @@ What the lab has found, by topic. How the lab works is in `Optimizer lab.md`; wh
 | Piece | Status | Gain | Cost | Evidence |
 |---|---|---|---|---|
 | `response_points` 128 | **In production** | Up to 0.96 on lone upgrades; `small` +0.007 | None measurable | `price` report 1 |
-| Kick loop, `kick_stall=32`, all four kick types | Candidate; in tree, off (`kick_stall` 0); not yet run at the new cut | Old-cut runs (`i2g`) against `cut_a`: quick_dev +0.0016 (12 wins, 1 loss), `large` +0.0089, real_test +0.0056, `speed_test` +0.0007, income 0 | x1.2–2.3 CPU, old cut | `price` report 8–10, `free_tap_cut` report |
+| Kick loop, `kick_stall=32`, all four kick types | Candidate; in tree, off (`kick_stall` 0) | real_test +0.0056 (hit 96.6 → 97.6), quick_dev +0.0016 (11 wins, 0 losses; 95.5 → 97.8), `speed_test` +0.0006, `large` +0.0077 (53 → 70), income +0.0001; no payload lost | x1.4–2.7 CPU | `price` report 8–10 |
 | Surrogate loop after `solve`: `sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach` | Candidate; in tree, off (`sur_stall` 0) | Against `cut_a`: real_test +0.0064 (hit 96.6 → 97.9), quick_dev +0.0018 (95.5 → 97.3), `speed_test` +0.0016, `large` +0.0066, advanced, free_taps and juice to 100, income +0.0002; no payload lost | x2.0–3.3 CPU | `surrogate` report 5–11 |
 | Screened polish in that loop: `sur_screen=true` | Candidate with it | Same gain within 0.01 on every payload (10-seed gap sum 0.288 against 0.276) | 13–24% less CPU than the loop | `surrogate` report 10 |
 | Chest amounts from the grid plus 4 random draws | Candidate; `price` `chestboth` only, not in `solve` yet | Fixes `single_1104_serca_n1` and `single_1166_serca_n1` | None measurable | `price` report 7–8 |
 
-At the old cut, against `solve` at 96k in the same batch, the kick loop was ahead (`large` +0.0073, quick_dev +0.0011, real_test +0.0016) at x0.8–1.3 the CPU.
+Against `solve` at 96k in the same batch the kick loop is ahead or level everywhere: real_test +0.0016, quick_dev +0.0008 (8 wins, 1 loss), `large` +0.0020 (1, 1), at x0.86–1.49 the CPU. At the old cut its `large` lead was +0.0073.
 
 ## What makes a result good
 
 **Free tap order.**
 
-- Insertion of a normal upgrade within a free tap's reach is what makes an order good: without those moves `price` loses 0.14–0.47. `solve`'s `order_polish` already has them.
+- Insertion of a normal upgrade within a free tap's reach is what makes an order good: without those moves `price` loses 0.13–0.48. `solve`'s `order_polish` already has them.
 - `solve` misses some order basins at any budget, 384k included. The kick loop reaches most of them.
 
 **Kicks.**
@@ -41,8 +42,8 @@ At the old cut, against `solve` at 96k in the same batch, the kick loop was ahea
 - A kick reaches a new basin only if what it moved is re-planned before a greedy repair runs. Otherwise `order_polish` puts a shuffled window straight back.
 - It must also move something that matters: a window starting past the free taps' reach changes nothing.
 - The moved upgrades must be read before the evaluation, which cleans the order (`clean_special_state`). One build read them after and lost every `chain_0017` gain.
-- Each set has its own kick: adv carries `large`, chest carries real_test and `speed_test`, and window carries the order basins. All four together match the best single kick on each set. The piece kick does nothing alone, but `large` and real_test are worse without it in the mix.
-- Stall length: 8 gets about half of 32, and 96 adds little to 32 for twice the CPU.
+- Each set has its own kick: adv carries `large`, chest carries real_test, window carries quick_dev and the order basins, and chest and window share `speed_test`. All four together match the best single kick on each set. The piece kick does nothing alone, but `large` and real_test are worse without it in the mix.
+- Stall length: 8 gets about half of 32 (a fifth on `large`), and 96 adds little to 32 for twice the CPU.
 - Kicks add to the annealing and do not replace it: halving the annealing to pay for them loses at matched CPU.
 
 **Re-planning after a kick.**
@@ -54,9 +55,9 @@ At the old cut, against `solve` at 96k in the same batch, the kick loop was ahea
 - Every win moves several plans together (median 7, none a single plan; two thirds with the order).
 - Kick kinds trade payloads: price `single_0044`, rand the order basins, chest and empty real_test. Stall 32, not 16.
 
-**Chest amounts.** A fixed step grid (halves in `solve`, thirds in `price`) misses lone-chest optima. `solve` finds those only through its random-amount moves in the annealer.
+**Chest amounts.** A fixed step grid (halves in `solve`, thirds in `price`) misses lone-chest optima. `solve` finds those only through its random-amount moves in the annealer: without them (`chest_move_rate=0`) it loses real_test -0.079 (up to -1.0 a payload), `speed_test` -0.022 (`single_1208` -3.1) and income -0.0044.
 
-**Starts.** Started from `solve`'s finished plan, `price` ties the kick loop. From its own start it is behind, so the kick loop is worth having and its start is not.
+**Starts.** Started from `solve`'s finished plan, `price` ties the kick loop, and the two split the order basins (the loop `chain_0017:3`, `price` the rest). From its own start it is behind, so the kick loop is worth having and its start is not.
 
 ## Where `solve` stands
 

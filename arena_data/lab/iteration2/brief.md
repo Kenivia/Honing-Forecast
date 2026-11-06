@@ -20,12 +20,12 @@ After all reviews, a final report with visualizations goes in `report/`, for dec
 Read, in this order:
 
 1. `AI notes/Calculator core/Optimizer lab.md`: how to work.
-2. `Optimizer lab results.md` beside it: what is known. The candidates in `solve` (`kick_stall=32`; `sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach`) are second baselines when swapping a piece in. Run them in your own batch: the kick loop has no stored runs at the new cut.
+2. `Optimizer lab results.md` beside it: what is known. The candidates in `solve` (`kick_stall=32`; `sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach`) are second baselines when swapping a piece in. Run them in your own batch; `pr_a:kick_stall=32` has the kick loop's stored runs at the new cut.
 3. `Optimizer.md` and `Optimizer tried.md` beside it. Read the tried note before designing any experiment.
 4. `iteration1/attempts/<algo>.md` and `crates/core/src/optimizer/lab/<algo>.rs`.
 5. `price/report.md`, as an example of a review.
 
-**Baselines changed.** HEAD has the new free tap cut. A new build repeats `cut_a`, not `lab_r1`, and `cut_a` holds `solve` at 48k and 96k and every prototype at effort 1. Read "The free tap cut changed" in `Optimizer lab.md` first. The effort curves (efforts against `solve` 6k–96k) exist only at the old cut, so a review's first batch rebuilds its prototype's curve: efforts 0.25–2 beside `solve` at 12k–96k, in one batch.
+**Baselines changed.** HEAD has the new free tap cut. A new build repeats `cut_a`, not `lab_r1`, and `cut_a` holds `solve` at 48k and 96k and every prototype at effort 1. Read "The free tap cut changed" in `Optimizer lab.md` first. The effort curves at the new cut (efforts 0.25–2 against `solve` 6k–96k, in one batch) are in `pr_a` and in `price/report.md` section 11; start from them rather than re-running.
 
 **How the work is split.** One agent uses the CPU at a time, so the orchestrator runs every long job. A reviewer works in rounds: write code, build, test, snapshot, smoke test for a few minutes, write the batch with `queue.py`, and end its turn saying what the batch tests. The orchestrator runs it and resumes the reviewer. Do not start `pnpm lab` or any arena run over about 10 minutes yourself.
 
