@@ -8,10 +8,10 @@ After all reviews, a final report with visualizations goes in `report/`, for dec
 
 | Investigation | Status | Snapshots |
 |---|---|---|
-| `price/` | Done. `final.patch`; code applied to the tree after the surrogate commit, every piece off (stash "price investigation" kept as a backup) | `i2a`–`i2i` |
+| `price/` | Done. Code in the tree, every piece off; re-run at the new cut in `pr_a` (batches `ra`–`rd`), report current | `i2a`–`i2i`, `pr_a` |
 | `free_tap_cut/` | Done, adopted as production; `cut_a` is the baseline for new builds | `cut_a` |
 | `surrogate/` | Done. Code left in the tree, every piece off; `final.patch` is the three files against 8444a44a (it carries the free tap cut's lines in them too); no stash | `sur_a`–`sur_g` |
-| `memetic/` | Not started | `mem_*` |
+| `memetic/` | Done. Code in the tree, every piece off (`mem_polish` in `solve`); report current | `mem_a`, `mem_b` |
 | `cem/` | Not started | `cem_*` |
 | `lns/` | Not started | `lns_*` |
 
@@ -20,7 +20,7 @@ After all reviews, a final report with visualizations goes in `report/`, for dec
 Read, in this order:
 
 1. `AI notes/Calculator core/Optimizer lab.md`: how to work.
-2. `Optimizer lab results.md` beside it: what is known. The candidates in `solve` (`kick_stall=32`; `sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach`) are second baselines when swapping a piece in. Run them in your own batch; `pr_a:kick_stall=32` has the kick loop's stored runs at the new cut.
+2. `Optimizer lab results.md` beside it: what is known. The candidates in `solve` (`kick_stall=32`; `kick_stall=32,mem_polish=true`; `sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach`) are second baselines when swapping a piece in. Run them in your own batch; `pr_a:kick_stall=32` has the kick loop's stored runs at the new cut.
 3. `Optimizer.md` and `Optimizer tried.md` beside it. Read the tried note before designing any experiment.
 4. `iteration1/attempts/<algo>.md` and `crates/core/src/optimizer/lab/<algo>.rs`.
 5. `price/report.md`, as an example of a review.

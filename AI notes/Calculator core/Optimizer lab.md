@@ -116,7 +116,7 @@ Keep it to about 10 minutes. Anything longer is a batch.
 
   Such a run gets the `error` "invalid state: ...". `solve` passed the check on every run of `quick_dev` (698).
 - `lab_algos_repeat_and_are_valid` (arena worker tests) runs every name in `ALGOS` twice per dummy step.
-- **Ablations**: `Tuning::lab_off` names pieces an attempt leaves out and `Tuning::lab_on` pieces it adds, joined by `+` (`<snapshot>:algo=price,lab_off=order+kicks`). Each attempt names its own, and with neither set it runs as before. `price` leaves out `order`, `kicks`, `prices`, `replan` and `ratio`, and each kick type: `kchest`, `kwindow`, `kadv`, `kexchange`, `kpiece` and `kperturb`. It adds `advall` (half its advanced kicks put every advanced upgrade of the piece type on one plan), `chestrand` (chest moves of random amounts in place of thirds), `chestboth` (thirds plus 4 random amounts) and `fromsolve` (`solve`'s result as one more carried start, its cost outside the budget).
+- **Ablations**: `Tuning::lab_off` names pieces an attempt leaves out and `Tuning::lab_on` pieces it adds, joined by `+` (`<snapshot>:algo=price,lab_off=order+kicks`). Each attempt names its own, and with neither set it runs as before. `price` leaves out `order`, `kicks`, `prices`, `replan` and `ratio`, and each kick type: `kchest`, `kwindow`, `kadv`, `kexchange`, `kpiece` and `kperturb`. It adds `advall` (half its advanced kicks put every advanced upgrade of the piece type on one plan), `chestrand` (chest moves of random amounts in place of thirds), `chestboth` (thirds plus 4 random amounts) and `fromsolve` (`solve`'s result as one more carried start, its cost outside the budget). `memetic` leaves out `cross`, `gens`, `restart`, `improve`, `pseed`, `oreplan`, `toggle` and `runs`, and adds `fromsolve` (starts from `solve`'s result, its cost included); each run writes `mem_gain`/`mem_wins`/`mem_cost` trace rows by phase and move (`iteration2/memetic/scripts/attr.py`).
 
 ## Reading results
 
@@ -141,6 +141,7 @@ Keep it to about 10 minutes. Anything longer is a batch.
 | `sur_c`–`sur_g` | The `surrogate` investigation, new cut. From `sur_e` on, runs carry the `ReferenceUs` reading. |
 | `cut_a` | `solve` at 48k and 96k and each attempt at effort 1, at the new cut (a2d2c0f2). **The baseline for new builds**; `cut_a` alone is `solve` 48k. |
 | `pr_a` | The `price` re-run at the new cut (code of 97e7115d), batches `ra`–`rd`: `solve` 6k–96k, every prototype but `surrogate` at efforts 0.25–2, the kick loop and its variants, `price`'s ablations, and `ascend` by `response_points`. Repeats `cut_a` exactly. |
+| `mem_a`, `mem_b` | The `memetic` investigation (new cut): its ablations, `fromsolve`, `mem_polish` in `solve`, with the kick loop and the surrogate loop in the same sessions. Both repeat `cut_a`. |
 
 The re-run in detail, about 22 hours at 16 jobs, each set one session:
 

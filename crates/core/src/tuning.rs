@@ -116,6 +116,9 @@ pub struct Tuning {
     pub sur_kinds: String,
     /// such a restart is polished one round first, and in full only where that beats the best
     pub sur_screen: bool,
+    /// after the chains, the best state takes the lab `memetic`'s polish (responses in fours, its
+    /// order moves with toggles and runs, advanced and chests)
+    pub mem_polish: bool,
 
     // chained runs
     pub max_blob_bytes: usize,
@@ -201,6 +204,7 @@ impl Default for Tuning {
             sur_stall: 0,
             sur_kinds: "price+rand+chest".to_string(),
             sur_screen: false,
+            mem_polish: false,
             max_blob_bytes: 5 * 1024 * 1024,
             carry: true,
             carry_iters: 1.0,

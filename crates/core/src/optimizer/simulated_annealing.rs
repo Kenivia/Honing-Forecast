@@ -644,6 +644,9 @@ pub fn solve<R: Rng>(
     let mut best = results[0].clone();
     let merged = tuning.merge && merge(&mut best, &results[1..], probe);
     refine(rng, &mut best, merged, probe);
+    if tuning.mem_polish {
+        super::lab::memetic::polish_state(rng, &mut best, probe);
+    }
     if tuning.kick_stall > 0 {
         kick_loop(rng, &mut best, probe);
     }

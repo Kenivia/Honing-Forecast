@@ -35,14 +35,21 @@ Things worth knowing about its shape:
 5. **Leaving early**: once `agree_exit` results have ended on the same metric, or once the first `unanimous` have and none elsewhere; or, going on from a plan (below), once `carry_stall` chains in a row have not bettered it. Too few agreeing chains leave on a plan that is reliably not the best on small payloads.
 6. **Merge** (`merge`): the best chain's result takes from each other chain's, where the metric agrees, its free tap order, its plans for a whole piece type (they share juices and books), and its plan for each upgrade.
 7. **Exchange** (`exchange`, in `refine`): uses of a juice or a book go from one upgrade to another that takes the same, in growing amounts: the last taps that take it of the one, the first that do not of the other. Then the polishes again, and again while it moves anything. Under a streak length (`exchange_blocks`) the amounts are blocks, and both plans are put back on the grid (`State::snap_to_block`) before the metric decides.
-8. **Kick loop** (`kick_loop`, off: `kick_stall` 0): the best state takes a kick, is polished, and the result is kept where better, until `kick_stall` kicks in a row gain nothing. The kicks (`kick_types`) are taken at random:
+8. **Memetic polish** (`mem_polish`, off): after the exchanges, the best state takes the lab `memetic`'s polish once (`optimizer/lab/memetic.rs`, `polish_state`), in rounds while it gains, at most 4. Each round is:
+   - responses in chunks of 4;
+   - a full advanced scan;
+   - order moves: each upgrade to places near it, to the front, either side of where free taps stop, and beside its piece's levels; one upgrade out of the free taps and another in at once; runs of 2–3 to the front or the end;
+   - chest moves between options in halving amounts, then single chests in two places.
+
+   A failed order move is retried with the moved upgrades re-planned. The pairs and the re-plan are what take the order basins that `order_polish`'s single insertions leave. At x1.03–1.17 the CPU it loses no payload. With the kick loop the two take each other's order basins. A lab result (`Optimizer lab results.md`), not yet on.
+9. **Kick loop** (`kick_loop`, off: `kick_stall` 0): the best state takes a kick, is polished, and the result is kept where better, until `kick_stall` kicks in a row gain nothing. The kicks (`kick_types`) are taken at random:
    - `window`: a window of the free tap order, starting within the free taps' reach, is shuffled, and the upgrades in it are re-planned (responses) before the polish. Without that re-plan, `order_polish` puts them straight back. They are taken before the evaluation, since that cleans the order.
    - `chest`: a stack is opened at random.
    - `adv`: an advanced upgrade gets a random plan.
    - `piece`: a piece type's normal upgrades all take their response at once.
 
    At 32 it loses no payload. It reaches order basins that the chains miss, at x1.4–2.7 the CPU. A lab result (`Optimizer lab results.md`), not yet on. Its window kick takes the free taps' reach from `skip_weights`, as `solve` does since the free tap cut.
-9. **Surrogate loop** (`sur_loop`, off: `sur_stall` 0): the best state takes a kick (`sur_kinds`), goes down a descent on the moment surrogate of `optimizer/lab/surrogate.rs`, is polished, and is kept where better, until `sur_stall` kicks in a row gain nothing.
+10. **Surrogate loop** (`sur_loop`, off: `sur_stall` 0): the best state takes a kick (`sur_kinds`), goes down a descent on the moment surrogate of `optimizer/lab/surrogate.rs`, is polished, and is kept where better, until `sur_stall` kicks in a row gain nothing.
    - The descent: every normal upgrade's response, plus advanced, order and chest moves ranked on the surrogate, in rounds, none of them checked. The order moves among the plans let it reach a new basin before `order_polish` puts the order back; the descent usually ends on it.
    - The kicks: `price` (prices kicked), `rand` (random plans and two order insertions, within reach with the lab switch `randreach`), `chest`, `empty`.
    - `sur_screen` polishes one round first, and in full only where that beats the best: 13–24% less CPU, same gain.

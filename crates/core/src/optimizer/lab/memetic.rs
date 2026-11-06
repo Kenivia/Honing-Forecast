@@ -2,7 +2,7 @@
 //! structure (piece types, pieces or upgrades with their free tap places, chest stacks), each
 //! improved by a short local search (best responses, advanced, order and chest moves) before it
 //! competes by crowding; restarts by prices when it converges, the best polished in between.
-//! See `arena_data/lab/iteration1/attempts/memetic.md`.
+//! See `arena_data/lab/iteration1/attempts/memetic.md` and `iteration2/memetic/report.md`.
 
 use super::check;
 use crate::advanced_honing::utils::MAX_ADV_STATE;
@@ -26,6 +26,32 @@ const STALL: f64 = 140.0;
 const RESTARTS: f64 = 3.0;
 const MUTATE: f64 = 0.5;
 
+/// phases and moves a new best is credited to, for the trace (`mem_gain` at iter phase * 16 + move)
+const SEED: usize = 0;
+const PSEED: usize = 1;
+const ANCHOR: usize = 2;
+const PORDER: usize = 3;
+const CHILD: usize = 4;
+const RESTART: usize = 5;
+const RSEED: usize = 6;
+const FINAL: usize = 7;
+const NONE: usize = 0;
+const SWEEP: usize = 1;
+const ADV: usize = 2;
+const OWIN: usize = 3;
+const OWINR: usize = 4;
+const TOG: usize = 5;
+const TOGR: usize = 6;
+const RUN: usize = 7;
+const RUNR: usize = 8;
+const CHEST: usize = 9;
+const PAIRS: usize = 10;
+const IRESP: usize = 11;
+const IADV: usize = 12;
+const IORDER: usize = 13;
+const ICHEST: usize = 14;
+const RPASS: usize = 15;
+
 #[derive(Clone)]
 struct Ind {
     plans: Vec<Vec<OneState>>,
@@ -44,13 +70,101 @@ struct Ctx<'a> {
     stacks: Vec<String>,
     free: bool,
     crossover: bool,
+    /// the best metric evaluated so far, and what found it
+    top: f64,
+    phase: usize,
+    mv: usize,
+    gain: Vec<f64>,
+    wins: Vec<f64>,
+    cost: Vec<f64>,
+}
+
+impl<'a> Ctx<'a> {
+    fn of(bundle: StateBundle, probe: &'a mut Probe) -> Ctx<'a> {
+        let count = bundle.upgrade_arr.len();
+        let crossover = !bundle.tuning.lab_off.split('+').any(|name| name == "cross");
+        let normal: Vec<usize> = (0..count)
+            .filter(|&index| bundle.upgrade_arr[index].is_normal_honing)
+            .collect();
+        let adv: Vec<usize> = (0..count)
+            .filter(|&index| !bundle.upgrade_arr[index].is_normal_honing)
+            .collect();
+        let stacks: Vec<String> = bundle
+            .prep_output
+            .chests
+            .iter()
+            .filter(|(_, chest)| chest.options.len() > 1 && chest.count > 0)
+            .map(|(key, _)| key.clone())
+            .collect();
+        // a chest may give the leapstones
+        let free = bundle.affords_a_free_tap()
+            || bundle.prep_output.chests.values().any(|chest| {
+                chest
+                    .options
+                    .iter()
+                    .any(|option| option.contains_key(&bundle.prep_output.special_label))
+            });
+        Ctx {
+            bundle,
+            probe,
+            spent: 0.0,
+            normal,
+            adv,
+            stacks,
+            free,
+            crossover,
+            top: f64::NEG_INFINITY,
+            phase: SEED,
+            mv: NONE,
+            gain: vec![0.0; 128],
+            wins: vec![0.0; 128],
+            cost: vec![0.0; 128],
+        }
+    }
+}
+
+/// memetic's polish of a finished state, for `Tuning::mem_polish` in `solve`
+pub fn polish_state<R: Rng>(rng: &mut R, bundle: &mut StateBundle, probe: &mut Probe) {
+    if bundle.upgrade_arr.is_empty() {
+        return;
+    }
+    let mut ctx = Ctx::of(bundle.clone(), probe);
+    ctx.phase = FINAL;
+    let metric = ctx.eval();
+    ctx.polish(rng, metric, f64::INFINITY);
+    let mut out = ctx.bundle;
+    out.metric = super::evaluate(&mut out, ctx.probe);
+    if out.metric > metric {
+        *bundle = out;
+    }
 }
 
 impl Ctx<'_> {
+    /// a piece left out by `Tuning::lab_off`
+    fn off(&self, piece: &str) -> bool {
+        self.bundle
+            .tuning
+            .lab_off
+            .split('+')
+            .any(|name| name == piece)
+    }
+
+    fn charge(&mut self, work: f64) {
+        self.spent += work;
+        self.cost[self.phase * 16 + self.mv] += work;
+    }
+
     fn eval(&mut self) -> f64 {
-        self.spent += 1.0;
+        self.charge(1.0);
         let metric = super::evaluate(&mut self.bundle, self.probe);
         self.bundle.metric = metric;
+        if metric > self.top {
+            if self.top.is_finite() {
+                self.gain[self.phase * 16 + self.mv] += metric - self.top;
+                self.wins[self.phase * 16 + self.mv] += 1.0;
+            }
+            self.top = metric;
+        }
         metric
     }
 
@@ -85,7 +199,7 @@ impl Ctx<'_> {
             .model
             .indices(&self.bundle.upgrade_arr[index].state.payload);
         let (_, found) = response.better(&now, self.bundle.tuning.response_joint);
-        self.spent += response.work(self.bundle.tuning.response_steps);
+        self.charge(response.work(self.bundle.tuning.response_steps));
         let model = &response.model;
         if model.canonical(&now) == found {
             return false;
@@ -197,15 +311,19 @@ impl Ctx<'_> {
                     list.push(pick);
                 }
             }
+            self.mv = IRESP;
             metric = self.sweep(metric, &list).0;
         }
         if !self.adv.is_empty() {
+            self.mv = IADV;
             metric = self.adv_move(rng, metric);
         }
         if self.free && self.bundle.special_state.len() > 1 {
+            self.mv = IORDER;
             metric = self.order_move(rng, metric);
         }
         if !self.stacks.is_empty() {
+            self.mv = ICHEST;
             metric = self.chest_move(rng, metric);
         }
         metric
@@ -219,16 +337,19 @@ impl Ctx<'_> {
             let mut list = self.normal.clone();
             shuffle(rng, &mut list);
             // a sweep in pieces, so that one bad response does not lose the rest
+            self.mv = SWEEP;
             for chunk in list.chunks(4) {
                 if self.spent >= budget {
                     break;
                 }
                 metric = self.sweep(metric, chunk).0;
             }
+            self.mv = ADV;
             metric = self.adv_polish(metric, budget);
             if self.free && self.bundle.special_state.len() > 1 {
                 metric = self.order_polish(metric, budget);
             }
+            self.mv = CHEST;
             metric = self.chest_polish(metric, budget);
             if metric <= start + start.abs() * 1e-12 || self.spent >= budget {
                 break;
@@ -269,6 +390,7 @@ impl Ctx<'_> {
     /// displaced one's answering the move
     fn order_polish(&mut self, from: f64, budget: f64) -> f64 {
         let mut metric = from;
+        let replan_off = self.off("oreplan");
         let len = self.bundle.special_state.len();
         let window = if len <= 12 { len } else { 6 };
         for item in self.normal.clone() {
@@ -309,11 +431,17 @@ impl Ctx<'_> {
                 }
                 let displaced = base.order[to];
                 self.bundle.special_state = new;
+                self.mv = OWIN;
                 let tried = self.eval();
                 if tried > metric {
                     metric = tried;
                     break;
                 }
+                if replan_off {
+                    self.load(&base);
+                    continue;
+                }
+                self.mv = OWINR;
                 let mut list = vec![item];
                 if self.bundle.upgrade_arr[displaced].is_normal_honing {
                     list.push(displaced);
@@ -330,6 +458,7 @@ impl Ctx<'_> {
         let inside = places(&self.bundle, &self.bundle.special_state);
         let (ins, outs): (Vec<usize>, Vec<usize>) =
             self.normal.iter().partition(|&&index| inside[index] < 2.0);
+        let ins = if self.off("toggle") { Vec::new() } else { ins };
         for &a in &ins {
             for &b in &outs {
                 if self.spent >= budget {
@@ -338,11 +467,17 @@ impl Ctx<'_> {
                 let base = self.snapshot(metric);
                 let new = toggle(&self.bundle, toggle(&self.bundle, base.order.clone(), a), b);
                 self.bundle.special_state = new;
+                self.mv = TOG;
                 let tried = self.eval();
                 if tried > metric {
                     metric = tried;
                     continue;
                 }
+                if replan_off {
+                    self.load(&base);
+                    continue;
+                }
+                self.mv = TOGR;
                 let (tried, kept) = self.sweep(f64::NEG_INFINITY, &[a, b]);
                 if kept && tried > metric {
                     metric = tried;
@@ -353,7 +488,8 @@ impl Ctx<'_> {
         }
         // runs of two or three to the front or to the end
         let len = self.bundle.special_state.len();
-        for size in [2, 3] {
+        let sizes: &[usize] = if self.off("runs") { &[] } else { &[2, 3] };
+        for &size in sizes {
             for at in 0..len.saturating_sub(size - 1) {
                 for front in [true, false] {
                     if self.spent >= budget {
@@ -371,11 +507,17 @@ impl Ctx<'_> {
                         continue;
                     }
                     self.bundle.special_state = new;
+                    self.mv = RUN;
                     let tried = self.eval();
                     if tried > metric {
                         metric = tried;
                         continue;
                     }
+                    if replan_off {
+                        self.load(&base);
+                        continue;
+                    }
+                    self.mv = RUNR;
                     let list: Vec<usize> = run
                         .iter()
                         .copied()
@@ -430,6 +572,7 @@ impl Ctx<'_> {
                 }
             }
         }
+        self.mv = PAIRS;
         self.chest_pairs(metric, budget)
     }
 
@@ -559,7 +702,7 @@ fn linear_plans(ctx: &mut Ctx, prices: &[f64]) {
             .model
             .indices(&ctx.bundle.upgrade_arr[index].state.payload);
         let (_, found) = response.better(&now, ctx.bundle.tuning.response_joint);
-        ctx.spent += response.work(ctx.bundle.tuning.response_steps);
+        ctx.charge(response.work(ctx.bundle.tuning.response_steps));
         if response.model.canonical(&now) != found {
             let plan = response.model.plan(&found);
             ctx.bundle.upgrade_arr[index].state.update_payload(plan);
@@ -854,22 +997,29 @@ fn price_seed<R: Rng>(
     ctx.snapshot(metric)
 }
 
-pub fn solve<R: Rng>(
-    rng: &mut R,
-    state_bundle: StateBundle,
-    previous: Option<&Previous>,
-    probe: &mut Probe,
-) -> Solved {
-    run(rng, state_bundle, previous, probe, true)
+/// a new member from a base: by prices, or with `lab_off=pseed` the base mutated three times
+fn seed_of<R: Rng>(rng: &mut R, ctx: &mut Ctx, base: &Ind, shadow: &[f64], market: &[f64]) -> Ind {
+    if !ctx.off("pseed") {
+        return price_seed(rng, ctx, base, shadow, market);
+    }
+    let mut ind = base.clone();
+    for _ in 0..3 {
+        mutate(rng, ctx, &mut ind);
+    }
+    ctx.load(&ind);
+    let metric = ctx.eval();
+    ctx.snapshot(metric)
 }
 
-/// `crossover` off makes each child a mutated copy of one parent, for the ablation
-fn run<R: Rng>(
+/// Switches (`lab_off`): `cross` (children copies of one parent), `gens` (no generations),
+/// `restart`, `improve` (no child local search), `pseed` (members by mutation, not prices),
+/// `oreplan` (no plans answering an order move), `toggle`, `runs`. `lab_on`: `fromsolve`
+/// (`solve`'s result as a seed, its cost apart). Findings: `iteration2/memetic/report.md`.
+pub fn solve<R: Rng>(
     rng: &mut R,
     mut bundle: StateBundle,
     previous: Option<&Previous>,
     probe: &mut Probe,
-    crossover: bool,
 ) -> Solved {
     if bundle.upgrade_arr.is_empty() {
         bundle.metric = super::evaluate(&mut bundle, probe);
@@ -881,43 +1031,24 @@ fn run<R: Rng>(
     let effort = bundle.tuning.lab_effort;
     let count = bundle.upgrade_arr.len();
     let budget = effort * (BUDGET_BASE + BUDGET_PER_UPGRADE * count as f64);
-    let carried = previous.map(|previous| previous.carried(&bundle));
-    let normal: Vec<usize> = (0..count)
-        .filter(|&index| bundle.upgrade_arr[index].is_normal_honing)
-        .collect();
-    let adv: Vec<usize> = (0..count)
-        .filter(|&index| !bundle.upgrade_arr[index].is_normal_honing)
-        .collect();
-    let stacks: Vec<String> = bundle
-        .prep_output
-        .chests
-        .iter()
-        .filter(|(_, chest)| chest.options.len() > 1 && chest.count > 0)
-        .map(|(key, _)| key.clone())
-        .collect();
-    // a chest may give the leapstones
-    let free = bundle.affords_a_free_tap()
-        || bundle.prep_output.chests.values().any(|chest| {
-            chest
-                .options
-                .iter()
-                .any(|option| option.contains_key(&bundle.prep_output.special_label))
-        });
-    let mut ctx = Ctx {
-        bundle,
-        probe,
-        spent: 0.0,
-        normal,
-        adv,
-        stacks,
-        free,
-        crossover,
-    };
+    let mut carried = previous.map_or(Vec::new(), |previous| previous.carried(&bundle));
+    if bundle
+        .tuning
+        .lab_on
+        .split('+')
+        .any(|name| name == "fromsolve")
+    {
+        let mut plain = bundle.clone();
+        plain.tuning.algo = String::new();
+        carried.push(crate::optimizer::solve(rng, plain, previous, probe).best);
+    }
+    let mut ctx = Ctx::of(bundle, probe);
+    let free = ctx.free;
 
     // the given and carried plans, on the grid, as candidates
     let mut seeds: Vec<Ind> = Vec::new();
     let mut givens: Vec<StateBundle> = vec![ctx.bundle.clone()];
-    givens.extend(carried.into_iter().flatten());
+    givens.extend(carried);
     for given in givens {
         let ind = Ind {
             plans: given
@@ -983,10 +1114,11 @@ fn run<R: Rng>(
     let shadow = ctx.bundle.shadow_prices(ctx.probe);
     let market = market(&ctx.bundle);
     let mut tries = 0;
+    ctx.phase = PSEED;
     while pop.len() < size && tries < 2 * size && ctx.spent < budget * 0.3 {
         tries += 1;
         let base = seeds[rng.random_range(0..seeds.len())].clone();
-        let ind = price_seed(rng, &mut ctx, &base, &shadow, &market);
+        let ind = seed_of(rng, &mut ctx, &base, &shadow, &market);
         if pop.iter().all(|other| distance(other, &ind, free) > 0) {
             pop.push(ind);
         }
@@ -1000,6 +1132,7 @@ fn run<R: Rng>(
         }
     }
     ctx.load(&pop[best].clone());
+    ctx.phase = ANCHOR;
     let polish_cap = ctx.spent + budget * 0.25;
     let metric = ctx.polish(rng, pop[best].metric, polish_cap);
     pop[best] = ctx.snapshot(metric);
@@ -1007,6 +1140,8 @@ fn run<R: Rng>(
         // the order by what a leapstone saves at the anchor's prices, plans answering it
         let prices = ctx.bundle.shadow_prices(ctx.probe);
         ctx.bundle.special_state = price_order(&ctx, &prices);
+        ctx.phase = PORDER;
+        ctx.mv = NONE;
         let start = ctx.eval();
         let metric = ctx.polish(rng, start, polish_cap + budget * 0.1);
         let other = ctx.snapshot(metric);
@@ -1023,7 +1158,8 @@ fn run<R: Rng>(
     let (mut stall, mut dry) = (0, 0);
     let mut since = f64::NEG_INFINITY;
     let reserve = budget * 0.8;
-    while ctx.spent < reserve && pop.len() > 1 {
+    let (mut children, mut restarted) = (0, 0);
+    while !ctx.off("gens") && ctx.spent < reserve && pop.len() > 1 {
         let top = pop
             .iter()
             .map(|ind| ind.metric)
@@ -1036,23 +1172,28 @@ fn run<R: Rng>(
                 0
             };
             since = top;
-            if dry >= restarts {
+            if dry >= restarts || ctx.off("restart") {
                 break;
             }
+            restarted += 1;
             let best = (0..pop.len())
                 .max_by(|&a, &b| pop[a].metric.total_cmp(&pop[b].metric).then(b.cmp(&a)))
                 .unwrap();
             ctx.load(&pop[best].clone());
+            ctx.phase = RESTART;
             let cap = (ctx.spent + budget * 0.1).min(reserve);
             let metric = ctx.polish(rng, pop[best].metric, cap);
             pop[best] = ctx.snapshot(metric);
             let anchor = pop[best].clone();
+            ctx.phase = RSEED;
             for at in (0..pop.len()).filter(|&at| at != best) {
-                let seed = price_seed(rng, &mut ctx, &anchor, &shadow, &market);
+                ctx.mv = NONE;
+                let seed = seed_of(rng, &mut ctx, &anchor, &shadow, &market);
                 // a pass of responses, so that it can compete
                 let mut list = ctx.normal.clone();
                 shuffle(rng, &mut list);
                 let mut metric = seed.metric;
+                ctx.mv = RPASS;
                 for chunk in list.chunks(4) {
                     metric = ctx.sweep(metric, chunk).0;
                 }
@@ -1073,8 +1214,15 @@ fn run<R: Rng>(
             focus.extend(mutate(rng, &ctx, &mut child));
         }
         ctx.load(&child);
+        ctx.phase = CHILD;
+        ctx.mv = NONE;
+        children += 1;
         let metric = ctx.eval();
-        let metric = ctx.improve(rng, metric, &focus);
+        let metric = if ctx.off("improve") {
+            metric
+        } else {
+            ctx.improve(rng, metric, &focus)
+        };
         let child = ctx.snapshot(metric);
         let near = (0..pop.len())
             .min_by_key(|&at| (distance(&pop[at], &child, free), at))
@@ -1102,8 +1250,23 @@ fn run<R: Rng>(
     }
     let winner = pop[best].clone();
     ctx.load(&winner);
+    ctx.phase = FINAL;
+    ctx.mv = NONE;
     let metric = ctx.eval();
     ctx.polish(rng, metric, budget.max(ctx.spent + 1.0));
+    // what found each new best, and what each phase and move cost
+    for code in 0..ctx.cost.len() {
+        if ctx.cost[code] > 0.0 || ctx.gain[code] > 0.0 {
+            ctx.probe.at(code as i64);
+            ctx.probe.put("mem_gain", ctx.gain[code]);
+            ctx.probe.put("mem_wins", ctx.wins[code]);
+            ctx.probe.put("mem_cost", ctx.cost[code]);
+        }
+    }
+    ctx.probe.at(0);
+    ctx.probe.put("mem_budget", budget);
+    ctx.probe.put("mem_children", children as f64);
+    ctx.probe.put("mem_restarts", restarted as f64);
     let mut out = ctx.bundle;
     if check::invalid(&out).is_some() {
         // never expected; the best seed is a plan the game allows
