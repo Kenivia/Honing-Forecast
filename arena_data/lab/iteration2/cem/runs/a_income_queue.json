@@ -1,0 +1,6 @@
+[
+ {
+  "name": "a_income_real_income_test",
+  "cmd": "target\\arena\\bin\\cem_a.exe --db arena_data/lab/runs.sqlite --set real_income_test run cem_a cem_a:algo=cem,lab_effort=1 cem_a:algo=cem,lab_effort=1,lab_on=keepgiven --mode chained --seeds 3 --jobs 16 --resume"
+ }
+]

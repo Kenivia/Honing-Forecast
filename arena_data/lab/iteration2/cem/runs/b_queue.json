@@ -1,0 +1,38 @@
+[
+ {
+  "name": "b_real_test",
+  "cmd": "target\\arena\\bin\\cem_b.exe --db arena_data/lab/runs.sqlite --set real_test run cem_b cem_b:algo=cem,lab_effort=1,lab_on=fullreach cem_b:algo=cem,lab_effort=2,lab_on=fullreach cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=oprefix cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=refit+group cem_b:algo=cem,lab_effort=1,lab_on=fullreach+exchange cem_b:algo=cem,lab_effort=1,lab_on=fullreach+shadow cem_b:algo=cem,lab_effort=1,lab_on=fullreach+fromsolve+ownstart cem_b:algo=cem,lab_effort=0.5,lab_on=fullreach+fromsolve+ownstart cem_b:kick_stall=32,mem_polish=true cem_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 10 --jobs 16 --resume"
+ },
+ {
+  "name": "b_quick_dev",
+  "cmd": "target\\arena\\bin\\cem_b.exe --db arena_data/lab/runs.sqlite --set quick_dev run cem_b cem_b:algo=cem,lab_effort=1,lab_on=fullreach cem_b:algo=cem,lab_effort=2,lab_on=fullreach cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=oprefix cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=refit+group cem_b:algo=cem,lab_effort=1,lab_on=fullreach+exchange cem_b:algo=cem,lab_effort=1,lab_on=fullreach+shadow cem_b:algo=cem,lab_effort=1,lab_on=fullreach+fromsolve+ownstart cem_b:algo=cem,lab_effort=0.5,lab_on=fullreach+fromsolve+ownstart cem_b:kick_stall=32,mem_polish=true cem_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_speed_test",
+  "cmd": "target\\arena\\bin\\cem_b.exe --db arena_data/lab/runs.sqlite --set speed_test run cem_b cem_b:algo=cem,lab_effort=1,lab_on=fullreach cem_b:algo=cem,lab_effort=2,lab_on=fullreach cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=oprefix cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=refit+group cem_b:algo=cem,lab_effort=1,lab_on=fullreach+exchange cem_b:algo=cem,lab_effort=1,lab_on=fullreach+shadow cem_b:algo=cem,lab_effort=1,lab_on=fullreach+fromsolve+ownstart cem_b:algo=cem,lab_effort=0.5,lab_on=fullreach+fromsolve+ownstart cem_b:kick_stall=32,mem_polish=true cem_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_advanced",
+  "cmd": "target\\arena\\bin\\cem_b.exe --db arena_data/lab/runs.sqlite --set advanced run cem_b cem_b:algo=cem,lab_effort=1,lab_on=fullreach cem_b:algo=cem,lab_effort=2,lab_on=fullreach cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=oprefix cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=refit+group cem_b:algo=cem,lab_effort=1,lab_on=fullreach+exchange cem_b:algo=cem,lab_effort=1,lab_on=fullreach+shadow cem_b:algo=cem,lab_effort=1,lab_on=fullreach+fromsolve+ownstart cem_b:algo=cem,lab_effort=0.5,lab_on=fullreach+fromsolve+ownstart cem_b:kick_stall=32,mem_polish=true cem_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_free_taps",
+  "cmd": "target\\arena\\bin\\cem_b.exe --db arena_data/lab/runs.sqlite --set free_taps run cem_b cem_b:algo=cem,lab_effort=1,lab_on=fullreach cem_b:algo=cem,lab_effort=2,lab_on=fullreach cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=oprefix cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=refit+group cem_b:algo=cem,lab_effort=1,lab_on=fullreach+exchange cem_b:algo=cem,lab_effort=1,lab_on=fullreach+shadow cem_b:algo=cem,lab_effort=1,lab_on=fullreach+fromsolve+ownstart cem_b:algo=cem,lab_effort=0.5,lab_on=fullreach+fromsolve+ownstart cem_b:kick_stall=32,mem_polish=true cem_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_juice",
+  "cmd": "target\\arena\\bin\\cem_b.exe --db arena_data/lab/runs.sqlite --set juice run cem_b cem_b:algo=cem,lab_effort=1,lab_on=fullreach cem_b:algo=cem,lab_effort=2,lab_on=fullreach cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=oprefix cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=refit+group cem_b:algo=cem,lab_effort=1,lab_on=fullreach+exchange cem_b:algo=cem,lab_effort=1,lab_on=fullreach+shadow cem_b:algo=cem,lab_effort=1,lab_on=fullreach+fromsolve+ownstart cem_b:algo=cem,lab_effort=0.5,lab_on=fullreach+fromsolve+ownstart cem_b:kick_stall=32,mem_polish=true cem_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_small",
+  "cmd": "target\\arena\\bin\\cem_b.exe --db arena_data/lab/runs.sqlite --set small run cem_b cem_b:algo=cem,lab_effort=1,lab_on=fullreach cem_b:algo=cem,lab_effort=2,lab_on=fullreach cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=oprefix cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=refit+group cem_b:algo=cem,lab_effort=1,lab_on=fullreach+exchange cem_b:algo=cem,lab_effort=1,lab_on=fullreach+shadow cem_b:algo=cem,lab_effort=1,lab_on=fullreach+fromsolve+ownstart cem_b:algo=cem,lab_effort=0.5,lab_on=fullreach+fromsolve+ownstart cem_b:kick_stall=32,mem_polish=true cem_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_large",
+  "cmd": "target\\arena\\bin\\cem_b.exe --db arena_data/lab/runs.sqlite --set large run cem_b cem_b:algo=cem,lab_effort=1,lab_on=fullreach cem_b:algo=cem,lab_effort=2,lab_on=fullreach cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=oprefix cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=refit+group cem_b:algo=cem,lab_effort=1,lab_on=fullreach+exchange cem_b:algo=cem,lab_effort=1,lab_on=fullreach+shadow cem_b:algo=cem,lab_effort=1,lab_on=fullreach+fromsolve+ownstart cem_b:algo=cem,lab_effort=0.5,lab_on=fullreach+fromsolve+ownstart cem_b:kick_stall=32,mem_polish=true cem_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_real_income_test",
+  "cmd": "target\\arena\\bin\\cem_b.exe --db arena_data/lab/runs.sqlite --set real_income_test run cem_b cem_b:algo=cem,lab_effort=1,lab_on=fullreach cem_b:algo=cem,lab_effort=2,lab_on=fullreach cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=oprefix cem_b:algo=cem,lab_effort=1,lab_on=fullreach,lab_off=refit+group cem_b:algo=cem,lab_effort=1,lab_on=fullreach+exchange cem_b:algo=cem,lab_effort=1,lab_on=fullreach+shadow cem_b:algo=cem,lab_effort=1,lab_on=fullreach+fromsolve+ownstart cem_b:algo=cem,lab_effort=0.5,lab_on=fullreach+fromsolve+ownstart cem_b:kick_stall=32,mem_polish=true cem_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode chained --seeds 3 --jobs 16 --resume"
+ }
+]

@@ -17,7 +17,8 @@ What the lab has found, by topic. How the lab works is in `Optimizer lab.md`; wh
 | `price` | Take pieces, not the algorithm. Its kick loop is its strength and its own start its weakness. | `iteration2/price/report.md` |
 | `surrogate` | Take one piece: its descent, as a re-plan between a kick and `solve`'s polish (`sur_stall`), with `sur_screen` to cut its CPU. The order moves among the plans carry most of it; the model adds a little through its error, and true moves with price noise do as well at more CPU. Its calibration is worth nothing; its own start and budget are its weakness. | `iteration2/surrogate/report.md` |
 | `memetic` | Take two pieces: its polish as a `solve` knob (`mem_polish`), and its generations from `solve`'s endpoint. Its own start is its weakness. | `iteration2/memetic/report.md` |
-| `cem`, `lns` | Not reviewed yet | |
+| `cem` | Take no piece of its model. Its restarts are its strength, and a cap of 10 places in its order polish was most of its loss. Run after `solve`, its restarts reach `b10_week_inc_0004:3` and `single_3375`, which the kick loop misses. | `iteration2/cem/report.md` |
+| `lns` | Not reviewed yet | |
 
 ## Pieces, and where they stand
 
@@ -30,6 +31,7 @@ What the lab has found, by topic. How the lab works is in `Optimizer lab.md`; wh
 | Memetic's polish after `solve`: `mem_polish=true` | Candidate; in tree, off | quick_dev +0.0014 (4 wins, 0 losses; 95.5 → 96.3), `large` +0.0021, 0 elsewhere; no payload lost | x1.03–1.17 CPU | `memetic` report 4 |
 | Kick loop with `mem_polish` | Candidate pair | quick_dev +0.0019 (97.6), `large` +0.0093 (73.3), real_test +0.0058, `speed_test` +0.0007; the union of both's order basins | The kick loop's own; x1.56–1.85 on the regime sets against its x2.2–3.0 | `memetic` report 4 |
 | Memetic generations from `solve`'s endpoint (lab: `algo=memetic,lab_on=fromsolve,lab_off=oreplan`) | Lab only; for a replacement | quick_dev +0.0015, `speed_test` +0.0019 (98.6), `large` +0.0061, real_test +0.0036, income +0.0003; no payload lost | x1.30–1.41, `solve` included | `memetic` report 3–4 |
+| cem's restarts after `solve` (lab: `algo=cem,lab_effort=0.5,lab_on=fullreach+fromsolve+ownstart`) | Lab only; a complement to the kick loop | quick_dev +0.0008 (8 wins, 0 losses), real_test +0.0033, income +0.0001; no payload lost. With `kick_stall=32,mem_polish=true`, offline better-of-two (not a run): quick_dev +0.0021, real_test +0.0061 (with L instead: +0.0022, +0.0070) | x1.21–1.54, `solve` included; with the kick loop x2.34 on quick_dev (with L x2.96) | `cem` report 4 |
 | Chest amounts from the grid plus 4 random draws | Candidate; `price` `chestboth` only, not in `solve` yet | Fixes `single_1104_serca_n1` and `single_1166_serca_n1` | None measurable | `price` report 7–8 |
 
 Against `solve` at 96k in the same batch the kick loop is ahead or level everywhere: real_test +0.0016, quick_dev +0.0008 (8 wins, 1 loss), `large` +0.0020 (1, 1), at x0.86–1.49 the CPU. At the old cut its `large` lead was +0.0073.
@@ -40,6 +42,7 @@ Against `solve` at 96k in the same batch the kick loop is ahead or level everywh
 
 - Insertion of a normal upgrade within a free tap's reach is what makes an order good: without those moves `price` loses 0.13–0.48. `solve`'s `order_polish` already has them.
 - `solve` misses some order basins at any budget, 384k included. The kick loop reaches most of them.
+- An order polish capped at a fixed number of places loses long free tap reaches. cem's cap of 10 cost `large` 0.10 and `single_0031_serca_n36` 0.368 on every seed; the plans that looked wrong followed the order.
 
 **Kicks.**
 
@@ -71,13 +74,19 @@ Against `solve` at 96k in the same batch the kick loop is ahead or level everywh
 - It is level with the surrogate loop on quick_dev, `speed_test`, income and `large`, at about 0.65 of its CPU (across batches).
 - Recombination adds a little (income, the regime sets). Price seeds and the re-plan of failed order moves add nothing there.
 
+**Restarts.**
+
+- Restarts from one cheap start, each a short descent (random partial redraws kept if better) and a polish, reach `b10_week_inc_0004:3` and `single_3375`, which kicks from the best miss. Each lands in another basin; they need no model and no special start (cem with its refit and piece-type factor off is level).
+- They do not improve a polished state: started from `solve`'s endpoint, cem's samples gain nothing (quick_dev +0.0001 at x2.9).
+- Moving juice between upgrades (`solve`'s exchanges) is part of what reaches advanced plans with normal ones: in cem it takes `real_08927991` from 0.196 to 0.067.
+
 **Chest amounts.** A fixed step grid (halves in `solve`, thirds in `price`) misses lone-chest optima. `solve` finds those only through its random-amount moves in the annealer: without them (`chest_move_rate=0`) it loses real_test -0.079 (up to -1.0 a payload), `speed_test` -0.022 (`single_1208` -3.1) and income -0.0044.
 
 **Starts.** Started from `solve`'s finished plan, `price` ties the kick loop, and the two split the order basins (the loop `chain_0017:3`, `price` the rest). From its own start it is behind, so the kick loop is worth having and its start is not. Memetic's start fails the same way: every payload it loses is fixed by starting from `solve`'s endpoint (advanced plans with normal ones, `real_08927991`; chest amounts off its grid, `single_1104`; `chain_0001`, `week_hone_0004`, `week_hone_0012`).
 
 ## Where `solve` stands
 
-**Weak:** free tap order basins on some multi-upgrade payloads (mostly fixed by the kick loop; the kick loop and `mem_polish` together take them all), joint moves of several upgrades' plans (the surrogate loop and memetic's generations from `solve`'s endpoint reach most of these), and chest amounts off its grid.
+**Weak:** free tap order basins on some multi-upgrade payloads (mostly fixed by the kick loop; the kick loop and `mem_polish` together take them all), joint moves of several upgrades' plans (the surrogate loop, memetic's generations from `solve`'s endpoint and cem's restarts after it reach most of these), and chest amounts off its grid.
 
 **Strong:** it is hard to beat at matched CPU anywhere else. `real_test` hit is 96.8% and income is within 0.001.
 
@@ -88,8 +97,11 @@ Against `solve` at 96k in the same batch the kick loop is ahead or level everywh
 - In their end states several upgrades' plans move together: juice tails shortened across a piece type, or one upgrade moved from past the reach to the front.
 - Under the surrogate loop, `single_3397_serca_n4` is 0.002, `single_3375` 0.005 and `b10_week_inc_0004:3` 0.008 at 10 seeds (`solve` 0.042, 0.045, 0.039). A re-plan with order moves in it reaches them, with or without the surrogate.
 - Under memetic's generations from `solve`'s endpoint, `b10_week_inc_0004:3` is 0, `single_3397` 0.003, `single_3375` 0–0.019 and `chain_1051` 0, on 3 seeds.
-- Open: the kick loop with `mem_polish`, together with the surrogate loop or with memetic's generations.
+- cem's restarts after `solve` reach `b10_week_inc_0004:3` (0) and `single_3375` (0.009) at effort 0.5, on 3 seeds.
+- Open: the kick loop with `mem_polish`, together with the surrogate loop, memetic's generations or cem's restarts, as one run.
 - `single_3300` was on this list by mistake. Its gap of 0.071 is one seed in three at 0.213; `solve` hits it on 9 of 10 seeds. `b10_single_3300` is still hard (4 of 10).
+
+**cem's `chain_0017:0/1` basin.** Every cem variant ends at 0.2–0.75 there, against `solve`'s 0.02–0.03, with another free tap order and plainer plans. Neither the uncapped polish nor the exchanges leave it.
 
 **How the free tap cut steers the search.** The new cut takes `single_1033_serca_n21` under `lns` from 0 of 10 hits to 10 of 10 and `b10_chain_0017:2` under `solve` from 0 to 6. That is far over its own error, and it is not the reach of order moves. What is cut is the low end of the outcomes, so it may be neutral moves near the front of the order.
 
@@ -102,3 +114,4 @@ Against `solve` at 96k in the same batch the kick loop is ahead or level everywh
 - `single_0071_serca_n19` under `price` sticks at 1.2 on 1 to 3 seeds in 10, at either cut.
 - `chain_0017` and `b10_single_3300` swing by 0.1 to 0.2 under any change, in every algorithm.
 - `single_0159` swings from 0.01 to 0.59 between variants under memetic, and `large`'s rows follow it.
+- `free_taps` `single_0087` ends each seed at 0 or 0.2–0.6 under cem's ablations.

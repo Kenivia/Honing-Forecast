@@ -1,7 +1,10 @@
 //! Cross-entropy method: a probability model over the decisions, sampled in batches and refit
 //! to the best of each batch, then polished by best responses. See `arena_data/lab/iteration1/attempts/cem.md`.
+//! Switches: `lab_off` `refit`, `fresh`, `group`, `oprefix`; `lab_on` `fromsolve`, `ownstart`,
+//! `solvepolish`, `exchange`, `fullreach`. Findings: `arena_data/lab/iteration2/cem/report.md`.
 
 use super::super::response::{Model, Response};
+use super::super::simulated_annealing::{polish_counted, refine_counted};
 use super::super::{Previous, Solved};
 use super::{check, evaluate};
 use crate::advanced_honing::utils::MAX_ADV_STATE;
@@ -35,6 +38,23 @@ const IMPROVE_TOL: f64 = 1e-9;
 // most passes of a polish, and the gain of a pass under which it stops
 const POLISH_PASSES: usize = 12;
 const POLISH_TOL: f64 = 1e-7;
+// what a new best and its cost are credited to, for the trace (`cem_gain` at iter = phase)
+const CAND: usize = 0;
+const SHADOW: usize = 1;
+const FRESH: usize = 2;
+const NARROWED: usize = 3;
+const RESP: usize = 4;
+const ADV: usize = 5;
+const OPREFIX: usize = 6;
+const OINSERT: usize = 7;
+const CHEST: usize = 8;
+const SPOLISH: usize = 9;
+const EXCHANGE: usize = 10;
+const PHASES: usize = 11;
+
+fn named(list: &str, name: &str) -> bool {
+    list.split('+').any(|n| n == name)
+}
 
 /// one complete plan
 #[derive(Clone)]
@@ -99,6 +119,8 @@ struct Cem {
     advs: Vec<(usize, Vec<Vec<f64>>)>,
     order: Option<Vec<f64>>,
     chests: Vec<ChestModel>,
+    // piece type draws and shifts (`lab_off=group` leaves them out)
+    grouped: bool,
 }
 
 fn normal<R: Rng>(rng: &mut R) -> f64 {
@@ -382,6 +404,7 @@ impl Cem {
             advs,
             order,
             chests,
+            grouped: !named(&bundle.tuning.lab_off, "group"),
         }
     }
 
@@ -401,7 +424,7 @@ impl Cem {
     fn pick<R: Rng>(&self, rng: &mut R) -> Vec<bool> {
         let parts = self.parts();
         let mut picked = vec![false; parts];
-        if !self.groups.is_empty() && rng.random::<f64>() < GROUP_PICK {
+        if self.grouped && !self.groups.is_empty() && rng.random::<f64>() < GROUP_PICK {
             let group = rng.random_range(0..self.groups.len());
             for (k, n) in self.normals.iter().enumerate() {
                 picked[k] = n.group == group;
@@ -455,7 +478,11 @@ impl Cem {
                 plan.order = order;
             }
         }
-        let groups: Vec<f64> = self.groups.iter().map(|g| g.draw(rng)).collect();
+        let groups: Vec<f64> = self
+            .groups
+            .iter()
+            .map(|g| if self.grouped { g.draw(rng) } else { 0.0 })
+            .collect();
         let pools = self
             .normals
             .iter()
@@ -610,18 +637,44 @@ struct Run<'a> {
     cur: Plan,
     spent: f64,
     probe: &'a mut Probe,
+    // the trace: per phase, gain to the best, new bests, and work charged
+    phase: usize,
+    gain: [f64; PHASES],
+    wins: [f64; PHASES],
+    // gain after the first polish
+    late: [f64; PHASES],
+    polished: bool,
+    cost: [f64; PHASES],
 }
 
 impl Run<'_> {
+    fn off(&self, name: &str) -> bool {
+        named(&self.work.tuning.lab_off, name)
+    }
+    fn on(&self, name: &str) -> bool {
+        named(&self.work.tuning.lab_on, name)
+    }
+    fn charge(&mut self, work: f64) {
+        self.spent += work;
+        self.cost[self.phase] += work;
+    }
+
     fn score(&mut self, plan: &mut Plan) -> f64 {
         apply(&mut self.work, plan);
         let metric = evaluate(&mut self.work, self.probe);
-        self.spent += 1.0;
+        self.charge(1.0);
         plan.metric = metric;
         if metric > self.cur.metric {
             self.cur = plan.clone();
         }
         if metric > self.best.metric {
+            if self.best.metric.is_finite() {
+                self.gain[self.phase] += metric - self.best.metric;
+                self.wins[self.phase] += 1.0;
+                if self.polished {
+                    self.late[self.phase] += metric - self.best.metric;
+                }
+            }
             self.best = plan.clone();
         }
         metric
@@ -630,6 +683,7 @@ impl Run<'_> {
     /// rounds of one model about the best, until it stalls or the budget is spent
     fn cem<R: Rng>(&mut self, rng: &mut R, budget: f64, spread: f64) {
         let stop = self.spent + budget;
+        let refit = !self.off("refit");
         let mut cem = Cem::around(&self.work, &self.cur, spread);
         // each part redrawn some four times a batch
         let mean_pick = (1.0 + cem.reach() as f64) / 2.0;
@@ -649,8 +703,32 @@ impl Run<'_> {
             } else {
                 stalled += 1;
             }
-            cem.refit(&scored);
+            if refit {
+                cem.refit(&scored);
+            }
         }
+    }
+
+    /// `solve`'s polishes in place of this one's, charged what they took
+    fn polish_solve<R: Rng>(&mut self, rng: &mut R) {
+        self.phase = SPOLISH;
+        let mut bundle = self.work.clone();
+        apply(&mut bundle, &self.cur);
+        let (out, cost) = polish_counted(rng, &mut bundle, self.probe);
+        self.charge(cost as f64);
+        let mut plan = plan_of(&out);
+        self.score(&mut plan);
+    }
+
+    /// `solve`'s exchanges and polishes after them, charged their evaluations
+    fn exchange<R: Rng>(&mut self, rng: &mut R) {
+        self.phase = EXCHANGE;
+        let mut bundle = self.work.clone();
+        apply(&mut bundle, &self.cur);
+        let cost = refine_counted(rng, &mut bundle, self.probe);
+        self.charge(cost as f64);
+        let mut plan = plan_of(&bundle);
+        self.score(&mut plan);
     }
 
     /// best responses, advanced, order and chest moves on the best, until none gains or the budget is spent
@@ -670,19 +748,21 @@ impl Run<'_> {
                     return;
                 }
                 if self.work.upgrade_arr[i].is_normal_honing {
+                    self.phase = RESP;
                     let mut plan = self.cur.clone();
                     apply(&mut self.work, &plan);
                     let response = Response::of(&mut self.work, i, self.probe);
                     let model = &response.model;
                     let now = model.indices(&plan.payloads[i]);
                     let (_, found) = response.better(&now, joint);
-                    self.spent += response.work(steps);
                     let found = model.plan(&found);
+                    self.charge(response.work(steps));
                     if found != plan.payloads[i] {
                         plan.payloads[i] = found;
                         self.score(&mut plan);
                     }
                 } else {
+                    self.phase = ADV;
                     for s in 0..self.cur.payloads[i].len() {
                         for d in [-2i64, -1, 1, 2] {
                             let mut plan = self.cur.clone();
@@ -722,10 +802,14 @@ impl Run<'_> {
             reach += 1;
         }
         let n = plan.order.len();
-        let reach = (reach + 2).min(n).min(10);
+        let reach = (reach + 2)
+            .min(n)
+            .min(if self.on("fullreach") { n } else { 10 });
         // the prefix rebuilt a place at a time, each the best of every upgrade there
+        self.phase = OPREFIX;
         let mut built = plan.clone();
-        for at in 0..reach {
+        let prefix = if self.off("oprefix") { 0 } else { reach };
+        for at in 0..prefix {
             let mut pick = (f64::NEG_INFINITY, built.order.clone());
             for j in at..n {
                 let mut order = built.order.clone();
@@ -742,6 +826,7 @@ impl Run<'_> {
             }
             built.order = pick.1;
         }
+        self.phase = OINSERT;
         for j in 0..n {
             for to in (0..n).filter(|&to| to != j && (to < reach || j < reach)) {
                 let mut plan = self.cur.clone();
@@ -756,6 +841,7 @@ impl Run<'_> {
 
     /// per stack: every chest on one option, then moves between two options while they gain, halving
     fn polish_chests(&mut self, pass: usize) {
+        self.phase = CHEST;
         let chests: Vec<(String, i64, usize)> = self
             .work
             .prep_output
@@ -831,11 +917,36 @@ pub fn solve<R: Rng>(
     let mut carried: Vec<StateBundle> = previous
         .map(|p| p.carried(&state_bundle))
         .unwrap_or_default();
+    // solve's result as one more carried plan, its cost apart from the budget
+    let fromsolve = named(&state_bundle.tuning.lab_on, "fromsolve");
+    // with `ownstart` it is held apart, the best to beat, and every cycle starts from cem's own start
+    let ownstart = named(&state_bundle.tuning.lab_on, "ownstart");
+    let mut solved = None;
+    if fromsolve {
+        let mut plain = state_bundle.clone();
+        plain.tuning.algo = String::new();
+        let best = crate::optimizer::solve(rng, plain, previous, probe).best;
+        if ownstart {
+            solved = Some(best);
+        } else {
+            carried.push(best);
+        }
+    }
+    // the grid rewrites any plan into streaks, so solve's result also as it is
+    let raw: Vec<Plan> = carried
+        .last()
+        .filter(|_| fromsolve && !ownstart)
+        .map(plan_of)
+        .into_iter()
+        .collect();
     snap(&mut state_bundle);
     let mut plans = vec![plan_of(&state_bundle)];
     for c in carried.iter_mut() {
         snap(c);
-        let mut plan = plan_of(c);
+        plans.push(plan_of(c));
+    }
+    plans.extend(raw);
+    for plan in plans.iter_mut().skip(1) {
         let chests = &state_bundle.prep_output.chests;
         if plan.chests.len() != chests.len()
             || chests
@@ -844,7 +955,6 @@ pub fn solve<R: Rng>(
         {
             plan.chests = state_bundle.chest_states.clone();
         }
-        plans.push(plan);
     }
     // nothing used, built from scratch so that it is valid whatever was given
     let juice_info = &state_bundle.prep_output.juice_info;
@@ -897,6 +1007,12 @@ pub fn solve<R: Rng>(
         work: state_bundle,
         spent: 0.0,
         probe,
+        phase: CAND,
+        gain: [0.0; PHASES],
+        wins: [0.0; PHASES],
+        late: [0.0; PHASES],
+        polished: false,
+        cost: [0.0; PHASES],
     };
     for plan in plans.iter_mut() {
         apply(&mut run.work, plan);
@@ -907,6 +1023,7 @@ pub fn solve<R: Rng>(
 
     // every normal upgrade's best response at the shadow prices of the best
     {
+        run.phase = SHADOW;
         let mut plan = run.best.clone();
         apply(&mut run.work, &plan);
         evaluate(&mut run.work, run.probe);
@@ -925,9 +1042,19 @@ pub fn solve<R: Rng>(
     // Cycles of a model until it stalls and a polish of what it found: from the start plan
     // with a wide model, then about the best with a narrow one, in turn.
     let start = run.best.clone();
+    if let Some(solved) = solved {
+        run.phase = CAND;
+        let mut plan = plan_of(&solved);
+        run.score(&mut plan);
+    }
     let mut polished = vec![start.metric];
+    let (restarts, solve_polish) = (!run.off("fresh"), run.on("solvepolish"));
+    let exchanges = run.on("exchange");
+    let mut cycles = 0;
     for cycle in 0.. {
-        let fresh = cycle % 2 == 0;
+        let fresh = cycle % 2 == 0 && restarts || ownstart;
+        run.phase = if fresh { FRESH } else { NARROWED };
+        cycles += 1;
         run.cur = if fresh {
             start.clone()
         } else {
@@ -947,9 +1074,30 @@ pub fn solve<R: Rng>(
         if polished.contains(&run.cur.metric) {
             continue;
         }
-        run.polish(rng, budget - run.spent);
+        if solve_polish {
+            run.polish_solve(rng);
+        } else {
+            run.polish(rng, budget - run.spent);
+        }
+        if exchanges {
+            run.exchange(rng);
+        }
         polished.push(run.cur.metric);
+        run.polished = true;
     }
+    for code in 0..PHASES {
+        if run.cost[code] > 0.0 || run.gain[code] > 0.0 {
+            run.probe.at(code as i64);
+            run.probe.put("cem_gain", run.gain[code]);
+            run.probe.put("cem_wins", run.wins[code]);
+            run.probe.put("cem_late", run.late[code]);
+            run.probe.put("cem_cost", run.cost[code]);
+        }
+    }
+    run.probe.at(0);
+    run.probe.put("cem_budget", budget);
+    run.probe.put("cem_cycles", cycles as f64);
+    run.probe.put("cem_polishes", polished.len() as f64 - 1.0);
 
     let best = run.best.clone();
     let mut out = run.work;
