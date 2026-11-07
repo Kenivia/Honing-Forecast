@@ -4,7 +4,7 @@
 //! `solvepolish`, `exchange`, `fullreach`. Findings: `arena_data/lab/iteration2/cem/report.md`.
 
 use super::super::response::{Model, Response};
-use super::super::simulated_annealing::{polish_counted, refine_counted};
+use super::super::simulated_annealing::lab_hooks::{polish_counted, refine_counted};
 use super::super::{Previous, Solved};
 use super::{check, evaluate};
 use crate::advanced_honing::utils::MAX_ADV_STATE;
@@ -51,6 +51,16 @@ const CHEST: usize = 8;
 const SPOLISH: usize = 9;
 const EXCHANGE: usize = 10;
 const PHASES: usize = 11;
+
+/// the `Tuning::lab_off` and `lab_on` switches this reads
+pub const OFF: &[&str] = &["refit", "fresh", "group", "oprefix"];
+pub const ON: &[&str] = &[
+    "fromsolve",
+    "ownstart",
+    "fullreach",
+    "solvepolish",
+    "exchange",
+];
 
 fn named(list: &str, name: &str) -> bool {
     list.split('+').any(|n| n == name)

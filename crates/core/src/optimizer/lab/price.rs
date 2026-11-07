@@ -39,6 +39,21 @@ const POLISH_ROUNDS: usize = 8;
 const ORDER_TOL: f64 = 1e-4;
 /// an order move that loses less than this share is tried again with the moved upgrade replanned
 const REPLAN_GAP: f64 = 2e-3;
+/// the `Tuning::lab_off` and `lab_on` switches this reads
+pub const OFF: &[&str] = &[
+    "order",
+    "replan",
+    "ratio",
+    "prices",
+    "kicks",
+    "kchest",
+    "kwindow",
+    "kadv",
+    "kexchange",
+    "kpiece",
+    "kperturb",
+];
+pub const ON: &[&str] = &["chestrand", "chestboth", "advall", "fromsolve"];
 /// the kicks by where their share of a roll ends, and their names for `Tuning::lab_off`
 const KICKS: [(f64, &str); 6] = [
     (0.15, "kchest"),

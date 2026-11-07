@@ -34,10 +34,12 @@ Read, in this order:
 - Subagents cannot write `report.md`. Send changed sections to the orchestrator at the end of each round, marked ready to paste.
 - Keep a plain baseline in every batch, and compare `cpu_s` only inside one batch. `ref x` in `cmp.py` crosses batches, but trust it only on sessions of 10 minutes or more.
 - `--resume` reuses a session only with identical arguments, so a narrower batch does not skip runs of a wider one.
-- Smoke every new switch in your `scratch.sqlite`, and show plain repeats `cut_a` before a batch.
+- Smoke every new switch in your `scratch.sqlite`, and show plain repeats `cut_a` before a batch (`tools/rep.py`).
+- List every switch in your file's `OFF` and `ON`. The arena rejects any other name at the start of a run.
+- Read runs with `tools/an.py` (a cached dump; see `Optimizer lab.md`, Tools). Do not copy it into your `scripts/`.
 - Do not touch `crates/arena`.
 
-**Keep to your files:** your algorithm's file, `tuning.rs` (new knobs), `simulated_annealing.rs` (swap-ins) and the lab `mod.rs` if needed. Do not touch another prototype's file, and never change a production default.
+**Keep to your files:** your algorithm's file, `tuning.rs` (new knobs), `simulated_annealing.rs` (swap-ins; helpers only the lab calls go in `simulated_annealing/lab_hooks.rs`) and the lab `mod.rs` if needed. Do not touch another prototype's file, and never change a production default.
 
 **At the end:**
 

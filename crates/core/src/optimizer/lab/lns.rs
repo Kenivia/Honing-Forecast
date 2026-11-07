@@ -37,6 +37,9 @@ const RESTART_AFTER: usize = 20;
 const STALL: f64 = 0.45;
 /// upgrades tried at each place when the free tap order is built again inside a move
 const BUILD_TRIES: usize = 8;
+/// the `Tuning::lab_off` and `lab_on` switches this reads
+pub const OFF: &[&str] = &[];
+pub const ON: &[&str] = &[];
 /// what the ladder multiplies the prices of the materials it is about by
 const LADDER: [f64; 6] = [0.0, 0.3, 0.6, 1.0, 1.6, 3.0];
 const LADDER_ROUNDS: usize = 3;

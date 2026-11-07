@@ -52,6 +52,12 @@ const IORDER: usize = 13;
 const ICHEST: usize = 14;
 const RPASS: usize = 15;
 
+/// the `Tuning::lab_off` and `lab_on` switches this reads
+pub const OFF: &[&str] = &[
+    "cross", "gens", "restart", "improve", "pseed", "oreplan", "toggle", "runs",
+];
+pub const ON: &[&str] = &["fromsolve"];
+
 #[derive(Clone)]
 struct Ind {
     plans: Vec<Vec<OneState>>,

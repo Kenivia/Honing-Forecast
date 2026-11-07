@@ -39,12 +39,12 @@ Invalid data goes to `ignored/junkyard`, not the lab.
 All LLM work happens in supervised sessions; the command only does CPU work.
 
 1. **Brief.** The iteration's aim, and which investigations it holds.
-2. **Implement.** A new approach is `crates/core/src/optimizer/lab/<name>.rs`, with a write-up of the algorithm as built. An investigation adds `lab_off`/`lab_on` switches in that file, and off-by-default knobs in `solve` for swap-ins.
+2. **Implement.** A new approach is `crates/core/src/optimizer/lab/<name>.rs`, with a write-up of the algorithm as built. An investigation adds `lab_off`/`lab_on` switches in that file, listed in its `OFF` and `ON`, and off-by-default knobs in `solve` for swap-ins.
 3. **Smoke test** (below), then snapshot into `runs.sqlite`.
-4. **Run.** Write a batch with `tools/queue.py`, and run it with `pnpm lab`.
-5. **Read** with `tools/cmp.py` and `pay.py`, and write the findings into `report.md` as you go, so that nothing is lost.
+4. **Run.** Write a batch with `tools/queue.py`, and run it with `pnpm lab`. Then `tools/logcheck.py <batch>` must pass.
+5. **Read** with `tools/an.py` (or `cmp.py` and `pay.py`), and write the findings into `report.md` as you go, so that nothing is lost.
 6. **Finish.**
-   - Remove the knobs that failed, so that `solve` stays clean.
+   - Remove the knobs and switches that failed (and their names from `OFF`/`ON`), so that `solve` stays clean.
    - Put the verdict at the top of `report.md`.
    - Move what is now known into `Optimizer lab results.md`, and what failed into `Optimizer tried.md` with its one key number.
    - Leave the code in the tree with every piece off, and stop for the user to commit. No stash: stashes went stale across commits. `final.patch` (`git diff --output=<investigation>/final.patch <base> -- <files>`) is optional, as a record.
@@ -85,6 +85,10 @@ pnpm lab iteration2/surrogate/a
 - `tools/cmp.py <base> [variant regex] [set,set] [chained 0|1] [scratch db]`: variants per set against a base, matched by scenario, step and seed. Columns: mean diff per payload, worst and best payload, wins and losses over 0.01%, hit (within 0.01% of the best known), mean gap, evaluations and CPU as ratios, and `ref`, the CPU ratio corrected for the machine's speed, when both sides have the reading (`Arena.md`, "The three measurements"). The re-run's other variants show only when the regex names them. Sets are matched by name, so a base must have run on the same set.
 - `tools/pay.py <A> <B> [k] [scenario substring] [chained 0|1] [scratch db]`: payload by payload, A against B, with both gaps, the number of upgrades and the number of seeds.
 - `tools/rerun_summary.py [variant regex]`: the re-run on its own, every variant against `solve` 48k, with hit, gap and CPU.
+- `tools/an.py`: `cmp`, `pay`, `fmt` and `sets_of` in Python on a cached dump of the light columns of every run (`tools/dump.py`, in `ignored/lab_cache/runs.pkl`). The first load after `runs.sqlite` changes rebuilds it, about 110 s; later loads take about 4 s. Groups are snapshot labels, and `pr_a`'s batches `ra`–`rd`. Use it from a script with `sys.path.insert(0, 'arena_data/lab/tools'); from an import *`.
+- `tools/rep.py <scratch db> <scratch label> <stored label> [variant substring]`: the repeat check, seed by seed, of smoke runs against stored runs of the same variant.
+- `tools/logcheck.py <batch>` (`iteration2/cem/b`): every queued job done, its variant summary naming every variant it ran, and no run died or failed its Monte Carlo check. It fails if it parses no rows.
+- A prototype's trace (`attr.py`) stays in its investigation's `scripts/`, since the keys are its own.
 
 ## Smoke tests
 
@@ -116,7 +120,9 @@ Keep it to about 10 minutes. Anything longer is a batch.
 
   Such a run gets the `error` "invalid state: ...". `solve` passed the check on every run of `quick_dev` (698).
 - `lab_algos_repeat_and_are_valid` (arena worker tests) runs every name in `ALGOS` twice per dummy step.
-- **Ablations**: `Tuning::lab_off` names pieces an attempt leaves out and `Tuning::lab_on` pieces it adds, joined by `+` (`<snapshot>:algo=price,lab_off=order+kicks`). Each attempt names its own, and with neither set it runs as before. `price` leaves out `order`, `kicks`, `prices`, `replan` and `ratio`, and each kick type: `kchest`, `kwindow`, `kadv`, `kexchange`, `kpiece` and `kperturb`. It adds `advall` (half its advanced kicks put every advanced upgrade of the piece type on one plan), `chestrand` (chest moves of random amounts in place of thirds), `chestboth` (thirds plus 4 random amounts) and `fromsolve` (`solve`'s result as one more carried start, its cost outside the budget). `memetic` leaves out `cross`, `gens`, `restart`, `improve`, `pseed`, `oreplan`, `toggle` and `runs`, and adds `fromsolve` (starts from `solve`'s result, its cost included); each run writes `mem_gain`/`mem_wins`/`mem_cost` trace rows by phase and move (`iteration2/memetic/scripts/attr.py`). `cem` leaves out `refit`, `fresh`, `group` and `oprefix`, and adds `fullreach` (no cap of 10 places on its order polish), `fromsolve` (`solve`'s result as a candidate, raw and snapped, its cost included), `ownstart` (with `fromsolve`, every cycle restarts from cem's own start, `solve`'s result the best to beat), `solvepolish` and `exchange`; each run writes `cem_gain`/`cem_late`/`cem_wins`/`cem_cost` trace rows by phase (`iteration2/cem/scripts/attr.py`).
+- **Ablations**: `Tuning::lab_off` names pieces an attempt leaves out and `Tuning::lab_on` pieces it adds, joined by `+` (`<snapshot>:algo=price,lab_off=order+kicks`). Each attempt names its own in its `OFF` and `ON`, and with neither set it runs as before.
+  - **Unknown names fail.** The arena runs `lab::check_switches` on every variant before it starts (`worker::tuning_with`). It rejects a name nothing reads, a name in the wrong list, and an unknown `sur_kinds` kind, so a typo cannot run as the plain algorithm. `solve` reads the surrogate's switches when `sur_stall` > 0 and memetic's with `mem_polish`, and so does a prototype run with `fromsolve`.
+  - The switches of each prototype: `price` leaves out `order`, `kicks`, `prices`, `replan` and `ratio`, and each kick type: `kchest`, `kwindow`, `kadv`, `kexchange`, `kpiece` and `kperturb`. It adds `advall` (half its advanced kicks put every advanced upgrade of the piece type on one plan), `chestrand` (chest moves of random amounts in place of thirds), `chestboth` (thirds plus 4 random amounts) and `fromsolve` (`solve`'s result as one more carried start, its cost outside the budget). `memetic` leaves out `cross`, `gens`, `restart`, `improve`, `pseed`, `oreplan`, `toggle` and `runs`, and adds `fromsolve` (starts from `solve`'s result, its cost included); each run writes `mem_gain`/`mem_wins`/`mem_cost` trace rows by phase and move (`iteration2/memetic/scripts/attr.py`). `cem` leaves out `refit`, `fresh`, `group` and `oprefix`, and adds `fullreach` (no cap of 10 places on its order polish), `fromsolve` (`solve`'s result as a candidate, raw and snapped, its cost included), `ownstart` (with `fromsolve`, every cycle restarts from cem's own start, `solve`'s result the best to beat), `solvepolish` and `exchange`; each run writes `cem_gain`/`cem_late`/`cem_wins`/`cem_cost` trace rows by phase (`iteration2/cem/scripts/attr.py`).
 
 ## Reading results
 

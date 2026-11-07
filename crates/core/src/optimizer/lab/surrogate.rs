@@ -55,6 +55,47 @@ const FLIP_SHARE: f64 = 0.25;
 const GOLDS_PER_EVAL: f64 = 6000.0;
 const STEPS_PER_EVAL: f64 = 2000.0;
 
+/// the `Tuning::lab_off` and `lab_on` switches this reads
+pub const OFF: &[&str] = &[
+    "calib",
+    "skew",
+    "widest",
+    "truepolish",
+    "flip",
+    "blend",
+    "greedy",
+    "dadv",
+    "dorder",
+    "dchest",
+    "dplan",
+    "surpolish",
+    "padv",
+    "porder",
+    "pchest",
+    "descent",
+    "pricekick",
+    "pempty",
+    "prand",
+    "ppiece",
+    "kickrepair",
+    "last",
+];
+pub const ON: &[&str] = &[
+    "points128",
+    "truedescent",
+    "trueorder",
+    "keepchest",
+    "randorder",
+    "randplan",
+    "randreach",
+    "keepplans",
+    "noisy",
+    "noisy3",
+    "fromsolve",
+];
+/// the kinds `kicked` takes (`Tuning::sur_kinds`)
+pub const KINDS: &[&str] = &["price", "rand", "chest", "empty"];
+
 /// where a restart comes from, for the trace and `lab_off`
 #[derive(Clone, Copy, PartialEq)]
 enum Kick {

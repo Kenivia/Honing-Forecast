@@ -33,6 +33,49 @@ pub fn solve<R: Rng>(
     }
 }
 
+/// Panics on a switch or kick kind nothing reads, so a typo cannot run as the plain algorithm.
+/// `solve` reads the surrogate's switches in its kick loop and memetic's in `mem_polish`, as
+/// does a lab algorithm that runs `solve` (`fromsolve`).
+pub fn check_switches(tuning: &crate::tuning::Tuning) {
+    let (mut off, mut on): (Vec<&str>, Vec<&str>) = match tuning.algo.as_str() {
+        "" => (vec![], vec![]),
+        "price" => (price::OFF.to_vec(), price::ON.to_vec()),
+        "surrogate" => (surrogate::OFF.to_vec(), surrogate::ON.to_vec()),
+        "memetic" => (memetic::OFF.to_vec(), memetic::ON.to_vec()),
+        "cem" => (cem::OFF.to_vec(), cem::ON.to_vec()),
+        "lns" => (lns::OFF.to_vec(), lns::ON.to_vec()),
+        other => panic!("no lab algorithm {other}"),
+    };
+    let solves = tuning.algo.is_empty() || tuning.lab_on.split('+').any(|n| n == "fromsolve");
+    if solves && tuning.sur_stall > 0 {
+        off.extend(surrogate::OFF);
+        on.extend(surrogate::ON);
+        for kind in tuning.sur_kinds.split('+') {
+            assert!(surrogate::KINDS.contains(&kind), "no sur_kinds kind {kind}");
+        }
+    }
+    if solves && tuning.mem_polish {
+        off.extend(memetic::OFF);
+        on.extend(memetic::ON);
+    }
+    let algo = if tuning.algo.is_empty() {
+        "solve"
+    } else {
+        &tuning.algo
+    };
+    for (field, list, known) in [
+        ("lab_off", &tuning.lab_off, off),
+        ("lab_on", &tuning.lab_on, on),
+    ] {
+        for name in list.split('+').filter(|n| !n.is_empty()) {
+            assert!(
+                known.contains(&name),
+                "{algo} reads no {field} switch {name} here"
+            );
+        }
+    }
+}
+
 /// the metric of the state as it is, timed and counted as an evaluation
 pub fn evaluate(state_bundle: &mut StateBundle, probe: &mut Probe) -> f64 {
     let clock = probe.clock();

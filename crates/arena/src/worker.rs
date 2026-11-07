@@ -109,7 +109,9 @@ pub fn tuning_with(overrides: &Map<String, Value>) -> Tuning {
         let old = value.as_object_mut().unwrap().get_mut(key);
         *old.unwrap_or_else(|| panic!("no tuning field {key}")) = new.clone();
     }
-    serde_json::from_value(value).unwrap()
+    let tuning = serde_json::from_value(value).unwrap();
+    hf_core::optimizer::lab::check_switches(&tuning);
+    tuning
 }
 
 fn result(
@@ -314,6 +316,37 @@ mod tests {
                 );
             }
         }
+    }
+
+    fn with(text: &str) -> Tuning {
+        tuning_with(&serde_json::from_str(text).unwrap())
+    }
+
+    /// switches are taken where something reads them
+    #[test]
+    fn known_switches_pass() {
+        with(r#"{"algo":"cem","lab_on":"fromsolve+ownstart","lab_off":"refit"}"#);
+        with(r#"{"sur_stall":32,"sur_kinds":"rand+chest+empty","lab_on":"randreach"}"#);
+        with(r#"{"mem_polish":true,"lab_off":"oreplan"}"#);
+        with(r#"{"algo":"cem","lab_on":"fromsolve","sur_stall":32,"lab_off":"descent+fresh"}"#);
+    }
+
+    #[test]
+    #[should_panic(expected = "cem reads no lab_off switch refitt")]
+    fn a_misspelt_switch_fails() {
+        with(r#"{"algo":"cem","lab_off":"refitt"}"#);
+    }
+
+    #[test]
+    #[should_panic(expected = "solve reads no lab_on switch randreach")]
+    fn a_switch_nothing_reads_fails() {
+        with(r#"{"lab_on":"randreach"}"#);
+    }
+
+    #[test]
+    #[should_panic(expected = "no sur_kinds kind lprice")]
+    fn an_unknown_kick_kind_fails() {
+        with(r#"{"sur_stall":32,"sur_kinds":"lprice+rand"}"#);
     }
 
     /// a plan put in a blob comes back onto the same upgrades as it was
