@@ -54,6 +54,18 @@ pub fn check_switches(tuning: &crate::tuning::Tuning) {
             assert!(surrogate::KINDS.contains(&kind), "no sur_kinds kind {kind}");
         }
     }
+    for kind in tuning.kick_types.split('+') {
+        let kinds = [
+            "window",
+            "chest",
+            "adv",
+            "piece",
+            "rebuild",
+            "rebuildempty",
+            "rebuildprice",
+        ];
+        assert!(kinds.contains(&kind), "no kick_types kind {kind}");
+    }
     if solves && tuning.mem_polish {
         off.extend(memetic::OFF);
         on.extend(memetic::ON);

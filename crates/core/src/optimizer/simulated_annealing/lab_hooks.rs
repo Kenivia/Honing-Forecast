@@ -10,13 +10,15 @@ use rand::seq::SliceRandom;
 use smallvec::smallvec;
 
 /// lns's rebuild: up to 10 normal upgrades of one piece type emptied, or each given its best
-/// plan at the shadow prices times lognormal noise (0.35), half and half; then responses in
-/// turn over them, kept where better, until none moves (3 rounds at most).
+/// plan at the shadow prices times lognormal noise (0.35), half and half (`rebuildempty` and
+/// `rebuildprice` take one half only); then responses in turn over them, kept where better,
+/// until none moves (3 rounds at most).
 pub(crate) fn rebuild_kick<R: Rng>(
     rng: &mut R,
     sb: &mut StateBundle,
     normal: &[usize],
     probe: &mut Probe,
+    kind: &str,
 ) {
     let piece = sb.upgrade_arr[normal[rng.random_range(0..normal.len())]].piece_type_usize;
     let mut set: Vec<usize> = normal
@@ -27,7 +29,12 @@ pub(crate) fn rebuild_kick<R: Rng>(
     set.shuffle(rng);
     set.truncate(10);
     sb.metric = sb.metric_router(probe);
-    if rng.random_bool(0.5) {
+    let empty = match kind {
+        "rebuildempty" => true,
+        "rebuildprice" => false,
+        _ => rng.random_bool(0.5),
+    };
+    if empty {
         for &i in &set {
             let len = sb.upgrade_arr[i].state.payload.len();
             sb.upgrade_arr[i]

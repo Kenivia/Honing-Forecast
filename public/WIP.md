@@ -3,6 +3,10 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
+- Assume tradability (or and chest type ) on previously seen icons
+- no more use previous
+- chaos dungeon detection (and maybe guardian also)
+
 ## Forecast mode
 
 - ~~forecast mode UI~~ this is gonna hvae to be very pervasive

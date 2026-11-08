@@ -349,6 +349,12 @@ mod tests {
         with(r#"{"sur_stall":32,"sur_kinds":"lprice+rand"}"#);
     }
 
+    #[test]
+    #[should_panic(expected = "no kick_types kind rebuilt")]
+    fn an_unknown_kick_type_fails() {
+        with(r#"{"kick_stall":32,"kick_types":"window+rebuilt"}"#);
+    }
+
     /// a plan put in a blob comes back onto the same upgrades as it was
     #[test]
     fn a_blob_keeps_its_plans() {

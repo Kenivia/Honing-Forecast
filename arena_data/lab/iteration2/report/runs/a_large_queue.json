@@ -1,0 +1,6 @@
+[
+ {
+  "name": "a_large_large",
+  "cmd": "target\\arena\\bin\\fin_a.exe --db arena_data/lab/runs.sqlite --set large run fin_a fin_a:max_iters=96000 fin_a:kick_stall=32,mem_polish=true fin_a:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuild fin_a:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuildempty fin_a:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuildprice fin_a:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach fin_a:sur_stall=32,sur_kinds=rand+chest+empty,sur_screen=true,lab_on=randreach fin_a:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuild,sur_stall=32,sur_kinds=rand+chest+empty,sur_screen=true,lab_on=randreach fin_a:algo=memetic,lab_effort=1,lab_on=fromsolve,lab_off=oreplan fin_a:algo=cem,lab_effort=0.5,lab_on=fullreach+fromsolve+ownstart --mode cold --seeds 10 --jobs 16 --resume"
+ }
+]

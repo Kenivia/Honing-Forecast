@@ -14,6 +14,7 @@ After all reviews, a final report with visualizations goes in `report/`, for dec
 | `memetic/` | Done. Code in the tree, every piece off (`mem_polish` in `solve`); report current | `mem_a`, `mem_b` |
 | `cem/` | Done. Code in the tree, every piece off (no `solve` knob); report current | `cem_a`, `cem_b` |
 | `lns/` | Done. Code in the tree, every piece off (`rebuild` kick type in `solve`, only when named); report current | `lns_a`, `lns_b` |
+| `report/` | Done. The final report: every candidate in one batch, recommendation by CPU budget; `rebuildempty`/`rebuildprice` kick types added (lab, off) | `fin_a` |
 
 ## For a reviewer
 

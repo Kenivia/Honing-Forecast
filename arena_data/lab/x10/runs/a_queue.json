@@ -1,0 +1,22 @@
+[
+ {
+  "name": "a_choices_test",
+  "cmd": "target\\arena\\bin\\x10_a.exe --db arena_data/lab/runs.sqlite --set choices_test run x10_a:streak_length=10 x10_a:streak_length=10,max_iters=192000 x10_a:streak_length=10,kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuildempty x10_a:streak_length=10,max_iters=24000 x10_a:streak_length=10,max_iters=12000 x10_a:streak_length=10,chain_iters_per_upgrade=125,chain_iters_min=2000 x10_a:streak_length=10,chain_iters_per_upgrade=60,chain_iters_min=1000 x10_a:streak_length=10,chain_iters_per_upgrade=30,chain_iters_min=500 x10_a:streak_length=10,agree_exit=3,unanimous=2 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "a_real_test",
+  "cmd": "target\\arena\\bin\\x10_a.exe --db arena_data/lab/runs.sqlite --set real_test run x10_a:streak_length=10 x10_a:streak_length=10,max_iters=192000 x10_a:streak_length=10,kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuildempty x10_a:streak_length=10,max_iters=24000 x10_a:streak_length=10,max_iters=12000 x10_a:streak_length=10,chain_iters_per_upgrade=125,chain_iters_min=2000 x10_a:streak_length=10,chain_iters_per_upgrade=60,chain_iters_min=1000 x10_a:streak_length=10,chain_iters_per_upgrade=30,chain_iters_min=500 x10_a:streak_length=10,agree_exit=3,unanimous=2 --mode cold --seeds 10 --jobs 16 --resume"
+ },
+ {
+  "name": "a_speed_test10",
+  "cmd": "target\\arena\\bin\\x10_a.exe --db arena_data/lab/runs.sqlite --set speed_test10 run x10_a:streak_length=10 x10_a:streak_length=10,max_iters=192000 x10_a:streak_length=10,kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuildempty x10_a:streak_length=10,max_iters=24000 x10_a:streak_length=10,max_iters=12000 x10_a:streak_length=10,chain_iters_per_upgrade=125,chain_iters_min=2000 x10_a:streak_length=10,chain_iters_per_upgrade=60,chain_iters_min=1000 x10_a:streak_length=10,chain_iters_per_upgrade=30,chain_iters_min=500 x10_a:streak_length=10,agree_exit=3,unanimous=2 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "a_large",
+  "cmd": "target\\arena\\bin\\x10_a.exe --db arena_data/lab/runs.sqlite --set large run x10_a:streak_length=10 x10_a:streak_length=10,max_iters=192000 x10_a:streak_length=10,kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuildempty x10_a:streak_length=10,max_iters=24000 x10_a:streak_length=10,max_iters=12000 x10_a:streak_length=10,chain_iters_per_upgrade=125,chain_iters_min=2000 x10_a:streak_length=10,chain_iters_per_upgrade=60,chain_iters_min=1000 x10_a:streak_length=10,chain_iters_per_upgrade=30,chain_iters_min=500 x10_a:streak_length=10,agree_exit=3,unanimous=2 --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "a_real_income_test",
+  "cmd": "target\\arena\\bin\\x10_a.exe --db arena_data/lab/runs.sqlite --set real_income_test run x10_a:streak_length=10 x10_a:streak_length=10,max_iters=192000 x10_a:streak_length=10,kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuildempty x10_a:streak_length=10,max_iters=24000 x10_a:streak_length=10,max_iters=12000 x10_a:streak_length=10,chain_iters_per_upgrade=125,chain_iters_min=2000 x10_a:streak_length=10,chain_iters_per_upgrade=60,chain_iters_min=1000 x10_a:streak_length=10,chain_iters_per_upgrade=30,chain_iters_min=500 x10_a:streak_length=10,agree_exit=3,unanimous=2 --mode chained --seeds 3 --jobs 16 --resume"
+ }
+]

@@ -721,7 +721,7 @@ fn kick_loop<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
             "window" => len > 1 && best.affords_a_free_tap(),
             "chest" => !stacks.is_empty(),
             "adv" => !adv.is_empty(),
-            "piece" | "rebuild" => !normal.is_empty(),
+            "piece" | "rebuild" | "rebuildempty" | "rebuildprice" => !normal.is_empty(),
             _ => false,
         })
         .map(String::from)
@@ -766,7 +766,9 @@ fn kick_loop<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
                     .collect();
                 kicked.upgrade_arr[index].state.update_payload(plan);
             }
-            "rebuild" => lab_hooks::rebuild_kick(rng, &mut kicked, &normal, probe),
+            kind if kind.starts_with("rebuild") => {
+                lab_hooks::rebuild_kick(rng, &mut kicked, &normal, probe, kind)
+            }
             _ => {
                 let piece =
                     kicked.upgrade_arr[normal[rng.random_range(0..normal.len())]].piece_type_usize;

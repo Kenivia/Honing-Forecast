@@ -70,7 +70,7 @@ python arena_data/lab/tools/queue.py iteration2/surrogate/a sur_a sur_a:algo=sur
 pnpm lab iteration2/surrogate/a
 ```
 
-- **`queue.py`** writes one job per set: `real_test` cold, 10 seeds; `real_income_test` chained, 3 seeds; `quick_dev`, `speed_test`, `advanced`, `free_taps`, `juice`, `small`, `large` cold, 3 seeds. `--sets` and `--filter` narrow it. The whole list takes about 20–25 minutes a variant.
+- **`queue.py`** writes one job per set: `real_test` cold, 10 seeds; `real_income_test` chained, 3 seeds; `quick_dev`, `speed_test`, `advanced`, `free_taps`, `juice`, `small`, `large` cold, 3 seeds. `--sets` and `--filter` narrow it; `--seeds n` replaces the standard seeds. The whole list takes about 20–25 minutes a variant.
 - **`pnpm lab`** runs the batch in order at below normal priority, and writes `<batch>_done.json` and `<batch>_run.log`.
   - **Queue format**: `[{name, cmd, note?}]`, shell commands run from the repo root. It is read again before each job, so jobs can be added while it runs.
   - **Started and ended by hand.** Ctrl-C stops the running job (the arena stops cleanly); the same command again goes on from it, since arena jobs carry `--resume`. `pnpm lab status <batch>` lists it.
@@ -151,6 +151,7 @@ Keep it to about 10 minutes. Anything longer is a batch.
 | `mem_a`, `mem_b` | The `memetic` investigation (new cut): its ablations, `fromsolve`, `mem_polish` in `solve`, with the kick loop and the surrogate loop in the same sessions. Both repeat `cut_a`. |
 | `cem_a`, `cem_b` | The `cem` investigation (new cut): its ablations, the order-polish cap, `solve`'s start, polish and exchanges inside it, `fromsolve` and `fromsolve+ownstart`; in `cem_b` the kick loop with `mem_polish` and the surrogate loop in the same sessions. Both repeat `cut_a`. |
 | `lns_a`, `lns_b` | The `lns` investigation (new cut): its ablations, `fromsolve`, `mempolish`, `insert`; the rebuild kick in `solve` (`kick_types` `rebuild`) alone and with the kick loop and `mem_polish`; `solve` + `mem_polish`, the kick loop with `mem_polish` and the surrogate loop in the same sessions. Both repeat `cut_a`. |
+| `fin_a` | Iteration 2's final batch (`iteration2/report/runs`): `solve` 48k and 96k, the kick loop with `mem_polish` (with `rebuild`, `rebuildempty`, `rebuildprice`), the surrogate loop (plain and screened), the two together, memetic's and cem's runs from `solve`'s endpoint; one session per set, `large` at 10 seeds. Repeats every stored snapshot it shares runs with. |
 
 The re-run in detail, about 22 hours at 16 jobs, each set one session:
 
