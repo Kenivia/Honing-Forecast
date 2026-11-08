@@ -13,7 +13,7 @@ After all reviews, a final report with visualizations goes in `report/`, for dec
 | `surrogate/` | Done. Code left in the tree, every piece off; `final.patch` is the three files against 8444a44a (it carries the free tap cut's lines in them too); no stash | `sur_a`–`sur_g` |
 | `memetic/` | Done. Code in the tree, every piece off (`mem_polish` in `solve`); report current | `mem_a`, `mem_b` |
 | `cem/` | Done. Code in the tree, every piece off (no `solve` knob); report current | `cem_a`, `cem_b` |
-| `lns/` | Not started | `lns_*` |
+| `lns/` | Done. Code in the tree, every piece off (`rebuild` kick type in `solve`, only when named); report current | `lns_a`, `lns_b` |
 
 ## For a reviewer
 

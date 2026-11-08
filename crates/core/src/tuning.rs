@@ -107,7 +107,8 @@ pub struct Tuning {
     /// the kinds of those kicks, joined by `+`: `window` (of the free tap order within reach,
     /// shuffled and its upgrades re-planned),
     /// `chest` (a stack opened at random), `adv` (an advanced upgrade's plan at random), `piece`
-    /// (a piece type's normal upgrades all take their response at once)
+    /// (a piece type's normal upgrades all take their response at once); lab: `rebuild` (lns's
+    /// rebuild of a piece type, `simulated_annealing/lab_hooks.rs`)
     pub kick_types: String,
     /// after the chains, restarts of the best state on the surrogate, each polished and kept
     /// where better, until this many in a row gain nothing; 0 for none

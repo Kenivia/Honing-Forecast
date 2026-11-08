@@ -5,6 +5,8 @@
 //! a ladder of prices whose plans are combined, then best responses in turn until none moves.
 //! Record-to-record acceptance; neighbourhoods weighted by what they gain for their work.
 //! See `arena_data/lab/iteration1/attempts/lns.md`.
+//! Lab switches (`OFF`, `ON`) and the trace (`lns_*` rows) are in
+//! `arena_data/lab/iteration2/lns/report.md`.
 
 use super::{check, evaluate};
 use crate::advanced_honing::utils::MAX_ADV_STATE;
@@ -14,6 +16,7 @@ use crate::optimizer::{Previous, Solved};
 use crate::probe::Probe;
 use crate::state::{OneState, get_pool_ids};
 use crate::state_bundle::{StateBundle, StateEssence};
+use ahash::AHashSet;
 use ordered_float::OrderedFloat;
 use rand::Rng;
 use rand::seq::SliceRandom;
@@ -38,8 +41,31 @@ const STALL: f64 = 0.45;
 /// upgrades tried at each place when the free tap order is built again inside a move
 const BUILD_TRIES: usize = 8;
 /// the `Tuning::lab_off` and `lab_on` switches this reads
-pub const OFF: &[&str] = &[];
-pub const ON: &[&str] = &[];
+pub const OFF: &[&str] = &["ladder", "price", "empty", "rrt", "adapt"];
+pub const ON: &[&str] = &["fromsolve", "insert", "chestboth", "mempolish"];
+/// trace rows: phases of the start and the end, then the arms
+const PHASES: usize = 8 + ARMS.len();
+/// the memetic polish at the end, in the unused candidate row
+const P_END_MEM: usize = 0;
+const P_ORDER: usize = 1;
+const P_SWEEP: usize = 2;
+const P_CHEST: usize = 3;
+const P_REBUILD: usize = 4;
+const P_INSERT: usize = 5;
+const P_END_INSERT: usize = 6;
+const P_END_SWEEP: usize = 7;
+
+fn named(list: &str, name: &str) -> bool {
+    list.split('+').any(|n| n == name)
+}
+
+fn on(sb: &StateBundle, name: &str) -> bool {
+    named(&sb.tuning.lab_on, name)
+}
+
+fn off(sb: &StateBundle, name: &str) -> bool {
+    named(&sb.tuning.lab_off, name)
+}
 /// what the ladder multiplies the prices of the materials it is about by
 const LADDER: [f64; 6] = [0.0, 0.3, 0.6, 1.0, 1.6, 3.0];
 const LADDER_ROUNDS: usize = 3;
@@ -151,6 +177,19 @@ fn uses(sb: &StateBundle, index: usize, row: usize) -> bool {
     } else {
         juice_info.adv_uindex_to_id[piece_type][level].contains(&id)
     }
+}
+
+/// the last place of the evaluated order a free tap can reach with any chance over 1e-6
+fn reach_of(sb: &StateBundle) -> usize {
+    let probs = sb.special_probs();
+    let mut tail = 0.0;
+    for k in (0..probs.len()).rev() {
+        tail += probs[k];
+        if tail > 1e-6 {
+            return k;
+        }
+    }
+    0
 }
 
 /// every piece's normal upgrades in level order, on the places they hold
@@ -648,16 +687,7 @@ impl Search<'_> {
     /// anywhere, and put back one at a time where each does best
     fn order_move(&mut self, sb: &mut StateBundle, rng: &mut impl Rng) -> f64 {
         self.evaluate(sb);
-        let probs = sb.special_probs().clone();
-        let mut tail = 0.0;
-        let mut reach = 0;
-        for k in (0..probs.len()).rev() {
-            tail += probs[k];
-            if tail > 1e-6 {
-                reach = k;
-                break;
-            }
-        }
+        let reach = reach_of(sb);
         let len = sb.special_state.len();
         if len < 2 {
             return sb.metric;
@@ -748,20 +778,56 @@ impl Search<'_> {
         order
     }
 
+    /// `solve`'s order polish: each normal upgrade to each place the evaluator's free tap
+    /// outcomes reach, kept where better, in rounds while one moves; the metric after
+    fn insert_polish(&mut self, sb: &mut StateBundle) -> f64 {
+        let mut now = self.evaluate(sb);
+        if !sb.affords_a_free_tap() {
+            return now;
+        }
+        let count = sb.special_state.len();
+        let normal: Vec<usize> = (0..count)
+            .filter(|&index| sb.upgrade_arr[index].is_normal_honing)
+            .collect();
+        for _ in 0..5 {
+            let mut improved = false;
+            let mut tried: AHashSet<Vec<usize>> = AHashSet::new();
+            for place in 0..count {
+                sb.compute_special_probs(false);
+                if place > sb.skip_weights().last().map_or(0, |x| x.0) {
+                    break;
+                }
+                for &index in &normal {
+                    let before = sb.special_state.clone();
+                    sb.special_state.retain(|&this| this != index);
+                    sb.special_state.insert(place, index);
+                    sb.clean_special_state();
+                    if sb.special_state == before || !tried.insert(sb.special_state.clone()) {
+                        sb.special_state = before;
+                        continue;
+                    }
+                    let metric = self.evaluate(sb);
+                    if metric > now + now.abs() * 1e-12 {
+                        now = metric;
+                        improved = true;
+                        tried.clear();
+                    } else {
+                        sb.special_state = before;
+                    }
+                }
+            }
+            if !improved {
+                break;
+            }
+        }
+        self.evaluate(sb)
+    }
+
     /// the free tap order from a place where it is reached on built again, then the upgrades
     /// whose place moved rebuilt
     fn order_tail(&mut self, sb: &mut StateBundle, rng: &mut impl Rng) -> f64 {
         self.evaluate(sb);
-        let probs = sb.special_probs().clone();
-        let mut tail = 0.0;
-        let mut reach = 0;
-        for k in (0..probs.len()).rev() {
-            tail += probs[k];
-            if tail > 1e-6 {
-                reach = k;
-                break;
-            }
-        }
+        let reach = reach_of(sb);
         let was = sb.special_state.clone();
         let from = rng.random_range(0..=reach.min(was.len() - 1));
         sb.special_state = self.build_order(sb, from, BUILD_TRIES, rng);
@@ -780,16 +846,7 @@ impl Search<'_> {
     /// the upgrades with a choice where the free taps reach, and the next two
     fn reached(&mut self, sb: &mut StateBundle) -> Vec<usize> {
         self.evaluate(sb);
-        let probs = sb.special_probs();
-        let mut tail = 0.0;
-        let mut reach = 0;
-        for k in (0..probs.len()).rev() {
-            tail += probs[k];
-            if tail > 1e-6 {
-                reach = k;
-                break;
-            }
-        }
+        let reach = reach_of(sb);
         sb.special_state
             .iter()
             .take(reach + 2)
@@ -910,6 +967,28 @@ impl Search<'_> {
             }
             step /= 2;
         }
+        // 4 random amounts a pair as well, off the halving grid
+        if on(sb, "chestboth") {
+            let some: Vec<(usize, usize)> = if pairs.len() <= 6 {
+                pairs.clone()
+            } else {
+                (0..6)
+                    .map(|_| pairs[rng.random_range(0..pairs.len())])
+                    .collect()
+            };
+            for (from, to) in some {
+                for _ in 0..4 {
+                    let mut state = sb.chest_states[&key].clone();
+                    if state[from] < 2 {
+                        break;
+                    }
+                    let amount = rng.random_range(1..state[from]);
+                    state[from] -= amount;
+                    state[to] += amount;
+                    try_state(self, sb, state, &mut now);
+                }
+            }
+        }
         let rows: Vec<usize> = chest
             .options
             .iter()
@@ -918,6 +997,24 @@ impl Search<'_> {
             .collect();
         let set = self.users(sb, &rows, rng);
         self.sweep(sb, &set, 2, rng)
+    }
+}
+
+/// gain to the best, new bests, work and picks, by phase and arm
+struct Trace {
+    gain: [f64; PHASES],
+    wins: [f64; PHASES],
+    cost: [f64; PHASES],
+    picks: [f64; PHASES],
+    /// the best and the work at the end of the last phase noted
+    mark: (f64, f64),
+}
+
+impl Trace {
+    fn note(&mut self, phase: usize, best: f64, work: f64) {
+        self.gain[phase] += (best - self.mark.0).max(0.0);
+        self.cost[phase] += work - self.mark.1;
+        self.mark = (best.max(self.mark.0), work);
     }
 }
 
@@ -964,6 +1061,13 @@ pub fn solve<R: Rng>(
         };
     }
     let budget = effort * (BASE_WORK + WORK_PER_UPGRADE * count as f64);
+    let mut trace = Trace {
+        gain: [0.0; PHASES],
+        wins: [0.0; PHASES],
+        cost: [0.0; PHASES],
+        picks: [0.0; PHASES],
+        mark: (0.0, 0.0),
+    };
 
     // the given, carried and empty plans, the best of them
     let mut candidates: Vec<StateEssence> = vec![sb.to_essence()];
@@ -974,6 +1078,13 @@ pub fn solve<R: Rng>(
                 candidates.push(other.to_essence());
             }
         }
+    }
+    // `fromsolve`: solve's result as it is, one more candidate, its cost outside the budget
+    if on(&sb, "fromsolve") {
+        let mut plain = sb.clone();
+        plain.tuning.algo = String::new();
+        let solved = crate::optimizer::solve(rng, plain, previous, search.probe).best;
+        candidates.push(solved.to_essence());
     }
     let mut empty = sb.to_essence();
     for (slots, upgrade) in empty.state_arr.iter_mut().zip(&sb.upgrade_arr) {
@@ -1000,6 +1111,7 @@ pub fn solve<R: Rng>(
 
     // a first rebuild of everything: free tap order, every upgrade in turn, chests, the
     // free tap order again
+    trace.mark = (best.0, search.work);
     if sb.affords_a_free_tap() {
         let built = search.build_order(&mut sb, 0, usize::MAX, rng);
         for order in greedy_orders(&mut search, &mut sb)
@@ -1016,6 +1128,7 @@ pub fn solve<R: Rng>(
             }
         }
     }
+    trace.note(P_ORDER, now, search.work);
     let all: Vec<usize> = (0..count).filter(|&index| has_choice(&sb, index)).collect();
     {
         let mut order = all.clone();
@@ -1043,6 +1156,7 @@ pub fn solve<R: Rng>(
         now = best.0;
     }
     keep_best(&sb, now, &mut best);
+    trace.note(P_SWEEP, best.0, search.work);
     for which in 0..sb
         .prep_output
         .chests
@@ -1059,6 +1173,7 @@ pub fn solve<R: Rng>(
         }
     }
     keep_best(&sb, now, &mut best);
+    trace.note(P_CHEST, best.0, search.work);
     if sb.affords_a_free_tap() {
         let kept = sb.special_state.clone();
         sb.special_state = search.build_order(&mut sb, 0, usize::MAX, rng);
@@ -1072,6 +1187,13 @@ pub fn solve<R: Rng>(
         }
     }
     keep_best(&sb, now, &mut best);
+    trace.note(P_REBUILD, best.0, search.work);
+    // `insert`: solve's order polish on the start
+    if on(&sb, "insert") {
+        now = search.insert_polish(&mut sb);
+        keep_best(&sb, now, &mut best);
+        trace.note(P_INSERT, best.0, search.work);
+    }
 
     // destroy and repair
     let mut weights: Vec<f64> = ARMS
@@ -1094,8 +1216,11 @@ pub fn solve<R: Rng>(
     let mut best_work = search.work;
     let (mut moves, mut spent) = (0, 0.0);
     let end = (1.0 - FINAL_SHARE) * budget;
+    let (rrt, adapt) = (!off(&sb, "rrt"), !off(&sb, "adapt"));
+    let mut stalled = 0.0;
     while search.work < end {
         if search.work - best_work > STALL * budget {
+            stalled = 1.0;
             break;
         }
         for &arm in &order_arms {
@@ -1108,7 +1233,17 @@ pub fn solve<R: Rng>(
         let Some(arm) = pick(rng, &weights) else {
             break;
         };
-        let (hood, start) = ARMS[arm];
+        let (hood, mut start) = ARMS[arm];
+        // a repair start switched off: the set is swept as it is
+        let name = match start {
+            Start::Ladder => "ladder",
+            Start::Price => "price",
+            Start::Empty => "empty",
+            Start::Kept => "",
+        };
+        if !name.is_empty() && off(&sb, name) {
+            start = Start::Kept;
+        }
         let before = sb.to_essence();
         let work_before = search.work;
         let metric = match hood {
@@ -1131,11 +1266,20 @@ pub fn solve<R: Rng>(
             Hood::Chest => search.chest_move(&mut sb, None, rng),
         };
         let progress = ((search.work - start_work) / (end - start_work).max(1.0)).min(1.0);
-        let threshold = best.0 - DEVIATION * best.0.abs().max(1.0) * (1.0 - progress);
+        // `rrt` off: nothing worse than the state as it was is taken
+        let threshold = if rrt {
+            best.0 - DEVIATION * best.0.abs().max(1.0) * (1.0 - progress)
+        } else {
+            now
+        };
+        trace.picks[PHASES - ARMS.len() + arm] += 1.0;
+        trace.cost[PHASES - ARMS.len() + arm] += search.work - work_before;
         let reward = if metric > best.0 + best.0.abs() * 1e-12 {
             if metric > best.0 + best.0.abs().max(1.0) * 1e-6 {
                 best_work = search.work;
             }
+            trace.gain[PHASES - ARMS.len() + arm] += metric - best.0;
+            trace.wins[PHASES - ARMS.len() + arm] += 1.0;
             best = (metric, sb.to_essence());
             since_best = 0;
             4.0
@@ -1160,18 +1304,54 @@ pub fn solve<R: Rng>(
             now = best.0;
             since_best = 0;
         }
-        weights[arm] =
-            ((1.0 - REACTION) * weights[arm] + REACTION * reward / cost.max(0.1)).max(MIN_WEIGHT);
+        if adapt {
+            weights[arm] = ((1.0 - REACTION) * weights[arm] + REACTION * reward / cost.max(0.1))
+                .max(MIN_WEIGHT);
+        }
     }
+    let loop_work = search.work - start_work;
 
     // a last pass over every upgrade from the best
     sb.clone_from_essence(&best.1, &OrderedFloat(best.0));
+    trace.mark = (best.0, search.work);
+    if on(&sb, "insert") {
+        let metric = search.insert_polish(&mut sb);
+        keep_best(&sb, metric, &mut best);
+        trace.note(P_END_INSERT, best.0, search.work);
+        sb.clone_from_essence(&best.1, &OrderedFloat(best.0));
+    }
+    // `mempolish`: memetic's polish of the best, its cost outside the budget
+    if on(&sb, "mempolish") {
+        sb.metric = search.evaluate(&mut sb);
+        super::memetic::polish_state(rng, &mut sb, search.probe);
+        let metric = search.evaluate(&mut sb);
+        keep_best(&sb, metric, &mut best);
+        trace.gain[P_END_MEM] += (best.0 - trace.mark.0).max(0.0);
+        trace.mark = (best.0, search.work);
+        sb.clone_from_essence(&best.1, &OrderedFloat(best.0));
+    }
     if search.work < budget && !all.is_empty() {
         let metric = search.sweep(&mut sb, &all, 1, rng);
         keep_best(&sb, metric, &mut best);
+        trace.note(P_END_SWEEP, best.0, search.work);
     }
     sb.clone_from_essence(&best.1, &OrderedFloat(best.0));
     search.evaluate(&mut sb);
+    for phase in 0..PHASES {
+        if trace.cost[phase] > 0.0 || trace.gain[phase] > 0.0 {
+            search.probe.at(phase as i64);
+            search.probe.put("lns_gain", trace.gain[phase]);
+            search.probe.put("lns_wins", trace.wins[phase]);
+            search.probe.put("lns_cost", trace.cost[phase]);
+            search.probe.put("lns_picks", trace.picks[phase]);
+        }
+    }
+    search.probe.at(0);
+    search.probe.put("lns_budget", budget);
+    search.probe.put("lns_spent", search.work);
+    search.probe.put("lns_loop", loop_work);
+    search.probe.put("lns_moves", moves as f64);
+    search.probe.put("lns_stalled", stalled);
     debug_assert_eq!(check::invalid(&sb), None);
     Solved {
         best: sb,

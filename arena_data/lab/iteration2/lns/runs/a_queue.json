@@ -1,0 +1,38 @@
+[
+ {
+  "name": "a_real_test",
+  "cmd": "target\\arena\\bin\\lns_a.exe --db arena_data/lab/runs.sqlite --set real_test run lns_a lns_a:algo=lns,lab_effort=1 lns_a:algo=lns,lab_effort=1,lab_on=fromsolve lns_a:algo=lns,lab_effort=1,lab_on=mempolish lns_a:algo=lns,lab_effort=1,lab_on=insert lns_a:algo=lns,lab_effort=1,lab_on=allplaces+alltries lns_a:algo=lns,lab_effort=1,lab_on=chestboth lns_a:algo=lns,lab_effort=1,lab_off=ladder lns_a:algo=lns,lab_effort=1,lab_off=price lns_a:algo=lns,lab_effort=1,lab_off=empty lns_a:algo=lns,lab_effort=1,lab_off=ladder+price+empty lns_a:algo=lns,lab_effort=1,lab_off=rrt lns_a:algo=lns,lab_effort=1,lab_off=adapt lns_a:mem_polish=true lns_a:kick_stall=32,mem_polish=true --mode cold --seeds 10 --jobs 16 --resume"
+ },
+ {
+  "name": "a_quick_dev",
+  "cmd": "target\\arena\\bin\\lns_a.exe --db arena_data/lab/runs.sqlite --set quick_dev run lns_a lns_a:algo=lns,lab_effort=1 lns_a:algo=lns,lab_effort=1,lab_on=fromsolve lns_a:algo=lns,lab_effort=1,lab_on=mempolish lns_a:algo=lns,lab_effort=1,lab_on=insert lns_a:algo=lns,lab_effort=1,lab_on=allplaces+alltries lns_a:algo=lns,lab_effort=1,lab_on=chestboth lns_a:algo=lns,lab_effort=1,lab_off=ladder lns_a:algo=lns,lab_effort=1,lab_off=price lns_a:algo=lns,lab_effort=1,lab_off=empty lns_a:algo=lns,lab_effort=1,lab_off=ladder+price+empty lns_a:algo=lns,lab_effort=1,lab_off=rrt lns_a:algo=lns,lab_effort=1,lab_off=adapt lns_a:mem_polish=true lns_a:kick_stall=32,mem_polish=true --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "a_speed_test",
+  "cmd": "target\\arena\\bin\\lns_a.exe --db arena_data/lab/runs.sqlite --set speed_test run lns_a lns_a:algo=lns,lab_effort=1 lns_a:algo=lns,lab_effort=1,lab_on=fromsolve lns_a:algo=lns,lab_effort=1,lab_on=mempolish lns_a:algo=lns,lab_effort=1,lab_on=insert lns_a:algo=lns,lab_effort=1,lab_on=allplaces+alltries lns_a:algo=lns,lab_effort=1,lab_on=chestboth lns_a:algo=lns,lab_effort=1,lab_off=ladder lns_a:algo=lns,lab_effort=1,lab_off=price lns_a:algo=lns,lab_effort=1,lab_off=empty lns_a:algo=lns,lab_effort=1,lab_off=ladder+price+empty lns_a:algo=lns,lab_effort=1,lab_off=rrt lns_a:algo=lns,lab_effort=1,lab_off=adapt lns_a:mem_polish=true lns_a:kick_stall=32,mem_polish=true --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "a_advanced",
+  "cmd": "target\\arena\\bin\\lns_a.exe --db arena_data/lab/runs.sqlite --set advanced run lns_a lns_a:algo=lns,lab_effort=1 lns_a:algo=lns,lab_effort=1,lab_on=fromsolve lns_a:algo=lns,lab_effort=1,lab_on=mempolish lns_a:algo=lns,lab_effort=1,lab_on=insert lns_a:algo=lns,lab_effort=1,lab_on=allplaces+alltries lns_a:algo=lns,lab_effort=1,lab_on=chestboth lns_a:algo=lns,lab_effort=1,lab_off=ladder lns_a:algo=lns,lab_effort=1,lab_off=price lns_a:algo=lns,lab_effort=1,lab_off=empty lns_a:algo=lns,lab_effort=1,lab_off=ladder+price+empty lns_a:algo=lns,lab_effort=1,lab_off=rrt lns_a:algo=lns,lab_effort=1,lab_off=adapt lns_a:mem_polish=true lns_a:kick_stall=32,mem_polish=true --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "a_free_taps",
+  "cmd": "target\\arena\\bin\\lns_a.exe --db arena_data/lab/runs.sqlite --set free_taps run lns_a lns_a:algo=lns,lab_effort=1 lns_a:algo=lns,lab_effort=1,lab_on=fromsolve lns_a:algo=lns,lab_effort=1,lab_on=mempolish lns_a:algo=lns,lab_effort=1,lab_on=insert lns_a:algo=lns,lab_effort=1,lab_on=allplaces+alltries lns_a:algo=lns,lab_effort=1,lab_on=chestboth lns_a:algo=lns,lab_effort=1,lab_off=ladder lns_a:algo=lns,lab_effort=1,lab_off=price lns_a:algo=lns,lab_effort=1,lab_off=empty lns_a:algo=lns,lab_effort=1,lab_off=ladder+price+empty lns_a:algo=lns,lab_effort=1,lab_off=rrt lns_a:algo=lns,lab_effort=1,lab_off=adapt lns_a:mem_polish=true lns_a:kick_stall=32,mem_polish=true --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "a_juice",
+  "cmd": "target\\arena\\bin\\lns_a.exe --db arena_data/lab/runs.sqlite --set juice run lns_a lns_a:algo=lns,lab_effort=1 lns_a:algo=lns,lab_effort=1,lab_on=fromsolve lns_a:algo=lns,lab_effort=1,lab_on=mempolish lns_a:algo=lns,lab_effort=1,lab_on=insert lns_a:algo=lns,lab_effort=1,lab_on=allplaces+alltries lns_a:algo=lns,lab_effort=1,lab_on=chestboth lns_a:algo=lns,lab_effort=1,lab_off=ladder lns_a:algo=lns,lab_effort=1,lab_off=price lns_a:algo=lns,lab_effort=1,lab_off=empty lns_a:algo=lns,lab_effort=1,lab_off=ladder+price+empty lns_a:algo=lns,lab_effort=1,lab_off=rrt lns_a:algo=lns,lab_effort=1,lab_off=adapt lns_a:mem_polish=true lns_a:kick_stall=32,mem_polish=true --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "a_small",
+  "cmd": "target\\arena\\bin\\lns_a.exe --db arena_data/lab/runs.sqlite --set small run lns_a lns_a:algo=lns,lab_effort=1 lns_a:algo=lns,lab_effort=1,lab_on=fromsolve lns_a:algo=lns,lab_effort=1,lab_on=mempolish lns_a:algo=lns,lab_effort=1,lab_on=insert lns_a:algo=lns,lab_effort=1,lab_on=allplaces+alltries lns_a:algo=lns,lab_effort=1,lab_on=chestboth lns_a:algo=lns,lab_effort=1,lab_off=ladder lns_a:algo=lns,lab_effort=1,lab_off=price lns_a:algo=lns,lab_effort=1,lab_off=empty lns_a:algo=lns,lab_effort=1,lab_off=ladder+price+empty lns_a:algo=lns,lab_effort=1,lab_off=rrt lns_a:algo=lns,lab_effort=1,lab_off=adapt lns_a:mem_polish=true lns_a:kick_stall=32,mem_polish=true --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "a_large",
+  "cmd": "target\\arena\\bin\\lns_a.exe --db arena_data/lab/runs.sqlite --set large run lns_a lns_a:algo=lns,lab_effort=1 lns_a:algo=lns,lab_effort=1,lab_on=fromsolve lns_a:algo=lns,lab_effort=1,lab_on=mempolish lns_a:algo=lns,lab_effort=1,lab_on=insert lns_a:algo=lns,lab_effort=1,lab_on=allplaces+alltries lns_a:algo=lns,lab_effort=1,lab_on=chestboth lns_a:algo=lns,lab_effort=1,lab_off=ladder lns_a:algo=lns,lab_effort=1,lab_off=price lns_a:algo=lns,lab_effort=1,lab_off=empty lns_a:algo=lns,lab_effort=1,lab_off=ladder+price+empty lns_a:algo=lns,lab_effort=1,lab_off=rrt lns_a:algo=lns,lab_effort=1,lab_off=adapt lns_a:mem_polish=true lns_a:kick_stall=32,mem_polish=true --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "a_real_income_test",
+  "cmd": "target\\arena\\bin\\lns_a.exe --db arena_data/lab/runs.sqlite --set real_income_test run lns_a lns_a:algo=lns,lab_effort=1 lns_a:algo=lns,lab_effort=1,lab_on=fromsolve lns_a:algo=lns,lab_effort=1,lab_on=mempolish lns_a:algo=lns,lab_effort=1,lab_on=insert lns_a:algo=lns,lab_effort=1,lab_on=allplaces+alltries lns_a:algo=lns,lab_effort=1,lab_on=chestboth lns_a:algo=lns,lab_effort=1,lab_off=ladder lns_a:algo=lns,lab_effort=1,lab_off=price lns_a:algo=lns,lab_effort=1,lab_off=empty lns_a:algo=lns,lab_effort=1,lab_off=ladder+price+empty lns_a:algo=lns,lab_effort=1,lab_off=rrt lns_a:algo=lns,lab_effort=1,lab_off=adapt lns_a:mem_polish=true lns_a:kick_stall=32,mem_polish=true --mode chained --seeds 3 --jobs 16 --resume"
+ }
+]

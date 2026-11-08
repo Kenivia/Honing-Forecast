@@ -47,6 +47,7 @@ Things worth knowing about its shape:
    - `chest`: a stack is opened at random.
    - `adv`: an advanced upgrade gets a random plan.
    - `piece`: a piece type's normal upgrades all take their response at once.
+   - `rebuild` (lab, used only when named in `kick_types`): up to 10 normal upgrades of one piece type are emptied, or each takes its best plan at shadow prices with lognormal noise, then responses run in turn over them before the polish (`rebuild_kick` in `simulated_annealing/lab_hooks.rs`). Added to the four kinds with `mem_polish`, it takes the joint re-splits of a shared juice (`single_3375`, `b10_week_inc_0004:3`, `single_0085`) at x0.97–1.25 the CPU of the loop. A lab result, not yet on.
 
    At 32 it loses no payload. It reaches order basins that the chains miss, at x1.4–2.7 the CPU. A lab result (`Optimizer lab results.md`), not yet on. Its window kick takes the free taps' reach from `skip_weights`, as `solve` does since the free tap cut.
 10. **Surrogate loop** (`sur_loop`, off: `sur_stall` 0): the best state takes a kick (`sur_kinds`), goes down a descent on the moment surrogate of `optimizer/lab/surrogate.rs`, is polished, and is kept where better, until `sur_stall` kicks in a row gain nothing.
@@ -157,4 +158,4 @@ What a run does with them (`Tuning::carry`):
 
 ## Testing a change
 
-Use the arena (`Arena.md`): snapshot the variants, run them against each other, and read the gap, hit rate and counters. Approaches written from scratch beside `solve` are in `optimizer/lab`, picked by `Tuning::algo` (`Optimizer lab.md`). All randomness must come from the solver's own `rng` so that a seed repeats. `scramble` exposes the neighbour moves for making random valid states. `polish_counted` and `refine_counted` in `simulated_annealing/lab_hooks.rs` are lab-only helpers for `cem`; nothing in `solve` calls them.
+Use the arena (`Arena.md`): snapshot the variants, run them against each other, and read the gap, hit rate and counters. Approaches written from scratch beside `solve` are in `optimizer/lab`, picked by `Tuning::algo` (`Optimizer lab.md`). All randomness must come from the solver's own `rng` so that a seed repeats. `scramble` exposes the neighbour moves for making random valid states. `simulated_annealing/lab_hooks.rs` holds lab-only code: `polish_counted` and `refine_counted` for `cem`, which nothing in `solve` calls, and `rebuild_kick`, the kick loop's lab kick type `rebuild`.

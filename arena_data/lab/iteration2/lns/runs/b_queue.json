@@ -1,0 +1,38 @@
+[
+ {
+  "name": "b_real_test",
+  "cmd": "target\\arena\\bin\\lns_b.exe --db arena_data/lab/runs.sqlite --set real_test run lns_b lns_b:kick_stall=32,mem_polish=true lns_b:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuild lns_b:kick_stall=32,kick_types=rebuild lns_b:algo=lns,lab_effort=0.5,lab_on=fromsolve lns_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 10 --jobs 16 --resume"
+ },
+ {
+  "name": "b_quick_dev",
+  "cmd": "target\\arena\\bin\\lns_b.exe --db arena_data/lab/runs.sqlite --set quick_dev run lns_b lns_b:kick_stall=32,mem_polish=true lns_b:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuild lns_b:kick_stall=32,kick_types=rebuild lns_b:algo=lns,lab_effort=0.5,lab_on=fromsolve lns_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_speed_test",
+  "cmd": "target\\arena\\bin\\lns_b.exe --db arena_data/lab/runs.sqlite --set speed_test run lns_b lns_b:kick_stall=32,mem_polish=true lns_b:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuild lns_b:kick_stall=32,kick_types=rebuild lns_b:algo=lns,lab_effort=0.5,lab_on=fromsolve lns_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_advanced",
+  "cmd": "target\\arena\\bin\\lns_b.exe --db arena_data/lab/runs.sqlite --set advanced run lns_b lns_b:kick_stall=32,mem_polish=true lns_b:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuild lns_b:kick_stall=32,kick_types=rebuild lns_b:algo=lns,lab_effort=0.5,lab_on=fromsolve lns_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_free_taps",
+  "cmd": "target\\arena\\bin\\lns_b.exe --db arena_data/lab/runs.sqlite --set free_taps run lns_b lns_b:kick_stall=32,mem_polish=true lns_b:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuild lns_b:kick_stall=32,kick_types=rebuild lns_b:algo=lns,lab_effort=0.5,lab_on=fromsolve lns_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_juice",
+  "cmd": "target\\arena\\bin\\lns_b.exe --db arena_data/lab/runs.sqlite --set juice run lns_b lns_b:kick_stall=32,mem_polish=true lns_b:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuild lns_b:kick_stall=32,kick_types=rebuild lns_b:algo=lns,lab_effort=0.5,lab_on=fromsolve lns_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_small",
+  "cmd": "target\\arena\\bin\\lns_b.exe --db arena_data/lab/runs.sqlite --set small run lns_b lns_b:kick_stall=32,mem_polish=true lns_b:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuild lns_b:kick_stall=32,kick_types=rebuild lns_b:algo=lns,lab_effort=0.5,lab_on=fromsolve lns_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_large",
+  "cmd": "target\\arena\\bin\\lns_b.exe --db arena_data/lab/runs.sqlite --set large run lns_b lns_b:kick_stall=32,mem_polish=true lns_b:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuild lns_b:kick_stall=32,kick_types=rebuild lns_b:algo=lns,lab_effort=0.5,lab_on=fromsolve lns_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_real_income_test",
+  "cmd": "target\\arena\\bin\\lns_b.exe --db arena_data/lab/runs.sqlite --set real_income_test run lns_b lns_b:kick_stall=32,mem_polish=true lns_b:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuild lns_b:kick_stall=32,kick_types=rebuild lns_b:algo=lns,lab_effort=0.5,lab_on=fromsolve lns_b:sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach --mode chained --seeds 3 --jobs 16 --resume"
+ }
+]
