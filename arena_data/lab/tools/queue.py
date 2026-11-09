@@ -3,7 +3,9 @@
 import argparse, json, os
 SETS = {'real_test': ('cold', 10), 'quick_dev': ('cold', 3), 'speed_test': ('cold', 3), 'advanced': ('cold', 3), 'free_taps': ('cold', 3),
         'juice': ('cold', 3), 'small': ('cold', 3), 'large': ('cold', 3), 'real_income_test': ('chained', 3),
-        'speed_test10': ('cold', 3), 'choices_test': ('cold', 3)}
+        'speed_test10': ('cold', 3), 'choices_test': ('cold', 3),
+        'real3_dev': ('cold', 3), 'real3_test': ('cold', 3), 'real3_income_dev': ('chained', 3), 'real3_income_test': ('chained', 3),
+        'real3_seq_dev': ('chained', 3), 'real3_seq_test': ('chained', 3)}
 ap = argparse.ArgumentParser()
 ap.add_argument('batch')
 ap.add_argument('variants', nargs='+')

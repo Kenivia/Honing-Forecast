@@ -102,6 +102,16 @@ Against `solve` at 96k in the same batch the kick loop is ahead or level everywh
 
 **Strong:** it is hard to beat at matched CPU anywhere else. `real_test` hit is 96.8% and income is within 0.001.
 
+## CPU against accuracy on real cases
+
+From iteration 3's `budget` (`iteration3/budget/report.md`, `bud_a` on the `real3_*` sets; gaps in % of flow, mlog = mean log10(gap + 0.001)).
+
+- **No knee.** For cold singles, income steps and family steps alike, mlog falls by about 0.05–0.1 a halving of CPU from 48k (about -2.8) to 6k (about -2.6). `max_iters=0` is about -2.2 at streak 1 and -2.35 at streak 10.
+- **Below about x0.3 the polishes are the CPU.** Each of `solve`'s 4 chains at low budgets ends in the full polishes, about the cost of a `max_iters=0` run, so 750–3k cost the same. Start and polish evaluations cost about 0.27 ms each, annealing moves about 0.04 ms.
+- **Size.** Payloads with 11+ upgrades take 80–85% of the CPU. Up to 10 upgrades, 3k is close to 48k; 26+ is hard even at 48k (mlog about -2.55).
+- **Carry.** A family-chain step scores and costs the same chained as cold (within 0.06 mlog); an income step after a week's income scores like step 0. `quick` and `carry_stall=1` are no better than a plain cut, and on income chains they drift worse step by step.
+- **Chests against plans.** `max_iters=0`'s big misses on real cases are mostly choice chests opened for the other main option (74 of 84 payloads missed by over 0.1% that have choice chests). The polishes change chests and plans one at a time, so neither move pays alone; tiny payloads miss by 3–9%. Generated sets rarely show this, so their cheap end is easier (`max_iters=0` -2.53 against -2.20).
+
 ## Open
 
 **Joint moves of several upgrades' plans.** `single_3375`, `single_3397_serca_n4` and `b10_week_inc_0004` step 3 are reached by `price`'s kick loop with its own polish: responses in turn over several rounds, with order and chest moves between.

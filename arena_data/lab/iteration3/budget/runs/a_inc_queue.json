@@ -1,0 +1,10 @@
+[
+ {
+  "name": "a_inc_real3_income_dev",
+  "cmd": "target\\arena\\bin\\bud_a.exe --db arena_data/lab/runs.sqlite --set real3_income_dev run bud_a bud_a:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuildempty,sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,sur_screen=true bud_a:max_iters=24000 bud_a:max_iters=12000 bud_a:max_iters=6000 bud_a:max_iters=3000 bud_a:max_iters=0 bud_a:quick=true bud_a:carry_stall=1 --mode chained --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "a_inc_real3_income_test",
+  "cmd": "target\\arena\\bin\\bud_a.exe --db arena_data/lab/runs.sqlite --set real3_income_test run bud_a bud_a:kick_stall=32,mem_polish=true,kick_types=window+chest+adv+piece+rebuildempty,sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach,sur_screen=true bud_a:max_iters=24000 bud_a:max_iters=12000 bud_a:max_iters=6000 bud_a:max_iters=3000 bud_a:max_iters=0 bud_a:quick=true bud_a:carry_stall=1 --mode chained --seeds 3 --jobs 16 --resume"
+ }
+]

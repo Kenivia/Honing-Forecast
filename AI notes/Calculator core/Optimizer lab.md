@@ -70,10 +70,11 @@ python arena_data/lab/tools/queue.py iteration2/surrogate/a sur_a sur_a:algo=sur
 pnpm lab iteration2/surrogate/a
 ```
 
-- **`queue.py`** writes one job per set: `real_test` cold, 10 seeds; `real_income_test` chained, 3 seeds; `quick_dev`, `speed_test`, `advanced`, `free_taps`, `juice`, `small`, `large` cold, 3 seeds. `--sets` and `--filter` narrow it; `--seeds n` replaces the standard seeds. The whole list takes about 20–25 minutes a variant.
+- **`queue.py`** writes one job per set: `real_test` cold, 10 seeds; `real_income_test` chained, 3 seeds; `quick_dev`, `speed_test`, `advanced`, `free_taps`, `juice`, `small`, `large` cold, 3 seeds. `--sets` and `--filter` narrow it; `--seeds n` replaces the standard seeds. The whole list takes about 20–25 minutes a variant. It also knows (only through `--sets`) `speed_test10` and `choices_test`, and iteration 3's `real3_dev`/`_test` (cold) and `real3_income_*`, `real3_seq_*` (chained), all at 3 seeds.
 - **`pnpm lab`** runs the batch in order at below normal priority, and writes `<batch>_done.json` and `<batch>_run.log`.
   - **Queue format**: `[{name, cmd, note?}]`, shell commands run from the repo root. It is read again before each job, so jobs can be added while it runs.
   - **Started and ended by hand.** Ctrl-C stops the running job (the arena stops cleanly); the same command again goes on from it, since arena jobs carry `--resume`. `pnpm lab status <batch>` lists it.
+  - **No reads of `runs.sqlite` while a batch writes.** The database is in rollback-journal mode and the arena sets no busy timeout, so a long read held the lock at a commit and killed `a_gen` ("database is locked", then poisoned-mutex panics). Analyse between batches; the same command resumes.
   - **A plain trigger**: queue anything that is only CPU.
   - **Paths**: commands run under `cmd` on Windows, so an executable's path needs backslashes (`target\arena\bin\<snapshot>.exe`). The driver is the snapshot's own exe, so a build meanwhile cannot touch it.
 - **A variant** is `<label>:key=val,...`; any `Tuning` field can be set by name. `--filter` is a plain substring, not a regex.
@@ -151,6 +152,8 @@ Keep it to about 10 minutes. Anything longer is a batch.
 | `mem_a`, `mem_b` | The `memetic` investigation (new cut): its ablations, `fromsolve`, `mem_polish` in `solve`, with the kick loop and the surrogate loop in the same sessions. Both repeat `cut_a`. |
 | `cem_a`, `cem_b` | The `cem` investigation (new cut): its ablations, the order-polish cap, `solve`'s start, polish and exchanges inside it, `fromsolve` and `fromsolve+ownstart`; in `cem_b` the kick loop with `mem_polish` and the surrogate loop in the same sessions. Both repeat `cut_a`. |
 | `lns_a`, `lns_b` | The `lns` investigation (new cut): its ablations, `fromsolve`, `mempolish`, `insert`; the rebuild kick in `solve` (`kick_types` `rebuild`) alone and with the kick loop and `mem_polish`; `solve` + `mem_polish`, the kick loop with `mem_polish` and the surrogate loop in the same sessions. Both repeat `cut_a`. |
+| `x10_a` | The `x10` investigation: every variant at `streak_length=10` (`solve` 12k–192k, shorter chains, `agree_exit=3,unanimous=2`, the kick loop). Its best known must be taken over streak-10 runs only. |
+| `bud_a` | Iteration 3's `budget` investigation (code of 530bcd35, repeats `cut_a`): `solve` from `max_iters` 0 to 48k on the `real3_*` sets, KMR+Ls as the reference, `quick` and `carry_stall=1` on the chained ones. |
 | `fin_a` | Iteration 2's final batch (`iteration2/report/runs`): `solve` 48k and 96k, the kick loop with `mem_polish` (with `rebuild`, `rebuildempty`, `rebuildprice`), the surrogate loop (plain and screened), the two together, memetic's and cem's runs from `solve`'s endpoint; one session per set, `large` at 10 seeds. Repeats every stored snapshot it shares runs with. |
 
 The re-run in detail, about 22 hours at 16 jobs, each set one session:
@@ -165,3 +168,4 @@ Iteration 1's first run was at 16 `response_points`, where the best response pic
 
 - **Iteration 1 (batch 1):** archetypes `price`, `surrogate`, `memetic`, `cem` and `lns`, written from scratch without reading the optimizer. The building blocks offered: the evaluator, `shadow_prices`, and the best response (`response.rs`). Brief in `iteration1/brief.md`, write-ups in `iteration1/attempts/`.
 - **Iteration 2:** reviews of each prototype in turn, one investigation each. Status in `iteration2/brief.md`.
+- **Iteration 3:** good results per CPU second on real cases, judged on the `real3_*` sets (real characters, both streak lengths, rosters split 50/50). First the curve of accuracy against CPU per kind of run, far below `solve`'s 48k, then cheap heuristics and categories. Brief and status in `iteration3/brief.md`. It reports how badly runs miss as well as hit: RMS gap and the mean of log10(gap + 0.001).
