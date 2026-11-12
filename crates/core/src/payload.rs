@@ -124,6 +124,7 @@ impl StateBundle {
 
             adv_cache,
             gold_memo: AHashMap::new(),
+            coarse_memo: Default::default(),
             special_done: None,
             tuning: Default::default(),
         };

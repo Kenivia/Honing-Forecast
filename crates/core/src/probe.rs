@@ -39,6 +39,8 @@ pub struct ProbeData {
     pub counts: [i64; COUNTER_NAMES.len()],
     /// wall seconds a solve spent evaluating; the rest of it is the optimizer deciding
     pub eval_s: f64,
+    /// wall seconds by phase of a solve (`Probe::time`)
+    pub phases: Vec<(&'static str, f64)>,
     pub rows: Vec<(i64, &'static str, f64)>,
     pub texts: Vec<(i64, &'static str, String)>,
 }
@@ -90,6 +92,19 @@ impl Probe {
         #[cfg(feature = "trace")]
         {
             self.data.eval_s += _since.elapsed().as_secs_f64();
+        }
+    }
+
+    /// what ran since the clock was taken was the phase `key`, summed by key
+    #[inline(always)]
+    pub fn time(&mut self, _key: &'static str, _since: Clock) {
+        #[cfg(feature = "trace")]
+        {
+            let seconds = _since.elapsed().as_secs_f64();
+            match self.data.phases.iter_mut().find(|(key, _)| *key == _key) {
+                Some(entry) => entry.1 += seconds,
+                None => self.data.phases.push((_key, seconds)),
+            }
         }
     }
 

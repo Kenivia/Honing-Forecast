@@ -233,6 +233,7 @@ impl StateBundle {
             special_cache: AHashMap::new(),
             adv_cache: AHashMap::new(),
             gold_memo: AHashMap::new(),
+            coarse_memo: Default::default(),
             special_done: None,
             tuning: self.tuning.clone(),
         };

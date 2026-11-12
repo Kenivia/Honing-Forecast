@@ -66,6 +66,16 @@ pub fn check_switches(tuning: &crate::tuning::Tuning) {
         ];
         assert!(kinds.contains(&kind), "no kick_types kind {kind}");
     }
+    assert!(
+        ["", "screen", "none"].contains(&tuning.chain_polish.as_str()),
+        "no chain_polish {}",
+        tuning.chain_polish
+    );
+    assert!(
+        ["", "all", "final"].contains(&tuning.chest_flip.as_str()),
+        "no chest_flip {}",
+        tuning.chest_flip
+    );
     if solves && tuning.mem_polish {
         off.extend(memetic::OFF);
         on.extend(memetic::ON);

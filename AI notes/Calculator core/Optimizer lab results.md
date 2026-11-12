@@ -38,6 +38,10 @@ What the lab has found, by topic. How the lab works is in `Optimizer lab.md`; wh
 | Kick loop, `mem_polish`, rebuild kick and the screened surrogate loop in one run (`solve` runs the kick loop, then the surrogate loop) | Candidate | `fin_a`: quick_dev +0.0022 (12 wins, 0 losses; 98.1), `large` +0.0094 (hit 51 → 68), real_test +0.0058, `speed_test` +0.0014 (below Ls alone, +0.0016), income +0.0002; reaches every basin of `What makes a result good`; no payload lost | x2.3–3.7 | `iteration2/report` 5 |
 | lns from `solve`'s endpoint (lab: `algo=lns,lab_effort=0.5,lab_on=fromsolve`) | Lab only; superseded by the rebuild kick | quick_dev +0.0006 (4, 0), regime sets to 100; no payload lost. The rebuild kick alone matches it at the same CPU and also takes `single_3375` | x1.47, `solve` included | `lns` report 4–5 |
 | Chest amounts from the grid plus 4 random draws | Candidate; `price` `chestboth` only, not in `solve` yet | Fixes `single_1104_serca_n1` and `single_1166_serca_n1` | None measurable | `price` report 7–8 |
+| Advanced polish within one value of the best: `adv_radius=1` | Candidate; in tree, off (0) | Every `real3_dev` payload ends the same to the digit | x0.83 / 0.77 the CPU at 12k (streak 1 / 10), most on 26+ upgrades | `iteration3/cold/report.md` §4 |
+| One coarse pass for every free tap outcome: `coarse_shared=true` | Candidate; in tree, off | Same accuracy on `real3_dev` and `real3_test`; error against the reference no larger | x0.68 the CPU at 12k (x0.55 on large rosters) | `cold` report §5 |
+| Each upgrade's coarse cells kept across evaluations: `coarse_cache=true` (with `coarse_shared`) | Candidate; in tree, off | Same accuracy; error as `coarse_shared`'s | x0.95 / 0.90 at 12k | `cold` report §6 |
+| `max_iters` by size: `size_power=0.5` (`size_ref` 16) | Candidate; in tree, off (0) | +0.01–0.03 mlog at equal CPU on dev and test; small payloads' tail to 48k's | x1.0–1.05 | `cold` report §6 |
 
 Against `solve` at 96k in the same batch the kick loop is ahead or level everywhere: real_test +0.0016, quick_dev +0.0008 (8 wins, 1 loss), `large` +0.0020 (1, 1), at x0.86–1.49 the CPU. At the old cut its `large` lead was +0.0073.
 
@@ -111,6 +115,13 @@ From iteration 3's `budget` (`iteration3/budget/report.md`, `bud_a` on the `real
 - **Size.** Payloads with 11+ upgrades take 80–85% of the CPU. Up to 10 upgrades, 3k is close to 48k; 26+ is hard even at 48k (mlog about -2.55).
 - **Carry.** A family-chain step scores and costs the same chained as cold (within 0.06 mlog); an income step after a week's income scores like step 0. `quick` and `carry_stall=1` are no better than a plain cut, and on income chains they drift worse step by step.
 - **Chests against plans.** `max_iters=0`'s big misses on real cases are mostly choice chests opened for the other main option (74 of 84 payloads missed by over 0.1% that have choice chests). The polishes change chests and plans one at a time, so neither move pays alone; tiny payloads miss by 3–9%. Generated sets rarely show this, so their cheap end is easier (`max_iters=0` -2.53 against -2.20).
+
+From iteration 3's `cold` (`iteration3/cold/report.md`, cold `real3` singles, snapshots `cold_a`–`cold_d`):
+
+- **x0.2–0.25 at 12k's accuracy.** 12k with `adv_radius=1,coarse_shared=true,coarse_cache=true` is x0.22 / 0.19 of 48k (streak 1 / 10) at -2.61 / -2.74 on dev (48k -2.79 / -2.84), x0.26 on test; that is what plain 12k had at x0.41. `size_power=0.5` adds 0.02. 16k with them is x0.26 / 0.24 at -2.66 / -2.77.
+- **Search knobs are on the curve of `max_iters`.** Screened or no chain polishes, fewer exchange amounts or rounds, `exchange_stop`, chain counts and size rules all land within about 0.02 mlog of it; only the evaluator's and the advanced polish's savings move it.
+- **The cheap end's misses on test are small payloads** (1–10 upgrades) that 4 chains of 3000–4000 miss on one seed in three, where 48k has 12 chains; `size_power` gives those more.
+- **Where a large run's time is now** (11+ upgrades, 12k with the three): evaluations 73–80%, the coarse pass 28–32% (binning the outcomes two thirds, convolving a third), reading outcomes off it 8%, their shapes 5–6%, the free tap DP 5–14%, memo lookups 5%.
 
 ## Open
 

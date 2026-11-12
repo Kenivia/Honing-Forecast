@@ -12,7 +12,7 @@ log = open(f'{stem}_run.log', encoding='utf-8').read().splitlines()
 # the log's sections, by the "== <job>" line the driver writes
 sections, cur = {}, None
 for line in log:
-    m = re.match(r'^== (\S+)$', line)
+    m = re.match(r'^== (\S+)', line)
     if m:
         cur = m.group(1)
         sections.setdefault(cur, [])

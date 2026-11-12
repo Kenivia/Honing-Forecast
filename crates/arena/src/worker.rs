@@ -231,6 +231,7 @@ pub fn run_job(job: &Job) {
 
                 let mut best = solved.best;
                 let eval_s = probe.data.eval_s;
+                let phases = probe.data.phases.clone();
                 let mut out = result(step, "best".to_string(), &tuning, &best, probe);
                 out.cpu_s = cpu_s;
                 out.wall_s = wall_s;
@@ -240,6 +241,10 @@ pub fn run_job(job: &Job) {
                     "AdvMiss".to_string(),
                     (best.adv_cache.len() - adv_known) as i64,
                 );
+                for (key, seconds) in &phases {
+                    out.counters
+                        .insert(format!("us_{key}"), (seconds * 1e6) as i64);
+                }
                 out.blob_bytes = solved.blob.len();
                 if let Some(spec) = &job.mc {
                     out.mc = check(&mut best, spec, &mut rng);

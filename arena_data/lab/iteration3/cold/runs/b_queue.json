@@ -1,0 +1,7 @@
+[
+ {
+  "name": "b_real3_dev",
+  "cmd": "target\\arena\\bin\\cold_b.exe --db arena_data/lab/runs.sqlite --set real3_dev run cold_b cold_b:max_iters=12000 cold_b:max_iters=6000,chains=2 cold_b:max_iters=12000,adv_radius=1 cold_b:max_iters=6000,chains=2,adv_radius=1 cold_b:max_iters=12000,adv_radius=2 cold_b:max_iters=12000,exchange_rank=12 cold_b:max_iters=6000,chains=2,exchange_rank=12 cold_b:max_iters=6000,chains=2,exchange_rank=12,exchange_stop=true cold_b:max_iters=12000,max_lattice_work=50000 cold_b:max_iters=12000,max_lattice_work=20000 cold_b:max_iters=12000,special_tol=0.0003 cold_b:max_iters=12000,max_memo_size=262144 cold_b:max_iters=12000,magic_number=0.25 cold_b:max_iters=6000,chains=2,magic_number=0.25 cold_b:max_iters=12000,adv_radius=1,exchange_stop=true cold_b:max_iters=12000,adv_radius=1,exchange_stop=true,chain_polish=screen cold_b:max_iters=16000,adv_radius=1,exchange_stop=true,chain_polish=screen cold_b:max_iters=8000,chains=2,adv_radius=1,exchange_stop=true cold_b:max_iters=6000,chains=2,adv_radius=1,exchange_stop=true cold_b:max_iters=24000,adv_radius=1,exchange_stop=true,chain_polish=screen cold_b:max_iters=0,adv_radius=1,exchange_stop=true,chest_flip=final cold_b:max_iters=12000,adv_radius=1,exchange_stop=true,exchange_rank=12 --mode cold --seeds 3 --jobs 16 --resume",
+  "note": "cold round 2: adv_radius, exchange_rank, evaluator knobs, schedule, stacks"
+ }
+]

@@ -1,0 +1,6 @@
+[
+ {
+  "name": "a_real3_dev",
+  "cmd": "target\\arena\\bin\\cold_a.exe --db arena_data/lab/runs.sqlite --set real3_dev run cold_a cold_a:max_iters=24000 cold_a:max_iters=12000 cold_a:max_iters=6000 cold_a:max_iters=6000,chains=2 cold_a:max_iters=3000 cold_a:max_iters=0 cold_a:max_iters=12000,chains=2 cold_a:max_iters=12000,chains=1 cold_a:max_iters=24000,chains=2 cold_a:max_iters=6000,chains=2,polish_rounds=1 cold_a:max_iters=6000,chains=2,response_polish=1 cold_a:max_iters=6000,chains=2,exchange_stop=true cold_a:max_iters=12000,exchange_stop=true cold_a:max_iters=12000,chain_polish=screen cold_a:max_iters=24000,chain_polish=screen cold_a:max_iters=12000,chain_polish=screen,polish_top=2 cold_a:max_iters=12000,chain_polish=screen,exchange_stop=true cold_a:max_iters=24000,chain_polish=screen,exchange_stop=true cold_a:max_iters=12000,chain_polish=none cold_a:max_iters=0,chest_flip=final cold_a:max_iters=0,chest_flip=all cold_a:max_iters=6000,chains=2,chest_flip=final cold_a:max_iters=12000,chain_polish=screen,chest_flip=final cold_a:chest_flip=final cold_a:max_iters=0,refine_rounds=1 cold_a:max_iters=6000,chains=2,refine_rounds=1 cold_a:max_iters=12000,chains=2,chain_polish=screen cold_a:max_iters=24000,chains=2,chain_polish=screen --mode cold --seeds 3 --jobs 16 --resume"
+ }
+]

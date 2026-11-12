@@ -210,6 +210,81 @@ fn chest_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64
     evals
 }
 
+/// From the best state, each stack with a choice opened all on each option but the one most of
+/// it is on, the normal upgrades re-planned by responses (two passes at most) before the metric
+/// decides: a plan built on one option's material otherwise never lets the chests move. The best
+/// of these is kept where it beats the best state. Returns what it took, in evaluations.
+fn chest_flip(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
+    let stacks: Vec<(String, usize)> = solver_bundle
+        .state_bundle
+        .prep_output
+        .chests
+        .iter()
+        .filter(|(_, chest)| chest.options.len() > 1 && chest.count > 0)
+        .map(|(key, chest)| (key.clone(), chest.options.len()))
+        .collect();
+    if stacks.is_empty() {
+        return 0;
+    }
+    let (essence, best_metric) = solver_bundle.best_n_states.peek_max().unwrap();
+    let (essence, best_metric) = (essence.clone(), *best_metric);
+    let state_bundle = &mut solver_bundle.state_bundle;
+    let normal: Vec<usize> = (0..state_bundle.upgrade_arr.len())
+        .filter(|&index| state_bundle.upgrade_arr[index].is_normal_honing)
+        .collect();
+    let mut work: f64 = 0.0;
+    let mut found: Option<(f64, StateEssence)> = None;
+    for (key, options) in &stacks {
+        let main = (0..*options)
+            .max_by_key(|&option| essence.chest_states[key][option])
+            .unwrap();
+        for to in (0..*options).filter(|&to| to != main) {
+            state_bundle.clone_from_essence(&essence, &best_metric);
+            let mut states = essence.chest_states.clone();
+            let state = states.get_mut(key).unwrap();
+            let count: i64 = state.iter().sum();
+            state.fill(0);
+            state[to] = count;
+            state_bundle.set_chest_state(&states);
+            state_bundle.metric = state_bundle.metric_router(probe);
+            work += 1.0;
+            for _ in 0..2 {
+                let before = state_bundle.metric;
+                for &index in &normal {
+                    work += respond_one(state_bundle, index, probe);
+                }
+                if state_bundle.metric <= before {
+                    break;
+                }
+            }
+            let beat = found
+                .as_ref()
+                .map_or(f64::from(best_metric), |found| found.0);
+            if state_bundle.metric > beat {
+                found = Some((state_bundle.metric, state_bundle.to_essence()));
+            }
+        }
+    }
+    if let Some((metric, essence)) = found {
+        my_push(
+            &mut solver_bundle.best_n_states,
+            essence,
+            OrderedFloat(metric),
+            solver_bundle.state_bundle.tuning.max_best_size,
+        );
+        probe.put("best", metric);
+    }
+    let (essence, best_metric) = solver_bundle.best_n_states.peek_max().unwrap();
+    solver_bundle
+        .state_bundle
+        .clone_from_essence(essence, best_metric);
+    solver_bundle.state_bundle.metric = solver_bundle.state_bundle.metric_router(probe);
+    solver_bundle
+        .prev_state
+        .my_clone_from(&solver_bundle.state_bundle);
+    work.ceil() as i64
+}
+
 /// One normal upgrade takes its best plan against the rest, where the metric agrees: the
 /// bundle's metric says whether it did. Returns what it took, in evaluations.
 fn respond_one(state_bundle: &mut StateBundle, index: usize, probe: &mut Probe) -> f64 {
@@ -403,6 +478,7 @@ fn adv_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
     let advanced: Vec<usize> = (0..state_bundle.upgrade_arr.len())
         .filter(|&index| !state_bundle.upgrade_arr[index].is_normal_honing)
         .collect();
+    let radius = state_bundle.tuning.adv_radius;
     let mut evals: i64 = 0;
     for _ in 0..if advanced.is_empty() { 0 } else { 3 } {
         let before = state_bundle.metric;
@@ -410,14 +486,30 @@ fn adv_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
             for entry in 0..state_bundle.upgrade_arr[index].state.len() {
                 let kept = state_bundle.upgrade_arr[index].state[entry][0];
                 let mut best = kept;
-                for value in (0..=MAX_ADV_STATE).filter(|&value| value != kept) {
-                    let state = &mut state_bundle.upgrade_arr[index].state;
-                    state[entry][0] = value;
-                    state.update_hash();
-                    let metric = state_bundle.metric_router(probe);
-                    evals += 1;
-                    if metric > state_bundle.metric {
-                        (state_bundle.metric, best) = (metric, value);
+                // every value, or a walk within `adv_radius` of the best so far
+                let mut tried: u32 = 1 << kept;
+                loop {
+                    let center = best;
+                    let (low, high) = match radius {
+                        0 => (0, MAX_ADV_STATE),
+                        r => (center.saturating_sub(r), (center + r).min(MAX_ADV_STATE)),
+                    };
+                    for value in low..=high {
+                        if tried >> value & 1 == 1 {
+                            continue;
+                        }
+                        tried |= 1 << value;
+                        let state = &mut state_bundle.upgrade_arr[index].state;
+                        state[entry][0] = value;
+                        state.update_hash();
+                        let metric = state_bundle.metric_router(probe);
+                        evals += 1;
+                        if metric > state_bundle.metric {
+                            (state_bundle.metric, best) = (metric, value);
+                        }
+                    }
+                    if radius == 0 || best == center {
+                        break;
                     }
                 }
                 let state = &mut state_bundle.upgrade_arr[index].state;
@@ -452,12 +544,25 @@ fn polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
     let mut cost = 0;
     for _ in 0..tuning.polish_rounds {
         let before = *solver_bundle.best_n_states.peek_max().unwrap().1;
+        let clock = probe.clock();
         cost += order_polish(solver_bundle, probe);
+        probe.time("order", clock);
         if tuning.response_polish > 0 {
+            let clock = probe.clock();
             cost += response_polish(solver_bundle, tuning.response_polish, probe);
+            probe.time("resp", clock);
         }
+        let clock = probe.clock();
         cost += adv_polish(solver_bundle, probe);
+        probe.time("adv", clock);
+        let clock = probe.clock();
         cost += chest_polish(solver_bundle, probe);
+        probe.time("chest", clock);
+        if tuning.chest_flip == "all" {
+            let clock = probe.clock();
+            cost += chest_flip(solver_bundle, probe);
+            probe.time("flip", clock);
+        }
         if *solver_bundle.best_n_states.peek_max().unwrap().1 <= before {
             break;
         }
@@ -509,11 +614,17 @@ pub fn solve<R: Rng>(
             blob: Vec::new(),
         };
     }
-    let tuning = state_bundle.tuning.clone();
+    let given_tuning = state_bundle.tuning.clone();
+    let mut tuning = given_tuning.clone();
+    let clock = probe.clock();
+    let upgrades = state_bundle.upgrade_arr.len() as f64;
+    if tuning.size_power > 0.0 {
+        let scale = (tuning.size_ref / upgrades).powf(tuning.size_power);
+        tuning.max_iters = ((tuning.max_iters as f64 * scale) as i64).min(tuning.size_cap);
+    }
     // A chain needs longer the more upgrades there are, and what is left over is better spent
     // on more chains than on longer ones.
-    let chain_iters =
-        (tuning.chain_iters_per_upgrade * state_bundle.upgrade_arr.len() as f64) as i64;
+    let chain_iters = (tuning.chain_iters_per_upgrade * upgrades) as i64;
     let chains = match tuning.chains {
         0 => (tuning.max_iters
             / chain_iters
@@ -606,6 +717,7 @@ pub fn solve<R: Rng>(
     let stall = if quick { 1 } else { tuning.carry_stall };
     let warm = warms.into_iter().next();
     let mut stalled = 0;
+    probe.time("start", clock);
     for chain in 0..chains {
         let floor = results
             .iter()
@@ -622,7 +734,20 @@ pub fn solve<R: Rng>(
             start.tuning.max_iters =
                 (tuning.max_iters as f64 / chains as f64 * tuning.carry_iters) as i64;
         }
+        match tuning.chain_polish.as_str() {
+            "screen" => {
+                start.tuning.polish_rounds = 1;
+                start.tuning.response_polish = 1;
+            }
+            "none" => {
+                start.tuning.polish_rounds = 0;
+                start.tuning.response_polish = 0;
+            }
+            _ => {}
+        }
+        let clock = probe.clock();
         results.push(anneal(rng, &mut start, probe, chain, chains, floor));
+        probe.time("chains", clock);
         // chains that end on the same state are unlikely to be beaten by another, and so is a
         // carried plan that the last few chains did not better
         let top = results
@@ -642,10 +767,25 @@ pub fn solve<R: Rng>(
             break;
         }
     }
+    let clock = probe.clock();
     results.sort_by(|a, b| b.metric.total_cmp(&a.metric));
+    if !tuning.chain_polish.is_empty() {
+        // the chains were polished in part or not at all: the best few in full
+        for result in results.iter_mut().take(tuning.polish_top) {
+            result.tuning = tuning.clone();
+            result.tuning.max_iters = 0;
+            *result = anneal(rng, result, probe, 1, 1, f64::NEG_INFINITY);
+        }
+        results.sort_by(|a, b| b.metric.total_cmp(&a.metric));
+    }
     let mut best = results[0].clone();
+    let merge_clock = probe.clock();
     let merged = tuning.merge && merge(&mut best, &results[1..], probe);
+    probe.time("merge", merge_clock);
     refine(rng, &mut best, merged, probe);
+    if tuning.chest_flip == "final" {
+        flip_final(rng, &mut best, probe);
+    }
     if tuning.mem_polish {
         super::lab::memetic::polish_state(rng, &mut best, probe);
     }
@@ -655,7 +795,8 @@ pub fn solve<R: Rng>(
     if tuning.sur_stall > 0 {
         sur_loop(rng, &mut best, probe);
     }
-    best.tuning = tuning;
+    probe.time("post", clock);
+    best.tuning = given_tuning;
     // the other plans the chains ended on, for a run that goes on from this one
     let mut elites: Vec<&StateBundle> = Vec::new();
     for result in &results {
@@ -681,8 +822,10 @@ pub fn solve<R: Rng>(
 /// exchanges move anything.
 fn refine<R: Rng>(rng: &mut R, best: &mut StateBundle, mut moved: bool, probe: &mut Probe) {
     let exchanges = best.tuning.exchange;
-    for _ in 0..3 {
+    for _ in 0..best.tuning.refine_rounds {
+        let clock = probe.clock();
         moved |= exchanges && exchange(best, probe);
+        probe.time("exchange", clock);
         if !moved {
             break;
         }
@@ -693,6 +836,26 @@ fn refine<R: Rng>(rng: &mut R, best: &mut StateBundle, mut moved: bool, probe: &
             break;
         }
         moved = false;
+    }
+}
+
+/// `chest_flip` on the best state, then the polishes where that gained.
+fn flip_final<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
+    let chests = &best.prep_output.chests;
+    if !chests.values().any(|c| c.options.len() > 1 && c.count > 0) {
+        return;
+    }
+    let before = best.metric;
+    best.tuning.max_iters = 0;
+    let mut solver_bundle = start_solver(rng, best, probe);
+    let clock = probe.clock();
+    chest_flip(&mut solver_bundle, probe);
+    probe.time("flip", clock);
+    let (essence, metric) = solver_bundle.best_n_states.peek_max().unwrap();
+    if f64::from(*metric) > before + before.abs() * 1e-12 {
+        let mut flipped = solver_bundle.state_bundle.clone();
+        flipped.clone_from_essence(essence, metric);
+        *best = anneal(rng, &mut flipped, probe, 1, 1, f64::NEG_INFINITY);
     }
 }
 
@@ -938,69 +1101,47 @@ fn exchange(best: &mut StateBundle, probe: &mut Probe) -> bool {
             }
         }
     }
-    let width = |model: &Model, stride: usize| {
-        model.pools[model
-            .strides
-            .iter()
-            .position(|&this| this == stride)
-            .unwrap()]
-        .len()
-            + 1
-    };
-    for _ in 0..2 {
+    for _ in 0..best.tuning.exchange_rounds {
         let before = best.metric;
         for users in users.values().filter(|users| users.len() > 1) {
-            for &(from, from_stride, from_option) in users {
-                for &(to, to_stride, to_option) in users.iter().filter(|user| user.0 != from) {
-                    let (a, b) = (&models[from], &models[to]);
-                    let (wide_a, wide_b) = (width(a, from_stride), width(b, to_stride));
-                    for amount in (0..7).map(|power| block << power) {
-                        let kept = (
-                            best.upgrade_arr[normal[from]].state.payload.clone(),
-                            best.upgrade_arr[normal[to]].state.payload.clone(),
-                        );
-                        let mut plan_a = a.canonical(&a.indices(&kept.0));
-                        let mut plan_b = b.canonical(&b.indices(&kept.1));
-                        let given: Vec<usize> = (0..a.len)
-                            .rev()
-                            .filter(|&tap| {
-                                plan_a[tap] / from_stride % wide_a * from_stride == from_option
-                            })
-                            .take(amount)
-                            .collect();
-                        let (pity, by_chance) = b.pity(&plan_b);
-                        let taken: Vec<usize> = (0..pity - !by_chance as usize)
-                            .filter(|&tap| plan_b[tap] / to_stride % wide_b == 0)
-                            .take(amount)
-                            .collect();
-                        if given.len() < amount || taken.len() < amount {
+            let pairs: Vec<(usize, usize)> = (0..users.len())
+                .flat_map(|i| {
+                    (0..users.len())
+                        .filter(move |&j| users[j].0 != users[i].0)
+                        .map(move |j| (i, j))
+                })
+                .collect();
+            for (i, j) in pairs {
+                let ((from, from_stride, from_option), (to, to_stride, to_option)) =
+                    (users[i], users[j]);
+                for amount in (0..best.tuning.exchange_powers).map(|power| block << power) {
+                    let kept = (
+                        best.upgrade_arr[normal[from]].state.payload.clone(),
+                        best.upgrade_arr[normal[to]].state.payload.clone(),
+                    );
+                    let (Some(plan_a), Some(plan_b)) = (
+                        shifted(
+                            &models[from],
+                            &kept.0,
+                            from_stride,
+                            from_option,
+                            amount,
+                            true,
+                        ),
+                        shifted(&models[to], &kept.1, to_stride, to_option, amount, false),
+                    ) else {
+                        break;
+                    };
+                    put(best, normal[from], plan_a, block);
+                    put(best, normal[to], plan_b, block);
+                    let metric = best.metric_router(probe);
+                    if metric > best.metric + best.metric.abs() * 1e-12 {
+                        best.metric = metric;
+                    } else {
+                        best.upgrade_arr[normal[from]].state.update_payload(kept.0);
+                        best.upgrade_arr[normal[to]].state.update_payload(kept.1);
+                        if best.tuning.exchange_stop {
                             break;
-                        }
-                        given.iter().for_each(|&tap| plan_a[tap] -= from_option);
-                        taken.iter().for_each(|&tap| plan_b[tap] += to_option);
-                        best.upgrade_arr[normal[from]]
-                            .state
-                            .update_payload(a.plan(&plan_a));
-                        best.upgrade_arr[normal[to]]
-                            .state
-                            .update_payload(b.plan(&plan_b));
-                        if block > 1 {
-                            for index in [normal[from], normal[to]] {
-                                let upgrade = &mut best.upgrade_arr[index];
-                                upgrade.state.snap_to_block(
-                                    block,
-                                    upgrade.piece_type_usize,
-                                    upgrade.upgrade_index,
-                                    &best.prep_output.juice_info,
-                                );
-                            }
-                        }
-                        let metric = best.metric_router(probe);
-                        if metric > best.metric + best.metric.abs() * 1e-12 {
-                            best.metric = metric;
-                        } else {
-                            best.upgrade_arr[normal[from]].state.update_payload(kept.0);
-                            best.upgrade_arr[normal[to]].state.update_payload(kept.1);
                         }
                     }
                 }
@@ -1012,6 +1153,63 @@ fn exchange(best: &mut StateBundle, probe: &mut Probe) -> bool {
     }
     best.metric = best.metric_router(probe);
     best.metric > start
+}
+
+/// The plan with `amount` taps of one option of a pool given up from its end, or taken on its
+/// first free taps before the pity; None where there are fewer.
+fn shifted(
+    model: &Model,
+    payload: &[OneState],
+    stride: usize,
+    option: usize,
+    amount: usize,
+    give: bool,
+) -> Option<Vec<OneState>> {
+    let pool = model
+        .strides
+        .iter()
+        .position(|&this| this == stride)
+        .unwrap();
+    let wide = model.pools[pool].len() + 1;
+    let mut plan = model.canonical(&model.indices(payload));
+    let taps: Vec<usize> = if give {
+        (0..model.len)
+            .rev()
+            .filter(|&tap| plan[tap] / stride % wide * stride == option)
+            .take(amount)
+            .collect()
+    } else {
+        let (pity, by_chance) = model.pity(&plan);
+        (0..pity - !by_chance as usize)
+            .filter(|&tap| plan[tap] / stride % wide == 0)
+            .take(amount)
+            .collect()
+    };
+    if taps.len() < amount {
+        return None;
+    }
+    for tap in taps {
+        if give {
+            plan[tap] -= option;
+        } else {
+            plan[tap] += option;
+        }
+    }
+    Some(model.plan(&plan))
+}
+
+/// Puts the plan on the upgrade, on the streak grid.
+fn put(best: &mut StateBundle, index: usize, plan: Vec<OneState>, block: usize) {
+    best.upgrade_arr[index].state.update_payload(plan);
+    if block > 1 {
+        let upgrade = &mut best.upgrade_arr[index];
+        upgrade.state.snap_to_block(
+            block,
+            upgrade.piece_type_usize,
+            upgrade.upgrade_index,
+            &best.prep_output.juice_info,
+        );
+    }
 }
 
 /// One chain, polished: the best state it saw. `chain` of `chains` and `floor`, the best of the
@@ -1044,6 +1242,7 @@ fn anneal<R: Rng>(
 
     let mut next_polish: i64 = 0;
     let mut next_response: i64 = tuning.response_every;
+    let clock = probe.clock();
     while eqv_wall_time_iters < tuning.max_iters {
         probe.at(offset + eqv_wall_time_iters + 1);
         if tuning.chest_polish_every > 0 && eqv_wall_time_iters >= next_polish {
@@ -1141,8 +1340,11 @@ fn anneal<R: Rng>(
         }
     }
     let _ = chains;
+    probe.time("moves", clock);
 
+    let clock = probe.clock();
     polish(&mut solver_bundle, probe);
+    probe.time("polish", clock);
     solver_bundle.state_bundle.clone_from_essence(
         &solver_bundle.best_n_states.peek_max().unwrap().0,
         solver_bundle.best_n_states.peek_max().unwrap().1,

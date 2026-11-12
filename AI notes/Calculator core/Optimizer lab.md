@@ -154,6 +154,10 @@ Keep it to about 10 minutes. Anything longer is a batch.
 | `lns_a`, `lns_b` | The `lns` investigation (new cut): its ablations, `fromsolve`, `mempolish`, `insert`; the rebuild kick in `solve` (`kick_types` `rebuild`) alone and with the kick loop and `mem_polish`; `solve` + `mem_polish`, the kick loop with `mem_polish` and the surrogate loop in the same sessions. Both repeat `cut_a`. |
 | `x10_a` | The `x10` investigation: every variant at `streak_length=10` (`solve` 12k–192k, shorter chains, `agree_exit=3,unanimous=2`, the kick loop). Its best known must be taken over streak-10 runs only. |
 | `bud_a` | Iteration 3's `budget` investigation (code of 530bcd35, repeats `cut_a`): `solve` from `max_iters` 0 to 48k on the `real3_*` sets, KMR+Ls as the reference, `quick` and `carry_stall=1` on the chained ones. |
+| `cold_a` | Iteration 3's `cold` investigation (repeats `bud_a`): cold `real3_dev` singles at x0.2–0.25 of 48k: chain counts, `chain_polish`, `chest_flip`, the exchange's loops. Runs carry the time by phase as `us_*` counters (`iteration3/cold/report.md` §1). |
+| `cold_b` | `cold`'s round 2 (repeats `cold_a`): `adv_radius`, `exchange_rank`, evaluator knobs (`max_lattice_work`, `special_tol`, `max_memo_size`), `magic_number`, and stacks with `exchange_stop` (`iteration3/cold/report.md` §4). |
+| `cold_c` | `cold`'s round 3 (repeats `cold_b`): `coarse_shared`, every free tap outcome's coarse lattice in one pass (`iteration3/cold/report.md` §5). |
+| `cold_d` | `cold`'s round 4 (repeats `cold_c`): `coarse_cache`, `size_power`/`size_ref`/`size_cap`, `min_chains` (since removed, with `exchange_rank` and `exchange_flat`; the tree repeats `cold_d`) (`iteration3/cold/report.md` §6). |
 | `fin_a` | Iteration 2's final batch (`iteration2/report/runs`): `solve` 48k and 96k, the kick loop with `mem_polish` (with `rebuild`, `rebuildempty`, `rebuildprice`), the surrogate loop (plain and screened), the two together, memetic's and cem's runs from `solve`'s endpoint; one session per set, `large` at 10 seeds. Repeats every stored snapshot it shares runs with. |
 
 The re-run in detail, about 22 hours at 16 jobs, each set one session:

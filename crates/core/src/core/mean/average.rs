@@ -1,4 +1,5 @@
 use crate::constants::{FLOAT_TOL, float_tol};
+use crate::core::mean::CoarseMemo;
 use crate::core::probability::cumulants::KsTuple;
 use crate::core::probability::shape::Shape;
 use crate::probe::{Counter, Probe};
@@ -25,7 +26,7 @@ fn edgeworth_leftover(at_zero: KsTuple, x: f64, span: f64) -> f64 {
         - span * span / 12.0 * normal_dist.pdf(z) / sd
 }
 
-fn mix(a: u64, b: u64) -> u64 {
+pub(crate) fn mix(a: u64, b: u64) -> u64 {
     let mut x = a.wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ b;
     x ^= x >> 32;
     x = x.wrapping_mul(0xD6E8_FEB8_6659_FD93);
@@ -64,6 +65,7 @@ impl StateBundle {
             Vec::new()
         };
         let tuning_key = self.tuning.evaluator_key();
+        let mut coarse = std::mem::take(&mut self.coarse_memo);
         let mut total_gold: f64 = 0.0;
         let plan_bands = &self.prep_output.bands[self.prep_output.optimizer_plan];
         for (support_index, thresh_price_pairs) in plan_bands.iter().enumerate() {
@@ -74,10 +76,12 @@ impl StateBundle {
                 thresh_price_pairs,
                 sums.get(support_index).map(|sums| &sums[..]),
                 tuning_key,
+                self.tuning.coarse_cache.then_some(&mut coarse),
                 probe,
             );
         }
         self.gold_memo = memo;
+        self.coarse_memo = coarse;
 
         total_gold
     }
@@ -117,6 +121,7 @@ impl StateBundle {
                     bands,
                     sums.get(support_index).map(|sums| &sums[..]),
                     tuning_key,
+                    None,
                     probe,
                 );
                 gold_breakdown[plan_index][support_index] += this;
@@ -148,6 +153,7 @@ impl StateBundle {
         thresh_price_pairs: &[(f64, f64)],
         sums: Option<&[u64]>,
         tuning_key: u64,
+        coarse: Option<&mut CoarseMemo>,
         probe: &mut Probe,
     ) -> f64 {
         // what the key says about everything but the upgrades
@@ -172,7 +178,7 @@ impl StateBundle {
         let table = if needs_probability {
             let thresholds: SmallVec<[f64; 4]> =
                 thresh_price_pairs.iter().map(|pair| pair.0).collect();
-            self.lattice_table(support_index, &missing, &thresholds, probe)
+            self.lattice_table_with(support_index, &missing, &thresholds, coarse, probe)
         } else {
             vec![None; missing.len()]
         };

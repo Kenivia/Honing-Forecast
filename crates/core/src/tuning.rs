@@ -31,6 +31,12 @@ pub struct Tuning {
     pub coarse_cells: f64,
     /// multiplications a coarse lattice may take before the Edgeworth series answers instead
     pub max_coarse_work: usize,
+    /// a material's coarse lattices for every free tap outcome in one pass from the last upgrade
+    /// back, on the finest of their steps, in place of one pass each
+    pub coarse_shared: bool,
+    /// with `coarse_shared`: steps on a ladder of eighth powers of two (finer by up to 9%), so an
+    /// upgrade's grid cells, kept by its state, last from one evaluation to the next
+    pub coarse_cache: bool,
     /// free tap outcomes under this chance, times the chance of any but the likeliest outcome,
     /// are not evaluated (`StateBundle::skip_weights`)
     pub special_tol: f64,
@@ -83,6 +89,20 @@ pub struct Tuning {
     pub chains: usize,
     pub chain_iters_per_upgrade: f64,
     pub chain_iters_min: i64,
+    /// `max_iters` times (`size_ref` / upgrades) to this power, at most `size_cap`; 0 for the same
+    /// at every size
+    pub size_power: f64,
+    pub size_ref: f64,
+    pub size_cap: i64,
+    /// the polish each chain ends on: empty for the full one, `screen` for one round with one pass
+    /// of responses, `none` for none; with either of those the best `polish_top` results then
+    /// get the full one
+    pub chain_polish: String,
+    pub polish_top: usize,
+    /// each stack with a choice opened all on another option, the normal upgrades re-planned by
+    /// responses before the metric decides (`chest_flip`): empty for never, `all` in every polish,
+    /// `final` once on the best state after the chains, polished in full where it gains
+    pub chest_flip: String,
     /// stop once this many chains have ended on the same best; 0 for never
     pub agree_exit: usize,
     /// stop once this many results have ended on the same best and none elsewhere; 0 for never
@@ -93,6 +113,16 @@ pub struct Tuning {
     pub exchange: bool,
     /// and so under a streak length, a block at a time
     pub exchange_blocks: bool,
+    /// passes of the exchanges while one moves; amounts tried, doubling from one tap or block;
+    /// rounds of exchanges and polishes after the chains while they move
+    pub exchange_rounds: usize,
+    pub exchange_powers: usize,
+    pub refine_rounds: usize,
+    /// a pair's amounts stop at the first that does not gain
+    pub exchange_stop: bool,
+    /// the advanced polish walks each entry within this many values of its best so far, in place
+    /// of trying every value; 0 for every value
+    pub adv_radius: usize,
     /// the least share of moves that change the free tap order, while there is a budget
     pub special_floor: f64,
     /// a move of the free tap order puts an upgrade where a free tap can get to
@@ -164,6 +194,8 @@ impl Default for Tuning {
             max_memo_size: 1 << 16,
             coarse_cells: 8.0,
             max_coarse_work: 20_000_000,
+            coarse_shared: false,
+            coarse_cache: false,
             special_tol: 1e-4,
 
             max_iters: 48000,
@@ -191,11 +223,22 @@ impl Default for Tuning {
             chains: 0,
             chain_iters_per_upgrade: 250.0,
             chain_iters_min: 4000,
+            size_power: 0.0,
+            size_ref: 16.0,
+            size_cap: 48000,
+            chain_polish: String::new(),
+            polish_top: 1,
+            chest_flip: String::new(),
             agree_exit: 5,
             unanimous: 3,
             merge: true,
             exchange: true,
             exchange_blocks: true,
+            exchange_rounds: 2,
+            exchange_powers: 7,
+            refine_rounds: 3,
+            exchange_stop: false,
+            adv_radius: 0,
             special_floor: 0.2,
             order_reach: true,
             greedy_order: true,
@@ -251,6 +294,12 @@ impl Tuning {
         )
             .hash(&mut hasher);
         self.max_coarse_work.hash(&mut hasher);
+        if self.coarse_shared {
+            true.hash(&mut hasher);
+        }
+        if self.coarse_cache {
+            2u8.hash(&mut hasher);
+        }
         hasher.finish()
     }
 }

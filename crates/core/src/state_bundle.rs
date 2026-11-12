@@ -1,5 +1,6 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use crate::chest::ChestStates;
+use crate::core::mean::CoarseMemo;
 use crate::parser::PreparationOutput;
 use crate::probe::Probe;
 use crate::state::{OneState, State};
@@ -38,6 +39,9 @@ pub struct StateBundle {
     /// one material's average gold under one free tap outcome, by what it was made from
     #[serde(skip)]
     pub gold_memo: AHashMap<u64, f64>,
+
+    #[serde(skip)]
+    pub coarse_memo: CoarseMemo,
 
     #[serde(skip)]
     pub tuning: Tuning,
@@ -111,6 +115,7 @@ impl StateBundle {
             special_cache: AHashMap::new(),
             adv_cache: AHashMap::new(),
             gold_memo: AHashMap::new(),
+            coarse_memo: CoarseMemo::default(),
             special_done: None,
             tuning: Tuning::default(),
         };

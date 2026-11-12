@@ -1,0 +1,12 @@
+[
+ {
+  "name": "d_real3_dev",
+  "cmd": "target\\arena\\bin\\cold_d.exe --db arena_data/lab/runs.sqlite --set real3_dev run cold_d cold_d:max_iters=12000,adv_radius=1,coarse_shared=true cold_d:max_iters=20000,adv_radius=1,coarse_shared=true,coarse_cache=true cold_d:max_iters=16000,adv_radius=1,coarse_shared=true,coarse_cache=true cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true cold_d:max_iters=8000,adv_radius=1,coarse_shared=true,coarse_cache=true,min_chains=2 cold_d:max_iters=16000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5 cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5 cold_d:max_iters=8000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5 cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=1 cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,min_chains=2 cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5,min_chains=2 cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=1,min_chains=2 --mode cold --seeds 3 --jobs 16 --resume",
+  "note": "cold round 4: coarse_cache on the max_iters curve, max_iters by size (size_power), min_chains 2"
+ },
+ {
+  "name": "d_real3_test",
+  "cmd": "target\\arena\\bin\\cold_d.exe --db arena_data/lab/runs.sqlite --set real3_test run cold_d cold_d:max_iters=16000,adv_radius=1,coarse_shared=true,coarse_cache=true cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true cold_d:max_iters=16000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5 cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5 --mode cold --seeds 3 --jobs 16 --resume",
+  "note": "cold round 4 finalists on the held-out set"
+ }
+]

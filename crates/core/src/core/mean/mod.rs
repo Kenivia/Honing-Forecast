@@ -2,3 +2,5 @@
 pub mod average;
 mod lattice;
 mod special;
+
+pub use lattice::CoarseMemo;
