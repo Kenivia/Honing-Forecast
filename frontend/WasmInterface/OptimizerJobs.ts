@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { reactive, ref } from "vue";
 import type { CharProfile } from "@/Stores/CharacterProfile";
 import { states_payload, type Payload } from "./PayloadBuilder";
 import { create_worker_bundle } from "./WorkerBundle";
@@ -56,6 +56,14 @@ const running = new Set<string>();
 let wanted = new Map<string, Job[]>();
 const workers = [create_worker_bundle(), create_worker_bundle()];
 const idle = workers.map(() => true);
+// the worker each running optimizer is on; null once on to its histogram
+const optimizing = reactive(new Map<string, number | null>());
+
+export function percent_done(hash: string) {
+  const at = optimizing.get(hash);
+  if (at === undefined) return 0;
+  return at === null ? 100 : workers[at].est_progress_percentage;
+}
 
 const count = () => (jobs_left.value = queue.length + running.size);
 
@@ -72,6 +80,7 @@ export function stop_jobs() {
   queue = [];
   wanted = new Map();
   running.clear();
+  optimizing.clear();
   workers.forEach((worker, at) => {
     worker.cancel();
     idle[at] = true;
@@ -87,10 +96,12 @@ function next(at: number) {
   const worker = workers[at];
   idle[at] = false;
   running.add(job.hash);
+  optimizing.set(job.hash, at);
   count();
   // a failed run is dropped, not retried
   const done = (out: any, state: any) => {
     if (!running.delete(job.hash)) return;
+    optimizing.delete(job.hash);
     if (out)
       for (const one of new Set([job, ...(wanted.get(job.hash) ?? [])]))
         one.store(out, state);
@@ -106,6 +117,7 @@ function next(at: number) {
       if (!state) return done(null, null);
       // interim states come while it is still busy
       if (worker.status !== "idle") return;
+      optimizing.set(job.hash, null);
       worker.debounced_start(
         WasmOp.Histogram,
         states_payload(job.payload, job.profile, state),

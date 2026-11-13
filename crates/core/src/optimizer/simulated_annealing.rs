@@ -7,7 +7,6 @@ use crate::js_interface::send_progress;
 use crate::probe::Probe;
 use crate::state_bundle::StateBundle;
 use crate::state_bundle::StateEssence;
-#[cfg(feature = "wasm")]
 use crate::timer::Timer;
 
 use crate::advanced_honing::utils::MAX_ADV_STATE;
@@ -74,30 +73,44 @@ fn upgrade_costs(state_bundle: &StateBundle) -> Vec<f64> {
     weights
 }
 
-/// Sends the progress at most once a second, with the best state on the same tick but only once
-/// this chain beats the ones before. `last` is when each was last sent.
 #[cfg(feature = "wasm")]
-fn maybe_send_wasm_progress(
-    done: f64,
+const TICK_SEC: f64 = 0.333;
+// a state starts a histogram on the page, so it goes less often
+#[cfg(feature = "wasm")]
+const STATE_SEC: f64 = 1.0;
+// the share of the progress shown that the chains fill; the rest waits for the final result
+#[cfg(feature = "wasm")]
+const CHAINS_PCT: f64 = 67.67;
+
+/// The progress of one solve, shared by its chains: one timer, `last` is when the progress and
+/// a state were last sent, `floor` the best of the chains before the current one.
+#[cfg_attr(not(feature = "wasm"), allow(dead_code))]
+struct Report {
+    timer: Timer,
+    last: [f64; 2],
+    started: bool,
+    chains: i64,
     floor: f64,
-    solver_bundle: &mut SolverStateBundle,
-    timer: &Timer,
-    last: &mut [f64; 2],
-) {
-    let elapsed = timer.elapsed_sec();
-    if elapsed - last[0] < 1.0 {
+}
+
+/// Sends the progress at most once a tick, with the best state at most once a second but only once
+/// this chain beats the ones before.
+#[cfg(feature = "wasm")]
+fn maybe_send_wasm_progress(done: f64, solver_bundle: &mut SolverStateBundle, report: &mut Report) {
+    let elapsed = report.timer.elapsed_sec();
+    if elapsed - report.last[0] < TICK_SEC {
         return;
     }
-    last[0] = elapsed;
-    let pct = (100.0 * done).clamp(0.01, 100.0);
+    report.last[0] = elapsed;
+    let pct = (CHAINS_PCT * done).clamp(0.01, CHAINS_PCT);
 
-    if elapsed - last[1] < 1.0
-        || f64::from(*solver_bundle.best_n_states.peek_max().unwrap().1) <= floor
+    if elapsed - report.last[1] < STATE_SEC
+        || f64::from(*solver_bundle.best_n_states.peek_max().unwrap().1) <= report.floor
     {
         send_progress(None, pct);
         return;
     }
-    last[1] = elapsed;
+    report.last[1] = elapsed;
 
     // Materialise the best known state before shipping it to the frontend.
     solver_bundle.state_bundle.clone_from_essence(
@@ -580,7 +593,7 @@ pub fn polish_only<R: Rng>(
     probe: &mut Probe,
 ) -> StateBundle {
     state_bundle.tuning.max_iters = 0;
-    anneal(rng, state_bundle, probe, 1, 1, f64::NEG_INFINITY)
+    anneal(rng, state_bundle, probe, 1, None)
 }
 
 /// A random valid state some moves away from the given one, for testing the evaluator
@@ -697,11 +710,18 @@ pub fn solve<R: Rng>(
     // Several shorter chains share the evaluations, each polished, and the best is kept. The
     // first goes on from a carried plan where there is one, the rest start afresh.
     let mut results: Vec<StateBundle> = Vec::new();
+    let mut report = Report {
+        timer: Timer::start(),
+        last: [0.0; 2],
+        started: false,
+        chains,
+        floor: f64::NEG_INFINITY,
+    };
     if tuning.carry_polish {
         // a carried plan is often a polish away from the best
         for warm in warms.iter_mut() {
             warm.tuning.max_iters = 0;
-            *warm = anneal(rng, warm, probe, 0, chains, f64::NEG_INFINITY);
+            *warm = anneal(rng, warm, probe, 0, Some(&mut report));
             results.push(warm.clone());
         }
         warms.sort_by(|a, b| b.metric.total_cmp(&a.metric));
@@ -717,6 +737,7 @@ pub fn solve<R: Rng>(
     let stall = if quick { 1 } else { tuning.carry_stall };
     let warm = warms.into_iter().next();
     let mut stalled = 0;
+    let mut exited = false;
     probe.time("start", clock);
     for chain in 0..chains {
         let floor = results
@@ -746,7 +767,8 @@ pub fn solve<R: Rng>(
             _ => {}
         }
         let clock = probe.clock();
-        results.push(anneal(rng, &mut start, probe, chain, chains, floor));
+        report.floor = floor;
+        results.push(anneal(rng, &mut start, probe, chain, Some(&mut report)));
         probe.time("chains", clock);
         // chains that end on the same state are unlikely to be beaten by another, and so is a
         // carried plan that the last few chains did not better
@@ -764,9 +786,16 @@ pub fn solve<R: Rng>(
             || tuning.unanimous > 0 && same >= tuning.unanimous && same == results.len()
             || warm.is_some() && stall > 0 && stalled >= stall
         {
+            exited = true;
             break;
         }
     }
+    // every chain ran: the progress waits here for the final result
+    #[cfg(feature = "wasm")]
+    if !exited {
+        send_progress(None, CHAINS_PCT);
+    }
+    let _ = exited;
     let clock = probe.clock();
     results.sort_by(|a, b| b.metric.total_cmp(&a.metric));
     if !tuning.chain_polish.is_empty() {
@@ -774,7 +803,7 @@ pub fn solve<R: Rng>(
         for result in results.iter_mut().take(tuning.polish_top) {
             result.tuning = tuning.clone();
             result.tuning.max_iters = 0;
-            *result = anneal(rng, result, probe, 1, 1, f64::NEG_INFINITY);
+            *result = anneal(rng, result, probe, 1, None);
         }
         results.sort_by(|a, b| b.metric.total_cmp(&a.metric));
     }
@@ -831,7 +860,7 @@ fn refine<R: Rng>(rng: &mut R, best: &mut StateBundle, mut moved: bool, probe: &
         }
         let before = best.metric;
         best.tuning.max_iters = 0;
-        *best = anneal(rng, best, probe, 1, 1, f64::NEG_INFINITY);
+        *best = anneal(rng, best, probe, 1, None);
         if !exchanges || best.metric <= before {
             break;
         }
@@ -855,7 +884,7 @@ fn flip_final<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
     if f64::from(*metric) > before + before.abs() * 1e-12 {
         let mut flipped = solver_bundle.state_bundle.clone();
         flipped.clone_from_essence(essence, metric);
-        *best = anneal(rng, &mut flipped, probe, 1, 1, f64::NEG_INFINITY);
+        *best = anneal(rng, &mut flipped, probe, 1, None);
     }
 }
 
@@ -958,7 +987,7 @@ fn kick_loop<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
         }
         kicked.tuning.max_iters = 0;
         kicked.metric = kicked.metric_router(probe);
-        let polished = anneal(rng, &mut kicked, probe, 1, 1, f64::NEG_INFINITY);
+        let polished = anneal(rng, &mut kicked, probe, 1, None);
         if polished.metric > best.metric + best.metric.abs() * 1e-12 {
             *best = polished;
             stall = 0;
@@ -985,12 +1014,12 @@ fn sur_loop<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
             kicked.tuning.polish_rounds = 1;
             kicked.tuning.response_polish = 1;
         }
-        let mut polished = anneal(rng, &mut kicked, probe, 1, 1, f64::NEG_INFINITY);
+        let mut polished = anneal(rng, &mut kicked, probe, 1, None);
         polished.tuning = best.tuning.clone();
         polished.tuning.max_iters = 0;
         let better = |p: &StateBundle| p.metric > best.metric + best.metric.abs() * 1e-12;
         if screen && better(&polished) {
-            polished = anneal(rng, &mut polished, probe, 1, 1, f64::NEG_INFINITY);
+            polished = anneal(rng, &mut polished, probe, 1, None);
         }
         if better(&polished) {
             *best = polished;
@@ -1212,19 +1241,19 @@ fn put(best: &mut StateBundle, index: usize, plan: Vec<OneState>, block: usize) 
     }
 }
 
-/// One chain, polished: the best state it saw. `chain` of `chains` and `floor`, the best of the
-/// chains before, are for reporting progress.
+/// One chain, polished: the best state it saw. A chain of a solve reports its progress to
+/// `report`; the first to get it sends the start.
 fn anneal<R: Rng>(
     rng: &mut R,
     state_bundle: &mut StateBundle,
     probe: &mut Probe,
     chain: i64,
-    chains: i64,
-    floor: f64,
+    report: Option<&mut Report>,
 ) -> StateBundle {
     #[cfg(feature = "wasm")]
-    let timer = Timer::start();
-    let _ = floor;
+    let mut report = report;
+    #[cfg(not(feature = "wasm"))]
+    let _ = report;
     let mut solver_bundle = start_solver(rng, state_bundle, probe);
     let tuning = state_bundle.tuning.clone();
     let mut eqv_wall_time_iters: i64 = 0;
@@ -1234,11 +1263,10 @@ fn anneal<R: Rng>(
     probe.put("best", state_bundle.metric);
 
     #[cfg(feature = "wasm")]
-    if chain == 0 {
+    if let Some(report) = report.as_deref_mut().filter(|report| !report.started) {
+        report.started = true;
         send_progress(Some(&solver_bundle.state_bundle), 0.01);
     }
-    #[cfg(feature = "wasm")]
-    let mut last_progress = [0.0; 2];
 
     let mut next_polish: i64 = 0;
     let mut next_response: i64 = tuning.response_every;
@@ -1328,18 +1356,12 @@ fn anneal<R: Rng>(
         eqv_wall_time_iters += 1;
 
         #[cfg(feature = "wasm")]
-        {
-            maybe_send_wasm_progress(
-                (chain as f64 + eqv_wall_time_iters as f64 / tuning.max_iters as f64)
-                    / chains as f64,
-                floor,
-                &mut solver_bundle,
-                &timer,
-                &mut last_progress,
-            );
+        if let Some(report) = report.as_deref_mut() {
+            let done = (chain as f64 + eqv_wall_time_iters as f64 / tuning.max_iters as f64)
+                / report.chains as f64;
+            maybe_send_wasm_progress(done, &mut solver_bundle, report);
         }
     }
-    let _ = chains;
     probe.time("moves", clock);
 
     let clock = probe.clock();

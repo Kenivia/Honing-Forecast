@@ -13,7 +13,11 @@ import {
   worth_text,
   type Choice,
 } from "@/Utils/Choices";
-import { jobs_left, queue_jobs } from "@/WasmInterface/OptimizerJobs";
+import {
+  jobs_left,
+  percent_done,
+  queue_jobs,
+} from "@/WasmInterface/OptimizerJobs";
 import Spinner from "@/Components/Common/Spinner.vue";
 import { option_job, type ChoiceJob } from "./ChoiceJobs";
 
@@ -222,6 +226,9 @@ watch(
                 v-if="!baseline_text"
                 class="inline-block h-4 w-4 align-middle"
               />
+              <span v-if="!baseline_text" class="text-(--text-muted)">
+                {{ Math.round(percent_done(base.hash)) }}%
+              </span>
               {{ baseline_text }}
             </span>
           </span>
@@ -264,6 +271,12 @@ watch(
                   v-if="!no_upgrades && row.worth === undefined"
                   class="inline-block h-4 w-4 align-middle"
                 />
+                <span
+                  v-if="!no_upgrades && row.worth === undefined"
+                  class="text-(--text-muted)"
+                >
+                  {{ Math.round(percent_done(row.job.hash)) }}%
+                </span>
                 {{ worth_text(no_upgrades, row.worth) }}
               </span>
               <button

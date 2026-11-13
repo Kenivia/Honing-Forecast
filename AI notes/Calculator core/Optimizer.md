@@ -18,7 +18,7 @@ Things worth knowing about its shape:
 - It restarts from the best known state very often.
 - On restart it may copy one upgrade's state onto an identical upgrade, since identical upgrades often want identical plans. Identical means normal honing too (an advanced block shares its index with a low normal level, and its state is not a normal state), and the same artisan and taps done, so a state's length never changes.
 - A move changes two upgrades: that is what moves juice between them.
-- In the browser it posts progress at most once a second, with the best state so far on the same tick once a later chain beats the ones before. The merge, exchange and final polish after the chains post nothing, so a heavy run sits near 100% for that part.
+- In the browser it posts progress at most every 333 ms on one timer for the whole solve (`Report`), with the best state so far at most once a second (each starts a histogram on the page), on a progress tick, once a later chain beats the ones before. The start (0.01%, with the starting state, a carried plan where there is one) is posted once. The chains fill 0 to 67.67%; when every chain has run it posts exactly 67.67% and sits there through the merge, exchange and polishes until the final result shows 100%. An early exit jumps straight to 100%.
 
 ## The shape of a solve
 

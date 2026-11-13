@@ -19,6 +19,7 @@ import { ilevel } from "@/Utils/HoningUtil";
 import { parse_locale_float } from "@/Utils/InputColumn";
 import {
   jobs_left,
+  percent_done,
   queue_jobs,
   stop_jobs,
 } from "@/WasmInterface/OptimizerJobs";
@@ -238,6 +239,9 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
                   v-if="!baseline_text"
                   class="inline-block h-4 w-4 align-middle"
                 />
+                <span v-if="!baseline_text" class="text-(--text-muted)">
+                  {{ Math.round(percent_done(base.hash)) }}%
+                </span>
                 {{ baseline_text }}
               </span>
             </span>
@@ -318,6 +322,12 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
                       v-if="!no_upgrades && worth(job.metric) === undefined"
                       class="inline-block h-4 w-4 align-middle"
                     />
+                    <span
+                      v-if="!no_upgrades && worth(job.metric) === undefined"
+                      class="text-(--text-muted)"
+                    >
+                      {{ Math.round(percent_done(job.hash)) }}%
+                    </span>
                     {{ worth_text(no_upgrades, worth(job.metric)) }}
                   </span>
                   <button
