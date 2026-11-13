@@ -6,7 +6,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - Assume tradability (or and chest type ) on previously seen icons
 - no more use previous
 - chaos dungeon detection (and maybe guardian also)
-- add progress percents
+- ~~add progress percents~~
 - fix tradable gold chance
 
 ## Forecast mode

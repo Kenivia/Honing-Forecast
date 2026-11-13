@@ -19,7 +19,7 @@ These notes are high-level. They cover what is hard to work out from reading one
 | `public/` | Static assets, changelogs, `WIP.md` (the author's roadmap), scanner config and OCR model. |
 | `scanner_setup/` | Everything that builds or calibrates the scanner config: source icons (`templates/`), game-file extraction, brightness calibration, anchor setup, the browser profiling scripts. |
 | `scripts/` | Changelog helper, the pre-deploy check, analytics pull and analysis (`analytics/`), a market price and population viewer (`market/`, `pnpm market`, `Forecasting/Market.md`), the Income page's mock save (`mock income/`) and game-data helpers (`game_files/`, `json_parser/`, `arena/`); everything scanner-specific lives in `scanner_setup/` instead. |
-| `tests/` | Playwright e2e tests (`tests/e2e/`), node-side frontend tests (migrations, the real-save fixture, cross-tier relations, `pnpm test:node`), Vitest unit and component tests (`unit/`, `pnpm test:unit`), and test fixtures (real saves `V7 config`, `v8 config`, `V10 config`; `test-results/`). |
+| `tests/` | Playwright e2e tests (`tests/e2e/`), node-side frontend tests (migrations, the real-save fixture, cross-tier relations, `pnpm test:node`), Vitest unit and component tests (`unit/`, `pnpm test:unit`), and test fixtures (real saves `V7 config`, `v8 config`, `V10 config`, `V10 config 2`; `test-results/`). |
 | `arena_data/` | Arena scenarios and its gitignored results database, plus the Python report scripts that read it. |
 
 Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-pack output), and `ignored/` (untracked: `junkyard/`, `data_fetcher/`, `game_file_reader/`, old saddlepoint reference PDF, the overnight evaluator experiments, scanner recordings).

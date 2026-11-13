@@ -3,6 +3,12 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
+- Assume tradability (or and chest type ) on previously seen icons
+- no more use previous
+- chaos dungeon detection (and maybe guardian also)
+- ~~add progress percents~~
+- fix tradable gold chance
+
 ## Forecast mode
 
 - ~~forecast mode UI~~ this is gonna hvae to be very pervasive
@@ -12,6 +18,9 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
     - something happening over n weeks?
 
 ## Misc UI
+
+- rework tooltips
+- allow non-mains to ignore roster chests / mats
 
 - need to add the UI for choices and hard code some examples
   - ~~need to get paradise data from somewhere~~

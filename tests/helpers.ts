@@ -18,6 +18,20 @@ export function equal(name: string, got: unknown, want: unknown) {
   check(name, a === b, a === b ? "" : `${a} != ${b}`);
 }
 
+// Paths where `got` and `want` differ, at any depth, keys in any order.
+export function differences(got: any, want: any, path = ""): string[] {
+  if (
+    typeof got !== "object" ||
+    got === null ||
+    typeof want !== "object" ||
+    want === null
+  ) {
+    return JSON.stringify(got) === JSON.stringify(want) ? [] : [path];
+  }
+  const keys = new Set([...Object.keys(got), ...Object.keys(want)]);
+  return [...keys].flatMap((k) => differences(got[k], want[k], `${path}.${k}`));
+}
+
 export function section(name: string) {
   console.log(`\n=== ${name} ===`);
 }

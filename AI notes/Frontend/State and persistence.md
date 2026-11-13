@@ -56,7 +56,7 @@ Runtime worker bundles are keyed by profile id. `App.vue` watches the list of id
 
 `SavedConfig.ts` defines the saved shape and converts to and from it; `ConfigStorage.ts` owns localStorage and the migrations.
 
-- One key, `HF_CONFIG_V10_COMPRESSED`, lz-string-compressed JSON, with the version **also inside** the payload. The key carries the version so a save is never read by code that predates it; the payload version drives the migration chain.
+- One key, `HF_CONFIG_V11_COMPRESSED`, lz-string-compressed JSON, with the version **also inside** the payload. The key carries the version so a save is never read by code that predates it; the payload version drives the migration chain.
 - One column per scope, not one per tier, so a material shared between tiers is stored once.
 - Two rules govern the shape: nothing derivable from `Constants.ts` is stored, and material values are keyed by **label**, never by row index. Reordering, inserting or removing a material row is therefore not a save-shape change.
 - `to_saved` / `from_saved` are explicit. A field that is not listed is not saved, so transient state cannot leak in by being added to the store.
@@ -68,7 +68,7 @@ Runtime worker bundles are keyed by profile id. `App.vue` watches the list of id
 
 **Before adding a migration, check what production runs.** Production is the `Production` branch on origin (`pnpm deploy` pushes main there): `git fetch origin Production` then `git show origin/Production:frontend/Stores/ConfigStorage.ts | grep STORAGE_VERSION`. If production is below the repo's `STORAGE_VERSION`, the current version is unreleased and nobody has a save in it: fold the change into the existing latest migration instead of starting a new version. Only bump when production already runs the repo's version.
 
-**Changing the saved shape** (once production has the current version) means bumping `STORAGE_VERSION`, setting `STORAGE_KEY` to the new version's key, moving the old key to the top of `LEGACY_KEYS`, and adding one entry to `MIGRATIONS`. Adding a material needs no migration: an unknown label in the save is dropped, a missing one falls back to the template value from `Constants.ts`.
+**Changing the saved shape** (once production has the current version) means bumping `STORAGE_VERSION`, setting `STORAGE_KEY` to the new version's key, moving the old key to the top of `LEGACY_KEYS`, and adding one entry to `MIGRATIONS`. A new saved field is added by a migration, not by the `?? defaults` in `from_saved`, which only stands in for hand-edited or partial saves; the V8 and V10 live tests fail when a migrated real save takes anything from a fallback. Adding a material needs no migration: an unknown label in the save is dropped, a missing one falls back to the template value from `Constants.ts`.
 
 A profile's `id` is saved and survives load, save, load unchanged. A save without ids (or with an id an earlier profile already took) gets fresh ones in `profile_from_saved`, so there is no migration step for it.
 
@@ -80,7 +80,9 @@ A profile's `chests` are saved as the scanner exported them (title, band, count,
 
 `migrate_8_to_9` repairs V8 saves whose Serca book prices the V7 migration zeroed: in every region's `mats_prices`, an enhanced or Serca book priced exactly 0 is reset to its fallback (any other value is the user's). That is all V9 changes; the shape is V8's. `tests/live_v8.test.ts` runs it on a real V8 save (`tests/v8 config`). `node tests/make_pasted_store.mjs [in] [out]` turns such a raw save into a devtools snippet that loads it; the raw string holds `"` and `\`, so it must be embedded via `JSON.stringify`.
 
-`migrate_9_to_10` gives every roster a uuid: the per-roster records (owned columns, regions, `roster_chests`, `roster_income`, `custom_choices`) are re-keyed, and every profile's, scan page's and snapshot's `roster_id` mapped. Profiles are stably sorted by the old numeric id first, so the rosters keep their order. Tests use the strings `"0"`, `"1"` as roster ids, so `record[0]` still finds them; the default config's roster is a fresh uuid, so a test on it reads `active_profile.roster_id` or `roster_ids[0]`.
+`migrate_9_to_10` gives every roster a uuid: the per-roster records (owned columns, regions, `roster_chests`, `roster_income`, `custom_choices`) are re-keyed, and every profile's, scan page's and snapshot's `roster_id` mapped. Profiles are stably sorted by the old numeric id first, so the rosters keep their order. Tests use the strings `"0"`, `"1"` as roster ids, so `record[0]` still finds them; the default config's roster is a fresh uuid, so a test on it reads `active_profile.roster_id` or `roster_ids[0]`. It also sets `analytics` (on) when the save has none, the field V10 brought.
+
+`migrate_10_to_11` gives every profile `income_auto` (off) and `income_sources` (`{}`) where missing; that is all V11 changes.
 
 `migrate_7_to_8` **drops** V7's `optimizer_treatment_plan` rather than mapping it, so `band_values` is left out and `profile_from_saved` supplies the default. `histogram_treatment_plan` is a different setting — which ownership line the chance column reads — and becomes `chance_band`. `leftover_price` is dropped too.
 

@@ -11,6 +11,7 @@ Traps and ruled-out alternatives. The current state is in `State and persistence
 
 ## Saving and loading
 
+- Don't add a saved field with only a `??` fallback in `from_saved`: V10's `analytics` reached production that way, untested, and `income_auto` / `income_sources` nearly did. Add it in a migration; the live tests check that nothing falls back.
 - Don't replace a save that throws on load with defaults silently: the next edit overwrites it for good. Copy it to `<key>_BROKEN` first, and surface it (banner with Download / Discard).
 - Don't load a `_BROKEN` copy back automatically: the user may have a new save by then.
 - Don't swallow a failed `_BROKEN` copy (quota): the next write overwrites the only copy. Pause saving instead.

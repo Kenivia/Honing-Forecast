@@ -13,13 +13,14 @@ import { debounce } from "@/Utils/Helpers";
 import { RosterConfig } from "./RosterConfig";
 import { from_saved, SavedColumn, SavedConfig, to_saved } from "./SavedConfig";
 
-export const STORAGE_VERSION = 10;
-export const STORAGE_KEY = "HF_CONFIG_V10_COMPRESSED";
+export const STORAGE_VERSION = 11;
+export const STORAGE_KEY = "HF_CONFIG_V11_COMPRESSED";
 
 // Older keys, newest first. On a version bump, move the current key to the top of
 // this list. `version` is only a fallback for pre-V8 saves, which carry no version
 // inside the payload.
 const LEGACY_KEYS: { key: string; version: number }[] = [
+  { key: "HF_CONFIG_V10_COMPRESSED", version: 10 },
   { key: "HF_CONFIG_V9_COMPRESSED", version: 9 },
   { key: "HF_CONFIG_V8_COMPRESSED", version: 8 },
   { key: "HF_CONFIG_V7_COMPRESSED", version: 7 },
@@ -40,6 +41,7 @@ const MIGRATIONS: Record<number, (data: any) => any> = {
   7: migrate_7_to_8,
   8: migrate_8_to_9,
   9: migrate_9_to_10,
+  10: migrate_10_to_11,
 };
 
 // ============================================================================
@@ -133,7 +135,7 @@ function read_newest_save(): {
   return null;
 }
 
-function migrate_to_current(data: any, version: number): any {
+export function migrate_to_current(data: any, version: number): any {
   let out = data;
   let v = version;
   while (v < STORAGE_VERSION) {
@@ -449,6 +451,17 @@ function migrate_9_to_10(data: any): any {
   ]) {
     data[key] = rekey(data[key]);
   }
+  data.analytics ??= true;
   data.version = 10;
+  return data;
+}
+
+// Auto income: per-character mode flag and source settings.
+function migrate_10_to_11(data: any): any {
+  for (const profile of data.profiles ?? []) {
+    profile.income_auto ??= false;
+    profile.income_sources ??= {};
+  }
+  data.version = 11;
   return data;
 }

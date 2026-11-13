@@ -1,0 +1,32 @@
+[
+ {
+  "name": "a_real3_dev",
+  "cmd": "target\\arena\\bin\\cold_d.exe --db arena_data/lab/runs.sqlite --set real3_dev run prod_a cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5 --mode cold --seeds 3 --jobs 16 --resume",
+  "note": "production 9ae4f169 against the current default"
+ },
+ {
+  "name": "a_real3_test",
+  "cmd": "target\\arena\\bin\\cold_d.exe --db arena_data/lab/runs.sqlite --set real3_test run prod_a cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5 --mode cold --seeds 3 --jobs 16 --resume",
+  "note": "production 9ae4f169 against the current default"
+ },
+ {
+  "name": "a_real3_income_dev",
+  "cmd": "target\\arena\\bin\\cold_d.exe --db arena_data/lab/runs.sqlite --set real3_income_dev run prod_a cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5 --mode chained --seeds 3 --jobs 16 --resume",
+  "note": "production 9ae4f169 against the current default"
+ },
+ {
+  "name": "a_real3_income_test",
+  "cmd": "target\\arena\\bin\\cold_d.exe --db arena_data/lab/runs.sqlite --set real3_income_test run prod_a cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5 --mode chained --seeds 3 --jobs 16 --resume",
+  "note": "production 9ae4f169 against the current default"
+ },
+ {
+  "name": "a_real3_seq_dev",
+  "cmd": "target\\arena\\bin\\cold_d.exe --db arena_data/lab/runs.sqlite --set real3_seq_dev run prod_a cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5 --mode chained --seeds 3 --jobs 16 --resume",
+  "note": "production 9ae4f169 against the current default"
+ },
+ {
+  "name": "a_real3_seq_test",
+  "cmd": "target\\arena\\bin\\cold_d.exe --db arena_data/lab/runs.sqlite --set real3_seq_test run prod_a cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5 --mode chained --seeds 3 --jobs 16 --resume",
+  "note": "production 9ae4f169 against the current default"
+ }
+]

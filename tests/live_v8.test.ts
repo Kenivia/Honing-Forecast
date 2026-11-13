@@ -1,11 +1,15 @@
-// Runs the V8 -> V9 migration against the real save in tests/v8 config, whose Serca book
+// Runs the migrations from V8 against the real save in tests/v8 config, whose Serca book
 // prices the V7 migration had zeroed.
 import fs from "node:fs";
-import { check, done } from "./helpers";
+import { check, differences, done } from "./helpers";
 import LZString from "lz-string";
 import { bundle_key, FALLBACK_PRICES } from "@/Utils/Constants";
-import { load_roster_config, STORAGE_KEY } from "@/Stores/ConfigStorage";
-import { to_saved } from "@/Stores/SavedConfig";
+import {
+  load_roster_config,
+  migrate_to_current,
+  STORAGE_KEY,
+} from "@/Stores/ConfigStorage";
+import { from_saved, to_saved } from "@/Stores/SavedConfig";
 import { input_column_to_num } from "@/Utils/InputColumn";
 
 const FIXTURE = "tests/v8 config";
@@ -15,6 +19,19 @@ if (!fs.existsSync(FIXTURE)) {
 }
 const compressed = fs.readFileSync(FIXTURE, "utf8");
 const v8 = JSON.parse(LZString.decompressFromUTF16(compressed));
+
+// the chain up to the current version leaves nothing to a load fallback
+const migrated = migrate_to_current(structuredClone(v8), 8);
+const { version: _m, ...expected } = migrated;
+const fell_back = differences(
+  to_saved(from_saved(structuredClone(migrated))),
+  expected,
+);
+check(
+  "nothing from a fallback",
+  fell_back.length === 0,
+  fell_back.slice(0, 10).join("; "),
+);
 
 localStorage.clear();
 localStorage.setItem("HF_CONFIG_V8_COMPRESSED", compressed);
@@ -53,7 +70,7 @@ for (const region of Object.keys(v8.mats_prices)) {
   );
 }
 
-// apart from the book prices, the save comes through unchanged
+// apart from the book prices and V11's added fields, the save comes through unchanged
 const again = to_saved(loaded);
 for (const region of Object.keys(v8.mats_prices)) {
   for (const k of books) delete again.mats_prices[region].values[k];
@@ -65,10 +82,19 @@ const profiles = again.profiles.map((p, i) => ({
   ...p,
   roster_id: rest.profiles[i].roster_id,
 }));
+const want = rest.profiles.map((p) => ({
+  ...p,
+  income_auto: false,
+  income_sources: {},
+}));
+const changed = [
+  ...differences(profiles, want),
+  ...differences(again.mats_prices, rest.mats_prices),
+];
 check(
   "the rest of the save unchanged",
-  JSON.stringify(profiles) === JSON.stringify(rest.profiles) &&
-    JSON.stringify(again.mats_prices) === JSON.stringify(rest.mats_prices),
+  changed.length === 0,
+  changed.slice(0, 10).join("; "),
 );
 
 localStorage.removeItem(STORAGE_KEY);

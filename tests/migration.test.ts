@@ -1,4 +1,4 @@
-import { check, done } from "./helpers";
+import { check, differences, done } from "./helpers";
 // Verifies the V7 -> V8 migration, the save/load round trip and export/import.
 import {
   ALL_LABELS,
@@ -12,6 +12,7 @@ import {
   load_roster_config,
   export_config,
   import_config,
+  migrate_to_current,
   STORAGE_VERSION,
   STORAGE_KEY,
   write_state,
@@ -587,5 +588,42 @@ check(
   Object.keys(localStorage).length === 1 ||
     localStorage.getItem("HF_CONFIG_V7_COMPRESSED") === null,
 );
+
+console.log("\n=== 10. V10 -> V11 adds the auto income fields ===");
+const v10: any = { ...structuredClone(to_saved(first)), version: 10 };
+delete v10.profiles[0].income_auto;
+delete v10.profiles[0].income_sources;
+v10.profiles[1].income_auto = true;
+v10.profiles[1].income_sources = { chaos: 3, hourglass: true };
+const v11 = migrate_to_current(structuredClone(v10), 10);
+check(
+  "missing fields get their defaults",
+  v11.profiles[0].income_auto === false &&
+    JSON.stringify(v11.profiles[0].income_sources) === "{}",
+);
+check(
+  "present ones are kept",
+  v11.profiles[1].income_auto === true &&
+    JSON.stringify(v11.profiles[1].income_sources) ===
+      JSON.stringify({ chaos: 3, hourglass: true }),
+);
+localStorage.clear();
+localStorage.setItem(
+  "HF_CONFIG_V10_COMPRESSED",
+  LZString.compressToUTF16(JSON.stringify(v10)),
+);
+const v11_loaded = load_roster_config();
+const { version: _v11, ...v11_expected } = v11;
+const v11_fell_back = differences(to_saved(v11_loaded), v11_expected);
+check(
+  "V10 key consumed",
+  localStorage.getItem("HF_CONFIG_V10_COMPRESSED") === null,
+);
+check(
+  "loads as migrated, nothing from a fallback",
+  v11_fell_back.length === 0,
+  v11_fell_back.slice(0, 10).join("; "),
+);
+localStorage.clear();
 
 done();
