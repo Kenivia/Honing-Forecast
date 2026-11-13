@@ -194,11 +194,11 @@ impl Default for Tuning {
             max_memo_size: 1 << 16,
             coarse_cells: 8.0,
             max_coarse_work: 20_000_000,
-            coarse_shared: false,
-            coarse_cache: false,
+            coarse_shared: true,
+            coarse_cache: true,
             special_tol: 1e-4,
 
-            max_iters: 48000,
+            max_iters: 12000,
             max_best_size: 10,
             non_impact_weight: 3.0,
             magic_number: 0.44,
@@ -223,7 +223,7 @@ impl Default for Tuning {
             chains: 0,
             chain_iters_per_upgrade: 250.0,
             chain_iters_min: 4000,
-            size_power: 0.0,
+            size_power: 0.5,
             size_ref: 16.0,
             size_cap: 48000,
             chain_polish: String::new(),
@@ -238,7 +238,7 @@ impl Default for Tuning {
             exchange_powers: 7,
             refine_rounds: 3,
             exchange_stop: false,
-            adv_radius: 0,
+            adv_radius: 1,
             special_floor: 0.2,
             order_reach: true,
             greedy_order: true,
@@ -268,10 +268,12 @@ impl Default for Tuning {
 
 impl Tuning {
     /// What reported metrics are scored with: the coarse lattice at 64 points, where the optimizer
-    /// has 8, and nearly every free tap outcome
+    /// has 8, a pass of its own for each outcome, and nearly every free tap outcome
     pub fn reference() -> Tuning {
         Tuning {
             coarse_cells: 64.0,
+            coarse_shared: false,
+            coarse_cache: false,
             special_tol: SPECIAL_FLOOR,
             ..Tuning::default()
         }

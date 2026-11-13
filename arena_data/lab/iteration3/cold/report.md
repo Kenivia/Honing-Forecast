@@ -2,9 +2,10 @@
 
 **Verdict: the aim is met at 12k's accuracy, not yet at 24k's.** 12k with `adv_radius=1,coarse_shared=true,coarse_cache=true` is x0.22 / 0.19 of 48k's CPU on `real3_dev` (streak 1 / 10) at mlog -2.61 / -2.74 (48k -2.79 / -2.84), and x0.26 / 0.26 at -2.67 / -2.76 on `real3_test`; adding `size_power=0.5` gives -2.63 / -2.76 at x0.23 / 0.19 (test -2.69 / -2.78 at x0.28). That is what 12k had at x0.41 / 0.40. Of the saving, the advanced polish's radius is x0.80, the shared coarse pass x0.68 and the cached cells x0.90–0.95; none changes accuracy, so they are worth having at any `max_iters`. 16k with them is x0.26 / 0.24 at -2.66 / -2.77 (test x0.31, -2.69 / -2.77); 24k's -2.69 / -2.79 would need about x1.5 more.
 
-- Every search knob tried (chain polishes, the exchange's loops and stops, chest flips, chain counts, `max_iters` by size) is on the curve of `max_iters` to within about 0.02 of mlog; the only one above it is `size_power=0.5`, by 0.01–0.03.
-- The rest of a large run's time is spread over parts of 5–30% each (§6), so the next x0.9 is one of several small evaluator changes.
-- Candidates, in tree and off: `adv_radius=1`, `coarse_shared`, `coarse_cache`, `size_power=0.5`. Removed: `exchange_flat`, `exchange_rank`, `min_chains`.
+- Every search knob tried (chain polishes, the exchange's loops and stops, chest flips, chain counts, `max_iters` by size, the kick loop after or in place of chains, more polishes and refine rounds) is on the curve of `max_iters` to within about 0.02 of mlog or below it; the only one above it is `size_power=0.5`, by 0.01–0.03 (§6, §8, §9).
+- A run finds the neighbourhood in its first chain; the time goes to more chains and the polishes, and the misses need joint re-plans of one piece or another order basin (§7).
+- The rest of a large run's time is spread over parts of 5–30% each (§6), so the next x0.9 is one of several small evaluator changes; buffer reuse gave none (§8).
+- **Pick (§9): 12k with `adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5`, now the default (§10)**; chained runs lose what cold ones do. Removed: `exchange_flat`, `exchange_rank`, `min_chains`.
 
 Aim (user, 2026-11-12): cold starts at x0.2–0.25 of `solve` 48k's CPU, as accurate as possible; chained runs left out for now. Any heuristic may be tried, and ones that only work in one regime can be pieced together. Judged on `real3_dev` (both streaks, 3 seeds); finalists confirmed on `real3_test`. Metrics as in `budget/report.md`: gap in % of flow against the best known per payload hash, mlog = mean log10(gap + 0.001), RMS, hit (≤ 0.01), p90/p99/worst; CPU as a ratio of sums against 48k in the same session.
 
@@ -195,3 +196,93 @@ Batch `d` (C = A + `coarse_cache=true`; 13 variants on `real3_dev`, then 5 on `r
 - **`min_chains=2` is on the curve**: about 10% less CPU for 0.02 less mlog, as 12k to 8k-and-a-bit. Removed.
 - Picked per size in sample the frontier is x0.20 / 0.15 at -2.62 / -2.75 and x0.25 / 0.17 at -2.66 / -2.77: about 0.02 over the best single setting, so little is left in piecing sizes together.
 - Repeats: after removing `exchange_flat`, `exchange_rank` and `min_chains`, the tree equals `cold_d` on 444 of 444 runs for 12k C and 12k C sp 0.5 (148 `r3_0` scenarios, 3 seeds).
+
+## 7. Where a run finds its result (marked solves, 2026-11-12)
+
+A temporary build (`tmp_mark`, never a snapshot; the patch is kept outside the repo) recorded, with the time since the solve began, the starts (greedy order, shadow prices), each chain's best state before and after its polish, the state after the merge, after the refine and at the end, and every new best inside the annealing. 12k C and 48k C (`adv_radius=1,coarse_shared=true,coarse_cache=true`) on the 148 `r3_0` dev scenarios, 3 seeds, scratch; 12k C repeats `cold_d` on 444 of 444 runs. Gaps use the optimizer's metric against the best known `metric_ref` (their difference is about 4e-4 % of flow). States are compared up to swaps of identical upgrades (armour of one level, artisan and taps done): the order as a sequence of kinds, plans as a bag per kind.
+
+**The neighbourhood comes early; the time goes after it.** Share of a 12k run by which the best so far is within a gap (mean over the runs that get there, and how many do):
+
+| streak, size | annealing / chain polish / after | within 1% | 0.1% | 0.01% | 0.001% |
+| --- | --- | --- | --- | --- | --- |
+| 1, 4–10 | 0.91 / 0.06 / 0.02 | 0.02 | 0.12 | 0.27 (85%) | 0.40 (69%) |
+| 1, 11–25 | 0.69 / 0.17 / 0.12 | 0.06 | 0.17 | 0.37 (86%) | 0.43 (55%) |
+| 1, 26+ | 0.48 / 0.28 / 0.22 | 0.02 | 0.16 | 0.32 | 0.68 (47%) |
+| 10, 11–25 | 0.86 / 0.09 / 0.04 | 0.03 | 0.17 | 0.38 (86%) | 0.40 (72%) |
+| 10, 26+ | 0.67 / 0.26 / 0.06 | 0.06 | 0.32 | 0.56 | 0.76 (73%) |
+
+- **The annealing ends rough and the polishes make it precise.** mlog of the best so far at each mark, 12k (streak 1, 11–25 / 26+): before any polish -1.59 / -1.12, after the chains' polish -2.38 / -2.30, after the merge -2.48 / -2.46, after the refine -2.55 / -2.66. At streak 10 on 26+ the refine alone takes -2.22 to -2.87. The polishes and the refine are 4–50% of the run.
+- **Each chain alone lands well short.** Polished chains on 11–25 at streak 1: best -2.38, median -1.95, worst -1.73; chain 0 (from shadow prices) is the best chain in 46–73% of runs at 4+ upgrades, but alone it is -2.15 against the run's -2.55. The other chains each find the neighbourhood again from scratch.
+
+**What the end states look like.** Hits all but always have the best known's first three kinds of the free tap order (93–100%) and mostly its chests (63–93%), yet 31–60% of their plans are not the best known's: near the optimum many plan combinations are worth the same. The best chain's state before its polish already has the order prefix in 80–100% of hits.
+
+**What the 12k misses lack** (26 scenarios, worst seed each, by putting the best known's parts into the final and evaluating):
+
+- 16 have the best known's order prefix and chests. In 10 of them the best known's plans close the whole gap, yet no single upgrade's plan does (the best one closes 0% in 7): responses have converged, and what is left is a joint move. One piece's plans together close it in 6 of the 16. Swapping or copying two upgrades' plans within a piece closes most of it in 3 of 26.
+- 10 are in another order basin. The best known's order and chests with the final's plans are worse (order and plans move together there), as are the best known's plans under the final's order.
+- In the misses' plans the same blocks recur across a piece's levels (a run of one juice with one or two taps of a second at the front or the back); final and best differ in which level gets which block, and by a few taps.
+
+So at 12k the general neighbourhood is not the problem: it is found in the first chain, usually from shadow prices, and the order prefix and chests with it. The time goes to three more chains that each find it again, and the precision comes from the polishes, the merge and the refine. The misses are joint re-plans of one piece's levels (about 60%) and order basins (about 40%).
+
+## 8. Round 5: kicks after or in place of chains (batch `e`, snapshot `cold_d`)
+
+The idea from §7: keep the neighbourhood the first chain finds and spend the rest on moves that re-plan a piece at once or shuffle the order within reach, in place of chains that find it again. K = `kick_types=window+chest+adv+piece+rebuildempty` (the kick loop of iteration 2: each kick polished and kept where better, until `kick_stall` kicks in a row gain nothing). C as in §6. Smoke (148 `r3_0` scenarios, one seed) put 12k C with `kick_stall=4` at +13–15% CPU for +0.03 mlog and a much smaller worst (0.064 to 0.028, 0.160 to 0.020), and kicks in place of chains at or below 12k.
+
+Batch `e` (`real3_dev`, 3 seeds, 11 variants, 52 min); `scripts/cold.py cold_d --split dev --session <e>`. Streak 1 / streak 10:
+
+| dev | cpu x | mlog | hit% | worst |
+| --- | --- | --- | --- | --- |
+| 48k | 1.00 / 1.00 | -2.78 / -2.84 | 94.3 / 93.8 | 0.153 / 0.359 |
+| 14k C | 0.24 / 0.21 | -2.64 / -2.76 | 86.2 / 89.6 | 0.179 / 0.581 |
+| 12k C | 0.22 / 0.19 | -2.61 / -2.74 | 84.8 / 88.2 | 0.252 / 0.581 |
+| 12k C K `kick_stall=2` | 0.25 / 0.20 | -2.62 / -2.75 | 85.6 / 88.5 | 0.185 / 0.581 |
+| 12k C K `kick_stall=4` | 0.27 / 0.22 | -2.64 / -2.76 | 86.2 / 89.3 | 0.185 / 0.581 |
+| 12k C `kick_stall=4,kick_types=piece+rebuildempty` | 0.28 / 0.21 | -2.63 / -2.76 | 86.0 / 89.2 | 0.252 / 0.581 |
+| 12k C K `kick_stall=4,mem_polish=true` | 0.40 / 0.28 | -2.64 / -2.77 | 86.5 / 89.4 | 0.155 / 0.278 |
+| 12k C K `kick_stall=4,size_power=0.5` | 0.28 / 0.22 | -2.66 / -2.78 | 87.4 / 90.2 | 0.157 / 0.581 |
+| 10k C K `kick_stall=4` | 0.26 / 0.19 | -2.63 / -2.75 | 84.8 / 88.0 | 0.149 / 0.581 |
+| 8k C K `kick_stall=6` | 0.27 / 0.18 | -2.60 / -2.73 | 82.2 / 86.4 | 0.346 / 0.393 |
+| 8k C, 2 chains, K `kick_stall=8` | 0.28 / 0.19 | -2.59 / -2.74 | 82.6 / 87.4 | 0.513 / 0.513 |
+
+- **The kick loop is no better use of CPU than `max_iters`.** After 12k it lands on or below the curve (16k C was -2.66 / -2.77 at x0.26 / 0.24 in batch `d`); in place of chains it is below it. The smoke's tails did not hold on the full set.
+- The piece kicks alone (the joint re-plans §7's misses lack) do no better than the mix.
+- `size_power=0.5` keeps its +0.02 with the kicks too.
+
+**Exact speedups tried and dropped.** Reading each outcome off the running coarse grid without a copy, and reusing the grid's and the exact lattice's buffers between upgrades, gave identical results (444 of 444 runs against `cold_d` for 12k C and 12k C `size_power=0.5`, against `cold_c` for 12k `adv_radius=1`) but no CPU (12k C 136.5 against 137.5 CPU s in one session), so they were taken out again: allocation is not where the time is.
+
+## 9. Round 6: more of the polishes and the refine (batch `f`, snapshot `cold_d`)
+
+§7 found that the precision comes from the polishes, the merge and the refine, but earlier rounds only tried less of them. Batch `f` (`real3_dev`, 3 seeds, 10 variants, 48 min) tried more at 12k C. Streak 1 / streak 10:
+
+| dev | cpu x | mlog | hit% |
+| --- | --- | --- | --- |
+| 48k | 1.00 / 1.00 | -2.78 / -2.84 | 94.3 / 93.8 |
+| 14k C | 0.24 / 0.21 | -2.64 / -2.76 | 86.2 / 89.6 |
+| 12k C | 0.22 / 0.19 | -2.61 / -2.74 | 84.8 / 88.2 |
+| … `exchange_powers=9`, `exchange_rounds=4`, or `refine_rounds=6,exchange_rounds=4` | identical to 12k C | | |
+| … `response_polish=5` | 0.23 / 0.19 | -2.62 / -2.74 | 85.1 / 88.3 |
+| … `polish_rounds=5,response_polish=5` | 0.24 / 0.20 | -2.62 / -2.74 | 85.1 / 88.3 |
+| … `size_power=0.5` | 0.23 / 0.19 | -2.63 / -2.76 | 86.7 / 89.7 |
+| … `size_power=0.5,refine_rounds=6,exchange_rounds=4` | identical to `size_power=0.5` | | |
+
+- **The refine is not held back by its caps**: the exchange and refine loops stop because nothing moves, never at their round limits, so raising them changes no run. More response passes are on the curve.
+- **Pick: 12k with `adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5`.** Dev x0.23 / 0.19 at -2.63 / -2.76 (batches `d`, `e` and `f` agree), test x0.28 / 0.28 at -2.69 / -2.78 (batch `d`), against 48k's -2.79 / -2.84 and -2.80 / -2.85. What is left to gain at this CPU needs joint moves across a piece's upgrades or another order basin (§7), which neither kicks (§8) nor more polishing reach cheaply.
+
+## 10. The new defaults (2026-11-12)
+
+The user chose the pick of §9 as production. Since `Tuning::default()` is what the website runs, chained runs change too, so they were checked first (batch `g`, snapshot `cold_d`, chained mode, 3 seeds, 1 h; `budget/scripts/curve.py cold_d --kind r3inc|r3seq --split dev`). NEW = `max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,size_power=0.5`. Streak 1 / streak 10, all steps:
+
+| dev | cpu x | mlog | hit% | p99 |
+| --- | --- | --- | --- | --- |
+| income chains, 48k | 1.00 / 1.00 | -2.74 / -2.79 | 90.5 / 91.0 | 0.048 / 0.066 |
+| income chains, NEW | 0.22 / 0.19 | -2.59 / -2.71 | 83.9 / 86.9 | 0.070 / 0.089 |
+| income chains, 48k `quick` (Choices) | 0.44 / 0.51 | -2.51 / -2.69 | 77.7 / 86.4 | 0.133 / 0.085 |
+| income chains, NEW `quick` | 0.11 / 0.10 | -2.46 / -2.65 | 75.1 / 84.2 | 0.179 / 0.098 |
+| family steps, 48k | 1.00 / 1.00 | -2.74 / -2.82 | 92.9 / 93.0 | 0.052 / 0.153 |
+| family steps, NEW | 0.25 / 0.20 | -2.61 / -2.73 | 85.4 / 87.3 | 0.103 / 0.198 |
+
+- **Chained runs lose what cold runs lose**: -0.15 / -0.08 on income chains and -0.13 / -0.09 on family steps, against -0.16 / -0.08 on cold singles, and steps 4+ lose no more than steps 1–3 (income -0.14 / -0.08 against -0.16 / -0.06): nothing compounds along a chain.
+- **Choices' `quick` runs** cost a quarter of what they did for 0.05 / 0.04 less.
+- NEW without `quick` is better than the old `quick` at half its CPU.
+
+**Code.** `Tuning::default()` now has `max_iters` 12000, `adv_radius` 1, `coarse_shared` and `coarse_cache` on and `size_power` 0.5. `Tuning::reference()` sets `coarse_shared` and `coarse_cache` off, so it scores exactly as before. Checks on the 148 `r3_0` dev scenarios, 3 seeds: the plain default equals `cold_d` NEW on 444 of 444 runs (metric_ref and evaluations), and `max_iters=48000,adv_radius=0,coarse_shared=false,coarse_cache=false,size_power=0` equals `cold_d`'s 48k on 444 of 444; core's tests pass and the wasm build checks.

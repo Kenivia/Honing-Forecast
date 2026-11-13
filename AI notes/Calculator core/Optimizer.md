@@ -4,7 +4,7 @@ Lives in `crates/core/src/optimizer`. The module header there describes the algo
 
 ## What it does
 
-Several short chains of simulated annealing over a `StateBundle`, each polished, the best kept, maximising the average-gold metric (see `Evaluation pipeline.md`). It runs for at most a fixed number of evaluations (`max_iters`), not a time budget, and returns the best state seen. Its constants are fields of `Tuning`. "The shape of a solve" below has the parts; the rest of this section is one chain.
+Several short chains of simulated annealing over a `StateBundle`, each polished, the best kept, maximising the average-gold metric (see `Evaluation pipeline.md`). It runs for at most a fixed number of evaluations (`max_iters`, 12,000 at 16 upgrades and scaled by size, below), not a time budget, and returns the best state seen. Until 2026-11-12 it was 48,000 at every size, about 4.5 times the CPU for 0.1–0.16 more mlog (lab iteration 3, `cold/report.md`). Its constants are fields of `Tuning`. "The shape of a solve" below has the parts; the rest of this section is one chain.
 
 Decision variables:
 
@@ -27,11 +27,11 @@ Things worth knowing about its shape:
 1. **A starting free tap order** (`greedy_order`): the upgrades by what a free tap saves for what it takes, whole and one piece's next level at a time, where either beats the order given.
 2. **A start from shadow prices** (`shadow_start` rounds, `optimizer/shadow.rs`): each material is priced at what one more unit of it costs at the state as it is (its band thresholds moved a little, over the free tap outcomes), every normal upgrade takes its best plan under those prices alone (`Response::linear`, no evaluation), the state is evaluated and the best kept. The prices are the running average of each round's; it stops when no plan moves. Every other fresh chain starts from it, the rest from the plain start: chains that all start from it agree on its plan too readily.
 3. **Chains** (`anneal`): the evaluations are shared between several chains, each from the same start with its own random numbers, each ending in the polishes. How many is by size (`chains` 0): a chain gets `chain_iters_per_upgrade` evaluations an upgrade, no less than `chain_iters_min`, and there are never fewer than 4 chains. One long chain settles into one of many plans that nothing near betters; another chain lands elsewhere.
-   - Lab, off: `size_power` scales `max_iters` by (`size_ref` / upgrades) to that power, at most `size_cap`, so small payloads get more chains and large ones fewer evaluations (`iteration3/cold/report.md` §6).
+   - `max_iters` is scaled by (`size_ref` 16 / upgrades) to the power `size_power` (0.5), at most `size_cap` (48,000): 24k at 4 upgrades, 12k at 16, 8.5k at 32. Small payloads are cheap and gain most from more chains (`iteration3/cold/report.md` §5–6).
 4. **The polishes** (`polish`, `polish_rounds` rounds while any of them moves the best state):
    - the free tap order (`order_polish`): each upgrade to each place a free tap can still reach (`order_reach`);
    - the responses (`response_polish`, see "Responses");
-   - the advanced upgrades (`adv_polish`): each entry of a strategy takes the best of its values;
+   - the advanced upgrades (`adv_polish`): each entry of a strategy walks within `adv_radius` (1) of its best so far until a step gains nothing (0 tries all 19 values; the walk ends on the same states for a fifth less CPU);
    - the chests (`chest_polish`).
 5. **Leaving early**: once `agree_exit` results have ended on the same metric, or once the first `unanimous` have and none elsewhere; or, going on from a plan (below), once `carry_stall` chains in a row have not bettered it. Too few agreeing chains leave on a plan that is reliably not the best on small payloads.
 6. **Merge** (`merge`): the best chain's result takes from each other chain's, where the metric agrees, its free tap order, its plans for a whole piece type (they share juices and books), and its plan for each upgrade.

@@ -2,9 +2,10 @@
 # mlog = mean log10(gap + 0.001), hit, quantiles, and where the time went (the us_* counters, shares of the run's wall).
 # Best known per payload hash over runs.sqlite and the given db, runs without a streak_length override.
 # usage (repo root): cold.py [snapshot] [db] [--size] [--phases] [--split dev|test] [--filter text] [--chests yes|no]
+#   [--session id|last]
 import sys, json, sqlite3, collections, math, glob
 opts = sys.argv[1:]
-VAL = ('--split', '--filter', '--chests')
+VAL = ('--split', '--filter', '--chests', '--session')
 args = [a for i, a in enumerate(opts) if not a.startswith('--') and (i == 0 or opts[i - 1] not in VAL)]
 SNAP = args[0] if args else 'cold_a'
 DB = args[1] if len(args) > 1 else 'arena_data/lab/runs.sqlite'
@@ -24,13 +25,15 @@ for db in dict.fromkeys([MAIN, DB]):
     c = sqlite3.connect(f'file:{db}?mode=ro', uri=True)
     step = {i: (sc, h) for i, sc, h in c.execute("select id, scenario, payload_hash from scenario_step where scenario like 'r3%'")}
     snaps = dict(c.execute('select label, id from snapshot'))
-    ext = ', '.join(f"coalesce(json_extract(counters, '$.us_{k}'), 0)" for k in KEYS)
+    want = only('--session')
+    want = c.execute('select max(session_id) from run').fetchone()[0] if want == 'last' else int(want) if want else None
+    ext =', '.join(f"coalesce(json_extract(counters, '$.us_{k}'), 0)" for k in KEYS)
     for sid, se, v, st, seed, ch, m, fl, cpu, wall, *us in c.execute(f"""select snapshot_id, session_id, variant, step_id, seed, chained, metric_ref,
             flow, cpu_s, wall_s, {ext} from run where kind='optimize' and error is null and step_id in ({','.join(map(str, step))})"""):
         if 'streak_length=' in v: continue
         sc, h = step[st]
         best[h] = max(best[h], m); flow[h] = max(flow[h], fl or 1)
-        if db == DB and sid == snaps.get(SNAP) and not ch and sc in meta:
+        if db == DB and sid == snaps.get(SNAP) and not ch and sc in meta and (want is None or se == want):
             rows.append((se, v, sc, h, seed, m, cpu or 0, wall or 0, us))
 
 def size(n): return 'upg 1-3' if n <= 3 else 'upg 4-10' if n <= 10 else 'upg 11-25' if n <= 25 else 'upg 26+'

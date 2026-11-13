@@ -1,0 +1,7 @@
+[
+ {
+  "name": "e_real3_dev",
+  "cmd": "target\\arena\\bin\\cold_d.exe --db arena_data/lab/runs.sqlite --set real3_dev run cold_d cold_d:max_iters=14000,adv_radius=1,coarse_shared=true,coarse_cache=true cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,kick_stall=2,kick_types=window+chest+adv+piece+rebuildempty cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,kick_stall=4,kick_types=window+chest+adv+piece+rebuildempty cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,kick_stall=4,kick_types=piece+rebuildempty cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,kick_stall=4,kick_types=window+chest+adv+piece+rebuildempty,mem_polish=true cold_d:max_iters=12000,adv_radius=1,coarse_shared=true,coarse_cache=true,kick_stall=4,kick_types=window+chest+adv+piece+rebuildempty,size_power=0.5 cold_d:max_iters=10000,adv_radius=1,coarse_shared=true,coarse_cache=true,kick_stall=4,kick_types=window+chest+adv+piece+rebuildempty cold_d:max_iters=8000,adv_radius=1,coarse_shared=true,coarse_cache=true,kick_stall=6,kick_types=window+chest+adv+piece+rebuildempty cold_d:max_iters=8000,chains=2,adv_radius=1,coarse_shared=true,coarse_cache=true,kick_stall=8,kick_types=window+chest+adv+piece+rebuildempty --mode cold --seeds 3 --jobs 16 --resume",
+  "note": "cold round 5: kick loop after 12k with the three speedups, and kicks in place of chains at equal CPU"
+ }
+]
