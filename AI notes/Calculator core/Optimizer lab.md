@@ -160,6 +160,7 @@ Keep it to about 10 minutes. Anything longer is a batch.
 | `cold_c` | `cold`'s round 3 (repeats `cold_b`): `coarse_shared`, every free tap outcome's coarse lattice in one pass (`iteration3/cold/report.md` §5). |
 | `cold_d` | `cold`'s round 4 (repeats `cold_c`): `coarse_cache`, `size_power`/`size_ref`/`size_cap`, `min_chains` (since removed, with `exchange_rank` and `exchange_flat`; the tree repeats `cold_d`) (`iteration3/cold/report.md` §6). |
 | `prod_a` | The live production build (9ae4f169: `solve` 48k at 16 `response_points`, the old free tap cut and evaluator), built from a `git archive` copy with `HF_ROOT` set to this repo (so it shares `adv_cache.sqlite`; advanced honing is unchanged since) and copied over the exe `snap` made; its row's sha set by hand. Repeats `lab_r1:response_points=16` exactly (60 of 60 on `small`). Batch `iteration3/prod/a`: against the current default on every `real3_*` set, driven by `cold_d.exe`; `iteration3/prod/scripts/prod.py` tabulates it. |
+| `sim_a` | `algo=simple` (Maxroll's rule) on the cold `real3_dev`/`real3_test` singles, 1 seed (batch `iteration4/simple/a`). |
 | `fin_a` | Iteration 2's final batch (`iteration2/report/runs`): `solve` 48k and 96k, the kick loop with `mem_polish` (with `rebuild`, `rebuildempty`, `rebuildprice`), the surrogate loop (plain and screened), the two together, memetic's and cem's runs from `solve`'s endpoint; one session per set, `large` at 10 seeds. Repeats every stored snapshot it shares runs with. |
 
 The re-run in detail, about 22 hours at 16 jobs, each set one session:
@@ -174,4 +175,5 @@ Iteration 1's first run was at 16 `response_points`, where the best response pic
 
 - **Iteration 1 (batch 1):** archetypes `price`, `surrogate`, `memetic`, `cem` and `lns`, written from scratch without reading the optimizer. The building blocks offered: the evaluator, `shadow_prices`, and the best response (`response.rs`). Brief in `iteration1/brief.md`, write-ups in `iteration1/attempts/`.
 - **Iteration 2:** reviews of each prototype in turn, one investigation each. Status in `iteration2/brief.md`.
+- **Iteration 4 (`simple`, snapshot `sim_a`):** Maxroll's rule as `algo=simple`, a no-search comparison point, against the stored default runs on the cold `real3` singles. Report in `iteration4/simple/report.md`.
 - **Iteration 3:** good results per CPU second on real cases, judged on the `real3_*` sets (real characters, both streak lengths, rosters split 50/50). First the curve of accuracy against CPU per kind of run, far below `solve`'s 48k, then cheap heuristics and categories. Brief and status in `iteration3/brief.md`. It reports how badly runs miss as well as hit: RMS gap and the mean of log10(gap + 0.001).

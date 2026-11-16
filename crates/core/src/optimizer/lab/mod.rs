@@ -6,6 +6,7 @@ pub mod check;
 pub mod lns;
 pub mod memetic;
 pub mod price;
+pub mod simple;
 pub mod surrogate;
 
 use super::{Previous, Solved};
@@ -14,7 +15,7 @@ use crate::state_bundle::StateBundle;
 use rand::Rng;
 
 /// every lab algorithm, by the name `Tuning::algo` takes
-pub const ALGOS: &[&str] = &["price", "surrogate", "memetic", "cem", "lns"];
+pub const ALGOS: &[&str] = &["price", "surrogate", "memetic", "cem", "lns", "simple"];
 
 pub fn solve<R: Rng>(
     rng: &mut R,
@@ -29,6 +30,7 @@ pub fn solve<R: Rng>(
         "memetic" => memetic::solve(rng, state_bundle, previous, probe),
         "cem" => cem::solve(rng, state_bundle, previous, probe),
         "lns" => lns::solve(rng, state_bundle, previous, probe),
+        "simple" => simple::solve(rng, state_bundle, previous, probe),
         other => panic!("no lab algorithm {other}"),
     }
 }
@@ -44,6 +46,7 @@ pub fn check_switches(tuning: &crate::tuning::Tuning) {
         "memetic" => (memetic::OFF.to_vec(), memetic::ON.to_vec()),
         "cem" => (cem::OFF.to_vec(), cem::ON.to_vec()),
         "lns" => (lns::OFF.to_vec(), lns::ON.to_vec()),
+        "simple" => (simple::OFF.to_vec(), simple::ON.to_vec()),
         other => panic!("no lab algorithm {other}"),
     };
     let solves = tuning.algo.is_empty() || tuning.lab_on.split('+').any(|n| n == "fromsolve");
