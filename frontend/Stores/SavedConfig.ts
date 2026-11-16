@@ -28,7 +28,7 @@ import {
 import { get_valid_status_grid } from "@/Utils/StatusGrid";
 import { format_char_name } from "@/Utils/Helpers";
 import type { ManifestChest } from "@/Utils/Chest";
-import type { ScanPage, Snapshot } from "@/Utils/Scans";
+import type { ScanCurrencies, ScanPage, Snapshot } from "@/Utils/Scans";
 import type { CustomChoice } from "@/Utils/Choices";
 import { markRaw } from "vue";
 
@@ -92,6 +92,7 @@ export interface SavedConfig {
   tradable_mats_owned: Record<string, SavedColumn>;
   roster_chests: Record<string, ManifestChest[]>;
   scan_pages: ScanPage[];
+  scan_currencies: ScanCurrencies[];
   snapshots: Snapshot[];
   roster_income: Record<string, Record<string, number>[]>;
   custom_choices: Record<string, CustomChoice>;
@@ -357,6 +358,7 @@ export function to_saved(config: RosterConfig): Omit<SavedConfig, "version"> {
     tradable_mats_owned,
     roster_chests: config.roster_chests,
     scan_pages: config.scan_pages,
+    scan_currencies: config.scan_currencies,
     snapshots: config.snapshots,
     roster_income: config.roster_income,
     custom_choices: config.custom_choices,
@@ -437,6 +439,9 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
   // arrived during V8: a save without them has none
   out.roster_chests = saved.roster_chests ?? {};
   out.scan_pages = Array.isArray(saved.scan_pages) ? saved.scan_pages : [];
+  out.scan_currencies = Array.isArray(saved.scan_currencies)
+    ? saved.scan_currencies
+    : [];
   out.snapshots = Array.isArray(saved.snapshots) ? saved.snapshots : [];
   out.roster_income = saved.roster_income ?? {};
   out.custom_choices = saved.custom_choices ?? {};

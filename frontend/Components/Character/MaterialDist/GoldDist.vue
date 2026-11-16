@@ -75,7 +75,7 @@ function log_percent(log10_chance: number) {
 function hover_annotation(x, _y, cy, _material, color, is_last): string {
   const gold = `<b style="color: ${color};"> ${Math.round(x).toLocaleString("en-US")} </b> gold`;
   if (is_last)
-    return `<b style="color: white;">${log_percent(dist.value.pity[1])} </b> chance to pity EVERYTHING <br> ≥ ${gold}`;
+    return `<b style="color: white;">${log_percent(dist.value.pity[1])} </b> chance to pity EVERYTHING <br> = ${gold}`;
   if (x === dist.value.luckiest[0])
     return `<b style="color: white;">${log_percent(dist.value.luckiest[1])} </b> chance to use ≤ ${gold}`;
   // only full pity is certain

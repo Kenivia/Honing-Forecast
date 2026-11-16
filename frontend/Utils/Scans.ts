@@ -4,7 +4,7 @@ import { add_stack, type ManifestChest } from "./Chest";
 import type { StatusGrid } from "./KeyedUpgrades";
 import type { RosterConfig } from "@/Stores/RosterConfig";
 
-// Scanned pages as last exported, merged across characters, and snapshots of the budgets.
+// Scanned pages as last exported, and snapshots of the budgets.
 
 // a chest that is listed but not passed on
 export interface LooseChest {
@@ -20,10 +20,24 @@ export interface PageContent {
   unknown: LooseChest[];
 }
 
-// One page of a window as last exported. Roster storage and the roster-wide part of the
-// currencies belong to the roster (`char_id` null), everything else to a character. A currency
-// is a page of its own, numbered as `CURRENCY_PAGES`.
-export interface ScanPage extends PageContent {
+// A slot as an export saved it: what the manifest counts on a page not open since, and what a
+// later scan takes on trust while the slot shows the same icon.
+export interface SavedSlot {
+  pos: [number, number];
+  // the icon matched there, null when none was
+  icon: string | null;
+  // the icon, or what it was set to by hand; null when irrelevant
+  item: string | null;
+  label: string | null;
+  tradability: string | null;
+  amount: number;
+  // for a chest, the ones it was read as
+  variants: number[];
+}
+
+// One page of a window as last exported. Roster storage belongs to the roster (`char_id` null),
+// the other windows to a character.
+export interface ScanPage {
   roster_id: string;
   char_id: string | null;
   window: string;
@@ -31,11 +45,20 @@ export interface ScanPage extends PageContent {
   at: number;
   // the character it was scanned on
   by: string;
+  slots: SavedSlot[];
 }
 
-export const CURRENCY_PAGES = { Silver: 0, Gold: 1, Shards: 2 };
+// The currencies as last exported, per character: char bound, roster bound, tradable. Kept for
+// analytics only; a scan always reads them again.
+export interface ScanCurrencies {
+  roster_id: string;
+  char_id: string;
+  at: number;
+  values: Record<string, number[]>;
+}
+
 // windows that belong to the roster; the rest are a character's
-export const ROSTER_WINDOWS = ["Roster", "Currency"];
+export const ROSTER_WINDOWS = ["Roster"];
 
 export const page_key = (window: string, page: number) => `${window} ${page}`;
 
@@ -129,6 +152,13 @@ export function save_pages(config: RosterConfig, pages: ScanPage[]) {
       (old) => !pages.some((page) => same_page(old, page)),
     ),
     ...pages,
+  ];
+}
+
+export function save_currencies(config: RosterConfig, saved: ScanCurrencies) {
+  config.scan_currencies = [
+    ...config.scan_currencies.filter((old) => old.char_id !== saved.char_id),
+    saved,
   ];
 }
 
@@ -265,34 +295,6 @@ export function take_snapshot(
 ) {
   if (!same_as_latest(config, roster_id))
     config.snapshots.push(snapshot_of(config, roster_id, kind, by));
-}
-
-// whether the roster and tradable budgets are as the latest snapshot has them
-export function roster_unchanged(config: RosterConfig, roster_id: string) {
-  const latest = latest_snapshot(config, roster_id);
-  if (!latest) return false;
-  return (
-    JSON.stringify([latest.roster_owned, latest.tradable]) ===
-    JSON.stringify([
-      nonzero(config.roster_mats_owned[roster_id]),
-      nonzero(config.tradable_mats_owned[roster_id]),
-    ])
-  );
-}
-
-// the same, and the character's bound budget and chests too
-export function char_unchanged(
-  config: RosterConfig,
-  roster_id: string,
-  char_id: string,
-) {
-  const char = latest_snapshot(config, roster_id)?.chars[char_id];
-  const profile = config.profiles.find((profile) => profile.id === char_id);
-  if (!char || !profile || !roster_unchanged(config, roster_id)) return false;
-  return (
-    JSON.stringify([char.bound, char.chests]) ===
-    JSON.stringify([nonzero(profile.bound_budgets), profile.chests])
-  );
 }
 
 // ============================================================================

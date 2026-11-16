@@ -20,6 +20,8 @@ export interface SlotEdit {
   amount: number | null;
   tradability: string | null;
   retry?: boolean;
+  // the icon matched there when it was set, which a later scan's prior goes by
+  icon?: string | null;
 }
 
 export const WINDOW_NAMES = {
@@ -48,27 +50,6 @@ export const currency_edits = ref<Partial<Record<Currency, number[]>>>({});
 // images only arrive when they change, and the same objects are reused so canvases are not redrawn
 export const slot_images = new Map<string, OneIconConfig>();
 
-// Taken on trust for a whole window where no tooltip said otherwise. The scanner is not told, so
-// a tooltip it does see still wins.
-export const assume_roster_tradable = ref(false);
-// character storage and the inventory
-export const assume_char_bound = ref(false);
-
-export const assumed_tradability = (address: SlotAddress) =>
-  address.inventory_type === "Roster" && assume_roster_tradable.value
-    ? "Tradable"
-    : address.inventory_type !== "Roster" && assume_char_bound.value
-      ? "CharBound"
-      : null;
-
-// a slot as the page shows it: an unknown tradability filled in by what is assumed for its window
-export function shown_slot(slot: SlotResult | undefined) {
-  if (slot?.status !== "NeedTradability") return slot;
-  const assumed = assumed_tradability(slot.address);
-  if (!assumed) return slot;
-  return { ...slot, status: "Good" as const, reason: "", tradability: assumed };
-}
-
 // The chest read in this very slot, else every chest with one of the slot's icons read in its
 // column: a pushed-up tooltip only tells the column.
 export function chests_for(address: SlotAddress, icon: string | null) {
@@ -91,10 +72,6 @@ export function chests_for(address: SlotAddress, icon: string | null) {
   );
 }
 
-// the user's say on covering each saved page of a coverable window by `page_key`, absent for the
-// default; kept until the next export or a wipe
-export const page_cover = ref<Record<string, boolean>>({});
-export const reset_covers = () => (page_cover.value = {});
 // bumped by `wipe_scan`, so a running capture starts over
 export const scan_wipes = ref(0);
 
@@ -149,8 +126,11 @@ const plain = (address: SlotAddress): SlotAddress => ({
 });
 
 export function set_edit(edit: SlotEdit) {
-  edit = { ...edit, address: plain(edit.address) };
-  edits.value[slot_key(edit.address)] = edit;
+  const key = slot_key(edit.address);
+  const icon =
+    edits.value[key]?.icon ?? slots.value.get(key)?.icon_name_score?.[0];
+  edit = { ...edit, address: plain(edit.address), icon: icon ?? null };
+  edits.value[key] = edit;
   unsent.push(edit);
 }
 

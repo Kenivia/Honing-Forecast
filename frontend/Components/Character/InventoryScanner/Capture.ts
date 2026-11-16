@@ -1,14 +1,6 @@
 import { ref } from "vue";
 import { decode, encode } from "@msgpack/msgpack";
-import {
-  assume_char_bound,
-  assume_roster_tradable,
-  chests,
-  edits,
-  game_pages,
-  seen_pages,
-  slots,
-} from "./ScanStore";
+import { chests, edits, game_pages, seen_pages, slots } from "./ScanStore";
 import { manifest } from "./Manifest";
 import { Detected, scan_settings } from "./ScanSettings";
 import {
@@ -51,6 +43,8 @@ export interface CaptureStart {
   brightness: Detected<number>;
   // the git commit that recorded it
   commit: string;
+  // what the last export said of the slots, which the scan was given (`scan_priors`)
+  priors: unknown[];
 }
 
 // the head of a capture, from a scanner state just reserved and cleared
@@ -118,8 +112,6 @@ function reference() {
     edits: edits.value,
     chests: chests.value,
     game_pages: game_pages.value,
-    assume_roster_tradable: assume_roster_tradable.value,
-    assume_char_bound: assume_char_bound.value,
     seen_pages: seen_pages.value,
     manifest: manifest.value,
   };

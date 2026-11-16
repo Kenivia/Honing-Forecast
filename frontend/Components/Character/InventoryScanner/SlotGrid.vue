@@ -4,16 +4,8 @@ import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { page_key } from "@/Utils/Scans";
 import { Currency, SlotAddress } from "./LoadStorage";
-import {
-  edits,
-  game_pages,
-  page_cover,
-  shown_slot,
-  slot_images,
-  slot_key,
-  slots,
-} from "./ScanStore";
-import { COVERABLE, cover_pages, covered, manifest } from "./Manifest";
+import { edits, game_pages, slot_images, slot_key, slots } from "./ScanStore";
+import { manifest } from "./Manifest";
 import CurrencyBar from "./CurrencyBar.vue";
 import CurrencyDashboard from "./CurrencyDashboard.vue";
 import SlotCell from "./SlotCell.vue";
@@ -74,40 +66,24 @@ function addresses(win: (typeof WINDOWS)[number]): SlotAddress[] {
   return out;
 }
 
-const { roster_config, active_profile, all_profiles } =
-  storeToRefs(useRosterStore());
+const { all_profiles } = storeToRefs(useRosterStore());
 
-// pages taken from the last export, since they were not open in game
-const saved = computed(
-  () =>
-    new Set(
-      manifest.value.saved.map((page) => page_key(page.window, page.page)),
-    ),
+// pages not open in game during this capture, taken from the last export, by `page_key`
+const saved = computed(() =>
+  Object.fromEntries(
+    manifest.value.saved.map((page) => [
+      page_key(page.window, page.page),
+      page,
+    ]),
+  ),
 );
-const has_saved = (type: string) =>
-  [...saved.value].some((key) => key.startsWith(`${type} `));
 
 // the page shown in a window, by `page_key`
 const shown_page = (type: string) => page_key(type, page[type]);
-// a saved page of a coverable window the user uncovered
-const uncovered = (type: string) =>
-  COVERABLE.includes(type) &&
-  cover_pages.value[type].has(shown_page(type)) &&
-  !covered.value[shown_page(type)];
 
-// who exported the page shown in a coverable window last, and when
+// who exported the page shown in a window last, and when
 function last_export(type: string) {
-  const owner = type === "Roster" ? null : active_profile.value.id;
-  const at = page[type];
-  const pages = roster_config.value.scan_pages.filter(
-    (page) =>
-      page.window === type &&
-      page.page === at &&
-      page.char_id === owner &&
-      page.roster_id === active_profile.value.roster_id,
-  );
-  const last = pages.reduce((a, b) => (b.at > a.at ? b : a), pages[0]);
-  if (!last) return "";
+  const last = saved.value[shown_page(type)];
   const name =
     all_profiles.value.find((profile) => profile.id === last.by)?.char_name ??
     "a deleted character";
@@ -158,41 +134,12 @@ function toggle_lock(x: Shown) {
             <button
               v-for="(_, index) in win.pages"
               :key="index"
-              class="generic-button relative"
+              class="generic-button"
               :style="{ color: page[win.type] === index ? 'var(--gold)' : '' }"
               @click="page[win.type] = index"
             >
               {{ index + 1 }}
-              <svg
-                v-if="saved.has(page_key(win.type, index))"
-                role="img"
-                aria-label="saved"
-                viewBox="0 0 16 16"
-                class="absolute -top-1 -right-1 h-2.5 w-2.5 fill-(--gold-muted)"
-              >
-                <path d="M2 1h10l3 3v11H1V1h1zm2 1v4h7V2H4zm1 8v4h6v-4H5z" />
-              </svg>
             </button>
-            <!-- undoes uncovering the page shown -->
-            <button
-              v-if="uncovered(win.type)"
-              class="generic-button ml-2 flex items-center gap-1"
-              @click="page_cover[shown_page(win.type)] = true"
-            >
-              <svg viewBox="0 0 16 16" class="h-2.5 w-2.5 fill-(--gold-muted)">
-                <path d="M2 1h10l3 3v11H1V1h1zm2 1v4h7V2H4zm1 8v4h6v-4H5z" />
-              </svg>
-              Use most recent scan
-            </button>
-            <span
-              v-else-if="has_saved(win.type)"
-              class="annotation ml-2 flex items-center gap-1"
-            >
-              <svg viewBox="0 0 16 16" class="h-2.5 w-2.5 fill-(--gold-muted)">
-                <path d="M2 1h10l3 3v11H1V1h1zm2 1v4h7V2H4zm1 8v4h6v-4H5z" />
-              </svg>
-              Using most recent scan
-            </span>
           </div>
           <div
             class="relative grid gap-1"
@@ -201,29 +148,23 @@ function toggle_lock(x: Shown) {
             }"
           >
             <div
-              v-if="covered[shown_page(win.type)]"
+              v-if="saved[shown_page(win.type)]"
               class="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-(--bg-muted) p-2 text-center text-sm"
               role="group"
               :aria-label="`${win.label} covered`"
             >
               <span>
-                You don't need to re-scan if you know nothing here has changed.
+                Not opened in game yet, so the previous scan of this page is
+                used.
               </span>
               <span class="text-(--text-muted)"
-                >Using most recent scan ({{ last_export(win.type) }}).</span
+                >Exported by {{ last_export(win.type) }}.</span
               >
-
-              <button
-                class="generic-button"
-                @click="page_cover[shown_page(win.type)] = false"
-              >
-                Scan {{ win.label.toLowerCase() }} page {{ page[win.type] + 1 }}
-              </button>
             </div>
             <SlotCell
               v-for="address in addresses(win)"
               :key="slot_key(address)"
-              :info="shown_slot(slots.get(slot_key(address)))"
+              :info="slots.get(slot_key(address))"
               :edit="edits[slot_key(address)]"
               :image="slot_images.get(slot_key(address))"
               :active="is_active(address)"

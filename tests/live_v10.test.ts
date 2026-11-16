@@ -1,6 +1,6 @@
-// Runs the V10 -> V11 migration on the real V10 saves in tests/V10 config*: it adds only the
-// auto income fields, nothing comes from a load fallback, and the result survives load, save,
-// load again.
+// Runs the V10 -> current migrations on the real V10 saves in tests/V10 config*: they add only
+// the auto income fields (V11) and empty the scan pages for slot-by-slot ones (V12), nothing comes
+// from a load fallback, and the result survives load, save, load again.
 import fs from "node:fs";
 import { check, differences, done, section } from "./helpers";
 import LZString from "lz-string";
@@ -10,6 +10,7 @@ import {
   load_roster_config,
   migrate_to_current,
   STORAGE_KEY,
+  STORAGE_VERSION,
   write_state,
 } from "@/Stores/ConfigStorage";
 import { to_saved } from "@/Stores/SavedConfig";
@@ -32,13 +33,21 @@ for (const fixture of fixtures) {
   const migrated = migrate_to_current(structuredClone(v10), 10);
   const added = differences(migrated, v10).filter((p) => p !== ".version");
   check(
-    "V11 adds only income_auto and income_sources",
-    added.every((p) => /^\.profiles\.\d+\.income_(auto|sources)$/.test(p)),
+    "adds only income_auto and income_sources, and new scan pages",
+    added.every((p) =>
+      /^\.profiles\.\d+\.income_(auto|sources)$|^\.scan_(pages|currencies)(\.|$)/.test(
+        p,
+      ),
+    ),
     show(added),
   );
   check(
+    "  scan pages emptied",
+    migrated.scan_pages.length === 0 && migrated.scan_currencies.length === 0,
+  );
+  check(
     "  to every profile, at their defaults",
-    migrated.version === 11 &&
+    migrated.version === STORAGE_VERSION &&
       migrated.profiles.every(
         (p: any) =>
           p.income_auto === false && JSON.stringify(p.income_sources) === "{}",

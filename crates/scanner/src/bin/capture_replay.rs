@@ -109,12 +109,14 @@ fn main() {
     }
 
     let file = fs::read(path).unwrap();
-    let (start, frames, end) = read_frames(&file);
+    let (mut start, frames, end) = read_frames(&file);
     if let (Some(path), Some(end)) = (&reference_path, &end) {
         fs::write(path, end).unwrap();
     }
-    println!("{start:?}");
+    let priors = std::mem::take(&mut start.priors);
+    println!("{start:?}  {} priors", priors.len());
     let (mut state, _pixels) = native::new_state(start.width, start.height);
+    state.set_priors(priors);
     state.screen_info.forced_21_9 = start.forced_21_9;
     state.screen_info.brightness = start.brightness;
     state.hover_log = Some(vec![]);

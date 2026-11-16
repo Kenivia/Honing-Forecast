@@ -132,7 +132,7 @@ describe("MaterialDist columns", () => {
   });
 
   it("pads or cuts the free-tap chances to 0 to the normal upgrades tapped", async () => {
-    const { wrapper, runtime } = await setup();
+    const { wrapper, store, runtime } = await setup();
     const normal = { is_normal_honing: true };
     runtime.histogram.result = fake_histogram(0, {
       state_bundle: {
@@ -141,6 +141,15 @@ describe("MaterialDist columns", () => {
         upgrade_arr: [normal, normal, { is_normal_honing: false }, normal],
       },
     });
+    await wrapper.vm.$nextTick();
+    // not cumulative by default: point k+1 is the chance of at least k+1
+    expect(graph(wrapper, "Special").props("data")).toEqual([
+      [1, 0.5],
+      [2, 0.25],
+      [3, 0],
+      [4, 0],
+    ]);
+    store.roster_config.cumulative_graph = true;
     await wrapper.vm.$nextTick();
     expect(graph(wrapper, "Special").props("data")).toEqual([
       [1, 1],

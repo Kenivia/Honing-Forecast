@@ -4,7 +4,7 @@ use crate::{
     currency::CurrencyResult,
     interface::setup::{OneIconConfig, WireRect},
     ocr::jobs::OcrJob,
-    scanner_state::{InventoryType, OneSlotInfo, ScannerState, SlotAddress, Tradability},
+    scanner_state::{InventoryType, OneSlotInfo, Prior, ScannerState, SlotAddress, Tradability},
     tooltip::{
         chest::Chest,
         items::{
@@ -58,9 +58,14 @@ pub struct SlotResult<'a> {
     pub amount: &'a Option<String>,
     pub tooltip_amount: &'a Option<String>,
     pub tradability: Option<Tradability>,
-    // the material the tooltip said it is, where the icon alone does not say
-    pub label: &'a Option<String>,
+    // the material the tooltip (or the last export) said it is, where the icon alone does not say
+    pub label: Option<&'a String>,
+    // what it is taken as: its icon, or what the last export had it set to by hand; nothing when
+    // that was irrelevant, or it matches no icon
+    pub item: Option<&'a String>,
     pub status: SlotStatus,
+    // in order thanks to the last export
+    pub assumed: bool,
     // its number is with OCR, a first read or a re-read
     pub reading: bool,
     // why it needs a hover or is an error, for the user
@@ -91,6 +96,32 @@ fn slot_variants(info: &OneSlotInfo) -> Vec<&'static Variant> {
         .filter(|x| x.level.is_some() == info.levelled())
         .collect();
     if by_level.is_empty() { all } else { by_level }
+}
+
+// of those, the chests the last export read the slot as
+fn narrow<'v>(variants: Vec<&'v Variant>, prior: Option<&Prior>) -> Vec<&'v Variant> {
+    let Some(prior) = prior else { return variants };
+    let kept: Vec<&Variant> = variants
+        .iter()
+        .copied()
+        .filter(|x| prior.variants.contains(&x.id))
+        .collect();
+    if kept.is_empty() { variants } else { kept }
+}
+
+// a material by the number on its icon alone
+fn number_status(info: &OneSlotInfo) -> (SlotStatus, String) {
+    match &info.amount {
+        None => (
+            SlotStatus::Pending,
+            "The number on the icon is still being recognized by OCR.".into(),
+        ),
+        Some(text) if icon_number(text) >= 9999 => (
+            SlotStatus::NeedHover,
+            "The icon only shows up to 9999, the real amount is on the tooltip.".into(),
+        ),
+        Some(_) => (SlotStatus::Good, String::new()),
+    }
 }
 
 impl OneSlotInfo {
@@ -124,24 +155,70 @@ impl Chest {
 }
 
 impl ScannerState {
-    // status, reason, and the slot's tradability: its own tooltip's, else its chest's, else the
-    // one way every chest it can be is bound
+    // the last export's say on a slot that shows the icon it showed then
+    fn prior_of(&self, address: &SlotAddress, info: &OneSlotInfo) -> Option<&Prior> {
+        let icon = &info.icon_name_score.as_ref()?.0;
+        self.priors.get(address).filter(|x| &x.icon == icon)
+    }
+
+    // Status, reason, the slot's tradability (its own tooltip's, else its chest's, else the one
+    // way every chest it can be is bound, else the last export's) and whether the last export
+    // put it in order.
     fn slot_status(
         &self,
         address: &SlotAddress,
         info: &OneSlotInfo,
         variants: &[&Variant],
-    ) -> (SlotStatus, String, Option<Tradability>) {
-        let (status, reason, tradability) = self.read_status(address, info, variants);
+        prior: Option<&Prior>,
+        narrowed: bool,
+    ) -> (SlotStatus, String, Option<Tradability>, bool) {
+        let (status, reason, tradability, assumed) =
+            self.prior_status(address, info, variants, prior, narrowed);
+        let assumed = assumed && matches!(status, SlotStatus::Good | SlotStatus::Irrelevant);
+        (status, reason, tradability, assumed)
+    }
+
+    fn prior_status(
+        &self,
+        address: &SlotAddress,
+        info: &OneSlotInfo,
+        variants: &[&Variant],
+        prior: Option<&Prior>,
+        narrowed: bool,
+    ) -> (SlotStatus, String, Option<Tradability>, bool) {
+        let from_prior = prior.and_then(|x| x.tradability);
+        // set by hand to something else, which no tooltip has undone since
+        if let Some(prior) = prior.filter(|x| !info.hovered && x.item.as_ref() != Some(&x.icon)) {
+            if prior.item.is_none() {
+                return (SlotStatus::Irrelevant, String::new(), None, true);
+            }
+            let (status, reason) = number_status(info);
+            return match (status, info.tradability.or(from_prior)) {
+                (SlotStatus::Good, None) => (
+                    SlotStatus::NeedTradability,
+                    "The tradability of this stack is not known.".into(),
+                    None,
+                    true,
+                ),
+                (status, tradability) => (status, reason, tradability, true),
+            };
+        }
+        let (status, reason, read) = self.read_status(address, info, variants, narrowed);
+        let tradability = read.or(from_prior);
+        let label = info.label.is_some() || prior.is_some_and(|x| x.label.is_some());
+        let assumed = (read.is_none() && from_prior.is_some())
+            || (info.label.is_none() && label)
+            || (narrowed && !info.hovered);
         let shared = info
             .icon_name_score
             .as_ref()
             .is_some_and(|x| shares_icon(&x.0));
-        if matches!(status, SlotStatus::Good) && shared && info.label.is_none() {
+        if matches!(status, SlotStatus::Good) && shared && !label {
             return (
                 SlotStatus::NeedHover,
                 "Several items share this icon.".into(),
                 tradability,
+                assumed,
             );
         }
         if matches!(status, SlotStatus::Good) && tradability.is_none() {
@@ -149,9 +226,10 @@ impl ScannerState {
                 SlotStatus::NeedTradability,
                 "The tradability of this stack is not known.".into(),
                 None,
+                assumed,
             );
         }
-        (status, reason, tradability)
+        (status, reason, tradability, assumed)
     }
 
     fn read_status(
@@ -159,8 +237,9 @@ impl ScannerState {
         address: &SlotAddress,
         info: &OneSlotInfo,
         variants: &[&Variant],
+        narrowed: bool,
     ) -> (SlotStatus, String, Option<Tradability>) {
-        let (status, reason) = self.amount_status(address, info, variants);
+        let (status, reason) = self.amount_status(address, info, variants, narrowed);
         let chest_tradability = || {
             info.icon_name_score.as_ref()?;
             let number = info.amount.as_ref().map(|text| icon_number(text));
@@ -193,6 +272,7 @@ impl ScannerState {
         address: &SlotAddress,
         info: &OneSlotInfo,
         variants: &[&Variant],
+        narrowed: bool,
     ) -> (SlotStatus, String) {
         let Some((icon, _)) = &info.icon_name_score else {
             return (SlotStatus::Irrelevant, String::new());
@@ -235,6 +315,14 @@ impl ScannerState {
                 .collect();
             // the amount of a chest that counts for nothing does not matter
             if !sure && !standing.is_empty() && standing.iter().all(|chest| chest.irrelevant) {
+                return good(true);
+            }
+            // the last export read it as chests that count for nothing, and nothing says otherwise
+            if narrowed
+                && !info.hovered
+                && standing.is_empty()
+                && variants.iter().all(|x| x.irrelevant)
+            {
                 return good(true);
             }
             if info.hovered && info.tooltip_failed {
@@ -284,17 +372,7 @@ impl ScannerState {
         if info.hovered {
             return (SlotStatus::Good, String::new());
         }
-        match &info.amount {
-            None => (
-                SlotStatus::Pending,
-                "The number on the icon is still being recognized by OCR.".into(),
-            ),
-            Some(text) if icon_number(text) >= 9999 => (
-                SlotStatus::NeedHover,
-                "The icon only shows up to 9999, the real amount is on the tooltip.".into(),
-            ),
-            Some(_) => (SlotStatus::Good, String::new()),
-        }
+        number_status(info)
     }
 }
 
@@ -326,40 +404,59 @@ pub struct ScanResult<'a> {
 }
 
 impl ScannerState {
+    // one slot as the page gets it
+    pub fn slot_result<'a>(
+        &'a self,
+        address: &SlotAddress,
+        info: &'a OneSlotInfo,
+        full: bool,
+    ) -> SlotResult<'a> {
+        let prior = self.prior_of(address, info);
+        let all = slot_variants(info);
+        let count = all.len();
+        let variants = narrow(all, prior);
+        let narrowed = variants.len() < count;
+        let (status, reason, tradability, assumed) =
+            self.slot_status(address, info, &variants, prior, narrowed);
+        let read = info.tooltip_amount.as_ref().or(info.amount.as_ref());
+        let item = match prior.filter(|_| !info.hovered) {
+            Some(prior) => prior.item.as_ref(),
+            None => info.icon_name_score.as_ref().map(|x| &x.0),
+        };
+        SlotResult {
+            address: *address,
+            icon_name_score: &info.icon_name_score,
+            alternatives: &info.alternatives,
+            amount: &info.amount,
+            tooltip_amount: &info.tooltip_amount,
+            tradability,
+            label: info.label.as_ref().or(prior.and_then(|x| x.label.as_ref())),
+            item,
+            status,
+            assumed,
+            reading: info
+                .amount_job
+                .is_some_and(|id| !self.ocr_texts.contains_key(&id)),
+            reason,
+            value: read
+                .filter(|_| info.icon_name_score.is_some())
+                .map(|text| icon_number(text)),
+            variants: variants.iter().map(|x| x.id).collect(),
+            image: info
+                .display_icon
+                .as_ref()
+                .filter(|_| full || self.changed_slots.contains(address))
+                .map(IconBytes),
+        }
+    }
+
     pub fn result(&self, full: bool) -> ScanResult<'_> {
         let slots = self
             .slot_infos
             .iter()
             // an edited slot is the page's to show
             .filter(|(address, _)| !self.edits.contains_key(*address))
-            .map(|(address, info)| {
-                let variants = slot_variants(info);
-                let (status, reason, tradability) = self.slot_status(address, info, &variants);
-                let read = info.tooltip_amount.as_ref().or(info.amount.as_ref());
-                SlotResult {
-                    address: *address,
-                    icon_name_score: &info.icon_name_score,
-                    alternatives: &info.alternatives,
-                    amount: &info.amount,
-                    tooltip_amount: &info.tooltip_amount,
-                    tradability,
-                    label: &info.label,
-                    status,
-                    reading: info
-                        .amount_job
-                        .is_some_and(|id| !self.ocr_texts.contains_key(&id)),
-                    reason,
-                    value: read
-                        .filter(|_| info.icon_name_score.is_some())
-                        .map(|text| icon_number(text)),
-                    variants: variants.iter().map(|x| x.id).collect(),
-                    image: info
-                        .display_icon
-                        .as_ref()
-                        .filter(|_| full || self.changed_slots.contains(address))
-                        .map(IconBytes),
-                }
-            })
+            .map(|(address, info)| self.slot_result(address, info, full))
             .collect();
         ScanResult {
             full,
@@ -392,3 +489,7 @@ impl ScannerState {
         self.chests_changed = false;
     }
 }
+
+#[cfg(test)]
+#[path = "scan_result_tests.rs"]
+mod tests;

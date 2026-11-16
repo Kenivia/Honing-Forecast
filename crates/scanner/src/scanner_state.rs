@@ -218,7 +218,25 @@ pub struct SlotEdit {
     pub tradability: Option<Tradability>,
 }
 
+// What the last export took a slot as. It stands while the slot shows the same icon, under
+// whatever a tooltip says.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Prior {
+    pub address: SlotAddress,
+    pub icon: String,
+    // the icon, another item it was set to by hand, or nothing when set irrelevant
+    pub item: Option<String>,
+    pub label: Option<String>,
+    pub tradability: Option<Tradability>,
+    // for a chest, the ones it was read as
+    pub variants: Vec<u32>,
+}
+
 impl ScannerState {
+    pub fn set_priors(&mut self, priors: Vec<Prior>) {
+        self.priors = priors.into_iter().map(|x| (x.address, x)).collect();
+    }
+
     pub fn apply_edits(&mut self, edits: Vec<SlotEdit>) {
         for edit in edits {
             if edit.retry {
@@ -256,6 +274,7 @@ impl AnchorType {
 pub struct ScannerState {
     pub slot_infos: AHashMap<SlotAddress, OneSlotInfo>,
     pub edits: AHashMap<SlotAddress, SlotEdit>,
+    pub priors: AHashMap<SlotAddress, Prior>,
     pub anchors: AHashMap<AnchorType, AnchorInfo>,
 
     pub page_num_infos: AHashMap<InventoryType, Vec<Option<bool>>>,
@@ -296,6 +315,8 @@ pub struct ScannerState {
     pub slots_left: bool,
     // the native harness reads every slot at once, so that its runs repeat
     pub no_slot_budget: bool,
+    // test only: tooltips are not looked for, as if nothing was hovered
+    pub no_tooltips: bool,
 
     // written since the last result went to JS
     pub changed_slots: AHashSet<SlotAddress>,

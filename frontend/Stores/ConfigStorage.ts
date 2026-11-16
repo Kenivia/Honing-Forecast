@@ -13,13 +13,14 @@ import { debounce } from "@/Utils/Helpers";
 import { RosterConfig } from "./RosterConfig";
 import { from_saved, SavedColumn, SavedConfig, to_saved } from "./SavedConfig";
 
-export const STORAGE_VERSION = 11;
-export const STORAGE_KEY = "HF_CONFIG_V11_COMPRESSED";
+export const STORAGE_VERSION = 12;
+export const STORAGE_KEY = "HF_CONFIG_V12_COMPRESSED";
 
 // Older keys, newest first. On a version bump, move the current key to the top of
 // this list. `version` is only a fallback for pre-V8 saves, which carry no version
 // inside the payload.
 const LEGACY_KEYS: { key: string; version: number }[] = [
+  { key: "HF_CONFIG_V11_COMPRESSED", version: 11 },
   { key: "HF_CONFIG_V10_COMPRESSED", version: 10 },
   { key: "HF_CONFIG_V9_COMPRESSED", version: 9 },
   { key: "HF_CONFIG_V8_COMPRESSED", version: 8 },
@@ -42,6 +43,7 @@ const MIGRATIONS: Record<number, (data: any) => any> = {
   8: migrate_8_to_9,
   9: migrate_9_to_10,
   10: migrate_10_to_11,
+  11: migrate_11_to_12,
 };
 
 // ============================================================================
@@ -438,7 +440,11 @@ function migrate_9_to_10(data: any): any {
     (a, b) => (Number(a.roster_id) || 0) - (Number(b.roster_id) || 0),
   );
   data.active_profile_index = Math.max(0, data.profiles.indexOf(active));
-  for (const item of [...data.profiles, ...(data.scan_pages ?? []), ...(data.snapshots ?? [])]) {
+  for (const item of [
+    ...data.profiles,
+    ...(data.scan_pages ?? []),
+    ...(data.snapshots ?? []),
+  ]) {
     item.roster_id = id_of(item.roster_id);
   }
   for (const key of [
@@ -463,5 +469,14 @@ function migrate_10_to_11(data: any): any {
     profile.income_sources ??= {};
   }
   data.version = 11;
+  return data;
+}
+
+// Scan pages are saved slot by slot: the old page totals are dropped, and the currencies get
+// their own list.
+function migrate_11_to_12(data: any): any {
+  data.scan_pages = [];
+  data.scan_currencies = [];
+  data.version = 12;
   return data;
 }

@@ -1,12 +1,15 @@
 // What the native bins share: the config and the recogniser from public/, and a state over a
 // frame buffer the bin owns.
 
-use std::{fs, sync::Once};
+use std::{collections::BTreeMap, fs, sync::Once};
 
 use crate::{
     buffer::Buffer,
-    interface::setup::{load_ocr_engine, set_config},
-    scanner_state::ScannerState,
+    interface::{
+        scan_result::{SlotResult, SlotStatus},
+        setup::{load_ocr_engine, set_config},
+    },
+    scanner_state::{Prior, ScannerState, SlotAddress},
     tooltip::{chest::Chest, hover::Hover},
 };
 
@@ -163,11 +166,10 @@ pub fn read_rest(state: &mut ScannerState) {
 
 // The slots set by hand in a capture's end record, the only right answers it has, against what
 // the scanner read there. A slot is right when it is in order (Good, or only its tradability
-// missing, which the page may assume) with the icon, amount and tradability that were set; no
+// missing) with the icon, amount and tradability that were set; no
 // amount set is a single item, no tradability set is not checked. A slot set with no item is right
 // when it is irrelevant. Prints each slot and returns how many were right, of how many.
 pub fn check_edits(state: &ScannerState, end: &str) -> (usize, usize) {
-    use crate::interface::scan_result::SlotStatus;
     let end: serde_json::Value = serde_json::from_str(end).unwrap();
     let slots = state.result(true).slots;
     let edits = end["edits"].as_object().cloned().unwrap_or_default();
@@ -191,7 +193,8 @@ pub fn check_edits(state: &ScannerState, end: &str) -> (usize, usize) {
         let icon = slot.icon_name_score.as_ref().map(|x| x.0.as_str());
         let is_item = icon == item
             || slot.alternatives.iter().any(|x| Some(x.as_str()) == item)
-            || slot.label.as_deref() == item;
+            || slot.label.map(|x| x.as_str()) == item
+            || slot.item.map(|x| x.as_str()) == item;
         let read_tradability = slot.tradability.map(|x| format!("{x:?}"));
         let ok = match item {
             None => matches!(slot.status, SlotStatus::Irrelevant),
@@ -214,4 +217,83 @@ pub fn check_edits(state: &ScannerState, end: &str) -> (usize, usize) {
         );
     }
     (right, edits.len())
+}
+
+// The chest an export takes a slot for: the one read in it, else one read in its column with
+// its icon, the one with its amount first.
+fn chest_read(state: &ScannerState, slot: &SlotResult) -> Option<Vec<u32>> {
+    let a = slot.address;
+    let info = &state.slot_infos[&a];
+    let column = (a.inventory_type, a.page_num, a.pos_in_inv.1);
+    let exact: Vec<&Chest> = state.chests.iter().filter(|x| x.slot == Some(a)).collect();
+    let found = if exact.is_empty() {
+        state
+            .chests
+            .iter()
+            .filter(|x| x.column == Some(column) && info.shows(&x.icons))
+            .collect()
+    } else {
+        exact
+    };
+    let digits = |x: &String| {
+        x.chars()
+            .filter(char::is_ascii_digit)
+            .collect::<String>()
+            .parse()
+            .ok()
+    };
+    let read = found
+        .iter()
+        .find(|x| x.amount.as_ref().and_then(digits) == slot.value)
+        .or(found.first());
+    read.map(|x| x.variants.clone())
+}
+
+// What an export at the end would save, as priors: the slots in order, with the end record's
+// hand edits over them.
+pub fn priors_of(state: &ScannerState, end: &str) -> Vec<Prior> {
+    let end: serde_json::Value = serde_json::from_str(end).unwrap();
+    let slots = state.result(true).slots;
+    let mut out: BTreeMap<String, Prior> = BTreeMap::new();
+    let key = |a: &SlotAddress| format!("{a:?}");
+    for slot in &slots {
+        let Some((icon, _)) = slot.icon_name_score else {
+            continue;
+        };
+        if !matches!(slot.status, SlotStatus::Good | SlotStatus::Irrelevant) {
+            continue;
+        }
+        let prior = Prior {
+            address: slot.address,
+            icon: icon.clone(),
+            item: slot.item.cloned(),
+            label: slot.label.cloned(),
+            tradability: slot.tradability,
+            variants: chest_read(state, slot).unwrap_or(slot.variants.clone()),
+        };
+        out.insert(key(&slot.address), prior);
+    }
+    for edit in end["edits"]
+        .as_object()
+        .into_iter()
+        .flat_map(|x| x.values())
+    {
+        let address: SlotAddress = serde_json::from_value(edit["address"].clone()).unwrap();
+        let Some(slot) = slots.iter().find(|x| x.address == address) else {
+            continue;
+        };
+        let Some((icon, _)) = slot.icon_name_score else {
+            continue;
+        };
+        let prior = Prior {
+            address,
+            icon: icon.clone(),
+            item: edit["item"].as_str().map(String::from),
+            label: None,
+            tradability: serde_json::from_value(edit["tradability"].clone()).unwrap(),
+            variants: chest_read(state, slot).unwrap_or(slot.variants.clone()),
+        };
+        out.insert(key(&address), prior);
+    }
+    out.into_values().collect()
 }

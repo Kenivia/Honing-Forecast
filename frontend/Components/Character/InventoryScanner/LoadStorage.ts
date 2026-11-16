@@ -66,12 +66,7 @@ export interface Chest {
 }
 
 export type SlotStatus =
-  | "Pending"
-  | "Good"
-  | "NeedHover"
-  | "NeedTradability"
-  | "Error"
-  | "Irrelevant";
+  "Pending" | "Good" | "NeedHover" | "NeedTradability" | "Error" | "Irrelevant";
 
 export type Currency = "Silver" | "Gold" | "Shards";
 
@@ -94,9 +89,14 @@ export interface SlotResult {
   amount: string | null;
   tooltip_amount: string | null;
   tradability: string | null;
-  // the material the tooltip said it is, where the icon alone does not say
+  // the material the tooltip (or the last export) said it is, where the icon alone does not say
   label: string | null;
+  // what it is taken as: its icon, or what the last export had it set to by hand; null when that
+  // was irrelevant, or it matches no icon
+  item: string | null;
   status: SlotStatus;
+  // in order thanks to the last export
+  assumed: boolean;
   // its number is with OCR, a first read or a re-read
   reading: boolean;
   reason: string;

@@ -6,7 +6,6 @@ import { new_char_profile } from "@/Stores/CharacterProfile";
 import { from_saved } from "@/Stores/SavedConfig";
 import { input_column_to_num, set_cell } from "@/Utils/InputColumn";
 import {
-  roster_unchanged,
   snapshot_diff,
   snapshot_of,
   sum_pages,
@@ -15,7 +14,6 @@ import {
 import {
   currencies,
   edits,
-  page_cover,
   reset_scan,
   seen_pages,
   set_edit,
@@ -24,7 +22,7 @@ import {
 import {
   export_manifest,
   manifest,
-  covered,
+  scan_priors,
 } from "@/Components/Character/InventoryScanner/Manifest";
 import { build_materials } from "@/WasmInterface/PayloadBuilder";
 
@@ -71,7 +69,6 @@ const as = (index: number) => {
 
 section("first export, character A");
 as(0);
-check("nothing saved: roster storage not covered", !covered.value["Roster 0"]);
 see("Roster 0", "CharStorage 0", "CharInventory 0");
 put("Roster", 0, 0, "Red", 100, "Tradable");
 put("CharStorage", 0, 0, "Blue", 50, "CharBound");
@@ -108,7 +105,9 @@ slots.value = new Map([
       tooltip_amount: null,
       tradability: null,
       label: null,
+      item: "Blue",
       status: "NeedHover",
+      assumed: false,
       reading: false,
       reason: "needs a hover",
       value: 9999,
@@ -139,20 +138,23 @@ equal(
         `${page.window} ${page.page} ${page.char_id === null ? "roster" : page.char_id === ids[0] ? "A" : "?"}`,
     )
     .sort(),
-  [
-    "CharCurrency 0 A",
-    "CharCurrency 1 A",
-    "CharInventory 0 A",
-    "CharStorage 0 A",
-    "Currency 0 roster",
-    "Currency 1 roster",
-    "Roster 0 roster",
-  ],
+  ["CharInventory 0 A", "CharStorage 0 A", "Roster 0 roster"],
+);
+equal(
+  "the unresolved slot is not saved",
+  config.scan_pages
+    .find((page) => page.window === "CharInventory")
+    .slots.map((slot) => slot.pos),
+  [[0, 0]],
+);
+equal(
+  "currencies saved apart",
+  config.scan_currencies.map((x) => [x.char_id === ids[0], x.values]),
+  [[true, { Silver: [0, 1000, 0], Gold: [10, 0, 20] }]],
 );
 
-section("character B, roster storage covered");
+section("character B opens roster storage again");
 as(1);
-check("saved and unchanged: covered", covered.value["Roster 0"]);
 see("Roster 0", "CharInventory 0");
 put("Roster", 0, 0, "Red", 999, "Tradable");
 put("CharInventory", 0, 0, "Blue", 7, "RosterBound");
@@ -163,15 +165,11 @@ export_manifest();
 now = owned();
 equal("B bound", now.bound.Blue, 3);
 equal("roster adds A's and B's", now.roster.Blue, 27);
+equal("tradable: roster storage as B read it", now.tradable.Red, 1004);
 equal(
-  "tradable: saved roster storage, not the covered read",
-  now.tradable.Red,
-  105,
-);
-equal(
-  "currencies kept from A's export",
+  "currencies are never taken from an export: not read, 0",
   [now.roster.Silver, now.tradable.Gold, now.bound.Gold],
-  [1000, 20, 0],
+  [0, 0, 0],
 );
 equal("A's bound untouched", input_column_to_num(a.bound_budgets).Blue, 50);
 check(
@@ -180,76 +178,43 @@ check(
     (page) => page.char_id === ids[1] && page.window === "CharInventory",
   ),
 );
-check(
-  "roster storage not saved again",
-  config.scan_pages.filter((page) => page.window === "Roster").length === 1,
-);
-
-section("a roster page open in game that was never saved");
-as(1);
-const roster_read = () =>
-  manifest.value.read
+equal(
+  "roster storage saved again, by B",
+  config.scan_pages
     .filter((page) => page.window === "Roster")
-    .map((page) => page.page);
-check("only page 1 saved, none open: covered", covered.value["Roster 0"]);
-see("Roster 0");
-check("the saved page open: still covered", covered.value["Roster 0"]);
-see("Roster 1");
-check(
-  "page 2 open, never saved: not covered, page 1 still is",
-  !covered.value["Roster 1"] && covered.value["Roster 0"],
-);
-put("Roster", 1, 0, "Red", 30, "Tradable");
-equal("only the uncovered page read", roster_read(), [1]);
-page_cover.value["Roster 0"] = false;
-check("the user can uncover page 1", !covered.value["Roster 0"]);
-equal("both open pages read", roster_read(), [0, 1]);
-page_cover.value["Roster 1"] = true;
-check("a page never saved cannot be covered", !covered.value["Roster 1"]);
-page_cover.value = {};
-check("back to the default: covered", covered.value["Roster 0"]);
-reset_scan();
-set_cell(store.active_tradable_mats_owned, "Red", "1");
-check("changed budgets uncover it", !covered.value["Roster 0"]);
-set_cell(store.active_tradable_mats_owned, "Red", "105");
-check(
-  "budgets back as snapshotted: covered",
-  roster_unchanged(config, config.profiles[0].roster_id) &&
-    covered.value["Roster 0"],
+    .map((page) => page.by === ids[1]),
+  [true],
 );
 
-section("A again, roster budget changed by hand");
-as(0);
-set_cell(store.active_tradable_mats_owned, "Red", "1");
-page_cover.value = {};
-check("changed since the snapshot: not covered", !covered.value["Roster 0"]);
-page_cover.value["Roster 0"] = true;
-check("the user can cover it anyway", covered.value["Roster 0"]);
-page_cover.value = {};
-// only roster page 2 is opened: page 1 and A's own windows come from the last export
+section("a page not opened is taken as unchanged");
+as(1);
 see("Roster 1");
 put("Roster", 1, 0, "Red", 30, "Tradable");
 equal(
   "saved pages in use",
   manifest.value.saved.map((page) => `${page.window} ${page.page}`).sort(),
-  [
-    "CharCurrency 0",
-    "CharCurrency 1",
-    "CharInventory 0",
-    "CharStorage 0",
-    "Currency 0",
-    "Currency 1",
-    "Roster 0",
-  ],
+  ["CharInventory 0", "Roster 0"],
+);
+equal(
+  "saved page 1, new page 2, B's inventory",
+  manifest.value.materials.Red[2],
+  1034,
+);
+reset_scan();
+
+section("A again, only roster page 2 opened");
+as(0);
+see("Roster 1");
+put("Roster", 1, 0, "Red", 30, "Tradable");
+equal(
+  "saved pages in use",
+  manifest.value.saved.map((page) => `${page.window} ${page.page}`).sort(),
+  ["CharInventory 0", "CharStorage 0", "Roster 0"],
 );
 export_manifest();
 now = owned();
-equal("tradable: saved page 1, new page 2, B's", now.tradable.Red, 135);
+equal("tradable: saved page 1, new page 2, B's", now.tradable.Red, 1034);
 equal("A bound from its saved pages", now.bound.Blue, 50);
-check(
-  "after the export the cover is back to the default",
-  !Object.keys(page_cover.value).length && covered.value["Roster 0"],
-);
 
 section("snapshots");
 const first = config.snapshots[0];
@@ -258,7 +223,7 @@ const diff = snapshot_diff(first, last, null);
 const row = (label: string) =>
   diff.rows.find((r) => r.label === label)?.changes;
 equal("Blue: A 50 + B 3 bound, 27 roster", row("Blue"), [53, 27, 0, 0]);
-equal("Red tradable", row("Red"), [0, 0, 135, 0]);
+equal("Red tradable", row("Red"), [0, 0, 1034, 0]);
 equal(
   "B alone",
   snapshot_diff(first, last, ids[1]).rows.find((r) => r.label === "Blue")
@@ -316,41 +281,79 @@ check(
 );
 a.bound_budgets.enabled["Shards"] = false;
 
-section("character storage covered");
+section("slots saved for the next scan");
 as(0);
-const storage_read = () =>
-  manifest.value.read.filter((page) => page.window === "CharStorage").length;
-check("A unchanged since its export: covered", covered.value["CharStorage 0"]);
-put("CharStorage", 0, 0, "Blue", 999, "CharBound");
-equal("covered, nothing read there counts", storage_read(), 0);
 see("CharStorage 1");
-check(
-  "a page never saved open: only it is not covered",
-  !covered.value["CharStorage 1"] && covered.value["CharStorage 0"],
+const at = (col: number) => ({
+  inventory_type: "CharStorage",
+  page_num: 1,
+  pos_in_inv: [0, col],
+});
+const read = (col: number, more: object) =>
+  [
+    `CharStorage 1 0,${col}`,
+    {
+      address: at(col),
+      icon_name_score: ["Blue", 0.99],
+      alternatives: [],
+      amount: "5",
+      tooltip_amount: null,
+      tradability: "CharBound",
+      label: null,
+      item: "Blue",
+      status: "Good",
+      assumed: false,
+      reading: false,
+      reason: "",
+      value: 5,
+      variants: [],
+      ...more,
+    } as any,
+  ] as const;
+slots.value = new Map([
+  read(0, { assumed: true }),
+  read(1, {}),
+  // set irrelevant by hand at an earlier export
+  read(2, { item: null, tradability: null, status: "Irrelevant" }),
+]);
+equal(
+  "a slot put in order by the last export is counted",
+  manifest.value.assumed,
+  1,
 );
+set_edit({
+  address: at(1) as any,
+  item: "Red",
+  amount: 2,
+  tradability: "Tradable",
+});
+equal(
+  "an edit keeps the icon matched there",
+  edits.value["CharStorage 1 0,1"].icon,
+  "Blue",
+);
+export_manifest();
+const priors = scan_priors().filter(
+  (x) => x.address.inventory_type === "CharStorage" && x.address.page_num === 1,
+);
+equal(
+  "saved as priors, a hand edit as what it was set to",
+  priors.map((x) => [x.address.pos_in_inv, x.icon, x.item, x.tradability]),
+  [
+    [[0, 0], "Blue", "Blue", "CharBound"],
+    [[0, 1], "Blue", "Red", "Tradable"],
+    [[0, 2], "Blue", null, null],
+  ],
+);
+check(
+  "slots set by hand where no icon was matched give no prior",
+  scan_priors().every((x) => x.icon),
+);
+equal("A bound counts the read slot", owned().bound.Blue, 55);
 reset_scan();
-set_cell(store.active_profile.bound_budgets, "Blue", "1");
-check("its bound budget changed: not covered", !covered.value["CharStorage 0"]);
-set_cell(store.active_profile.bound_budgets, "Blue", "50");
-check("back as snapshotted: covered", covered.value["CharStorage 0"]);
-set_cell(store.active_tradable_mats_owned, "Red", "1");
-check(
-  "the roster's budgets changed: not covered",
-  !covered.value["CharStorage 0"],
-);
-set_cell(store.active_tradable_mats_owned, "Red", "135");
-page_cover.value["CharStorage 0"] = false;
-check("the user can uncover it", !covered.value["CharStorage 0"]);
-as(1);
-page_cover.value = {};
-check(
-  "B never exported its storage: not covered",
-  !covered.value["CharStorage 0"],
-);
 
 section("a Serca character's T4 is exported unconverted");
 as(0);
-page_cover.value["CharStorage 0"] = false;
 a.tier = 1;
 see("CharStorage 0", "CharInventory 0");
 put("CharStorage", 0, 0, "Fusion", 12, "CharBound");

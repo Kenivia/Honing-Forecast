@@ -24,11 +24,18 @@ export function scan_page(roster_id: string, char_id: string | null): ScanPage {
     page: 2,
     at: 1700000000000,
     by: "someid",
-    materials: { Red: [1, 2, 3] },
-    chests: [chest("Page chest")],
-    random: [],
-    unknown: [],
-  } as ScanPage;
+    slots: [
+      {
+        pos: [0, 1],
+        icon: "icon_a",
+        item: "icon_a",
+        label: null,
+        tradability: "Tradable",
+        amount: 3,
+        variants: [],
+      },
+    ],
+  };
 }
 
 export function snapshot(roster_id: string, char_id: string): Snapshot {
@@ -68,7 +75,12 @@ export function rich_config(): RosterConfig {
   };
   config.all_regions = { 0: "nae", 1: "euc" };
   const a = { ...new_char_profile(), char_name: "Alpha", roster_id: "0" };
-  const b = { ...new_char_profile(), char_name: "Beta", roster_id: "0", tier: 1 };
+  const b = {
+    ...new_char_profile(),
+    char_name: "Beta",
+    roster_id: "0",
+    tier: 1,
+  };
   const c = { ...new_char_profile(), char_name: "Gamma", roster_id: "1" };
   a.chests = [chest("Alpha chest"), chest("Alpha chest 2", 0, 3)];
   a.income_manual = true;

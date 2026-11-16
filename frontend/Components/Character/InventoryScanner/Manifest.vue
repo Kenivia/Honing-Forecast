@@ -20,7 +20,7 @@ import {
   tier_tooltip,
   tier_warning,
 } from "../StatusInput/StatusInputUtil";
-import { BAND_NAMES, export_manifest, manifest } from "./Manifest";
+import { BAND_NAMES, export_manifest, manifest, page_place } from "./Manifest";
 
 const { active_profile } = storeToRefs(useRosterStore());
 
@@ -32,13 +32,10 @@ const has_serca = (materials: Record<string, number[]>) =>
 // Serca materials anywhere, and in this character's own storage or inventory
 const serca = computed(() => ({
   any: has_serca(manifest.value.materials),
-  own: [
-    ...manifest.value.read.map((page) => ({ ...page, ...page.content })),
-    ...manifest.value.saved,
-  ].some(
+  own: [...manifest.value.read, ...manifest.value.saved].some(
     (page) =>
       ["CharStorage", "CharInventory"].includes(page.window) &&
-      has_serca(page.materials),
+      has_serca(page.content.materials),
   ),
 }));
 
@@ -73,6 +70,11 @@ const loose = computed(() => [
     why: "contents unknown",
   })),
 ]);
+
+// pages not open in game, taken as unchanged since the last export
+const unopened = computed(() =>
+  manifest.value.saved.map((page) => page_place(page.window, page.page)),
+);
 
 const exported = ref(false);
 function export_to_calc() {
@@ -126,6 +128,21 @@ function export_to_calc() {
         :show-tooltip-only-on-disabled="false"
         :warning="tier_warning(active_profile)"
       />
+    </div>
+    <div
+      v-if="manifest.assumed || unopened.length"
+      class="card-shell card-body flex w-175! max-w-full flex-col items-center gap-1 text-center text-sm"
+    >
+      <span class="text-(--warning)">
+        Some information from the previous scan was used.
+      </span>
+      <span v-if="manifest.assumed" class="text-(--text-muted)">
+        {{ manifest.assumed }} slot(s) took their tradability or contents from
+        it without a hover.
+      </span>
+      <span v-if="unopened.length" class="text-(--text-muted)">
+        Not opened in game, taken as unchanged: {{ unopened.join(", ") }}.
+      </span>
     </div>
     <div class="flex max-w-full flex-col items-center gap-2 text-sm">
       <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">

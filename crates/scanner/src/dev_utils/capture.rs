@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
 
-use crate::scanner_state::{Detected, ScannerState};
+use crate::scanner_state::{Detected, Prior, ScannerState};
 
 pub const MAGIC: &[u8] = b"HFCAP005";
 pub const START: u8 = b'S';
@@ -22,6 +22,9 @@ pub struct Start {
     pub brightness: Detected<f64>,
     // the git commit that recorded it
     pub commit: String,
+    // what the last export said of the slots, which the scan was given
+    #[serde(default)]
+    pub priors: Vec<Prior>,
 }
 
 // A frame the scanner was sent: the XOR with the one before it, RGBA, LZ4, nothing when the two

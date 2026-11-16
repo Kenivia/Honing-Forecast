@@ -9,16 +9,15 @@ import { add_stack, type Bag, type ManifestChest, merge } from "@/Utils/Chest";
 import {
   add_loose,
   add_material,
-  CURRENCY_PAGES,
   empty_content,
   other_pages,
   own_pages,
   page_key,
   PageContent,
   ROSTER_WINDOWS,
-  char_unchanged,
-  roster_unchanged,
+  save_currencies,
   save_pages,
+  SavedSlot,
   ScanPage,
   sum_pages,
   take_snapshot,
@@ -27,16 +26,12 @@ import { useRosterStore } from "@/Stores/RosterConfig";
 import { merge_lower_tier } from "@/WasmInterface/PayloadBuilder";
 import { ChestKind, Currency, SlotAddress } from "./LoadStorage";
 import {
-  assumed_tradability,
   chests_for,
   edits,
   has_progress,
-  page_cover,
-  reset_covers,
   seen_pages,
   set_edit,
   shown_currency,
-  shown_slot,
   slot_place,
   slots,
   WINDOW_NAMES,
@@ -45,8 +40,8 @@ import ITEMS from "../../../../scanner_setup/templates/items.json";
 import CHESTS from "../../../../scanner_setup/templates/chests.json";
 
 // The manifest: what the scan amounts to, as materials per ownership band plus the chests still
-// to be opened, merged with the pages saved by earlier exports. It sits between the scanner and
-// the rest of the site.
+// to be opened, merged with the pages saved slot by slot by earlier exports. It sits between the
+// scanner and the rest of the site.
 
 const BAND_OF = { CharBound: 0, RosterBound: 1, Tradable: 2 };
 export const BAND_NAMES = ["Char bound", "Roster bound", "Tradable"];
@@ -142,11 +137,9 @@ function settle(variants: number[]): Opens | undefined {
   return same ? OPENS[first] : undefined;
 }
 
-// where a saved page is, in words
-export function page_place(window: string, page: number) {
-  if (WINDOW_NAMES[window]) return `${WINDOW_NAMES[window]} page ${page + 1}`;
-  return Object.keys(CURRENCY_PAGES)[page];
-}
+// where a page is, in words
+export const page_place = (window: string, page: number) =>
+  `${WINDOW_NAMES[window]} page ${page + 1}`;
 
 const digits = (text: string | null) =>
   text ? Number(text.replace(/\D/g, "")) : null;
@@ -168,57 +161,17 @@ function alternatives(
   return [merge(parts.flatMap((part) => (part.length === 1 ? part : [])))];
 }
 
-// windows the last export can stand in for wholly: roster storage and character storage
-export const COVERABLE = ["Roster", "CharStorage"];
-// the pages of each coverable window saved by an earlier export, by `page_key`
-export const cover_pages = computed(() => {
-  const { roster_config, active_profile } = useRosterStore();
-  const owner = { Roster: null, CharStorage: active_profile.id };
-  const out = Object.fromEntries(
-    COVERABLE.map((window) => [window, new Set<string>()]),
-  );
-  for (const page of roster_config.scan_pages) {
-    if (
-      page.window in owner &&
-      page.char_id === owner[page.window] &&
-      page.roster_id === active_profile.roster_id
-    )
-      out[page.window].add(page_key(page.window, page.page));
-  }
-  return out;
-});
-// Whether a saved page of a coverable window is taken from the last export, its grid covered and
-// whatever is read there ignored, by `page_key`. Every saved page of a window is unless the
-// budgets it feeds changed since the last snapshot; a page never saved never is. The user can
-// flip each saved page either way.
-export const covered = computed(() => {
-  const { roster_config, active_profile } = useRosterStore();
-  const { roster_id, id } = active_profile;
-  const unchanged = {
-    Roster: roster_unchanged(roster_config, roster_id),
-    CharStorage: char_unchanged(roster_config, roster_id, id),
-  };
-  const out: Record<string, boolean> = {};
-  for (const window of COVERABLE) {
-    for (const key of cover_pages.value[window]) {
-      out[key] = page_cover.value[key] ?? unchanged[window];
-    }
-  }
-  return out;
-});
+/// the chests of the table still in the game data
+const known = (variants: number[]) => variants.filter((id) => OPENS[id]);
+const all_irrelevant = (variants: number[]) =>
+  variants.length > 0 && variants.every((id) => OPENS[id].irrelevant);
 
-// Straight off the slot grid, per page, before conversion. Only slots that are good or were set
-// by hand count; the rest are `missing`. A page is `seen` once it was open in game or anything on
-// it counts. A currency is a page of its own, its roster-wide bands apart from its char-bound one.
-export const live = computed(() => {
-  const pages: Record<string, PageContent> = {};
-  const stacks: Record<string, Map<string, ManifestChest>> = {};
-  const missing: MissingSlot[] = [];
-  const seen = new Set<string>();
-  const content = (key: string) => (pages[key] ??= empty_content());
+// What saved or live slots of one page add up to, before conversion.
+export function content_of(saved: SavedSlot[]): PageContent {
+  const content = empty_content();
+  const stacks = new Map<string, ManifestChest>();
 
   function group(
-    key: string,
     chest: Opens,
     band: number,
     count: number,
@@ -228,7 +181,7 @@ export const live = computed(() => {
     const { title, icon } = chest;
     // an obtain-all and a select-one are never one stack
     add_stack(
-      (stacks[key] ??= new Map()),
+      stacks,
       { title, band, count, options, obtain_all, icons: [icon] },
       `${obtain_all}|`,
     );
@@ -236,15 +189,15 @@ export const live = computed(() => {
 
   // What is inside a chest takes the chest's band, or its own where it is bound more loosely. No
   // select-one of the table holds such a thing, or gold, so its options all take the chest's.
-  function open(key: string, chest: Opens, count: number, band: number) {
+  function open(chest: Opens, count: number, band: number) {
     const { kind, title } = chest;
-    if (kind === "Random") return add_loose(content(key).random, title, count);
+    if (kind === "Random") return add_loose(content.random, title, count);
     if (kind === "SelectOne") {
       // an option that is no material, or a chest of chance, is not offered
       const options = chest.contents.flatMap(([inner, each, id]) =>
         alternatives(inner, each, id),
       );
-      if (options.length) group(key, chest, band, count, options, false);
+      if (options.length) group(chest, band, count, options, false);
       return;
     }
     // an obtain-all inside is part of this chest; any other chest inside is opened in turn
@@ -257,32 +210,85 @@ export const live = computed(() => {
         const opens = id ? OPENS[id] : undefined;
         if (label) bags[own][label] = (bags[own][label] ?? 0) + each * times;
         else if (opens?.kind === "ObtainAll") gather(opens, each * times, own);
-        else if (opens) open(key, opens, each * times * count, own);
+        else if (opens) open(opens, each * times * count, own);
       });
     };
     gather(chest, 1, band);
     // listed once for each band it gives into
     bags.forEach((bag, own) => {
-      if (Object.keys(bag).length) group(key, chest, own, count, [bag], true);
+      if (Object.keys(bag).length) group(chest, own, count, [bag], true);
     });
   }
 
-  for (const key of Object.keys(seen_pages.value)) {
-    if (!covered.value[key]) seen.add(key);
+  for (const slot of saved) {
+    const { item, amount } = slot;
+    const band = BAND_OF[slot.tradability ?? ""];
+    if (!item || band === undefined) continue;
+    // a shared icon set by hand is set to the material itself
+    const label =
+      slot.label ??
+      ICON_LABEL[item] ??
+      (SHARED_LABELS.has(item) ? item : undefined);
+    if (label) {
+      add_material(content, label, band, amount);
+      continue;
+    }
+    if (!CHEST_ICONS[item]) continue;
+    const variants = known(slot.variants);
+    if (all_irrelevant(variants)) continue;
+    const chest = settle(variants);
+    // read, but as chests that hold different chests inside
+    if (!chest)
+      add_loose(content.unknown, OPENS[variants[0]]?.title ?? item, amount);
+    else open(chest, amount, band);
   }
+  content.chests = [...stacks.values()];
+  return content;
+}
+
+// the chest read off a tooltip for a slot, else none
+function chest_read(address: SlotAddress, item: string, amount: number) {
+  const read = chests_for(address, item);
+  return read.find((chest) => digits(chest.amount) === amount) ?? read[0];
+}
+
+// Straight off the slot grid, per page, as an export saves it. Slots that are good or were set by
+// hand are kept, and irrelevant ones so that a later scan knows them; the rest are `missing`. A
+// page is `seen` once it was open in game or anything on it counts. The currencies are apart.
+export const live = computed(() => {
+  const pages: Record<string, SavedSlot[]> = {};
+  const missing: MissingSlot[] = [];
+  const seen = new Set(Object.keys(seen_pages.value));
+  // slots in order thanks to the last export
+  let assumed = 0;
+
   const keys = new Set([...slots.value.keys(), ...Object.keys(edits.value)]);
   for (const key of keys) {
     const edit = edits.value[key];
-    const slot = shown_slot(slots.value.get(key));
-    if (!edit && (!slot || slot.status === "Irrelevant")) continue;
+    const slot = slots.value.get(key);
+    if (!edit && !slot.icon_name_score) continue;
     const address = edit?.address ?? slot.address;
     const page = page_key(address.inventory_type, address.page_num);
-    if (covered.value[page]) continue;
-    const item = edit ? edit.item : slot.icon_name_score?.[0];
-    if (!item) continue;
+    const keep = (saved: Omit<SavedSlot, "pos" | "icon">) =>
+      (pages[page] ??= []).push({
+        pos: [address.pos_in_inv[0], address.pos_in_inv[1]],
+        icon: edit ? (edit.icon ?? null) : slot.icon_name_score[0],
+        ...saved,
+      });
+    const nothing = { label: null, tradability: null, amount: 0 };
+    if (!edit && slot.assumed) assumed++;
+    const item = edit ? edit.item : slot.item;
+    if (!edit && slot.status === "Irrelevant") {
+      const read = item ? chest_read(address, item, slot.value) : undefined;
+      keep({ item, ...nothing, variants: read?.variants ?? slot.variants });
+      continue;
+    }
+    if (!item) {
+      if (edit) keep({ item, ...nothing, variants: [] });
+      continue;
+    }
     seen.add(page);
-    // a slot set by hand is as good as a read one: no amount is a single item, and no
-    // tradability is what is assumed for its window
+    // a slot set by hand is as good as a read one: no amount is a single item
     const amount = edit
       ? (edit.amount ?? 1)
       : slot.status === "Good"
@@ -295,45 +301,30 @@ export const live = computed(() => {
         why: slot.reason || "Its number is still being recognized by OCR.",
         address,
       });
-    const band =
-      BAND_OF[
-        (edit
-          ? (edit.tradability ?? assumed_tradability(address))
-          : slot.tradability) ?? ""
-      ];
-    if (amount == null || band === undefined) {
+    const tradability = edit ? edit.tradability : slot.tradability;
+    if (amount == null || BAND_OF[tradability ?? ""] === undefined) {
       // an edit never holds the manifest back; without a band it is only left out
       if (!edit) miss();
       continue;
     }
-    // a shared icon set by hand is set to the material itself
-    const label =
-      (edit ? null : slot.label) ??
-      ICON_LABEL[item] ??
-      (SHARED_LABELS.has(item) ? item : undefined);
-    if (label) {
-      add_material(content(page), label, band, amount);
+    const label = edit ? null : slot.label;
+    if (!CHEST_ICONS[item]) {
+      keep({ item, label, tradability, amount, variants: [] });
       continue;
     }
-    if (!CHEST_ICONS[item]) continue;
     // the chest read off a tooltip, else whatever its icon can only be
-    const found = chests_for(address, item);
-    const read =
-      found.find((chest) => digits(chest.amount) === amount) ?? found[0];
+    const read = chest_read(address, item, amount);
     const variants = read?.variants ?? slot?.variants ?? [];
-    if (variants.length && variants.every((id) => OPENS[id].irrelevant))
-      continue;
-    const chest = settle(variants);
-    if (!chest) {
-      // read, but as chests that hold different chests inside
-      if (edit || read)
-        add_loose(content(page).unknown, read?.title ?? item, amount);
-      else miss();
+    if (!edit && !read && !all_irrelevant(variants) && !settle(variants)) {
+      miss();
       continue;
     }
-    open(page, chest, amount, band);
+    keep({ item, label, tradability, amount, variants });
   }
-  // currencies sit in no slot, and come with their bands
+
+  // currencies sit in no slot, come with their bands, and are always read again
+  const currencies = empty_content();
+  const values: Record<string, number[]> = {};
   for (const name of CURRENCY_ORDER) {
     const currency = shown_currency(name);
     if (!currency) continue;
@@ -347,17 +338,12 @@ export const live = computed(() => {
       });
       continue;
     }
-    const at = CURRENCY_PAGES[currency.currency];
-    const keys = [page_key("CharCurrency", at), page_key("Currency", at)];
-    keys.forEach((key) => seen.add(key));
+    values[name] = [...currency.bands];
     currency.bands.forEach((amount, band) =>
-      add_material(content(keys[Math.min(band, 1)]), label, band, amount),
+      add_material(currencies, label, band, amount),
     );
   }
-  for (const [key, stack] of Object.entries(stacks)) {
-    content(key).chests = [...stack.values()];
-  }
-  return { pages, seen: [...seen], missing };
+  return { pages, seen: [...seen], missing, currencies, values, assumed };
 });
 
 const split_key = (key: string) => {
@@ -366,31 +352,43 @@ const split_key = (key: string) => {
 };
 
 // What an export writes: the pages seen now, this character's and roster's saved pages that were
-// not, and what the roster's other characters hold that is not bound to them. Nothing is
-// converted; chests are passed on whole, with both tiers in them.
+// not (taken as unchanged), the currencies, and what the roster's other characters hold that is
+// not bound to them. Nothing is converted; chests are passed on whole, with both tiers in them.
 export const manifest = computed(() => {
   const { roster_config, active_profile } = useRosterStore();
   const { roster_id, id } = active_profile;
-  const { pages, seen, missing } = live.value;
-  const read = seen.map((key) => ({
-    ...split_key(key),
-    content: pages[key] ?? empty_content(),
-  }));
-  const saved = own_pages(roster_config, roster_id, id).filter(
-    (page) => !seen.includes(page_key(page.window, page.page)),
+  const { pages, seen, missing, currencies, assumed } = live.value;
+  const read = seen.map((key) => {
+    const slots = pages[key] ?? [];
+    return { ...split_key(key), slots, content: content_of(slots) };
+  });
+  const saved = own_pages(roster_config, roster_id, id)
+    .filter((page) => !seen.includes(page_key(page.window, page.page)))
+    .map(({ window, page, at, by, slots }) => ({
+      window,
+      page,
+      at,
+      by,
+      content: content_of(slots),
+    }));
+  const others = other_pages(roster_config, roster_id, id).map((page) =>
+    content_of(page.slots),
   );
-  const others = other_pages(roster_config, roster_id, id);
-  const own = sum_pages([...read.map((page) => page.content), ...saved]);
+  const own = sum_pages([
+    ...read.map((page) => page.content),
+    ...saved.map((page) => page.content),
+    currencies,
+  ]);
   // what is bound to another character is its own
-  const shared = others.map((page) => ({
+  const shared = others.map((content) => ({
     ...empty_content(),
     materials: Object.fromEntries(
-      Object.entries(page.materials).map(([label, bands]) => [
+      Object.entries(content.materials).map(([label, bands]) => [
         label,
         bands.map((amount, band) => (band ? amount : 0)),
       ]),
     ),
-    chests: page.chests.filter((chest) => chest.band),
+    chests: content.chests.filter((chest) => chest.band),
   }));
   const all = sum_pages([own, ...shared]);
 
@@ -427,16 +425,41 @@ export const manifest = computed(() => {
     missing,
     read,
     saved,
-    others,
+    assumed,
   };
 });
+
+// What the last export saved of this character's and its roster's slots, for the scanner to take
+// on trust. Plain objects: they are posted to the worker.
+export function scan_priors() {
+  const { roster_config, active_profile } = useRosterStore();
+  const { roster_id, id } = active_profile;
+  return own_pages(roster_config, roster_id, id).flatMap((page) =>
+    page.slots
+      .filter((slot) => slot.icon)
+      .map((slot) => ({
+        address: {
+          inventory_type: page.window,
+          page_num: page.page,
+          pos_in_inv: [slot.pos[0], slot.pos[1]],
+        },
+        icon: slot.icon,
+        item: slot.item,
+        label: slot.label,
+        tradability: slot.tradability,
+        variants: [...slot.variants],
+      })),
+  );
+}
 
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
 // Overwrites the budgets and chests of this character and its roster with the manifest, and
-// saves the pages seen now. Slots still unresolved are set irrelevant first. The roster's budgets
-// are snapshotted before and after.
+// saves the pages seen now slot by slot. Slots still unresolved are set irrelevant, but not
+// saved. The roster's budgets are snapshotted before and after.
 export function export_manifest() {
+  const { materials, chests, read } = manifest.value;
+  const { values } = live.value;
   for (const slot of live.value.missing) {
     if (slot.address)
       set_edit({
@@ -446,8 +469,6 @@ export function export_manifest() {
         tradability: null,
       });
   }
-  // read first: the snapshot can make a window covered by default
-  const { materials, chests, read } = manifest.value;
   const store = useRosterStore();
   const config = store.roster_config;
   const profile = store.active_profile;
@@ -477,18 +498,23 @@ export function export_manifest() {
   const at = Date.now();
   save_pages(
     config,
-    read.map(({ window, page, content }): ScanPage => ({
-      ...copy(content),
+    read.map(({ window, page, slots }): ScanPage => ({
       roster_id: profile.roster_id,
       char_id: ROSTER_WINDOWS.includes(window) ? null : profile.id,
       window,
       page,
       at,
       by: profile.id,
+      slots: copy(slots),
     })),
   );
+  save_currencies(config, {
+    roster_id: profile.roster_id,
+    char_id: profile.id,
+    at,
+    values: copy(values),
+  });
   take_snapshot(config, profile.roster_id, "After export", profile.id);
-  reset_covers();
   exported_read.value = JSON.stringify(manifest.value.read);
 }
 

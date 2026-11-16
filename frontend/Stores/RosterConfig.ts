@@ -23,7 +23,7 @@ import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
 
 import { load_roster_config } from "./ConfigStorage";
 import { process_chests, type Chest, type ManifestChest } from "@/Utils/Chest";
-import type { ScanPage, Snapshot } from "@/Utils/Scans";
+import type { ScanCurrencies, ScanPage, Snapshot } from "@/Utils/Scans";
 import type { CustomChoice } from "@/Utils/Choices";
 
 // Everything in here is persisted. Session-only state lives in RuntimeState.
@@ -37,8 +37,10 @@ export interface RosterConfig {
   tradable_mats_owned: Record<string, InputColumn>;
   // chests of a roster that are not bound to one character
   roster_chests: Record<string, ManifestChest[]>;
-  // every page the scanner exported, as last exported, and the budget snapshots
+  // every page the scanner exported, slot by slot, as last exported; the currencies likewise;
+  // and the budget snapshots
   scan_pages: ScanPage[];
+  scan_currencies: ScanCurrencies[];
   snapshots: Snapshot[];
   // income per week typed by hand, [roster bound, tradable]
   roster_income: Record<string, Record<string, number>[]>;
@@ -92,11 +94,12 @@ export function default_roster_config(): RosterConfig {
     tradable_mats_owned: { [roster_id]: create_default_owned_input_column() },
     roster_chests: {},
     scan_pages: [],
+    scan_currencies: [],
     snapshots: [],
     roster_income: {},
     custom_choices: {},
     all_regions: { [roster_id]: "nae" },
-    cumulative_graph: true,
+    cumulative_graph: false,
     selected_bundles: {
       nae: default_selected_bundles(),
       euc: default_selected_bundles(),
@@ -251,6 +254,9 @@ export const useRosterStore = defineStore("roster", {
       this.point_active_at(keep.id);
 
       config.scan_pages = config.scan_pages.filter(
+        (p) => p.char_id !== gone.id,
+      );
+      config.scan_currencies = config.scan_currencies.filter(
         (p) => p.char_id !== gone.id,
       );
       const roster_id = gone.roster_id;

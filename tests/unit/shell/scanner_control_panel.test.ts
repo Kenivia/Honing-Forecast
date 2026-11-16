@@ -8,13 +8,13 @@ describe("ScannerControlPanel", () => {
   it("the last checkbox opts out of sharing snapshots", async () => {
     const { wrapper } = await mount_app(ScannerControlPanel);
     const boxes = wrapper.findAll('input[type="checkbox"]');
-    expect(boxes).toHaveLength(4);
+    expect(boxes).toHaveLength(2);
     expect(wrapper.findAll("label").at(-1).text()).toBe(
       "Share owned material anonymously",
     );
     const store = useRosterStore();
     expect(store.roster_config.analytics).toBe(true);
-    await boxes[3].setValue(false);
+    await boxes[1].setValue(false);
     expect(store.roster_config.analytics).toBe(false);
   });
 });

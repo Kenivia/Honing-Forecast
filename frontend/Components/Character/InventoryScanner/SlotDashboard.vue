@@ -6,7 +6,6 @@ import {
   edits,
   retry_slot,
   set_edit,
-  shown_slot,
   slot_images,
   slot_key,
   slots,
@@ -25,15 +24,14 @@ const TRADABILITY = [
 const TRADABILITY_NAMES = Object.fromEntries(TRADABILITY);
 
 const key = computed(() => (props.address ? slot_key(props.address) : ""));
-const read = computed(() => slots.value.get(key.value));
-const slot = computed(() => shown_slot(read.value));
-// no tooltip said so; it is what was assumed for the window
-const assumed = computed(() => slot.value !== read.value);
+const slot = computed(() => slots.value.get(key.value));
 const edit = computed(() => edits.value[key.value]);
 
-// for an icon several materials share, the one its tooltip said it is
+// for an icon several materials share, the one its tooltip said it is; or what the last export
+// had it set to by hand
 const read_item = computed(() => {
   const icon = slot.value?.icon_name_score?.[0] ?? null;
+  if (icon && slot.value.item !== icon) return slot.value.item;
   return (SHARED_ICONS[icon] && slot.value.label) || icon;
 });
 const item = computed(() => (edit.value ? edit.value.item : read_item.value));
@@ -74,9 +72,7 @@ const tradability = computed(
   () => (edit.value ? edit.value.tradability : slot.value?.tradability) ?? null,
 );
 const read_tradability = computed(() =>
-  slot.value?.tradability
-    ? `${TRADABILITY_NAMES[slot.value.tradability]}${assumed.value ? " (assumed)" : ""}`
-    : "-",
+  slot.value?.tradability ? TRADABILITY_NAMES[slot.value.tradability] : "-",
 );
 
 const slot_chests = computed(() =>
@@ -94,7 +90,7 @@ const loaded = ref("");
 const changed = computed(() => JSON.stringify(draft) !== loaded.value);
 watch(
   // also when the slot is saved, retried or first read
-  [key, edit, () => !slot.value, assumed],
+  [key, edit, () => !slot.value],
   () => {
     draft.item = item.value ?? "";
     draft.amount = edit.value ? edit.value.amount : (slot.value?.value ?? null);

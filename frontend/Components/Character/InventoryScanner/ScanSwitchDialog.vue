@@ -16,9 +16,9 @@ function wipe() {
 
 // on to the scanner, where the scan goes on
 function move() {
-  const { name, same_roster } = pending_switch.value;
+  const { name } = pending_switch.value;
   pending_switch.value = null;
-  move_scan(same_roster);
+  move_scan();
   router.push({ name: "char-scanner", params: { characterName: name } });
 }
 

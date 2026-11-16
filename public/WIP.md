@@ -8,6 +8,12 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - chaos dungeon detection (and maybe guardian also)
 - ~~add progress percents~~
 - fix tradable gold chance
+- +N for tradable showing roster bound incorrectly
+- allow forbidding chests on non-mains
+- wealth ticks keep their ranking until overwritten
+- choices optimizer not sharing the results from the calc page
+- lostark.bible login
+- reorganize to info page
 
 ## Forecast mode
 
@@ -17,10 +23,13 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
   - optimizer for n weeks in the future
     - something happening over n weeks?
 
+- expected weeks until afforded? will need monto carlo for tis
+
 ## Misc UI
 
 - rework tooltips
 - allow non-mains to ignore roster chests / mats
+  - perscribe a main?
 
 - need to add the UI for choices and hard code some examples
   - ~~need to get paradise data from somewhere~~

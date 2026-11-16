@@ -11,7 +11,7 @@ use hf_scanner::dev_utils::capture::{InputRecorder, parse};
 use hf_scanner::dev_utils::timing::{take, timed};
 use hf_scanner::interface::setup::{OneIconConfig, load_ocr_engine, set_config};
 use hf_scanner::ocr::jobs::OcrJob;
-use hf_scanner::scanner_state::{Detected, ScannerState, SlotEdit};
+use hf_scanner::scanner_state::{Detected, Prior, ScannerState, SlotEdit};
 use rand::rngs::ThreadRng;
 use serde::Deserialize;
 use serde_wasm_bindgen::{from_value, to_value};
@@ -167,6 +167,9 @@ struct ReserveInput {
     settings: ScanSettings,
     buffer: Buffer,
     config: Vec<OneIconConfig>,
+    // what the last export said of the slots
+    #[serde(default)]
+    priors: Vec<Prior>,
 }
 
 #[derive(Deserialize)]
@@ -183,10 +186,12 @@ pub fn reserve_buffer_wrapper(input: JsValue) -> JsValue {
         settings,
         mut buffer,
         config,
+        priors,
     } = from_value(input).unwrap();
     buffer.reserve();
     set_config(config);
-    let scanner_state = ScannerState::new(buffer, settings.forced_21_9, settings.brightness);
+    let mut scanner_state = ScannerState::new(buffer, settings.forced_21_9, settings.brightness);
+    scanner_state.set_priors(priors);
     let out = to_value(&scanner_state.result(true)).unwrap();
     if let Some(mut old) = SCANNER.replace(Some(scanner_state)) {
         old.buffer.dealloc();

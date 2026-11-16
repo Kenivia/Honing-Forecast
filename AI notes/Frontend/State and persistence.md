@@ -34,7 +34,7 @@ Every profile has an `id` (`crypto.randomUUID()`), and everything internal ident
 
 Every tab saves the whole config, so the last to save wins. Nothing merges: `OtherTabBanner` only warns while another tab is open (a `BroadcastChannel` in `Utils/OtherTabs.ts`, each tab greeting the others once per page load and saying goodbye on `pagehide`). Both banners sit under the header, except on character pages, where `CharView` puts them at the top of the main area instead, since the fixed sidebar covers the space under the header.
 
-Character and roster changes are store actions in `RosterConfig.ts` (`add_char`, `add_roster`, `duplicate_profile`, `move_profile`, `delete_profile`); `RosterView` only calls them. Each keeps the active character by id, not by index. Deleting the active character moves to the one before it (the next one if it was first). Deleting a character drops its own scan pages; deleting a roster's last character also drops the roster's owned columns, region, `roster_chests`, `roster_income`, `custom_choices`, and the scan pages and snapshots with its roster id. Duplicating makes a separate, identical character: its chests and income settings are copied too, so they count for both.
+Character and roster changes are store actions in `RosterConfig.ts` (`add_char`, `add_roster`, `duplicate_profile`, `move_profile`, `delete_profile`); `RosterView` only calls them. Each keeps the active character by id, not by index. Deleting the active character moves to the one before it (the next one if it was first). Deleting a character drops its own scan pages and saved currencies; deleting a roster's last character also drops the roster's owned columns, region, `roster_chests`, `roster_income`, `custom_choices`, and the scan pages and snapshots with its roster id. Duplicating makes a separate, identical character: its chests and income settings are copied too, so they count for both.
 
 **Roster ids are uuids** (`crypto.randomUUID()`), like profile ids, so a roster is unique across saves and browsers (the analytics uploads key by it) and a new roster never inherits a deleted one's data. Nothing stores the roster order: `roster_ids` lists them in order of first appearance in `profiles`, and `add_profile` inserts after the roster's last character (`add_char`, `duplicate_profile` and the default all go through it or start grouped), so a roster's characters stay together and deleting one never reorders the rosters. `move_profile` only swaps within a roster. `from_saved` groups the loaded profiles the same way, keeping the active one. The "Roster N" labels are positions in `roster_ids`, not ids.
 
@@ -56,7 +56,7 @@ Runtime worker bundles are keyed by profile id. `App.vue` watches the list of id
 
 `SavedConfig.ts` defines the saved shape and converts to and from it; `ConfigStorage.ts` owns localStorage and the migrations.
 
-- One key, `HF_CONFIG_V11_COMPRESSED`, lz-string-compressed JSON, with the version **also inside** the payload. The key carries the version so a save is never read by code that predates it; the payload version drives the migration chain.
+- One key, `HF_CONFIG_V12_COMPRESSED`, lz-string-compressed JSON, with the version **also inside** the payload. The key carries the version so a save is never read by code that predates it; the payload version drives the migration chain.
 - One column per scope, not one per tier, so a material shared between tiers is stored once.
 - Two rules govern the shape: nothing derivable from `Constants.ts` is stored, and material values are keyed by **label**, never by row index. Reordering, inserting or removing a material row is therefore not a save-shape change.
 - `to_saved` / `from_saved` are explicit. A field that is not listed is not saved, so transient state cannot leak in by being added to the store.
@@ -72,7 +72,7 @@ Runtime worker bundles are keyed by profile id. `App.vue` watches the list of id
 
 A profile's `id` is saved and survives load, save, load unchanged. A save without ids (or with an id an earlier profile already took) gets fresh ones in `profile_from_saved`, so there is no migration step for it.
 
-A profile's `chests` are saved as the scanner exported them (title, band, count, options by label, `obtain_all`), with both tiers in them; what the calculator uses is derived on the page. A save without the field loads as empty. Only char-bound chests are a profile's; the rest are the roster's (`roster_chests`, keyed by roster id). `roster_chests`, `scan_pages` and `snapshots` also load empty from a save without them (the migrations go through `from_saved`).
+A profile's `chests` are saved as the scanner exported them (title, band, count, options by label, `obtain_all`), with both tiers in them; what the calculator uses is derived on the page. A save without the field loads as empty. Only char-bound chests are a profile's; the rest are the roster's (`roster_chests`, keyed by roster id). `roster_chests`, `scan_pages`, `scan_currencies` and `snapshots` also load empty from a save without them (the migrations go through `from_saved`).
 
 `roster_income`, `custom_choices` and a profile's `income_manual` / `bound_income` / `income_now` / `income_results` / `choice_levels` / `optimizer_cache` / `choice_results` / `choice_seed` load empty or off from a save without them. The last three are saved optimizer results (`Wasm contract.md`, "Saved results"); the two states are `markRaw` on load and on write, so the store's deep watch does not walk them. `scan_pages` and `snapshots` only grow with exports and are rewritten with the rest of the config on every change. If that gets slow, they are the part to move to a key of their own.
 
@@ -83,6 +83,8 @@ A profile's `chests` are saved as the scanner exported them (title, band, count,
 `migrate_9_to_10` gives every roster a uuid: the per-roster records (owned columns, regions, `roster_chests`, `roster_income`, `custom_choices`) are re-keyed, and every profile's, scan page's and snapshot's `roster_id` mapped. Profiles are stably sorted by the old numeric id first, so the rosters keep their order. Tests use the strings `"0"`, `"1"` as roster ids, so `record[0]` still finds them; the default config's roster is a fresh uuid, so a test on it reads `active_profile.roster_id` or `roster_ids[0]`. It also sets `analytics` (on) when the save has none, the field V10 brought.
 
 `migrate_10_to_11` gives every profile `income_auto` (off) and `income_sources` (`{}`) where missing; that is all V11 changes.
+
+`migrate_11_to_12` empties `scan_pages`, whose page totals gave way to pages saved slot by slot (`Screen scanner/Manifest.md`), and adds an empty `scan_currencies`; that is all V12 changes. The first export of each character after it starts from nothing saved. `tests/live_v10.test.ts` runs both on the real V10 saves.
 
 `migrate_7_to_8` **drops** V7's `optimizer_treatment_plan` rather than mapping it, so `band_values` is left out and `profile_from_saved` supplies the default. `histogram_treatment_plan` is a different setting — which ownership line the chance column reads — and becomes `chance_band`. `leftover_price` is dropped too.
 

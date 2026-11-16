@@ -11,6 +11,7 @@ import {
   take_ocr_results,
 } from "./OcrRelay";
 import { has_progress, reset_scan, scan_wipes, take_edits } from "./ScanStore";
+import { scan_priors } from "./Manifest";
 import { wipe_scan } from "./ScanSwitch";
 import { WasmOp } from "@/WasmInterface/WasmTypes";
 import {
@@ -263,13 +264,16 @@ async function start_scanner() {
   if (!size || status.value === "idle") return;
   const { width, height } = size;
   // the state is built once here and then stays inside the worker's wasm
+  // a replay takes the priors it was recorded with
+  const priors = replay ? (replay.priors ?? []) : scan_priors();
   const new_scanner_state = {
     settings: copy_settings(),
     buffer: { width, height, size: width * height * 4 },
     config: toRaw(config),
+    priors,
   };
   if (recording.value && !replay)
-    begin_capture_file({ width, height, ...copy_settings() });
+    begin_capture_file({ width, height, ...copy_settings(), priors });
   // the model only goes to the OCR workers, the templates to them too
   start_ocr(toRaw(model), toRaw(config));
   bundle.value.debounced_start(
