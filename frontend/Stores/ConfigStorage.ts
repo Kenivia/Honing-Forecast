@@ -1,5 +1,5 @@
 import LZString from "lz-string";
-import { shallowRef } from "vue";
+import { shallowRef, toRaw } from "vue";
 import {
   ALL_LABELS,
   bundle_key,
@@ -169,23 +169,75 @@ export function load_roster_config(): RosterConfig {
 // Save
 // ============================================================================
 
+// raw, so the walk does not go through the store's proxies
 function serialize(config: RosterConfig): string {
-  return JSON.stringify({ version: STORAGE_VERSION, ...to_saved(config) });
+  return JSON.stringify({
+    version: STORAGE_VERSION,
+    ...to_saved(toRaw(config)),
+  });
 }
 
-export function write_state(state: { roster_config: RosterConfig }) {
+// What the save watch walks. Snapshots and choice results are most of the save and are only
+// ever replaced, added or removed, which still counts; an edit inside one (an upload's `sent`,
+// an income result) is saved with the next change or on pagehide.
+export function save_watch_source(config: RosterConfig) {
+  const { snapshots, profiles, ...rest } = config;
+  return [
+    rest,
+    snapshots.length,
+    profiles.map(({ choice_results: _, ...profile }) => profile),
+  ];
+}
+
+// The last save written, so a write that would store the same thing is skipped.
+let stored_json = "";
+let stored_raw = "";
+// Bumped by every write; a worker result from an older one is dropped.
+let seq = 0;
+let pending_json = "";
+let compressor: Worker | null = null;
+
+function store_compressed(json: string, raw: string) {
   if (broken_save.value?.kept === false) return;
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      LZString.compressToUTF16(serialize(state.roster_config)),
-    );
+    localStorage.setItem(STORAGE_KEY, raw);
+    stored_json = json;
+    stored_raw = raw;
   } catch (e) {
     console.error("could not save config", e);
   }
 }
 
-export const debounced_write_roster_config = debounce(write_state, 500);
+const unchanged = (json: string) =>
+  json === stored_json && localStorage.getItem(STORAGE_KEY) === stored_raw;
+
+export function write_state(state: { roster_config: RosterConfig }) {
+  if (broken_save.value?.kept === false) return;
+  seq++;
+  const json = serialize(state.roster_config);
+  if (!unchanged(json)) store_compressed(json, LZString.compressToUTF16(json));
+}
+
+// Compresses in the worker; synchronous where there is none (tests).
+function write_state_async(state: { roster_config: RosterConfig }) {
+  if (typeof Worker === "undefined") return write_state(state);
+  if (broken_save.value?.kept === false) return;
+  const at = ++seq;
+  const json = serialize(state.roster_config);
+  if (unchanged(json)) return;
+  if (!compressor) {
+    compressor = new Worker(new URL("./SaveCompressor.ts", import.meta.url), {
+      type: "module",
+    });
+    compressor.onmessage = ({ data: [done, raw] }) => {
+      if (done === seq) store_compressed(pending_json, raw);
+    };
+  }
+  pending_json = json;
+  compressor.postMessage([at, json]);
+}
+
+export const debounced_write_roster_config = debounce(write_state_async, 500);
 
 // ============================================================================
 // Export / import
@@ -473,10 +525,11 @@ function migrate_10_to_11(data: any): any {
 }
 
 // Scan pages are saved slot by slot: the old page totals are dropped, and the currencies get
-// their own list.
+// their own list. Profiles get forbidden chests.
 function migrate_11_to_12(data: any): any {
   data.scan_pages = [];
   data.scan_currencies = [];
+  for (const profile of data.profiles ?? []) profile.forbidden_chests ??= [];
   data.version = 12;
   return data;
 }

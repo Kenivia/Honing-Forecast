@@ -85,7 +85,7 @@ describe("MaterialDist columns", () => {
     const { wrapper, store, runtime } = await setup();
     expect(graph(wrapper, "Red").props("annotationLabels")).toEqual([
       "Average",
-      "Bound",
+      "Char-Bound",
     ]);
     const hist = vi.spyOn(runtime.histogram, "throttled_start");
     await pick_band(wrapper, 2);
@@ -93,7 +93,7 @@ describe("MaterialDist columns", () => {
     expect(cells(wrapper, "Red")[1].props("input_column").Red).toBe(0.9);
     expect(graph(wrapper, "Red").props("annotationLabels")).toEqual([
       "Average",
-      "+Tradable",
+      "Tradable",
     ]);
     expect(hist).toHaveBeenCalledOnce();
   });
@@ -242,16 +242,16 @@ describe("MaterialDist chest gains", () => {
       },
     });
     await wrapper.vm.$nextTick();
-    expect(plus(wrapper, "Red")).toEqual({ "from chests": 20 });
-    expect(plus(wrapper, "Blue")).toEqual({ "from chests": 5 });
+    expect(plus(wrapper, "Red")).toEqual({ "(Chests)": 20 });
+    expect(plus(wrapper, "Blue")).toEqual({ "(Chests)": 5 });
     expect(graph(wrapper, "Red").props("annotations")).toEqual([100, 20]);
     // the special leap row sums every band
     const special = cells(wrapper, "Special Leap")[0];
     expect(special.props("plus")[0].amount).toBe(6);
     await pick_band(wrapper, 2);
     expect(plus(wrapper, "Red")).toEqual({
-      "from chests": 14,
-      "from roster-bound": 20,
+      "(Chests)": 14,
+      "(Char)": 20,
     });
     expect(graph(wrapper, "Red").props("annotations")).toEqual([100, 34]);
   });
@@ -262,8 +262,8 @@ describe("MaterialDist chest gains", () => {
         chest({ count: 3, options: [{ Red: 10 }, { Blue: 5 }] }),
       ),
     );
-    expect(plus(wrapper, "Blue")).toEqual({ "from chests": 15 });
-    expect(plus(wrapper, "Red")).toEqual({ "from chests": 0 });
+    expect(plus(wrapper, "Blue")).toEqual({ "(Chests)": 15 });
+    expect(plus(wrapper, "Red")).toEqual({ "(Chests)": 0 });
   });
 });
 
@@ -279,26 +279,27 @@ describe("MaterialDist +c from T4", () => {
   it("shows per band what a Serca character's T4 adds", async () => {
     const { wrapper } = await setup(1, stock);
     expect(plus(wrapper, "Serca Red")).toEqual({
-      "from chests": 0,
-      "from T4": 2,
+      "(Chests)": 0,
+      "(T4)": 2,
     });
     // a material with no T4 stock has no T4 line
-    expect(plus(wrapper, "Serca Blue")).toEqual({ "from chests": 0 });
+    expect(plus(wrapper, "Serca Blue")).toEqual({ "(Chests)": 0 });
     expect(cells(wrapper, "Serca Special Leap")[0].props("plus")).toEqual([
-      { amount: 0, text: "from chests" },
-      { amount: 2, text: "from T4" },
+      { amount: 0, text: "(Chests)" },
+      { amount: 2, text: "(T4)" },
     ]);
     await pick_band(wrapper, 1);
     // roster-bound and tradable T4 pool into roster bound
     expect(plus(wrapper, "Serca Red")).toEqual({
-      "from chests": 0,
-      "from T4": 1,
-      "from char-bound": 3,
+      "(Chests)": 0,
+      "(T4)": 1,
+      "(Char)": 3,
     });
     await pick_band(wrapper, 2);
     expect(plus(wrapper, "Serca Red")).toEqual({
-      "from chests": 0,
-      "from roster-bound": 4,
+      "(Chests)": 0,
+      "(Char)": 3,
+      "(Roster)": 1,
     });
     expect(graph(wrapper, "Serca Red").props("annotations")).toEqual([100, 4]);
   });
@@ -307,9 +308,9 @@ describe("MaterialDist +c from T4", () => {
     const { wrapper, store } = await setup(1, stock);
     store.active_profile.bound_budgets.enabled.Red = false;
     await wrapper.vm.$nextTick();
-    expect(plus(wrapper, "Serca Red")).toEqual({ "from chests": 0 });
+    expect(plus(wrapper, "Serca Red")).toEqual({ "(Chests)": 0 });
     const t4 = await setup(0, stock);
-    expect(plus(t4.wrapper, "Red")).toEqual({ "from chests": 0 });
+    expect(plus(t4.wrapper, "Red")).toEqual({ "(Chests)": 0 });
   });
 });
 
@@ -328,7 +329,7 @@ describe("MaterialDist chance band", () => {
     expect((select.element as HTMLSelectElement).selectedIndex).toBe(2);
     expect(graph(wrapper, "Red").props("annotationLabels")).toEqual([
       "Average",
-      "+Tradable",
+      "Tradable",
     ]);
   });
 

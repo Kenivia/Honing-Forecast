@@ -1,6 +1,7 @@
 import { WORKER_URL } from "./Constants";
 import { LATEST_VERSION } from "./Changelog";
 import type { RosterConfig } from "@/Stores/RosterConfig";
+import { debounced_write_roster_config } from "@/Stores/ConfigStorage";
 import type { Snapshot } from "./Scans";
 
 // Uploads each roster's budget snapshots not sent yet to the Worker, which looks up the
@@ -59,6 +60,8 @@ export async function upload_snapshots(config: RosterConfig) {
         }).catch(() => null);
         if (!res?.ok) return;
         for (const snapshot of batch) snapshot.sent = true;
+        // the save watch does not look inside snapshots
+        debounced_write_roster_config({ roster_config: config });
       }
     }
   } finally {

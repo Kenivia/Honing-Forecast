@@ -17,6 +17,7 @@ const RESULTS = path.join(ROOT, "ignored/perf");
 const THROTTLE = 4;
 const WINDOW_MS = 1000; // blocking time is summed over this long after each action
 const QUIET_MS = 500; // settled once no long frame for this long
+const SINCE_EVENT_MS = 1500; // and this long after the last event, so its debounced save has landed
 const REAL_SAVE = { key: "HF_CONFIG_V10_COMPRESSED", file: "tests/V10 config 2" };
 // what a build needs from a git ref; the wasm package is not in git, so the current one is used
 const AB_PATHS = ["frontend", "public", "index.html", "vite.config.ts", "tsconfig.json", "package.json", "scanner_setup/templates/items.json", "scanner_setup/templates/chests.json"];
@@ -31,13 +32,23 @@ const ITERS = Number(opt("iters", 8));
 const LABEL = opt("label", new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-"));
 const STATES = opt("only", "fresh,real").split(",");
 const AB = opt("ab");
+const LOAF = opt("loaf");
+const PAINT_ONLY = flag("paint-only");
+const PROFILE_RUNS = Number(opt("profile-runs", 1));
 
 // observers installed before the app loads
 function init_perf() {
   window.__perf = { loaf: [], last: {} };
   new PerformanceObserver((list) => {
     for (const e of list.getEntries())
-      window.__perf.loaf.push({ start: e.startTime, end: e.startTime + e.duration, blocking: e.blockingDuration });
+      window.__perf.loaf.push({
+        start: e.startTime,
+        end: e.startTime + e.duration,
+        blocking: e.blockingDuration,
+        render: e.renderStart,
+        style: e.styleAndLayoutStart,
+        scripts: e.scripts.map((s) => ({ inv: s.invoker, url: s.sourceURL, fn: s.sourceFunctionName, pos: s.sourceCharPosition, start: s.startTime, dur: s.duration, forced: s.forcedStyleAndLayoutDuration })),
+      });
   }).observe({ type: "long-animation-frame", buffered: true });
   for (const kind of ["click", "change"])
     window.addEventListener(kind, (e) => (window.__perf.last[kind] = e.timeStamp), true);
@@ -61,8 +72,8 @@ function wait_paint([kind, pred_src]) {
   });
 }
 
-// no long frame for QUIET_MS and the optimizer idle, capped
-function settle(quiet) {
+// no long frame for QUIET_MS, SINCE_EVENT_MS since the last event (its debounced save done) and the optimizer idle, capped
+function settle([quiet, since_event]) {
   const begin = performance.now();
   const optimizer_idle = () => {
     const label = [...document.querySelectorAll("span")].find((s) => s.textContent === "Optimizer progress:");
@@ -72,7 +83,8 @@ function settle(quiet) {
     const poll = () => {
       const last = window.__perf.loaf.at(-1)?.end ?? 0;
       const now = performance.now();
-      if ((now - last >= quiet && optimizer_idle()) || now - begin > 60_000) return resolve();
+      const event = Math.max(0, ...Object.values(window.__perf.last));
+      if ((now - last >= quiet && now - event >= since_event && optimizer_idle()) || now - begin > 60_000) return resolve();
       setTimeout(poll, 100);
     };
     poll();
@@ -100,16 +112,42 @@ const PAGES = {
 
 async function measure(ctx, name, kind, pred, act) {
   const { page, cdp, results } = ctx;
-  await page.evaluate(settle, QUIET_MS);
+  await page.evaluate(settle, [QUIET_MS, SINCE_EVENT_MS]);
   if (ctx.profiles) await cdp.send("Profiler.start");
   const done = page.evaluate(wait_paint, [kind, pred]);
   await act();
   const r = await done;
   if (!r) throw new Error(`${name}: never painted`);
+  if (ctx.profiles && PAINT_ONLY) ctx.profiles[name] = (await cdp.send("Profiler.stop")).profile;
   await page.waitForTimeout(WINDOW_MS);
-  if (ctx.profiles) ctx.profiles[name] = (await cdp.send("Profiler.stop")).profile;
+  if (ctx.profiles && !PAINT_ONLY) ctx.profiles[name] = (await cdp.send("Profiler.stop")).profile;
+  if (LOAF && name.startsWith(LOAF)) await print_loaf(ctx, name, r);
   (results[name] ??= { paint: [], blocking: [] }).paint.push(r.t1 - r.t0);
   results[name].blocking.push(await blocking(page, r.t0));
+}
+
+// the long frames between an action's event and its paint: what ran and the rendering phases
+async function print_loaf(ctx, name, { t0, t1 }) {
+  const frames = await ctx.page.evaluate(([a, b]) => window.__perf.loaf.filter((e) => e.end > a && e.start < b), [t0, t1]);
+  const dir = ctx.port === 4318 ? AB_DIR : OUT_DIR;
+  console.log(`\n${name} on ${ctx.port}: paint ${(t1 - t0).toFixed(0)} ms`);
+  for (const f of frames) {
+    const ms = (x) => x.toFixed(0).padStart(4);
+    console.log(`  frame +${ms(f.start - t0)} ${ms(f.end - f.start)} ms  scripts→render ${ms(f.render - f.start)}  render→style ${ms(f.style - f.render)}  style+layout+paint ${ms(f.end - f.style)}`);
+    for (const sc of f.scripts) {
+      const at = sc.url ? where_pos(dir, sc.url, sc.pos) : "";
+      console.log(`      ${ms(sc.dur)} ms (forced layout ${ms(sc.forced)})  ${sc.inv}  ${sc.fn || ""} ${at}`);
+    }
+  }
+}
+const sources = {};
+function where_pos(dir, url, pos) {
+  const file = url.match(/\/assets\/([^/?]+\.js)/)?.[1];
+  if (!file || pos < 0) return path.basename(url);
+  const text = (sources[`${dir}/${file}`] ??= fs.readFileSync(path.join(dir, "assets", file), "utf8"));
+  const before = text.slice(0, pos);
+  const line = before.split("\n").length - 1;
+  return where({ url, lineNumber: line, columnNumber: pos - before.lastIndexOf("\n") - 1, functionName: "" }, dir).at;
 }
 
 const header = (page, text) => page.locator("nav").getByRole("link", { name: text, exact: true });
@@ -187,16 +225,16 @@ async function run_once(browser, port, state, results, { trace_path, profiles } 
     await cdp.send("Profiler.setSamplingInterval", { interval: 200 });
   }
   if (trace_path) await browser.startTracing(page, { path: trace_path, screenshots: true });
-  await scenario({ page, cdp, results, profiles }, state);
+  await scenario({ page, cdp, results, profiles, port }, state);
   if (trace_path) await browser.stopTracing();
   await context.close();
 }
 
 // self time per original function, through the build's source maps
 const consumers = {};
-function where(frame) {
+function where(frame, dir = OUT_DIR) {
   const file = frame.url.match(/\/assets\/([^/?]+\.js)/)?.[1];
-  const map = file && path.join(OUT_DIR, "assets", `${file}.map`);
+  const map = file && path.join(dir, "assets", `${file}.map`);
   if (map && fs.existsSync(map)) {
     consumers[map] ??= new SourceMapConsumer(JSON.parse(fs.readFileSync(map, "utf8")));
     const pos = consumers[map].originalPositionFor({ line: frame.lineNumber + 1, column: frame.columnNumber });
@@ -208,20 +246,23 @@ function where(frame) {
   const src = frame.url ? path.basename(frame.url) : "(native)";
   return { fn: frame.functionName || "(anon)", src, at: frame.url ? `${src}:${frame.lineNumber + 1}` : src };
 }
-function summarise(profile, top = 10) {
-  const nodes = new Map(profile.nodes.map((n) => [n.id, n]));
-  const self = new Map();
-  profile.samples.forEach((id, i) => self.set(id, (self.get(id) ?? 0) + (profile.timeDeltas[i + 1] ?? 0) / 1000));
+// averaged over the runs
+function summarise(profiles, dir, top = 10) {
   const by_fn = new Map();
   const by_src = new Map();
   let total = 0;
-  for (const [id, t] of self) {
-    const f = nodes.get(id).callFrame;
-    if (f.functionName === "(idle)" || f.functionName === "(root)") continue;
-    const w = where(f);
-    by_fn.set(`${w.fn} ${w.at}`, (by_fn.get(`${w.fn} ${w.at}`) ?? 0) + t);
-    by_src.set(w.src, (by_src.get(w.src) ?? 0) + t);
-    total += t;
+  for (const profile of profiles) {
+    const nodes = new Map(profile.nodes.map((n) => [n.id, n]));
+    const self = new Map();
+    profile.samples.forEach((id, i) => self.set(id, (self.get(id) ?? 0) + (profile.timeDeltas[i + 1] ?? 0) / 1000 / profiles.length));
+    for (const [id, t] of self) {
+      const f = nodes.get(id).callFrame;
+      if (f.functionName === "(idle)" || f.functionName === "(root)") continue;
+      const w = where(f, dir);
+      by_fn.set(`${w.fn} ${w.at}`, (by_fn.get(`${w.fn} ${w.at}`) ?? 0) + t);
+      by_src.set(w.src, (by_src.get(w.src) ?? 0) + t);
+      total += t;
+    }
   }
   const list = (m) => [...m].sort((x, y) => y[1] - x[1]).slice(0, top).map(([k, t]) => `    ${t.toFixed(1).padStart(7)} ms  ${k}`);
   return [`  sampled ${total.toFixed(0)} ms (main thread; throttling inflates it, read as shares)`, "  by file:", ...list(by_src), "  by function:", ...list(by_fn)].join("\n");
@@ -321,16 +362,23 @@ try {
       console.log(`trace: ${trace_path} (DevTools > Performance > Load profile)`);
     }
     if (flag("profile")) {
-      const profiles = {};
-      await run_once(browser, 4317, state, {}, { profiles });
       const dir = path.join(RESULTS, `${LABEL}-${state}-profiles`);
       fs.mkdirSync(dir, { recursive: true });
-      const text = Object.entries(profiles).map(([name, p], i) => {
-        fs.writeFileSync(path.join(dir, `${String(i).padStart(2, "0")} ${name.replace(/[→#]/g, "-")}.cpuprofile`), JSON.stringify(p));
-        return `${name}\n${summarise(p)}`;
-      });
-      fs.writeFileSync(path.join(dir, "summary.txt"), text.join("\n\n"));
-      console.log(`profiles: ${dir} (summary.txt; .cpuprofile files load in DevTools > Performance)`);
+      // with --ab the ref is profiled too, into summary-base.txt
+      for (const [port, build_dir, suffix] of [[4317, OUT_DIR, ""], ...(AB ? [[4318, AB === "same" ? OUT_DIR : AB_DIR, "-base"]] : [])]) {
+        const runs = {};
+        for (let i = 0; i < PROFILE_RUNS; i++) {
+          const profiles = {};
+          await run_once(browser, port, state, {}, { profiles });
+          for (const [name, p] of Object.entries(profiles)) (runs[name] ??= []).push(p);
+        }
+        const text = Object.entries(runs).map(([name, ps], i) => {
+          if (!suffix) fs.writeFileSync(path.join(dir, `${String(i).padStart(2, "0")} ${name.replace(/[→#]/g, "-")}.cpuprofile`), JSON.stringify(ps[0]));
+          return `${name}\n${summarise(ps, build_dir)}`;
+        });
+        fs.writeFileSync(path.join(dir, `summary${suffix}.txt`), text.join("\n\n"));
+      }
+      console.log(`profiles: ${dir} (summary*.txt; .cpuprofile files load in DevTools > Performance)`);
     }
   }
 } finally {

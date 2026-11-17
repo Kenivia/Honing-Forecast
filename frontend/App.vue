@@ -8,6 +8,7 @@ import { storeToRefs } from "pinia";
 import { FETCHABLE_REGIONS, start_fetch } from "./Utils/MarketDataFetcher";
 import {
   debounced_write_roster_config,
+  save_watch_source,
   write_state,
 } from "./Stores/ConfigStorage";
 import { useRuntimeStore } from "./Stores/RuntimeState";
@@ -21,9 +22,11 @@ roster_store.init();
 
 const { all_profiles, roster_ids } = storeToRefs(roster_store);
 
-roster_store.$subscribe((_mutation, state) => {
-  debounced_write_roster_config(state);
-});
+watch(
+  () => save_watch_source(roster_store.roster_config),
+  () => debounced_write_roster_config(roster_store.$state),
+  { deep: true },
+);
 // the debounced write may not have landed when the tab closes
 window.addEventListener("pagehide", () => write_state(roster_store.$state));
 

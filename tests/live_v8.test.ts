@@ -86,6 +86,7 @@ const want = rest.profiles.map((p) => ({
   ...p,
   income_auto: false,
   income_sources: {},
+  forbidden_chests: [],
 }));
 const changed = [
   ...differences(profiles, want),

@@ -8,6 +8,7 @@ import {
   export_config,
   import_config,
   load_roster_config,
+  save_watch_source,
   STORAGE_KEY,
   STORAGE_VERSION,
   write_state,
@@ -15,8 +16,27 @@ import {
 import { to_saved } from "@/Stores/SavedConfig";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { createPinia, setActivePinia } from "pinia";
-import { nextTick } from "vue";
+import { nextTick, watch } from "vue";
 import { rich_config } from "./fixtures";
+
+// the save compressor, answering at once unless held
+const compressor = {
+  hold: false,
+  held: [] as (() => void)[],
+  made: 0,
+};
+globalThis.Worker = class {
+  onmessage: (e: any) => void;
+  constructor() {
+    compressor.made++;
+  }
+  postMessage([at, json]: [number, string]) {
+    const reply = () =>
+      this.onmessage({ data: [at, LZString.compressToUTF16(json)] });
+    if (compressor.hold) compressor.held.push(reply);
+    else reply();
+  }
+} as any;
 
 const put = (key: string, data: any) =>
   localStorage.setItem(key, LZString.compressToUTF16(JSON.stringify(data)));
@@ -140,7 +160,11 @@ describe("store wiring as in App.vue", () => {
     vi.useFakeTimers();
     setActivePinia(createPinia());
     const store = useRosterStore();
-    store.$subscribe((_m, state) => debounced_write_roster_config(state));
+    watch(
+      () => save_watch_source(store.roster_config),
+      () => debounced_write_roster_config(store.$state),
+      { deep: true },
+    );
     store.roster_config.profiles[0].bound_income = { Red: 3 };
     store.roster_config.scan_pages.push({ roster_id: 0 } as any);
     await nextTick();
@@ -148,6 +172,59 @@ describe("store wiring as in App.vue", () => {
     const loaded = load_roster_config();
     expect(loaded.profiles[0].bound_income).toEqual({ Red: 3 });
     expect(loaded.scan_pages).toHaveLength(1);
+  });
+
+  it("snapshots and choice results save when added or replaced, not when edited inside", async () => {
+    vi.useFakeTimers();
+    setActivePinia(createPinia());
+    const store = useRosterStore();
+    const set = vi.spyOn(Storage.prototype, "setItem");
+    watch(
+      () => save_watch_source(store.roster_config),
+      () => debounced_write_roster_config(store.$state),
+      { deep: true },
+    );
+    const settle = async () => {
+      await nextTick();
+      vi.advanceTimersByTime(500);
+    };
+    store.roster_config.snapshots.push({ roster_id: "r", sent: false } as any);
+    await settle();
+    expect(set).toHaveBeenCalledTimes(1);
+    store.roster_config.snapshots[0].sent = true;
+    store.roster_config.profiles[0].choice_results.x = [1, 2];
+    await settle();
+    expect(set).toHaveBeenCalledTimes(1);
+    store.roster_config.profiles[0].choice_results = { y: [3, 4] };
+    await settle();
+    expect(set).toHaveBeenCalledTimes(2);
+  });
+
+  it("one compressor serves every save, and a late result never overwrites a newer save", () => {
+    vi.useFakeTimers();
+    compressor.hold = true;
+    debounced_write_roster_config({ roster_config: named("Old") });
+    vi.advanceTimersByTime(500);
+    write_state({ roster_config: named("New") });
+    compressor.held.forEach((reply) => reply());
+    compressor.hold = false;
+    compressor.held = [];
+    expect(load_roster_config().profiles[0].char_name).toBe("New");
+    debounced_write_roster_config({ roster_config: named("Later") });
+    vi.advanceTimersByTime(500);
+    expect(load_roster_config().profiles[0].char_name).toBe("Later");
+    expect(compressor.made).toBe(1);
+  });
+
+  it("a write that would store the same thing is skipped", () => {
+    const set = vi.spyOn(Storage.prototype, "setItem");
+    const config = named("Same");
+    write_state({ roster_config: config });
+    write_state({ roster_config: config });
+    expect(set).toHaveBeenCalledTimes(1);
+    localStorage.removeItem(STORAGE_KEY);
+    write_state({ roster_config: config });
+    expect(set).toHaveBeenCalledTimes(2);
   });
 });
 
