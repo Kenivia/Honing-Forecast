@@ -90,7 +90,7 @@ describe("process_chests", () => {
     ]);
   });
 
-  it("unknown labels and tradable gold go; a chest left with nothing is gone", () => {
+  it("unknown labels go, tradable gold stays; a chest left with nothing is gone", () => {
     const out = process_chests(
       [
         chest("Odd", 1, 1, [{ "Some Accessory": 1, Gold: 10 }]),
@@ -99,13 +99,16 @@ describe("process_chests", () => {
       ],
       0,
     );
-    expect(brief(out)).toEqual([["Odd", 1, 1, [{ Gold: 10 }]]]);
+    expect(brief(out)).toEqual([
+      ["Odd", 1, 1, [{ Gold: 10 }]],
+      ["Rich", 2, 1, [{ Gold: 1000 }]],
+    ]);
   });
 
-  it("tradable gold is dropped by the scanned band, not the converted one", () => {
+  it("tradable gold in a converted stack goes with it to roster bound", () => {
     expect(
       brief(process_chests([chest("Mix", 2, 1, [{ Red: 5, Gold: 9 }])], 1)),
-    ).toEqual([["Mix", 1, 1, [{ "Serca Red": 1 }]]]);
+    ).toEqual([["Mix", 1, 1, [{ Gold: 9, "Serca Red": 1 }]]]);
   });
 
   it("dominated options go, of two alike the first stays", () => {

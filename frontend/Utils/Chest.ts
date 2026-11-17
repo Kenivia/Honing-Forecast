@@ -97,10 +97,7 @@ export function process_chests(chests: ManifestChest[], tier: number): Chest[] {
       .map((option) =>
         Object.fromEntries(
           Object.entries(tier === 1 ? to_serca(option) : option).filter(
-            ([label]) =>
-              MATERIALS[label]?.tiers.includes(tier) &&
-              // tradable gold is never counted
-              !(label === "Gold" && chest.band === 2),
+            ([label]) => MATERIALS[label]?.tiers.includes(tier),
           ),
         ),
       )

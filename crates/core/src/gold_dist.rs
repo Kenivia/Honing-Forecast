@@ -52,6 +52,8 @@ pub struct GoldDist {
     pub luckiest: (f64, f64),
     /// (gold spent, log10 of the chance to spend at least that)
     pub pity: (f64, f64),
+    /// chance the owned tradable gold covers everything: spent net of it is at most 0
+    pub within_budget: f64,
 }
 
 /// Instead of actually sampling the distribution, we guarantee that every value has exactly the expected number of occurances
@@ -225,5 +227,6 @@ pub fn gold_distribution(sb: &StateBundle, plan: usize) -> GoldDist {
         cdf,
         luckiest,
         pity,
+        within_budget: at_most(0.0),
     }
 }

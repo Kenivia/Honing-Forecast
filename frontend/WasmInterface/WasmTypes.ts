@@ -32,6 +32,8 @@ export interface HistogramOutputs {
   gold_per_plan: ByLabel<number>[];
   metric_per_plan: number[];
   gold_dist: GoldDist | null;
+  // tradable gold owned after chests; every metric and gold_dist are net of it
+  tradable_gold: number;
 
   juice_info: any;
   state_bundle: StateBundle;
@@ -43,6 +45,8 @@ export interface GoldDist {
   // (gold spent, log10 chance to spend at most / at least that)
   luckiest: HistogramPair;
   pity: HistogramPair;
+  // chance the owned tradable gold covers everything
+  within_budget: number;
 }
 
 export interface StateBundle {

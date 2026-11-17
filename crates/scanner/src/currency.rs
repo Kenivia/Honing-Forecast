@@ -526,16 +526,8 @@ impl ScannerState {
                 bands: value.map(bands),
             }
         };
-        let silver = single(
-            Currency::Silver,
-            |x| [0, x, 0],
-            "Not seen yet",
-        );
-        let shards = single(
-            Currency::Shards,
-            |x| [x, 0, 0],
-            "Not seen yet",
-        );
+        let silver = single(Currency::Silver, |x| [0, x, 0], "Not seen yet");
+        let shards = single(Currency::Shards, |x| [x, 0, 0], "Not seen yet");
         vec![silver, self.gold_result(disagree), shards]
     }
 

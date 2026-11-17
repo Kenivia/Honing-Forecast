@@ -1,6 +1,6 @@
 //! Chests still to be opened, and how each stack of them is opened.
 
-use crate::materials::{MaterialTable, OneMaterial};
+use crate::materials::{MaterialTable, OneMaterial, all_bands};
 use crate::state_bundle::StateBundle;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -115,11 +115,7 @@ impl StateBundle {
             })
             .collect();
         prep.special_budget = prep.base_special_budget + whole(special) as i64;
-        prep.bands = prep
-            .plans
-            .iter()
-            .map(|plan| materials.iter().map(|mat| plan.bands(mat)).collect())
-            .collect();
+        prep.bands = all_bands(&prep.plans, &materials, &prep.table);
         if update_materials {
             prep.materials = materials;
         }

@@ -2,7 +2,7 @@ use crate::constants::juice_info::JuiceInfo;
 use crate::constants::*;
 use crate::gold_dist::{GoldDist, gold_distribution};
 use crate::js_interface::remove_adv_cache;
-use crate::materials::NUM_BASE_MATS;
+use crate::materials::{GOLD_LABEL, NUM_BASE_MATS};
 use crate::probe::Probe;
 use crate::state_bundle::StateBundle;
 use crate::tuning::Tuning;
@@ -27,6 +27,8 @@ pub struct HistogramOutputs {
     metric_per_plan: Vec<f64>,
     /// of the payload's dist_plan, when it has one
     gold_dist: Option<GoldDist>,
+    /// tradable gold owned after chests, which every metric and the gold distribution are net of
+    tradable_gold: f64,
 
     juice_info: JuiceInfo,
     state_bundle: StateBundle,
@@ -83,6 +85,10 @@ pub fn histogram(state_bundle: &mut StateBundle, dist_plan: Option<usize>) -> Hi
 
     let no_juice_pity = no_juice_pity(state_bundle);
     let table = &state_bundle.prep_output.table;
+    // gold owed (negative) is spent, not owned
+    let tradable_gold = table.get_row(GOLD_LABEL).map_or(0.0, |row| {
+        state_bundle.prep_output.materials[row].tradable.max(0.0)
+    });
     HistogramOutputs {
         cum_percentiles: table.keyed(&cum_percentiles),
         chance_within: table.keyed(&chance_within),
@@ -91,6 +97,7 @@ pub fn histogram(state_bundle: &mut StateBundle, dist_plan: Option<usize>) -> Hi
         gold_per_plan: gold_breakdown.iter().map(|x| table.keyed(x)).collect(),
         metric_per_plan,
         gold_dist,
+        tradable_gold,
         juice_info: state_bundle.prep_output.juice_info.clone(),
         state_bundle: remove_adv_cache(state_bundle),
     }

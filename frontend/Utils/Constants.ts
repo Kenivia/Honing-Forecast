@@ -18,9 +18,9 @@ export const ANNOTATION_POSITIONS: ("top" | "middle" | "bottom" | "graph")[] = [
 ];
 export const ANNOTATION_LABELS = [
   "Average",
-  "Bound",
-  "+Roster-Bound",
-  "+Tradable",
+  "Char-Bound",
+  "Roster-Bound",
+  "Tradable",
 ];
 
 // ============================================================================

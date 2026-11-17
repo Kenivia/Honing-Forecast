@@ -5,7 +5,7 @@ use crate::constants::accessor::{
 };
 use crate::constants::juice_info::{JuiceInfo, get_event_adjusted_juice_info};
 use crate::constants::*;
-use crate::materials::{MaterialTable, NUM_BASE_MATS, OneMaterial, ValuationPlan};
+use crate::materials::{MaterialTable, NUM_BASE_MATS, OneMaterial, ValuationPlan, all_bands};
 use crate::state::OneState;
 use crate::upgrade::{PieceType, Upgrade, piece_index_to_type, piece_type_to_usize};
 use ahash::AHashMap;
@@ -99,10 +99,7 @@ impl PreparationOutput {
             &mut adv_cache,
         );
         assert!(optimizer_plan < plans.len());
-        let bands: Vec<Vec<Vec<(f64, f64)>>> = plans
-            .iter()
-            .map(|plan| materials.iter().map(|mat| plan.bands(mat)).collect())
-            .collect();
+        let bands = all_bands(&plans, &materials, &table);
         let out: PreparationOutput = Self {
             table,
             base_materials: materials.clone(),

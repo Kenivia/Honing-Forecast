@@ -111,10 +111,11 @@ describe("build_payload: materials", () => {
     });
   });
 
-  it("gold is never tradable", () => {
+  // Rust values it at face value whatever the plan
+  it("tradable gold is sent as owned", () => {
     set(store.active_tradable_mats_owned, "Gold", 500);
     expect(build_payload().materials.Gold).toMatchObject({
-      tradable: 0,
+      tradable: 500,
       market_price: 1,
     });
   });
@@ -185,7 +186,9 @@ describe("build_payload: plans and budget", () => {
     const p = build_payload();
     // event temporarily forced off
     expect(p.express_event).toBe(false);
-    expect([p.num_threads, p.metric_type, p.min_resolution]).toEqual([1, 1, 10]);
+    expect([p.num_threads, p.metric_type, p.min_resolution]).toEqual([
+      1, 1, 10,
+    ]);
   });
 });
 

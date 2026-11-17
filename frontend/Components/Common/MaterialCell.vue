@@ -31,7 +31,7 @@ const props = defineProps<{
   tick_column?: InputColumn;
   aria_name?: string;
   // "+N <text>" lines on the right, taking plus_width whether shown or not
-  plus?: { amount: number; text: string }[];
+  plus?: { amount: number; text: string; color?: string }[];
   plus_width?: number;
 }>();
 
@@ -160,6 +160,7 @@ watch(source_value, (val) => {
         :key="line.text"
         class="annotation whitespace-nowrap"
         :class="{ invisible: Math.floor(line.amount) <= 0 }"
+        :style="{ color: line.color }"
       >
         +{{ Math.floor(line.amount).toLocaleString("en-US") }} {{ line.text }}
       </span>

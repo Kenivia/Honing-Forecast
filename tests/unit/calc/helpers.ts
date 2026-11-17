@@ -29,6 +29,7 @@ export function fake_histogram(tier: number, over: Record<string, any> = {}) {
       [20, 1],
     ]),
     metric_per_plan: [1000, 700],
+    tradable_gold: 0,
     state_bundle: {
       chest_states: new Map<string, number[]>(),
       latest_special_probs: [0.5, 0.25],

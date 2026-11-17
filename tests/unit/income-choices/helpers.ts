@@ -51,4 +51,5 @@ export const fake_state = (tag = 0) => ({
 });
 export const fake_out = (gold: number, plan: number) => ({
   metric_per_plan: [gold, plan],
+  tradable_gold: 0,
 });

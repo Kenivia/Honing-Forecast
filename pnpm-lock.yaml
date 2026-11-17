@@ -114,6 +114,9 @@ importers:
       pure-rand:
         specifier: ^8.4.2
         version: 8.4.2
+      source-map-js:
+        specifier: 1.2.2
+        version: 1.2.2
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

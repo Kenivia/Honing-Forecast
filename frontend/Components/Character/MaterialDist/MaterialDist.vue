@@ -10,7 +10,11 @@ import {
   SPECIAL_LEAP_LABELS,
   // cheapest_bundles, // Est. gold value column
 } from "@/Utils/Constants";
-import { has_upgrades_in_range, metric_to_text } from "@/Utils/Helpers";
+import {
+  chance_text,
+  has_upgrades_in_range,
+  metric_to_text,
+} from "@/Utils/Helpers";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue";
 import GoldDist from "@/Components/Character/MaterialDist/GoldDist.vue";
@@ -91,21 +95,20 @@ const t4_gain = (label: string, band: number) =>
   t4_gains.value[label]?.[band] ?? 0;
 // shown only when there is any
 const t4_line = (amount: number) =>
-  amount > 0 ? [{ amount, text: "from T4" }] : [];
+  amount > 0 ? [{ amount, text: "(T4)" }] : [];
 
-// what the bands up to the one under the shown one hold (stock, chests, T4), cumulative like the graph lines
-const lower_lines = (label: string, band: number) => {
-  if (band === 0) return [];
-  const amount = [0, 1]
-    .slice(0, band)
-    .reduce(
-      (sum, b) =>
-        sum + owned.value[b][label] + gain(label, b) + t4_gain(label, b),
-      0,
-    );
-  const text = band === 1 ? "from char-bound" : "from roster-bound";
-  return amount > 0 ? [{ amount, text }] : [];
-};
+// what each band under the shown one holds (stock, chests, T4), one line per band
+const LOWER_TAGS = [
+  { text: "(Char)", color: "var(--bound)" },
+  { text: "(Roster)", color: "var(--roster)" },
+];
+const lower_lines = (label: string, band: number) =>
+  LOWER_TAGS.slice(0, band)
+    .map((tag, b) => ({
+      ...tag,
+      amount: owned.value[b][label] + gain(label, b) + t4_gain(label, b),
+    }))
+    .filter((line) => line.amount > 0);
 
 // This is average mats cost (not gold)
 const average_breakdown = computed(
@@ -199,8 +202,28 @@ const tickbox_tooltip = `Untick the box if you don't plan on buying that materia
 // <span style="color:var(--text-muted)">(it also disable selling this mat)</span>`
 
 // Plan 0 credits nothing, so it is the gross spend; plan 1 is the user's, which is what
-// the optimizer minimises. The gap between them is what the leftovers are worth.
-const total_gold = computed(() => runtime.histogram.result?.metric_per_plan[0]);
+// the optimizer minimises. The gap between them is what the leftovers are worth. Both are net
+// of tradable gold owned; the total is shown gross.
+const total_gold = computed(
+  () =>
+    runtime.histogram.result?.metric_per_plan[0] -
+    runtime.histogram.result?.tradable_gold,
+);
+
+// the tradable gold chance cell: raw gold alone, then with the mats bought, once the
+// optimizer is done
+const gold_chance_text = computed(() => {
+  const result = runtime.histogram.result;
+  if (!result) return "";
+  const raw = chance_text(result.chance_within["Gold"][2]);
+  const combined =
+    result.state_bundle.upgrade_arr.length === 0
+      ? chance_text(1)
+      : result.gold_dist
+        ? chance_text(result.gold_dist.within_budget)
+        : "…";
+  return `${raw} chance the raw gold cost fits in your tradable gold (including chests). ${combined} with the gold spent buying mats & juice too.`;
+});
 const leftover_credit = computed(
   () =>
     runtime.histogram.result?.metric_per_plan[0] -
@@ -330,8 +353,8 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
       }"
     >
       <div class="mats-row h-fit! items-end! border-b-(--border-main)!">
-        <div class="flex flex-row justify-between">
-          <QuestionMark :text="tickbox_tooltip" class="mb-1" />
+        <div class="flex flex-row items-end justify-between">
+          <QuestionMark :text="tickbox_tooltip" class="mb-1.5 self-end!" />
           <div class="relative mr-19 w-fit">
             <select
               aria-label="Chance column"
@@ -350,8 +373,8 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
               </option>
             </select>
             <QuestionMark
-              text='The "+N from ..." amounts are not included in the input box on the left.'
-              class="absolute bottom-0 left-full mb-1 ml-1"
+              text='The "+N (...)" amounts are not included in the input box on the left.'
+              class="absolute bottom-0 left-full mb-1.5 ml-1"
             />
           </div>
         </div>
@@ -368,7 +391,7 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
           >
           <QuestionMark
             :text="CHANCE_TEXTS[active_profile.chance_band]"
-            class="mb-1"
+            class="mb-1.5 self-end!"
           />
         </div>
         <span class="text-right text-(--average)">Average</span>
@@ -452,7 +475,7 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
                   ? [
                       {
                         amount: gain(label, active_profile.chance_band),
-                        text: 'from chests',
+                        text: '(Chests)',
                       },
                       ...t4_line(t4_gain(label, active_profile.chance_band)),
                       ...lower_lines(label, active_profile.chance_band),
@@ -473,7 +496,14 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
             >
           </div>
           <div v-else></div> -->
+            <div
+              v-if="label === 'Gold' && active_profile.chance_band === 2"
+              class="flex items-center justify-end"
+            >
+              <QuestionMark :text="gold_chance_text" />
+            </div>
             <MaterialCell
+              v-else
               :input_column="histogram_chances"
               :label="label"
               :input_color="selected_chance_color"
@@ -540,7 +570,7 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
                 amount: (
                   gains[SPECIAL_LEAP_LABELS[active_profile.tier]] ?? []
                 ).reduce((a, b) => a + b, 0),
-                text: 'from chests',
+                text: '(Chests)',
               },
               ...t4_line(t4_gain(SPECIAL_LEAP_LABELS[active_profile.tier], 0)),
             ]"

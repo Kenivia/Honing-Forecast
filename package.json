@@ -70,6 +70,7 @@
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "pure-rand": "^8.4.2",
+    "source-map-js": "1.2.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.71.2",
     "vite": "^6.4.4",

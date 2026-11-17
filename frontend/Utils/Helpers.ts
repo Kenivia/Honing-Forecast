@@ -159,6 +159,12 @@ export function metric_to_text(metric: number | null | undefined) {
   // `|| 0` turns a rounded -0 into 0
   return `${(Math.round(-metric) || 0).toLocaleString("en-US")}`;
 }
+// a whole percentage, with ~ where rounding hides that it is not quite 0 or 100
+export function chance_text(chance: number) {
+  const percent = Math.round(chance * 100);
+  const near = (percent === 0 && chance > 0) || (percent === 100 && chance < 1);
+  return `${near ? "~" : ""}${percent}%`;
+}
 export function get_icon_path(name: string) {
   return IconMap[name] ?? "";
 }

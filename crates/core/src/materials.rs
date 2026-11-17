@@ -112,6 +112,35 @@ impl ValuationPlan {
     }
 }
 
+pub const GOLD_LABEL: &str = "Gold";
+
+/// bands[plan][row]. Gold is never sold, so tradable gold is always worth its face value: the
+/// metric is then gold spent beyond the bound bands minus the tradable gold owned.
+pub fn all_bands(
+    plans: &[ValuationPlan],
+    materials: &[OneMaterial],
+    table: &MaterialTable,
+) -> Vec<Vec<Vec<(f64, f64)>>> {
+    let gold_row = table.get_row(GOLD_LABEL);
+    plans
+        .iter()
+        .map(|plan| {
+            materials
+                .iter()
+                .enumerate()
+                .map(|(row, mat)| {
+                    let plan = if Some(row) == gold_row {
+                        ValuationPlan([plan.0[0], plan.0[1], BandValue::Market])
+                    } else {
+                        *plan
+                    };
+                    plan.bands(mat)
+                })
+                .collect()
+        })
+        .collect()
+}
+
 /// gold value of having used this much, the function the evaluator takes the mean of
 pub fn gold(used: f64, bands: &[(f64, f64)]) -> f64 {
     let (last_thresh, last_price) = *bands.last().unwrap();
@@ -320,6 +349,29 @@ mod tests {
             ValuationPlan([Worthless, TaxedSell, TaxedSell]).bands(&mat),
             vec![(0.0, 95.0), (20.0, 100.0)]
         );
+    }
+
+    /// tradable gold is owned gold: spent beyond the bound bands, net of it
+    #[test]
+    fn tradable_gold_is_face_value() {
+        let labels: Vec<String> = ["A", "B", "C", "D", "E", "Gold", "F"]
+            .iter()
+            .map(|x| x.to_string())
+            .collect();
+        let table = super::MaterialTable::new(labels, 0);
+        let gold = OneMaterial {
+            bound: 10.0,
+            roster: 20.0,
+            tradable: 30.0,
+            taxed_price: 1.0,
+            market_price: 1.0,
+        };
+        let bands = &super::all_bands(&[ValuationPlan([Worthless; 3])], &[gold; 7], &table)[0];
+        for (used, value) in [(0.0, 30.0), (30.0, 30.0), (50.0, 10.0), (100.0, -40.0)] {
+            assert!((super::gold(used, &bands[5]) - value).abs() < FLOAT_TOL);
+        }
+        // any other row still credits nothing for its tradable band
+        assert!((super::gold(0.0, &bands[0])).abs() < FLOAT_TOL);
     }
 
     #[test]

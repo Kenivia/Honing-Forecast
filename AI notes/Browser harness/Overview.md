@@ -6,6 +6,7 @@ Per-section instructions:
 
 - `Calculator.md`: the calculator, market and roster pages.
 - `Screen scanner.md`: the scanner page, fed by an uploaded image or video.
+- `Performance.md`: the latency benchmark, `pnpm perf`.
 
 ## Setup
 

@@ -27,7 +27,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 ## Build and run
 
 - `pnpm dev` builds the wasm package with wasm-pack, then starts Vite. Vite does not watch `crates/`, so **Rust changes need `pnpm run wasm` again**.
-- `pnpm test:e2e` runs the browser tests; `pnpm browse` runs a one-off browser script. See `Browser harness/Overview.md`.
+- `pnpm test:e2e` runs the browser tests; `pnpm browse` runs a one-off browser script. See `Browser harness/Overview.md`. `pnpm perf` benchmarks interaction latency on a production build (`Browser harness/Performance.md`).
 - `pnpm check` runs `vue-tsc --noEmit` over the `.ts` layer and `.vue` templates. `pnpm test:node` runs the node-side suites in `tests/`, `pnpm test:unit` the Vitest unit and component tests in `tests/unit/`. All are fast; run them after a frontend change.
 - `pnpm test:rust` runs `cargo test -p hf-core -p hf-arena`: the valuation unit tests in `materials.rs`, plus a short Monte Carlo check and a seed-repeats check from the arena.
 - `pnpm test` runs every suite in turn: Rust, node, Vitest, then the browser tests in both browsers (those take several minutes and start `pnpm dev`, which rebuilds the wasm).
@@ -91,3 +91,4 @@ Each note describes the code as it is now. Where something was tried and failed 
 - `Browser harness/Overview.md`: driving the site in Chromium and Firefox, for debugging and e2e tests. One note per site section alongside it:
   - `Browser harness/Calculator.md`: the calculator, market and roster pages.
   - `Browser harness/Screen scanner.md`: the scanner page, fed by an uploaded image or video.
+  - `Browser harness/Performance.md`: `pnpm perf`, interaction and route-switch latency on a throttled production build.

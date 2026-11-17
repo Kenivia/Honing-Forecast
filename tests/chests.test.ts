@@ -22,11 +22,12 @@ const scanned = [
 ];
 
 equal(
-  "T4: nothing of Serca, tradable gold dropped",
+  "T4: nothing of Serca, tradable gold kept",
   brief(process_chests(scanned, 0)),
   [
     ["Rocks", 2, 3, [{ Red: 250 }]],
     ["Leaps / More leaps", 1, 7, [{ Leaps: 3 }, { Shards: 1000 }]],
+    ["Gold", 2, 1, [{ Gold: 100 }]],
   ],
 );
 
@@ -37,6 +38,7 @@ equal(
     ["Rocks", 1, 3, [{ "Serca Red": 50 }]],
     ["Leaps / More leaps", 1, 7, [{ "Serca Leaps": 0.6 }, { Shards: 1000 }]],
     ["Twins", 0, 1, [{ "Serca Blue": 5 }]],
+    ["Gold", 2, 1, [{ Gold: 100 }]],
   ],
 );
 

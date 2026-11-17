@@ -49,7 +49,8 @@ export function job_for(
     store: (out, state) => {
       const result: SnapshotResult = {
         gains: chest_gains(chests, state.chest_states),
-        gold: out.metric_per_plan[0],
+        // gross, as the tradable gold owned is added on the page
+        gold: out.metric_per_plan[0] - out.tradable_gold,
         leftover: out.metric_per_plan[0] - out.metric_per_plan[1],
       };
       states.set(key, state);
