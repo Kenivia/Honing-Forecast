@@ -31,7 +31,7 @@ describe("ChestPanels", () => {
       slots: { default: "<i class='foot'>foot</i>" },
     });
 
-  it("two panels, empty one says None, slot under selection", async () => {
+  it("two panels, empty one says None, slot under both", async () => {
     const w = panels({ obtain_all_title: "Opened" });
     // obtain-all is hidden until asked for
     expect(w.findAll("[role=group]")).toHaveLength(1);
@@ -42,8 +42,8 @@ describe("ChestPanels", () => {
       "Opened",
     ]);
     expect(groups[1].text()).toContain("None.");
-    expect(groups[0].find(".foot").exists()).toBe(true);
-    expect(groups[1].find(".foot").exists()).toBe(false);
+    expect(groups.some((g) => g.find(".foot").exists())).toBe(false);
+    expect(w.find(".foot").exists()).toBe(true);
   });
 
   it("collapses from the header", async () => {
@@ -67,12 +67,44 @@ describe("ChestPanels", () => {
     expect(w.find("[role=group] button").exists()).toBe(false);
   });
 
-  it("editing emits count and remove by key", async () => {
+  it("editing emits count, forbid and remove by key", async () => {
     const w = panels({ editing: true });
     await w.find("[role=group] input").setValue("5");
-    await w.find("[role=group] button").trigger("click");
+    await w
+      .find("[aria-label='Forbid a title on this character']")
+      .trigger("click");
+    await w.find("[aria-label='Delete a title']").trigger("click");
     expect(w.emitted("count")[0][0]).toBe("a");
+    expect(w.emitted("forbid")).toEqual([["a"]]);
     expect(w.emitted("remove")).toEqual([["a"]]);
+  });
+
+  it("a forbidden chest: message, count disabled, buttons kept", () => {
+    const w = panels({ editing: true, forbidden: ["a"] });
+    const row = w.find("[role=group] .border-b");
+    expect(row.text()).toContain("Forbidden on this character");
+    expect(row.text()).not.toContain("x10");
+    expect(row.find("input").attributes("disabled")).toBeDefined();
+    expect(
+      row.find("[aria-label='Allow a title on this character']").exists(),
+    ).toBe(true);
+    expect(row.find("[aria-label='Delete a title']").exists()).toBe(true);
+  });
+
+  it("only a roster or tradable chest can be forbidden", () => {
+    const w = panels({ editing: true, selection: [chest("a", { band: 0 })] });
+    expect(w.find("[aria-label^='Forbid']").exists()).toBe(false);
+    expect(w.find("[aria-label='Delete a title']").exists()).toBe(true);
+  });
+
+  it("not editing: a forbidden chest can still be allowed", async () => {
+    const w = panels({ forbidden: ["a"], hide_count: true });
+    expect(w.find("[role=group] input").exists()).toBe(false);
+    expect(w.find("[aria-label^='Delete']").exists()).toBe(false);
+    await w
+      .find("[aria-label='Allow a title on this character']")
+      .trigger("click");
+    expect(w.emitted("forbid")).toEqual([["a"]]);
   });
 });
 

@@ -144,7 +144,23 @@ export const useRosterStore = defineStore("roster", {
     },
     // what the payload sends: the active chests as the character's tier takes them
     processed_chests(): Chest[] {
-      return process_chests(this.active_chests, this.active_profile.tier);
+      const forbidden = this.active_profile.forbidden_chests;
+      return process_chests(
+        this.active_chests.filter((chest) => !forbidden.includes(chest.key)),
+        this.active_profile.tier,
+      );
+    },
+    // the forbidden ones, only to be shown: each processed alone, keeping its stored key
+    forbidden_processed_chests(): Chest[] {
+      const forbidden = this.active_profile.forbidden_chests;
+      return this.active_chests
+        .filter((chest) => forbidden.includes(chest.key))
+        .flatMap((chest) =>
+          process_chests([chest], this.active_profile.tier).map((out) => ({
+            ...out,
+            key: chest.key,
+          })),
+        );
     },
     active_region(state): MarketRegions {
       return state.roster_config.all_regions[this.active_profile.roster_id];
@@ -181,6 +197,13 @@ export const useRosterStore = defineStore("roster", {
   },
 
   actions: {
+    // forbids a stored chest on the active character, or lifts it
+    toggle_forbid(key: string) {
+      const forbidden = this.active_profile.forbidden_chests;
+      const index = forbidden.indexOf(key);
+      if (index >= 0) forbidden.splice(index, 1);
+      else forbidden.push(key);
+    },
     init() {
       this.roster_config = load_roster_config();
     },

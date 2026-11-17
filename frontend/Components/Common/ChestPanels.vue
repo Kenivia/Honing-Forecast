@@ -4,24 +4,39 @@ import { BAND_COLORS, BAND_NAMES } from "@/Utils/Constants";
 import { get_icon_path } from "@/Utils/Helpers";
 import { amount_text, state_fits, type Chest } from "@/Utils/Chest";
 import ChestIcon from "./ChestIcon.vue";
-import CloseButton from "./CloseButton.vue";
 
-// The chests still to be opened, as two lists side by side in one card, the selection one in two
-// columns while obtain-all is hidden. Which chest goes where is the page's to say. The default
-// slot is the foot of the card, below both lists, `controls` sits in the header. With `states`, a
-// selection chest whose state fits shows how many go to each option (provisional: the
-// histogram's latest state).
+// The chests still to be opened, as two lists side by side in one card; each list, and each
+// column in a list, is half the card, one under another below 500px. Which chest goes where is
+// the page's to say. The default slot is the foot of the card, below both lists, `controls` sits
+// in the header. With `states`, a selection chest whose state fits shows how many go to each
+// option (provisional: the histogram's latest state). A `forbidden` chest is shown greyed, with
+// its allow button even when not editing; only a roster or tradable chest can be forbidden.
 const props = defineProps<{
   selection: Chest[];
   obtain_all: Chest[];
+  selection_title?: string;
   obtain_all_title?: string;
   editing?: boolean;
+  hide_count?: boolean;
   states?: Map<string, number[]>;
+  forbidden?: string[];
 }>();
 const emit = defineEmits<{
   count: [key: string, event: Event];
   remove: [key: string];
+  forbid: [key: string];
 }>();
+const is_forbidden = (chest: Chest) => !!props.forbidden?.includes(chest.key);
+const can_forbid = (chest: Chest) =>
+  is_forbidden(chest) || (props.editing && chest.band > 0);
+const BUTTON =
+  "flex h-7 w-7 items-center justify-center rounded border border-(--border-main) text-(--text-muted) hover:text-(--text-bright)";
+// a public svg drawn in the text color
+const mask = (name: string) => ({
+  mask: `url(/Icons/${name}.svg) center / contain no-repeat`,
+});
+// half the width, one column below 500px
+const HALF = "min(100%, max(500px, calc(50% - 1rem)))";
 const open = defineModel<boolean>("open", { default: true });
 const show_obtain_all = defineModel<boolean>("show_obtain_all", {
   default: false,
@@ -34,22 +49,18 @@ const split = (chest: Chest) => {
 
 const panels = computed(() => [
   {
-    title: "Selection chests",
+    title: props.selection_title ?? "Selection chests",
     chests: props.selection,
-    columns: show_obtain_all.value ? 1 : 2,
   },
   ...(show_obtain_all.value
     ? [
         {
           title: props.obtain_all_title ?? "Obtain-all chests",
           chests: props.obtain_all,
-          columns: 1,
         },
       ]
     : []),
 ]);
-// count, chest, options, delete
-const row_span = computed(() => (props.editing ? 4 : 3));
 </script>
 
 <template>
@@ -76,43 +87,49 @@ const row_span = computed(() => (props.editing ? 4 : 3));
       <div
         v-for="(panel, at) in panels"
         :key="panel.title"
-        class="flex max-w-full flex-col gap-1"
+        class="flex max-w-full min-w-0 flex-col gap-1"
+        :style="{ flex: `1 1 ${HALF}` }"
         role="group"
         :aria-label="panel.title"
       >
         <div class="font-semibold text-(--text-bright)">
           {{ panel.title }}
-          <span v-if="at === 0 && states" class="annotation font-normal">
-            (split is provisional)
-          </span>
         </div>
         <span v-if="!panel.chests.length" class="text-(--text-muted)">
           None.
         </span>
         <div
           v-else
-          class="grid max-h-80 items-center gap-x-3 overflow-auto"
+          class="grid max-h-80 gap-x-8 overflow-auto"
           :style="{
-            gridTemplateColumns: `repeat(${panel.columns * row_span}, auto)`,
+            gridTemplateColumns: `repeat(auto-fill, minmax(${HALF}, 1fr))`,
           }"
         >
           <div
             v-for="chest in panel.chests"
             :key="chest.key"
-            class="grid grid-cols-subgrid items-center border-b border-(--border-very-muted) py-1"
-            :class="{ 'odd:pr-8': panel.columns === 2 }"
-            :style="{ gridColumn: `span ${row_span}` }"
+            class="grid items-center gap-x-3 border-b border-(--border-very-muted) py-1"
+            :class="
+              hide_count
+                ? 'grid-cols-[7rem_minmax(0,1fr)_auto]'
+                : 'grid-cols-[4rem_7rem_minmax(0,1fr)_auto]'
+            "
           >
             <input
+              v-if="!hide_count"
               type="number"
               min="0"
               class="generic-input h-7! w-16 pl-1"
-              :disabled="!editing"
+              :class="{ 'opacity-50': is_forbidden(chest) }"
+              :disabled="!editing || is_forbidden(chest)"
               :aria-label="`${chest.title} count`"
               :value="chest.count"
               @change="emit('count', chest.key, $event)"
             />
-            <span class="flex flex-col">
+            <span
+              class="flex flex-col"
+              :class="{ 'opacity-50': is_forbidden(chest) }"
+            >
               <ChestIcon :chest="chest" />
               <span
                 class="annotation"
@@ -121,7 +138,10 @@ const row_span = computed(() => (props.editing ? 4 : 3));
                 {{ BAND_NAMES[chest.band] }}
               </span>
             </span>
-            <span class="flex flex-wrap items-center gap-2">
+            <span v-if="is_forbidden(chest)" class="text-(--text-very-muted)">
+              Forbidden on this character
+            </span>
+            <span v-else class="flex flex-wrap items-center gap-2">
               <template v-for="(option, index) in chest.options" :key="index">
                 <span class="text-(--text-very-muted)">
                   {{ index ? (at === 0 && split(chest) ? "," : "or") : ":" }}
@@ -144,13 +164,40 @@ const row_span = computed(() => (props.editing ? 4 : 3));
                 </span>
               </template>
             </span>
-            <CloseButton
-              v-if="editing"
-              class="justify-self-center"
-              :size="28"
-              :aria-label="`Delete ${chest.title}`"
-              @click="emit('remove', chest.key)"
-            />
+            <span class="flex gap-1">
+              <button
+                v-if="can_forbid(chest)"
+                :class="BUTTON"
+                :aria-label="
+                  is_forbidden(chest)
+                    ? `Allow ${chest.title} on this character`
+                    : `Forbid ${chest.title} on this character`
+                "
+                :title="is_forbidden(chest) ? 'Allow' : 'Forbid'"
+                @click="emit('forbid', chest.key)"
+              >
+                <template v-if="is_forbidden(chest)">✓</template>
+                <span
+                  v-else
+                  class="h-4 w-4 bg-current"
+                  :style="mask('ban-solid-full')"
+                />
+              </button>
+              <!-- keeps the delete buttons in line -->
+              <span v-else-if="editing" class="w-7" />
+              <button
+                v-if="editing"
+                :class="BUTTON"
+                :aria-label="`Delete ${chest.title}`"
+                title="Delete"
+                @click="emit('remove', chest.key)"
+              >
+                <span
+                  class="h-4 w-4 bg-current"
+                  :style="mask('trash-solid-full')"
+                />
+              </button>
+            </span>
           </div>
         </div>
       </div>

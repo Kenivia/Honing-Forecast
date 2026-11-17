@@ -62,6 +62,17 @@ describe("getters", () => {
     expect(labels).toContain("Serca Red");
   });
 
+  it("a forbidden chest is processed apart, for this character only", () => {
+    store.switch_profile(0);
+    const key = store.active_chests[2].key;
+    store.active_profile.forbidden_chests = [key];
+    const titles = (chests: { title: string }[]) => chests.map((c) => c.title);
+    expect(titles(store.processed_chests)).not.toContain("Roster chest");
+    expect(titles(store.forbidden_processed_chests)).toEqual(["Roster chest"]);
+    store.switch_profile(1);
+    expect(titles(store.processed_chests)).toContain("Roster chest");
+  });
+
   it("roster ids are unique, in order of first appearance", () => {
     store.roster_config.profiles[0].roster_id = "5";
     expect(store.roster_ids).toEqual(["5", "0", "1"]);
@@ -106,7 +117,11 @@ describe("actions", () => {
   });
 
   it("add_profile keeps a roster's characters together", () => {
-    store.add_profile({ ...new_char_profile(), char_name: "Delta", roster_id: "0" });
+    store.add_profile({
+      ...new_char_profile(),
+      char_name: "Delta",
+      roster_id: "0",
+    });
     expect(store.all_profiles.map((p) => p.char_name)).toEqual([
       "Alpha",
       "Beta",

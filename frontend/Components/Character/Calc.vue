@@ -12,14 +12,21 @@ import { useRosterStore } from "@/Stores/RosterConfig.js";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 import { settle_deductions } from "./Instructions/Details/NormalDetails/SuccessUtils";
 const runtime = useRuntimeStore();
+const store = useRosterStore();
 const {
   active_profile,
   active_region,
   active_chests,
   active_mats_prices,
   active_selected_bundles,
-  processed_chests: chests,
-} = storeToRefs(useRosterStore());
+  processed_chests,
+  forbidden_processed_chests: forbidden,
+} = storeToRefs(store);
+// the forbidden ones are shown too, greyed
+const chests = computed(() => [...processed_chests.value, ...forbidden.value]);
+const forbidden_keys = computed(() =>
+  forbidden.value.map((chest) => chest.key),
+);
 // the stored chests are shown in place of these while editing
 const editing_chests = ref(false);
 const chests_open = ref(true);
@@ -34,6 +41,7 @@ watch(
     () => active_profile.value.express_event,
     () => active_profile.value.band_values,
     () => active_chests.value,
+    () => active_profile.value.forbidden_chests,
     () => active_profile.value.auto_start_optimizer,
     () => active_profile.value.min_resolution,
     () => active_region.value,
@@ -80,8 +88,12 @@ onUnmounted(() => {
     v-model:show_obtain_all="show_obtain_all"
     :selection="selection"
     :obtain_all="chests.filter((chest) => chest.options.length === 1)"
+    selection_title="Chest opening advice"
     obtain_all_title="Obtain-all and trivial selection chests"
+    :hide_count="true"
     :states="runtime.histogram.result?.state_bundle.chest_states"
+    :forbidden="forbidden_keys"
+    @forbid="store.toggle_forbid"
   >
     <template #controls>
       <label class="flex items-center gap-1">

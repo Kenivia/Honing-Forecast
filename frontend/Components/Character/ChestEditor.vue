@@ -11,8 +11,8 @@ import ChestPanels from "@/Components/Common/ChestPanels.vue";
 
 // The chests as stored, both tiers in them: this character's own and its roster's. A chest
 // bound to a character goes to the character, any other to the roster.
-const { active_profile, active_chests, roster_config } =
-  storeToRefs(useRosterStore());
+const store = useRosterStore();
+const { active_profile, active_chests, roster_config } = storeToRefs(store);
 
 const roster_list = () =>
   (roster_config.value.roster_chests[active_profile.value.roster_id] ??= []);
@@ -40,6 +40,8 @@ function set_count(key: string, event: Event) {
 function remove(key: string) {
   const at = find(key);
   at?.list.splice(at.index, 1);
+  if (active_profile.value.forbidden_chests.includes(key))
+    store.toggle_forbid(key);
 }
 
 const labels = computed(() => [
@@ -82,8 +84,10 @@ function add_chest() {
     :selection="active_chests.filter((chest) => !chest.obtain_all)"
     :obtain_all="active_chests.filter((chest) => chest.obtain_all)"
     :editing="true"
+    :forbidden="active_profile.forbidden_chests"
     @count="set_count"
     @remove="remove"
+    @forbid="store.toggle_forbid"
   >
     <template #controls><slot name="controls" /></template>
     <div class="flex flex-col gap-2 pt-2">

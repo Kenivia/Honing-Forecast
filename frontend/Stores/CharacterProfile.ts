@@ -47,6 +47,8 @@ export interface CharProfile {
   bound_budgets: InputColumn;
   // chests still to be opened, as the scanner's manifest exported them
   chests: ManifestChest[];
+  // keys of chests, its own or the roster's, this character may not open
+  forbidden_chests: string[];
   // income per week typed by hand, char bound and free taps (under the special leap label)
   income_manual: boolean;
   // income per week from the sources configured on the Income page, when not typed by hand
@@ -95,6 +97,7 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
     enabled: (label) => label !== "Shards",
   }),
   chests: [],
+  forbidden_chests: [],
   income_manual: false,
   income_auto: false,
   income_sources: {},

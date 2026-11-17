@@ -9,6 +9,7 @@
     "scanner-profile": "node scanner_setup/browser/profile_scanner.mjs",
     "scanner-compare": "node scanner_setup/browser/scan_compare.mjs",
     "scanner-suite": "python scanner_setup/scanner/suite.py",
+    "perf": "node scripts/perf/bench.mjs",
     "test": "pnpm run test:rust && pnpm run test:node && pnpm run test:unit && pnpm run test:e2e",
     "test:rust": "cargo test -p hf-core -p hf-arena && cargo test -p hf-scanner --lib",
     "test:node": "node tests/run.mjs",
