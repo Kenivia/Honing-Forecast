@@ -85,13 +85,15 @@ describe("CharView", () => {
     expect(wrapper.findAll("a.selected").map((a) => a.text())).toEqual(["Bob"]);
   });
 
-  it("draws a character's class icon, and none for an unknown class", async () => {
+  it("draws a character's class icon, and a helmet for an unknown class", async () => {
     const { wrapper, store } = await mount_at("/Bob/calc");
     store.all_profiles[0].class_name = "Guardianknight";
     await flushPromises();
-    const icons = wrapper.findAll('nav[aria-label="Characters"] a span');
-    expect(icons).toHaveLength(1);
-    expect(icons[0].attributes("style")).toContain("guardianknight.svg");
+    const icons = wrapper.findAll('nav[aria-label="Characters"] a span[style]');
+    expect(icons.map((i) => i.attributes("style"))).toEqual([
+      expect.stringContaining("guardianknight.svg"),
+      expect.stringContaining("unknown.png"),
+    ]);
   });
 
   it("switches and cancels the old runs when the name changes", async () => {
