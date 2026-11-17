@@ -5,6 +5,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - shift sidebar?
 
+- new user / new character setup
 - rework changelog page (infinite scroll)
 
 - cloud syncing

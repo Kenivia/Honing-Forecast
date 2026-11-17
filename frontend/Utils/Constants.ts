@@ -496,6 +496,7 @@ const OTHER_ICONS: Record<string, string> = {
   "Forecast Icon": "/Icons/Forecast Icon.webp",
   Pity: "/Icons/Artist Caught.png",
   Warning: "/Icons/Warning.png",
+  "Artist Cry": "/Icons/artist_cry.png",
 };
 
 export const IconMap: Record<string, string> = {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
+import "@/info.css";
 
 const dummy_checkbox = ref(true);
 
@@ -22,7 +23,7 @@ const selected_color = computed(() => {
 });
 </script>
 <template>
-  <div class="guide-html card-shell card-body prose-card">
+  <div class="info-html card-shell card-body prose-card">
     <h1>Guide</h1>
     <h2>Step 1: Select your upgrades</h2>
     <img class="mx-auto" src="/Guide/ticks.png" />
@@ -223,18 +224,3 @@ const selected_color = computed(() => {
     </p>
   </div>
 </template>
-
-<style scoped>
-.guide-html h3,
-.guide-html p {
-  padding-left: 1.25rem;
-}
-.guide-html ol {
-  list-style-type: decimal;
-  padding-left: 3.25rem;
-}
-.guide-html ul {
-  list-style-type: " - ";
-  padding-left: 3.25rem;
-}
-</style>

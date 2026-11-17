@@ -14,7 +14,7 @@ import {
 import { useRuntimeStore } from "./Stores/RuntimeState";
 import ScanSwitchDialog from "./Components/Character/InventoryScanner/ScanSwitchDialog.vue";
 import { upload_snapshots } from "./Utils/Analytics";
-import { bible_auth, sign_out, signed_in } from "./Utils/BibleAuth";
+import { bible_auth, sign_in, sign_out, signed_in } from "./Utils/BibleAuth";
 import { auto_refresh } from "./Utils/BibleSync";
 import BibleSyncPopup from "./Components/Common/Uwuowo/BibleSyncPopup.vue";
 
@@ -175,6 +175,19 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
             Sign out
           </button>
         </div>
+        <button
+          v-else
+          class="ml-auto flex cursor-pointer flex-row items-center gap-2 px-3 text-sm text-(--text-muted) hover:underline"
+          title="Sign in with lostark.bible"
+          @click="sign_in"
+        >
+          Sign in
+          <img
+            :src="get_icon_path('Artist Cry')"
+            alt="Artist crying"
+            class="h-8 w-8"
+          />
+        </button>
       </nav>
     </header>
 

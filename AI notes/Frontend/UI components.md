@@ -26,3 +26,7 @@ Every hover tooltip on the site, including the material and gold graphs' (Chart.
 ## Calculator layout
 
 - The chest card and the optimizer panel share a row in `Calc.vue` while the chest card is thin; once it is wide (editing, or "Show all chests", 1032px) the optimizer goes under it. The optimizer panel is a fixed 665px, just enough for the simple strategy grid (662px at max-content); widen it if those columns grow.
+
+## Info pages
+
+Guide.vue and Docs.vue share prose styles (heading/paragraph indent, list markers) from `frontend/info.css`, scoped under the `.info-html` class on each page root.

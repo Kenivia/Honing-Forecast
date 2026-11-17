@@ -13,7 +13,7 @@ import Income from "@/Components/Character/Income/Income.vue";
 import Choices from "@/Components/Character/Choices/Choices.vue";
 import { guard_switch } from "@/Components/Character/InventoryScanner/ScanSwitch";
 import AuthCallback from "@/Components/Common/Uwuowo/AuthCallback.vue";
-import UpgradeOrder from "@/Components/Info/UpgradeOrder.vue";
+import UpgradeOrder from "@/Components/Info/Docs.vue";
 
 const router = createRouter({
   history: createWebHistory(),
