@@ -1,5 +1,6 @@
 """
-Scores the output of the number_bench bin: wrong reads per clean-up variant and alphabet.
+Scores the output of the number_bench bin: wrong reads per clean-up variant and alphabet. Recordings
+and debug captures are scored alike.
 
     python scanner_setup/tooltips/number_bench.py <tsv>...
 
@@ -37,7 +38,8 @@ for path in sys.argv[1:]:
             source = path if part[1] == "stdin" else part[1]
             reads.append((source, part[3], part[4], (part[5:] + [""] * len(names))[: len(names)]))
         elif part[0] == "TRUTH":
-            truth[(path, part[2], part[3])] = digits(part[4])
+            source = path if part[1] == "stdin" else part[1]
+            truth[(source, part[2], part[3])] = digits(part[4])
 
 rows = collections.defaultdict(dict)
 

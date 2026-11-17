@@ -154,8 +154,8 @@ function accept() {
             :image="slot_images.get(key)"
             :active="false"
           />
-          <div class="flex flex-col">
-            <span class="text-base text-(--text-bright)">
+          <div class="flex min-w-0 flex-col">
+            <span class="text-base wrap-break-word text-(--text-bright)">
               {{
                 item_name(item) ??
                 (slot || edit ? "No known item" : "Not seen yet")
@@ -174,22 +174,18 @@ function accept() {
       </div>
 
       <div
-        class="grid h-fit grid-cols-[auto_auto_auto] items-center gap-x-4 gap-y-1"
+        class="grid h-fit grid-cols-[auto_11rem_auto] items-center gap-x-4 gap-y-1"
         role="group"
         aria-label="Read and corrected"
       >
         <span></span>
-        <span class="text-(--text-bright)">Read</span>
+        <span class="text-(--text-bright)">Read by scanner</span>
         <span class="text-(--text-bright)">Correct it</span>
 
         <span class="text-(--text-muted)">Item</span>
-        <span>{{ item_name(read_item) ?? "-" }}</span>
+        <span class="wrap-break-word">{{ item_name(read_item) ?? "-" }}</span>
         <div class="flex items-center gap-2">
-          <select
-            v-model="draft.item"
-            class="selector max-w-56"
-            aria-label="Item"
-          >
+          <select v-model="draft.item" class="selector w-56" aria-label="Item">
             <option value="">Irrelevant</option>
             <!-- memoized: Vue rewrites every bound option value on each render, which resets an open dropdown's highlight -->
             <option

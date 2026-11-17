@@ -8,7 +8,7 @@ import CloseButton from "./CloseButton.vue";
 
 // The chests still to be opened, as two lists side by side in one card, the selection one in two
 // columns while obtain-all is hidden. Which chest goes where is the page's to say. The default
-// slot is the foot of the selection list, `controls` sits in the header. With `states`, a
+// slot is the foot of the card, below both lists, `controls` sits in the header. With `states`, a
 // selection chest whose state fits shows how many go to each option (provisional: the
 // histogram's latest state).
 const props = defineProps<{
@@ -153,7 +153,9 @@ const row_span = computed(() => (props.editing ? 4 : 3));
             />
           </div>
         </div>
-        <slot v-if="at === 0" />
+      </div>
+      <div v-if="$slots.default" class="w-full">
+        <slot />
       </div>
     </div>
   </div>

@@ -34,7 +34,12 @@ export const ocr_pending = ref(0);
 // per-batch timings in ms, kept on window for profiling
 const ocr_timings: any[] = ((globalThis as any).__ocr_timings ??= []);
 
-export function start_ocr(model: Uint8Array, config: OneIconConfig[]) {
+// `font` is what slot numbers are read by, a game font or a picked file that passed check_font
+export function start_ocr(
+  model: Uint8Array,
+  config: OneIconConfig[],
+  font: Uint8Array,
+) {
   stop_ocr();
   workers = Array.from({ length: WORKERS }, () => ({
     bundle: create_worker_bundle(),
@@ -44,9 +49,9 @@ export function start_ocr(model: Uint8Array, config: OneIconConfig[]) {
   for (const worker of workers) {
     worker.bundle.debounced_start(
       WasmOp.OcrInit,
-      { model, config },
+      { model, config, font },
       (out) => {
-        // null when it failed; a success returns nothing
+        // null when it failed
         if (out === null) return;
         worker.ready = true;
         pump();
@@ -137,4 +142,21 @@ function pump() {
       false,
     );
   }
+}
+
+// whether a picked font file has every digit and "+", checked once in a worker of its own
+export function check_font(font: Uint8Array): Promise<boolean> {
+  const bundle = create_worker_bundle();
+  return new Promise((resolve) =>
+    bundle.debounced_start(
+      WasmOp.FontCheck,
+      font,
+      (ok) => {
+        bundle.cancel();
+        resolve(!!ok);
+      },
+      0,
+      false,
+    ),
+  );
 }

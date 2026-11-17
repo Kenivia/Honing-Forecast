@@ -21,6 +21,7 @@ realfft = {version="3.5.0", features=["wasm_simd"]}
 rustfft = {version="6.4.1", features=["wasm_simd"]}
 parking_lot = {version="0.12.5"}
 ocrs = "0.13.0"
+ab_glyph = "0.2.32"
 rten = "0.26.0"
 rten-imageproc = "0.26.0"
 rmp-serde = "1.3.1"

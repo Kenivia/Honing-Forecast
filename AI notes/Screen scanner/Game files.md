@@ -2,7 +2,7 @@
 
 `scanner_setup/game_files` builds the scanner's chest table and icon art from the installed game's own files. Nothing reads `scanner_setup/codex` (old downloads from lostarkcodex.com, git-ignored).
 
-1. `extract.py` pulls the tables and the icon sheets out of the game, once per game patch.
+1. `extract.py` pulls the tables, the fonts and the icon sheets out of the game, once per game patch. `fonts.py` then cuts the fonts down for the scanner.
 2. `chests.py` writes `scanner_setup/templates/chests.json` and `scanner_setup/templates/ChestIcons`: every chest that opens to something the scanner counts, and every other chest drawn like one of those.
 3. `decoys.py` writes `scanner_setup/templates/decoys.json` and `scanner_setup/templates/DecoyIcons`: what we do not count that looks like one of our templates.
 4. `python scanner_setup/templates/make_msg_pack.py` and `pnpm run wasm`, as for any change to the tables.
@@ -27,6 +27,7 @@ Claude Code will not run a downloaded exe on its own: `umodel_lostark_v7.exe` is
 ## What extract.py writes
 
 - **`scanner_setup/game_files/tables/`**: 24 of the SQLite tables in `EFGame/data2.lpk`, decrypted, and `IconInfo.loa` from `data3.lpk`. The list is in `extract/Program.cs`; a script that needs another table has to add it there. The scripts open the `.db` files as they are (`game.table`).
+- **`scanner_setup/game_files/fonts/`**: everything under `Binaries/Fonts` in `font.lpk`, by its path there (languages share file names): the fonts and a `FontMap.xml` per language folder, which maps the UI's text styles to files (the root's is Korean). `fonts.py` cuts each language's main style (`$YG760`) down to "0123456789+" into `public/fonts/<Language>.ttf` for the slot-number shape reader (`Pipeline.md`), which the native bins and the shape test read too. These are shipped and tracked.
 - **`scanner_setup/game_files/atlas/`**: the textures of the `EFUI_IconAtlas_*` packages as PNG, in `<package>/Texture2D/<sheet>.png`. umodel takes a package by its real name only with `-nameresolve`; on disk the files have scrambled names.
 
 Vite watches the whole project, so big folders are in `server.watch.ignored` in `vite.config.ts` (`scanner_setup/game_files`, `scanner_setup/brightness`, `scanner_setup/codex`, `ignored`, `crates`, `target`).

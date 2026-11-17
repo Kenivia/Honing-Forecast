@@ -158,7 +158,7 @@ function toggle_lock(x: Shown) {
                 used.
               </span>
               <span class="text-(--text-muted)"
-                >Exported by {{ last_export(win.type) }}.</span
+                >Exported on {{ last_export(win.type) }}.</span
               >
             </div>
             <SlotCell

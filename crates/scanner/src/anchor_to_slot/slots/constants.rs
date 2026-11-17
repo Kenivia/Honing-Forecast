@@ -4,6 +4,9 @@ use parking_lot::RwLock;
 use std::sync::LazyLock;
 
 pub const UNMATCHED_UNCHANGED: f64 = 0.995;
+// A slot whose look scores this much better as its icon than the look its number was last read
+// from is read again: lit by the hover and back to normal is too close to count as a change.
+pub const BETTER_LOOK: f64 = 0.005;
 // What a slot has to score as an icon. With the decoys in, true matches start at 0.946 and the
 // closest other slot is 0.924. What a slot may also be keeps the old limit.
 pub const SLOT_CONFIDENCE: f64 = 0.935;

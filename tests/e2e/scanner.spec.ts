@@ -286,6 +286,28 @@ test("reset scan wipes a stopped scan", async ({ page }) => {
   await expect(reset).toBeDisabled();
 });
 
+test("a custom number font needs every digit", async ({ page }) => {
+  await open_scanner(page, "Newchar");
+  await page.getByRole("button", { name: /Troubleshooting/ }).click();
+  await page.getByLabel("Number font").selectOption("Custom");
+  const apply = page.getByRole("button", { name: "Apply" });
+  await expect(apply).toBeDisabled();
+  const file = page.getByLabel("Font file");
+  await file.setInputFiles({
+    name: "not-a-font.ttf",
+    mimeType: "font/ttf",
+    buffer: Buffer.from("not a font"),
+  });
+  await expect(page.getByText("not-a-font.ttf is not a font")).toBeVisible();
+  await expect(apply).toBeDisabled();
+  await file.setInputFiles(
+    fileURLToPath(new URL("../../public/fonts/English.ttf", import.meta.url)),
+  );
+  await expect(page.getByText("English.ttf", { exact: true })).toBeVisible();
+  await expect(page.getByText("not-a-font.ttf is not a font")).toBeHidden();
+  await expect(apply).toBeEnabled();
+});
+
 test("a scan moved to another roster counts its roster storage there", async ({
   page,
 }) => {

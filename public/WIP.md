@@ -3,9 +3,9 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
-- Assume tradability (or and chest type ) on previously seen icons
-- no more use previous
-- chaos dungeon detection (and maybe guardian also)
+- ~~Assume tradability (or and chest type ) on previously seen icons~~
+- ~~no more use previous~~
+
 - ~~add progress percents~~
 - fix tradable gold chance
 - +N for tradable showing roster bound incorrectly
@@ -14,6 +14,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - choices optimizer not sharing the results from the calc page
 - lostark.bible login
 - reorganize to info page
+- better warnings on scanners (show icons)
 
 ## Forecast mode
 
@@ -24,6 +25,11 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
     - something happening over n weeks?
 
 - expected weeks until afforded? will need monto carlo for tis
+
+## income logging?
+
+- chaos dungeon detection (and maybe guardian also)
+- this is lowkey a loa log type job
 
 ## Misc UI
 

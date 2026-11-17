@@ -7,6 +7,7 @@ import init, {
   take_timings,
   replay_wrapper,
   ocr_init_wrapper,
+  font_check_wrapper,
   ocr_wrapper,
   recorder_buffer,
   record_frame,
@@ -143,7 +144,9 @@ async function handle(msg) {
   } else if (wasm_op == WasmOp.Record) {
     result = record(payload, wasm.memory, timings);
   } else if (wasm_op == WasmOp.OcrInit) {
-    ocr_init_wrapper(payload.model, payload.config);
+    ocr_init_wrapper(payload.model, payload.config, payload.font);
+  } else if (wasm_op == WasmOp.FontCheck) {
+    result = font_check_wrapper(payload);
   } else if (wasm_op == WasmOp.Ocr) {
     // a batch of text lines from the scanner worker, relayed by the main thread
     result = payload.map((job) => [job.id, ocr_wrapper(job)]);

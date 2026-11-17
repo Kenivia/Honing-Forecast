@@ -9,6 +9,7 @@ use crate::{
         scan_result::{SlotResult, SlotStatus},
         setup::{load_ocr_engine, set_config},
     },
+    ocr::shapes::load_number_font,
     scanner_state::{Prior, ScannerState, SlotAddress},
     tooltip::{chest::Chest, hover::Hover},
 };
@@ -21,6 +22,10 @@ pub fn load() {
         let config = fs::read(format!("{ROOT}/public/ScannerConfig.msgpack")).unwrap();
         set_config(rmp_serde::from_slice(&config).unwrap());
         load_ocr_engine(fs::read(format!("{ROOT}/public/text-recognition.rten")).unwrap());
+        // NO_SHAPES=1 reads every number by the OCR
+        if std::env::var("NO_SHAPES").is_err() {
+            load_number_font(fs::read(format!("{ROOT}/public/fonts/English.ttf")).unwrap());
+        }
     });
 }
 

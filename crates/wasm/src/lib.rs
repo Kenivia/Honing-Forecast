@@ -10,7 +10,10 @@ use hf_scanner::buffer::Buffer;
 use hf_scanner::dev_utils::capture::{InputRecorder, parse};
 use hf_scanner::dev_utils::timing::{take, timed};
 use hf_scanner::interface::setup::{OneIconConfig, load_ocr_engine, set_config};
-use hf_scanner::ocr::jobs::OcrJob;
+use hf_scanner::ocr::{
+    jobs::OcrJob,
+    shapes::{load_number_font, number_font},
+};
 use hf_scanner::scanner_state::{Detected, Prior, ScannerState, SlotEdit};
 use rand::rngs::ThreadRng;
 use serde::Deserialize;
@@ -199,14 +202,22 @@ pub fn reserve_buffer_wrapper(input: JsValue) -> JsValue {
     out
 }
 
-// The two below run in the OCR worker, which holds the recogniser and the templates a slot's
-// number is cleaned up with, and no scanner state.
+// The two below run in the OCR worker, which holds the recogniser, the templates a slot's number is
+// cleaned up with and the font it is read by, and no scanner state. The font has passed
+// font_check_wrapper.
 #[wasm_bindgen]
-pub fn ocr_init_wrapper(model: Vec<u8>, config: JsValue) {
+pub fn ocr_init_wrapper(model: Vec<u8>, config: JsValue, font: Vec<u8>) {
     console_error_panic_hook::set_once();
 
     load_ocr_engine(model);
     set_config(from_value(config).unwrap());
+    load_number_font(font);
+}
+
+// whether a picked font file has every digit and "+"
+#[wasm_bindgen]
+pub fn font_check_wrapper(font: Vec<u8>) -> bool {
+    number_font(font).is_some()
 }
 
 // one of a scan result's ocr_jobs, as it came

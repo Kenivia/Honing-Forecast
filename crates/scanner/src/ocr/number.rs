@@ -171,23 +171,29 @@ pub fn number_background(
 // How much white a pixel needs over this background going by colour alone. Shading keeps a colour's
 // hue and white washes it out, so a grey pixel over a coloured part of the icon is nearly all digit,
 // however bright that part is. Says nothing over a background that is grey itself.
-fn alpha_by_colour(observed: Rgb, background: Rgb, params: &NumberParams) -> f64 {
+// Also how far the pixel is from white over that background with that much white: the part of it
+// that is not white once the icon is taken out. None over a grey background.
+fn alpha_by_colour(observed: Rgb, background: Rgb, params: &NumberParams) -> (f64, Option<f64>) {
     let spread = |p: Rgb| (p[0].min(p[1]).min(p[2]), p[0].max(p[1]).max(p[2]));
     let ((low, high), (bg_low, bg_high)) = (spread(observed), spread(background));
     if bg_high - bg_low < params.min_chroma {
-        return 0.0;
+        return (0.0, None);
     }
     let kept = ((high - low) / (bg_high - bg_low)).min(1.0);
-    (low - kept * bg_low) / 255.0
+    let white = low - kept * bg_low;
+    let error = (0..3)
+        .map(|c| (observed[c] - white - kept * background[c]).abs())
+        .fold(0.0, f64::max);
+    (white / 255.0, Some(error))
 }
 
-// per pixel: the least white the template leaves unexplained, the same going by colour, and
-// whether it is the number's shadow
-pub fn number_layers(
-    number: &RgbaImage,
-    background: &[Rgb],
-    params: &NumberParams,
-) -> (Vec<f64>, Vec<f64>, Vec<bool>) {
+pub struct Layers {
+    pub alpha: Vec<f64>,     // the least white the template leaves unexplained
+    pub by_colour: Vec<f64>, // the same going by colour
+    pub shadow: Vec<bool>,   // the number's shadow
+}
+
+pub fn number_layers(number: &RgbaImage, background: &[Rgb], params: &NumberParams) -> Layers {
     let (w, h) = number.dimensions();
     let bg = |x: i32, y: i32| {
         background[(y.clamp(0, h as i32 - 1) * w as i32 + x.clamp(0, w as i32 - 1)) as usize]
@@ -199,9 +205,20 @@ pub fn number_layers(
         for x in 0..w as i32 {
             let observed = rgb(number.get_pixel(x as u32, y as u32));
             let index = (y * w as i32 + x) as usize;
-            by_colour[index] = (0..9)
+            let colour: Vec<(f64, Option<f64>)> = (0..9)
                 .map(|n| alpha_by_colour(observed, bg(x + n % 3 - 1, y + n / 3 - 1), params))
-                .fold(1.0, f64::min);
+                .collect();
+            // only backgrounds the pixel is white over count
+            let least = colour
+                .iter()
+                .filter(|(_, error)| error.is_none_or(|e| e <= params.tolerance))
+                .map(|x| x.0)
+                .fold(f64::INFINITY, f64::min);
+            by_colour[index] = if least.is_finite() {
+                least.min(1.0)
+            } else {
+                0.0
+            };
             'alpha: for step in 0..16 {
                 let a = step as f64 / 16.0;
                 let target = observed.map(|v| (v - a * 255.0) / (1.0 - a));
@@ -227,7 +244,11 @@ pub fn number_layers(
             }
         }
     }
-    (alpha, by_colour, shadow)
+    Layers {
+        alpha,
+        by_colour,
+        shadow,
+    }
 }
 
 // The game draws the number over the icon as opaque white digits with a soft black shadow around them,
@@ -238,13 +259,23 @@ pub fn number_layers(
 // white the template does not have, or white inside the shadow.
 pub fn number_mask(number: &RgbaImage, background: &[Rgb], params: &NumberParams) -> GrayImage {
     let (w, h) = number.dimensions();
-    let (alpha, by_colour, shadow) = number_layers(number, background, params);
+    let Layers {
+        alpha,
+        by_colour,
+        shadow,
+    } = number_layers(number, background, params);
     let reach = (h as f64 / params.reach).round() as i32;
     let is_shadow = |x: i32, y: i32| {
         x >= 0 && y >= 0 && x < w as i32 && y < h as i32 && shadow[(y * w as i32 + x) as usize]
     };
     let white: Vec<f64> = number.pixels().map(|p| whiteness(rgb(p), params)).collect();
     let at = |x: i32, y: i32| (y * w as i32 + x) as usize;
+    // A digit's edge tinted by a coloured icon behind it counts by the white the colour test finds in
+    // it. The fit alone would take a lit-up icon for white.
+    let coverage = |i: usize| match white[i] > 0.0 {
+        true => alpha[i].max(by_colour[i]),
+        false => by_colour[i],
+    };
     let mut digit = vec![false; (w * h) as usize];
     for y in 0..h as i32 {
         for x in 0..w as i32 {
@@ -254,8 +285,8 @@ pub fn number_mask(number: &RgbaImage, background: &[Rgb], params: &NumberParams
                 .iter()
                 .any(|(dx, dy)| within(*dx, *dy) && within(-dx, -dy));
             let index = at(x, y);
-            let unexplained = alpha[index].max(by_colour[index]) >= params.min_alpha;
-            digit[index] = white[index] > 0.0 && (unexplained || in_shadow);
+            let unexplained = coverage(index) >= params.min_alpha;
+            digit[index] = unexplained || (white[index] > 0.0 && in_shadow);
         }
     }
     // a pixel short of the limit still counts where it touches a digit pixel
@@ -265,10 +296,7 @@ pub fn number_mask(number: &RgbaImage, background: &[Rgb], params: &NumberParams
         for y in 0..h as i32 {
             for x in 0..w as i32 {
                 let index = at(x, y);
-                if digit[index]
-                    || white[index] == 0.0
-                    || alpha[index].max(by_colour[index]) < params.low_alpha
-                {
+                if digit[index] || coverage(index) < params.low_alpha {
                     continue;
                 }
                 let touches = (0..9).any(|n| {
@@ -284,7 +312,8 @@ pub fn number_mask(number: &RgbaImage, background: &[Rgb], params: &NumberParams
     }
     GrayImage::from_fn(w, h, |x, y| {
         let index = (y * w + x) as usize;
-        Luma([if digit[index] { white[index] as u8 } else { 0 }])
+        let value = white[index].max(coverage(index) * 255.0);
+        Luma([if digit[index] { value as u8 } else { 0 }])
     })
 }
 

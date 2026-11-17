@@ -4,6 +4,7 @@ import {
   file_to_stream,
 } from "@/Components/Character/InventoryScanner/FramePassing";
 import {
+  check_font,
   ocr_pending,
   queue_ocr,
   start_ocr,
@@ -26,6 +27,7 @@ import {
 import { until, useIntervalFn } from "@vueuse/core";
 import {
   download_note,
+  getFonts,
   getModel,
   getScannerConfig,
   ScanResult,
@@ -45,9 +47,10 @@ import {
   recording,
   SAME_FRAME,
 } from "./Capture";
-import { scan_settings } from "./ScanSettings";
+import { custom_font, NUMBER_FONTS, scan_settings } from "./ScanSettings";
 import { show_debug } from "./ScannerUIutils";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
+import QuestionMark from "@/Components/Common/QuestionMark.vue";
 const runtime = useRuntimeStore();
 
 const props = defineProps<{
@@ -97,8 +100,30 @@ const draft_changed = computed(
 );
 const draft_valid = computed(() => {
   const { manual, value } = draft.brightness;
-  return !manual || (typeof value === "number" && value >= 0 && value <= 100);
+  const brightness_ok =
+    !manual || (typeof value === "number" && value >= 0 && value <= 100);
+  return brightness_ok && (draft.font !== "Custom" || !!draft.font_file);
 });
+// a font file picked in the draft, taken on apply; one without every digit is turned away
+let picked_font: Uint8Array | null = null;
+const font_refused = ref<string | null>(null);
+async function pick_font(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (!(await check_font(bytes))) {
+    font_refused.value = file.name;
+    return;
+  }
+  font_refused.value = null;
+  picked_font = bytes;
+  draft.font_file = file.name;
+}
+// the font the numbers are read by
+const number_font = async () =>
+  scan_settings.font === "Custom"
+    ? custom_font.bytes!
+    : (await getFonts())[scan_settings.font];
 const aspect_choice = computed({
   get: () =>
     draft.forced_21_9.manual
@@ -124,12 +149,15 @@ const brightness_choice = computed({
 });
 // idle, they are only kept for the next capture
 function apply_settings() {
+  if (draft.font === "Custom" && picked_font) custom_font.bytes = picked_font;
   Object.assign(scan_settings, structuredClone(toRaw(draft)));
   if (status.value === "capturing") restart_scanner();
 }
 const details = ref(false);
 function discard_settings() {
   Object.assign(draft, copy_settings());
+  picked_font = null;
+  font_refused.value = null;
 }
 
 // what the scanner last reported, shown beside a setting left on auto
@@ -251,6 +279,7 @@ async function start_scanner() {
       replay ?? source.measure(),
       getScannerConfig(),
       getModel(),
+      number_font(),
     ]);
   } catch {
     if (status.value === "idle") return;
@@ -259,7 +288,7 @@ async function start_scanner() {
       "Could not download the scanner's files. Check your connection and try again.";
     return;
   }
-  const [size, config, model] = loaded;
+  const [size, config, model, font] = loaded;
   // stopped while downloading
   if (!size || status.value === "idle") return;
   const { width, height } = size;
@@ -275,7 +304,7 @@ async function start_scanner() {
   if (recording.value && !replay)
     begin_capture_file({ width, height, ...copy_settings(), priors });
   // the model only goes to the OCR workers, the templates to them too
-  start_ocr(toRaw(model), toRaw(config));
+  start_ocr(toRaw(model), toRaw(config), font);
   bundle.value.debounced_start(
     WasmOp.Reserve,
     new_scanner_state,
@@ -479,19 +508,19 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
 </script>
 
 <template>
-  <div class="card-shell w-fit max-w-full">
+  <div class="card-shell w-150! max-w-full">
     <div class="card-header">
       <span class="card-title">Screen Capture</span>
     </div>
     <div class="card-body flex flex-col gap-4">
-      <p v-if="error" class="max-w-150 text-xs text-(--warning)">
+      <p v-if="error" class="text-xs text-(--warning)">
         {{ error }}
       </p>
-      <p v-if="download_note" class="max-w-150 text-sm text-(--text-muted)">
+      <p v-if="download_note" class="text-sm text-(--text-muted)">
         Downloading scanner data: {{ download_note }}.
       </p>
 
-      <div class="flex w-full gap-2">
+      <div class="flex w-full flex-wrap gap-2">
         <button
           class="generic-button rounded-lg! bg-(--accent-blue)! px-4! py-1.5! enabled:hover:bg-(--accent-blue-hover)!"
           :disabled="status === 'capturing'"
@@ -541,7 +570,7 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
         <span class="text-[1.1rem] font-semibold">{{
           details ? "▾" : "▸"
         }}</span>
-        {{ details ? "Hide details" : "Show details" }}
+        Troubleshooting
       </button>
       <div
         v-if="details && status === 'capturing'"
@@ -604,10 +633,47 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
               (within 5 ish should be fine)
             </template>
           </span>
+          <span>Font</span>
+          <select
+            v-model="draft.font"
+            class="selector"
+            aria-label="Number font"
+          >
+            <option v-for="name in NUMBER_FONTS" :key="name" :value="name">
+              {{ name }} Font
+            </option>
+            <option value="Custom">Custom file</option>
+          </select>
+          <QuestionMark
+            v-if="draft.font !== 'Custom'"
+            text="Your game still has to be in English, this is just for the font. This may or may not help, I havn't tested this on non-english fonts."
+            position="right"
+          />
+          <span v-else class="flex items-center gap-2">
+            <label
+              class="generic-button bg-(--accent-blue)! px-1.25! py-0.75! hover:bg-(--accent-blue-hover)!"
+            >
+              Choose .ttf / .otf
+              <input
+                type="file"
+                accept=".ttf,.otf"
+                aria-label="Font file"
+                class="hidden"
+                @change="pick_font"
+              />
+            </label>
+            <span class="text-(--text-muted)">{{ draft.font_file ?? "" }}</span>
+          </span>
         </div>
+        <span
+          v-if="font_refused && draft.font === 'Custom'"
+          class="text-sm text-(--warning)"
+        >
+          {{ font_refused }} is not a font with every digit and "+" in it.
+        </span>
         <div
           v-if="draft_changed"
-          class="flex max-w-150 flex-wrap items-center gap-2"
+          class="flex flex-wrap items-center gap-2"
         >
           <span v-if="status === 'capturing'" class="text-sm text-(--warning)">
             Applying restarts the scanner and wipes the current scan.
@@ -627,27 +693,23 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
           </button>
         </div>
       </template>
+      <div v-if="details" class="text-sm">
+        Check the aspect ratio and brightness above. If they look right and it
+        still doesn't work, it's probably my fault. Please report it on
+        <a href="https://discord.gg/KWDpQyvgzc" class="link">Discord</a> or
+        <a href="https://github.com/Kenivia/Honing-Forecast" class="link"
+          >GitHub</a
+        >.
+      </div>
       <p v-if="replay_note" class="text-sm text-(--text-muted)">
         {{ replay_note }}
       </p>
 
-      <!-- as wide as the rest of the card makes it, the spacer widens it with limitations open -->
       <div>
-        <div v-if="show_limitations" class="h-0 w-100" />
-        <div class="w-0 min-w-full">
-          <div class="text-(--text-bright)">Troubleshooting</div>
-          <div class="pl-4">
-            Check the aspect ratio and brightness under "Show details" above. If
-            they look right and it still doesn't work, it's probably my fault.
-            Please report it on
-            <a href="https://discord.gg/KWDpQyvgzc" class="link">Discord</a> or
-            <a href="https://github.com/Kenivia/Honing-Forecast" class="link"
-              >GitHub</a
-            >.
-          </div>
+        <div>
           <div>
             <button
-              class="mt-2 flex items-center gap-1 text-(--text-bright) hover:text-(--text-main)"
+              class="flex items-center gap-1 text-(--text-bright) hover:text-(--text-main)"
               :aria-expanded="show_limitations"
               @click="show_limitations = !show_limitations"
             >
@@ -697,7 +759,7 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
         </div>
         <p
           v-if="recorder_fell_behind"
-          class="max-w-150 text-sm text-(--warning)"
+          class="text-sm text-(--warning)"
         >
           Recording stopped: this computer could not keep up with recording
           every frame. What was recorded so far can still be downloaded.

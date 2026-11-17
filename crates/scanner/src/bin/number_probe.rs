@@ -7,7 +7,9 @@ use hf_scanner::{
     dev_utils::native,
     interface::setup::BASE_ICONS,
     ocr::{
-        number::{NumberParams, number_background, number_layers, number_mask, number_strip},
+        number::{
+            Layers, NumberParams, number_background, number_layers, number_mask, number_strip,
+        },
         recognize::recognize_line,
     },
     scanner_state::{InventoryType, ScannerState, SlotAddress},
@@ -30,7 +32,12 @@ fn dump(state: &ScannerState, address: &SlotAddress, out: &str, frame: usize) {
     let template = BASE_ICONS.read()[name].data.clone();
     let params = NumberParams::default();
     let background = number_background(&template, icon, w, h, brightness);
-    let (alpha, by_colour, shadow) = number_layers(number, &background, &params);
+    let Layers {
+        alpha,
+        by_colour,
+        shadow,
+        ..
+    } = number_layers(number, &background, &params);
     let strip = number_strip(number, icon, &template, brightness, &params);
     let path = |stage: &str| format!("{out}/f{frame:04}_{stage}.png");
     icon.save(path("0_icon")).unwrap();

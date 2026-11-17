@@ -12,10 +12,12 @@
 //   --dump <folder>         the frames scanned and the lines sent in those scans, as PNG
 //   --check                 holds the slots against the hand edits of the end record, the only
 //                           right answers a capture has (see capture_edit)
+// TIMINGS=1 also prints each timed stage's total to stderr.
 use hf_scanner::{
     dev_utils::{
         capture::read_frames,
         native::{self, check_edits, describe, describe_chest, print_statuses},
+        timing,
     },
     scanner_state::{ScannerState, SlotAddress},
     tooltip::hover::Hover,
@@ -242,5 +244,13 @@ fn main() {
     if check {
         let (right, all) = check_edits(&state, end.as_deref().unwrap_or("{}"));
         println!("check: {right} of {all} slots set by hand read right");
+    }
+    // TIMINGS=1: each timed stage's total over the run, to stderr
+    if env::var("TIMINGS").is_ok() {
+        let mut timings = timing::take();
+        timings.sort_by(|a, b| a.0.cmp(b.0));
+        for (name, total, calls) in timings {
+            eprintln!("{name}	{total:.1} ms	{calls} calls");
+        }
     }
 }

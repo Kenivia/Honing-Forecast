@@ -40,6 +40,7 @@ cloudflare/.wrangler/
 scanner_setup/brightness/all icons/*
 scanner_setup/game_files/tables/
 scanner_setup/game_files/atlas/
+scanner_setup/game_files/fonts/
 scanner_setup/game_files/*.npz
 scanner_setup/game_files/extract/bin/
 scanner_setup/game_files/extract/obj/

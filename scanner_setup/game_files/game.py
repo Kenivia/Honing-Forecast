@@ -13,6 +13,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 TABLES = HERE / "tables"  # EFTable_<name>.db and IconInfo.loa
 ATLAS = HERE / "atlas"  # the icon sheets, as umodel exports them
+FONTS = HERE / "fonts"  # Binaries/Fonts of font.lpk: the fonts and a FontMap.xml per language
 RARITIES = ["common", "uncommon", "rare", "epic", "legendary", "relic", "ancient", "sidereal"]
 KINDS = {2: "Random", 3: "SelectOne"}  # RandomBoxBase.Type; the others obtain all
 

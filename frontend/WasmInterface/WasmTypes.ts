@@ -12,6 +12,7 @@ export enum WasmOp {
   OcrInit,
   Ocr,
   Record,
+  FontCheck,
 }
 
 // THESE BELOW DIRECTLY CORRESPOND TO A RUST STRUCT

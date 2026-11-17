@@ -1,6 +1,7 @@
 use super::{
     number::{NumberParams, number_strip},
     recognize::recognize_line,
+    shapes::read_by_shapes,
     text::text_strip,
 };
 use crate::{dev_utils::timing::timed, interface::setup::BASE_ICONS, scanner_state::ScannerState};
@@ -91,7 +92,15 @@ impl OCRLine {
         matches!(self.kind, Kind::Number { .. } | Kind::Digits)
     }
 
+    // a slot's number by its shapes when they are sure, else by the recogniser
     pub fn read(&self) -> String {
+        if let Kind::Number { icon, template } = &self.kind {
+            let template = &BASE_ICONS.read()[template].data;
+            let read = || read_by_shapes(&self.crop, icon, template, self.brightness);
+            if let Some(text) = timed("ocr/shapes", read) {
+                return text;
+            }
+        }
         let strip = timed("ocr/preprocess", || self.strip());
         recognize_line(&strip, self.digits_only())
     }

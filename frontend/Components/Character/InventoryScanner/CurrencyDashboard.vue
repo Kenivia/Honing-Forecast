@@ -92,7 +92,7 @@ function save() {
       aria-label="Read and corrected"
     >
       <span></span>
-      <span class="text-(--text-bright)">Read</span>
+      <span class="text-(--text-bright)">Read by scanner</span>
       <span class="text-(--text-bright)">Correct it</span>
 
       <template v-for="band in bands" :key="band">

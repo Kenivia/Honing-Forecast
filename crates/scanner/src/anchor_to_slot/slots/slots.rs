@@ -3,8 +3,8 @@ use crate::{
         anchor_defs::{ALL_SLOT_ADDRESSS, COMBINED_NUMBER_HEIGHT, NUMBER_OFFSET, SLOT_ORDER},
         slots::{
             constants::{
-                AFAR_ROWS, ALTERNATIVE, OVERLAY_REACH, OVERLAYS, SLOT_BUDGET, SLOT_CONFIDENCE,
-                SLOT_UPDATE_FREQ, UNMATCHED_UNCHANGED,
+                AFAR_ROWS, ALTERNATIVE, BETTER_LOOK, OVERLAY_REACH, OVERLAYS, SLOT_BUDGET,
+                SLOT_CONFIDENCE, SLOT_UPDATE_FREQ, UNMATCHED_UNCHANGED,
             },
             utils::{from_afar, overlaid, overlay_areas},
         },
@@ -118,7 +118,8 @@ impl ScannerState {
             };
 
             // Identical pixels are the usual case and need no comparison at all. Otherwise the slot
-            // is unchanged while it is still close to what was seen.
+            // is unchanged while it is still close to what was seen, unless it now scores clearly
+            // better as its icon than the look its number was read from (back from lit to normal).
             let (left, top) = position.top_left;
             let raw_hash = self.buffer.hash(
                 left as usize,
@@ -138,8 +139,19 @@ impl ScannerState {
                 Some(false) => {
                     let mut crop = self.crop_buffer(position);
                     normalize_brightness(&mut crop, self.screen_info.brightness.value.unwrap());
-                    let same =
-                        close_enough(&self.slot_infos[slot_address].observed_icon, &crop).is_some();
+                    let info = &self.slot_infos[slot_address];
+                    let mut same = close_enough(&info.observed_icon, &crop).is_some();
+                    if same && let Some((name, read)) = info.icon_name_score.clone() {
+                        same = timed("slots/better_look", || {
+                            let (height, scale) = (
+                                self.screen_info.effective_height,
+                                self.screen_info.scale_factor,
+                            );
+                            let template =
+                                icon_lookup(&name, height, get_resizer(&mut self.resizer));
+                            overlaid(&template, &crop, &name, scale).0 < read + BETTER_LOOK
+                        });
+                    }
                     seen = Some(crop);
                     if same {
                         self.slot_infos.get_mut(slot_address).unwrap().raw_hash = raw_hash;

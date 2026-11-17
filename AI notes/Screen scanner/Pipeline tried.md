@@ -83,6 +83,16 @@ Warnings behind `Pipeline.md`: what failed or was ruled out, with the one number
 - **Don't drop the stroke-joining rule:** a "6" over a pink pouch read "54" for 64 on all nine reads of a recording. Limits of 0.2 to 0.4 score alike; it costs a stray "8" before "809" at three more storage-sweep settings and lets more surroundings in at 720p.
 - **Don't level the digits' brightness in the strip (whole, per blob or binary), and don't invert numbers:** no gain, binary is much worse, and inverting made the recogniser worse on numbers.
 - **Don't crop the empty black left of the number by more than a few pixels:** 2 to 4 px at 1080p works, 6 to 8 px is much worse than no crop.
+- **Don't enlarge the number crop before the clean-up** (template sampled at the larger size, neighbour offsets scaled with it): 2x is much worse (95 of 2,638 capture reads wrong against 31, 10 slots by the vote against 2), 3x mixed (5 against 1 on the inventory sweep, 5 against 10 on the storage sweep, 34 capture reads) at 2.7 times the time (3.7 against 1.3 ms a strip natively). Bicubic instead of bilinear for 3x is no better.
+- **The shape reader** (`ocr/shapes.rs`), each against the grey version that read 18 of 4,666 captures-and-stills reads wrong (2026-11-16):
+  - Don't compare in colour (RGB, the lit fit per channel): 17 wrong, 40% slower.
+  - Don't search positions finer than a quarter pixel: an eighth read the same 18.
+  - Don't cap each pixel's difference (at 40 or 60 luma, so a cursor or glow counts the same against every candidate): 272 and 105 wrong. It throws away a digit's bright core, the strongest evidence there is.
+  - Don't charge each digit a fixed cost against extra digits on lit slots: no change.
+  - Don't learn the digit shapes from captures when the font is there: shapes learned from other captures than the one read, at the nearest resolution, read 16 wrong against 14 for the font. 1080p shapes enlarged to 2160p misread clean "85" and "829", and 1440p had only 49 to 122 numbers to learn from.
+  - Don't skip the second pass over the lit background: 34 wrong against 18, the extra ones nearly all lit slots read with an extra digit ("88731" for 31).
+- **Don't weigh slot-number reads by the recogniser's own scores** (`ocrs` drops them; the model run through `rten` on the same strip gives them). They hardly tell wrong reads from right ones: the least character probability under 0.8 caught 25 of 41 wrong reads but also 353 of 4,625 right ones (2026-11-16, captures and stills). A wrong "31" for 311, with the middle "1" lost in the clean-up, scored 0.998.
+- **Don't let the fit's alpha count for a pixel that does not look white:** over a pale, nearly grey part of an icon the hover highlight brightens it, the fit explains that as part white, and a lit "94" read "1794". Only the colour test may vouch for a tinted pixel.
 - The parameters were tuned on the stills and the brightness sweep (182 of 182 and 294 of 294 read); with all of the above, the sweeps read 3 wrong of 630 and 16 of 1,089.
 
 ## State between frames

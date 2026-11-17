@@ -1,5 +1,6 @@
 import { decode } from "@msgpack/msgpack";
 import { computed, reactive } from "vue";
+import { NUMBER_FONTS } from "./ScanSettings";
 
 export interface ScaledPosition {
   top_left: [number, number];
@@ -182,6 +183,18 @@ export const getScannerConfig = once(
     decode(await load_file("/ScannerConfig.msgpack")) as OneIconConfig[],
 );
 export const getModel = once(() => load_file("/text-recognition.rten"));
+
+// every number font, a few KB each, by name
+export const getFonts = once(async () =>
+  Object.fromEntries(
+    await Promise.all(
+      NUMBER_FONTS.map(async (name) => [
+        name,
+        (await download(`/fonts/${name}.ttf`)).bytes,
+      ]),
+    ),
+  ),
+);
 
 // A build serves these brotli compressed as <url>.br (vite.config.ts), the dev server raw. A
 // server that sends the .br with Content-Encoding: br has the browser decompress it instead.

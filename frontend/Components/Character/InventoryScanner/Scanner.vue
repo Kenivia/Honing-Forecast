@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import {
   download_note,
+  getFonts,
   getModel,
   getScannerConfig,
   OneIconConfig,
@@ -17,13 +18,14 @@ import { scanner_shown } from "./ScannerUIutils";
 const status = ref<"idle" | "capturing">("idle");
 const config = ref<OneIconConfig[] | null>(null);
 const failed = ref(false);
-// fetched on the first visit, not on app load; a failed model is tried again when a capture starts
+// fetched on the first visit, not on app load; a failed model or font is tried again when a capture starts
 function load() {
   failed.value = false;
   getScannerConfig()
     .then((data) => (config.value = data))
     .catch(() => (failed.value = true));
   getModel().catch(() => {});
+  getFonts().catch(() => {});
 }
 if (scanner_shown.value) load();
 function show_anyway() {

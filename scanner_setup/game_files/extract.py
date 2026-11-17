@@ -1,6 +1,7 @@
 """
-Pulls what the scripts here read out of the installed game: the tables into scanner_setup/game_files/tables
-and the icon sheets into scanner_setup/game_files/atlas. Neither is tracked. Run again after a game patch.
+Pulls what the scripts here read out of the installed game: the tables into scanner_setup/game_files/tables,
+the fonts into scanner_setup/game_files/fonts and the icon sheets into scanner_setup/game_files/atlas. None is
+tracked. Run again after a game patch.
 
     python scanner_setup/game_files/extract.py [game folder]
 
@@ -12,7 +13,7 @@ import shutil
 import subprocess
 import sys
 
-from game import ATLAS, HERE, ROOT, TABLES
+from game import ATLAS, FONTS, HERE, ROOT, TABLES
 
 GAME = r"C:\Program Files (x86)\Steam\steamapps\common\Lost Ark"
 UMODEL = ROOT / "ignored/game_file_reader" / "umodel" / "umodel_lostark_v7.exe"
@@ -20,7 +21,7 @@ UMODEL = ROOT / "ignored/game_file_reader" / "umodel" / "umodel_lostark_v7.exe"
 
 def main():
     game = sys.argv[1] if len(sys.argv) > 1 else GAME
-    subprocess.run(["dotnet", "run", "-c", "Release", "--project", HERE / "extract", "--", game, TABLES], check=True)
+    subprocess.run(["dotnet", "run", "-c", "Release", "--project", HERE / "extract", "--", game, TABLES, FONTS], check=True)
     shutil.rmtree(ATLAS, ignore_errors=True)
     packages = f"{game}/EFGame/ReleasePC/Packages"
     command = [UMODEL, "-export", "-png", "-na", "-game=lostark", "-nameresolve", f"-path={packages}", f"-out={ATLAS}", "EFUI_IconAtlas_*"]

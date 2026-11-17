@@ -21,6 +21,18 @@ import {
   tier_warning,
 } from "../StatusInput/StatusInputUtil";
 import { BAND_NAMES, export_manifest, manifest, page_place } from "./Manifest";
+import QuestionMark from "@/Components/Common/QuestionMark.vue";
+import { Currency, SlotAddress } from "./LoadStorage";
+import {
+  edits,
+  shown_currency,
+  slot_images,
+  slot_key,
+  slots,
+  WINDOW_NAMES,
+} from "./ScanStore";
+import { status_border } from "./ScannerUIutils";
+import SlotCell from "./SlotCell.vue";
 
 const { active_profile } = storeToRefs(useRosterStore());
 
@@ -58,6 +70,32 @@ const gains = computed(() =>
 // shown although some slots are not in it
 const forced = ref(false);
 
+// missing slots per window as the grid lays them out, currencies apart
+const missing = computed(() => {
+  const all = manifest.value.missing;
+  const currencies = all.filter((slot) => !slot.address);
+  // every window keeps its column, empty or not
+  const windows = Object.entries(WINDOW_NAMES).map(([type, name]) => ({
+    name,
+    slots: all.filter((slot) => slot.address?.inventory_type === type),
+  }));
+  // e.g. "2 slots and 1 currency"
+  const n_slots = all.length - currencies.length;
+  const n_cur = currencies.length;
+  const subject = [
+    n_slots && `${n_slots} slot${n_slots === 1 ? "" : "s"}`,
+    n_cur && `${n_cur} ${n_cur === 1 ? "currency" : "currencies"}`,
+  ]
+    .filter(Boolean)
+    .join(" and ");
+  return { currencies, windows, subject, one: all.length === 1 };
+});
+
+const short_place = ({ page_num, pos_in_inv: [row, col] }: SlotAddress) =>
+  `Page ${page_num + 1}, row ${row + 1}, col ${col + 1}`;
+const currency_border = (name: string) =>
+  status_border(shown_currency(name as Currency)?.status ?? "NeedHover", false);
+
 const labels = computed(() => [
   ...TIER_MATERIALS[tier.value].map((mat) => mat.label),
   SPECIAL_LEAP_LABELS[tier.value],
@@ -86,22 +124,80 @@ function export_to_calc() {
 <template>
   <div class="w-full border-t border-(--border-main)" />
   <div
-    v-if="manifest.missing.length && !forced"
-    class="card-shell card-body flex w-175! max-w-full flex-col items-center gap-2 text-center text-sm"
+    v-if="manifest.missing.length"
+    class="card-shell card-body flex w-fit! max-w-full flex-col items-center gap-3 text-sm"
   >
-    <span class="text-(--warning)">
-      {{ manifest.missing.length }} slot(s) or currencies are not read yet or
-      still need a hover, so the manifest is hidden. These slots will be ignored
-      if you proceed.
+    <span class="text-center text-(--warning)">
+      {{ missing.subject }} {{ missing.one ? "is" : "are" }} not read yet or
+      still {{ missing.one ? "needs" : "need" }} a hover,
+      <template v-if="forced">
+        so {{ missing.one ? "it is" : "they are" }} left out of the manifest.
+      </template>
+      <template v-else>
+        so the manifest is hidden. {{ missing.one ? "It" : "They" }} will be
+        ignored if you proceed.
+      </template>
     </span>
 
-    <ul aria-label="Missing slots" class="flex flex-col gap-1">
-      <li v-for="slot in manifest.missing" :key="slot.place + slot.item">
-        {{ slot.place }}: {{ slot.item }}
-        <span class="text-(--text-muted)">{{ slot.why }}</span>
-      </li>
-    </ul>
-    <button class="generic-button w-fit" @click="forced = true">
+    <div aria-label="Missing slots" class="flex w-full flex-col gap-3">
+      <div
+        v-if="missing.currencies.length"
+        class="flex flex-wrap items-center gap-x-6 gap-y-1"
+      >
+        <span class="text-(--text-muted)">Currencies</span>
+        <div
+          v-for="cur in missing.currencies"
+          :key="cur.item"
+          class="flex items-center gap-2"
+        >
+          <span
+            class="flex h-8 w-8 items-center justify-center"
+            :style="currency_border(cur.item)"
+          >
+            <img
+              :src="get_icon_path(cur.item)"
+              class="generic-icon h-5 w-5"
+              :alt="cur.item"
+            />
+          </span>
+          {{ cur.item }}
+          <QuestionMark :text="cur.why" />
+        </div>
+      </div>
+      <div
+        class="grid grid-cols-[minmax(0,400px)] gap-6 lg:grid-cols-[repeat(3,minmax(0,400px))]"
+      >
+        <div
+          v-for="win in missing.windows"
+          :key="win.name"
+          class="grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)_auto] content-start items-center gap-x-3 gap-y-1"
+          role="group"
+          :aria-label="win.name"
+        >
+          <span class="col-span-4 text-(--text-muted)">{{ win.name }}</span>
+          <span v-if="!win.slots.length" class="col-span-4 text-(--text-muted)">
+            Nothing missing
+          </span>
+          <template v-for="slot in win.slots" :key="slot_key(slot.address!)">
+            <SlotCell
+              class="h-8 w-8 cursor-default!"
+              :info="slots.get(slot_key(slot.address!))"
+              :edit="edits[slot_key(slot.address!)]"
+              :image="slot_images.get(slot_key(slot.address!))"
+              :active="false"
+            />
+            <span class="whitespace-nowrap text-(--text-muted)">
+              {{ short_place(slot.address!) }}
+            </span>
+            <span class="truncate" :title="slot.item">{{ slot.item }}</span>
+            <span class="flex items-center gap-1 text-(--text-muted)">
+              Why <QuestionMark :text="slot.why" />
+            </span>
+          </template>
+        </div>
+      </div>
+    </div>
+    <button v-if="!forced" class="generic-button w-fit" @click="forced = true">
       Show the manifest without these
     </button>
   </div>
@@ -131,18 +227,22 @@ function export_to_calc() {
     </div>
     <div
       v-if="manifest.assumed || unopened.length"
-      class="card-shell card-body flex w-175! max-w-full flex-col items-center gap-1 text-center text-sm"
+      class="card-shell card-body flex w-175! max-w-full flex-col items-center gap-1 text-left text-sm"
     >
-      <span class="text-(--warning)">
+      <span class="flex w-full flex-row gap-2 text-(--series-gold)">
         Some information from the previous scan was used.
+        <QuestionMark
+          text="We assume that an item that stayed in the same spot hasn't been swapped out for a different, identical looking one. 
+          If you did this, hovering them should fix it."
+        />
       </span>
-      <span v-if="manifest.assumed" class="text-(--text-muted)">
-        {{ manifest.assumed }} slot(s) took their tradability or contents from
-        it without a hover.
-      </span>
-      <span v-if="unopened.length" class="text-(--text-muted)">
-        Not opened in game, taken as unchanged: {{ unopened.join(", ") }}.
-      </span>
+
+      <div v-if="unopened.length" class="w-full text-left text-(--text-muted)">
+        <div>Not opened in game, taken as unchanged:</div>
+        <div v-for="page in unopened" :key="page" class="pl-8">
+          - {{ page }}
+        </div>
+      </div>
     </div>
     <div class="flex max-w-full flex-col items-center gap-2 text-sm">
       <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
@@ -154,7 +254,8 @@ function export_to_calc() {
         </button>
         <div class="flex max-w-64 flex-col">
           <span v-if="!exported" class="text-(--text-muted)">
-            Overwrites the budgets and chests of this character and its roster.
+            Overwrites the budgets and chests of this character and their roster
+            with the below.
           </span>
           <span v-else class="text-(--achieved)"> Exported. </span>
         </div>
@@ -163,8 +264,8 @@ function export_to_calc() {
         v-if="manifest.missing.length"
         class="w-175 max-w-full text-center text-(--warning)"
       >
-        {{ manifest.missing.length }} slot(s) or currencies are missing from
-        this manifest. These slots have been ignored.
+        {{ missing.subject }} {{ missing.one ? "is" : "are" }} missing from this
+        manifest and {{ missing.one ? "has" : "have" }} been ignored.
       </span>
     </div>
 
