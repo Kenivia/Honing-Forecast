@@ -1,6 +1,6 @@
 import { reactive, ref } from "vue";
 import type { CharProfile } from "@/Stores/CharacterProfile";
-import { states_payload, type Payload } from "./PayloadBuilder";
+import { states_payload, type FedState, type Payload } from "./PayloadBuilder";
 import { create_worker_bundle } from "./WorkerBundle";
 import { WasmOp } from "./WasmTypes";
 
@@ -11,6 +11,8 @@ export interface Job {
   hash: string;
   payload: Payload;
   profile: CharProfile;
+  // a saved state of this payload: only its histogram is run
+  state?: FedState;
   // the histogram's output and the optimizer's state it was run with
   store: (out: any, state: any) => void;
 }
@@ -109,6 +111,17 @@ function next(at: number) {
     count();
     next(at);
   };
+  const histogram = (state: FedState) => {
+    optimizing.set(job.hash, null);
+    worker.debounced_start(
+      WasmOp.Histogram,
+      states_payload(job.payload, job.profile, state),
+      (out) => done(out, state),
+      0,
+      false,
+    );
+  };
+  if (job.state) return histogram(job.state);
   // the worker is kept between runs: loading the wasm again is a good part of a short run
   worker.debounced_start(
     WasmOp.OptimizeAverage,
@@ -117,14 +130,7 @@ function next(at: number) {
       if (!state) return done(null, null);
       // interim states come while it is still busy
       if (worker.status !== "idle") return;
-      optimizing.set(job.hash, null);
-      worker.debounced_start(
-        WasmOp.Histogram,
-        states_payload(job.payload, job.profile, state),
-        (out) => done(out, state),
-        0,
-        false,
-      );
+      histogram(state);
     },
     0,
     false,

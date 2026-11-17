@@ -22,9 +22,14 @@ import {
   OneUpgradeInput,
   Upgrade,
 } from "@/Utils/KeyedUpgrades";
-import { input_column_to_num } from "@/Utils/InputColumn";
+import { input_column_to_num, MAX_AMOUNT } from "@/Utils/InputColumn";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
-import { Bag, type Chest } from "@/Utils/Chest";
+import {
+  Bag,
+  process_chests,
+  type Chest,
+  type ManifestChest,
+} from "@/Utils/Chest";
 import type { CharProfile } from "@/Stores/CharacterProfile";
 import type { Snapshot } from "@/Utils/Scans";
 import {
@@ -83,7 +88,7 @@ export interface Payload {
 }
 
 // what of an optimizer result is fed back into the next payload
-interface FedState {
+export interface FedState {
   upgrade_arr?: Upgrade[];
   special_state?: number[];
   chest_states?: Map<string, number[]>;
@@ -344,9 +349,14 @@ export function snapshot_payload(
   chests: Chest[],
 ): Payload {
   const char = snapshot.chars[profile.id];
+  // a disabled material is an endless stock, as the calculator sends it
+  const enabled = profile.bound_budgets.enabled;
+  const bound = { ...char?.bound };
+  for (const label of Object.keys(enabled))
+    if (enabled[label] === false) bound[label] = MAX_AMOUNT;
   return payload_for(
     profile,
-    char?.bound ?? {},
+    bound,
     snapshot.roster_owned,
     snapshot.tradable,
     char?.special ?? {},
@@ -436,8 +446,8 @@ export function fed_state(saved: SavedState): FedState {
   };
 }
 
-// the active profile over the store's budgets, chests and prices, with no state
-export function store_payload(): Payload {
+// the active profile over the store's budgets, allowed chests (and `extra`) and prices, with no state
+export function store_payload(extra: ManifestChest[] = []): Payload {
   const store = useRosterStore();
   const profile = store.active_profile;
   return payload_for(
@@ -446,7 +456,9 @@ export function store_payload(): Payload {
     input_column_to_num(store.active_roster_mats_owned),
     input_column_to_num(store.active_tradable_mats_owned),
     input_column_to_num(profile.special_budget),
-    store.processed_chests,
+    extra.length
+      ? process_chests([...store.allowed_chests, ...extra], profile.tier)
+      : store.processed_chests,
     input_column_to_num(store.active_mats_prices),
     store.active_selected_bundles,
   );

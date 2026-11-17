@@ -3,7 +3,6 @@ import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { get_icon_path } from "@/Utils/Helpers";
-import type { Snapshot } from "@/Utils/Scans";
 import {
   difficulties,
   is_empty,
@@ -25,7 +24,6 @@ import { option_job, type ChoiceJob } from "./ChoiceJobs";
 // of them; the player takes the best of those.
 const props = defineProps<{
   base: ChoiceJob;
-  now: Snapshot;
   no_upgrades: boolean;
   item_level: number;
   baseline_text: string;
@@ -106,15 +104,22 @@ const rows = computed(() =>
       option,
       job: is_empty(option)
         ? null
-        : option_job(profile.value, props.now, props.base, used, index),
+        : option_job(profile.value, props.base, used, index),
     };
   }),
 );
+// last worth seen per row, so a pending row (e.g. Wealth toggled) keeps its place
+let last_worth = new Map<number, number>();
+watch(choice, () => (last_worth = new Map()));
 // best first, those not run yet last
 const sorted = computed(() =>
   rows.value
-    .map((row) => ({ ...row, worth: worth(row.job) }))
-    .sort((a, b) => (b.worth ?? -Infinity) - (a.worth ?? -Infinity)),
+    .map((row) => {
+      const w = worth(row.job);
+      if (w !== undefined) last_worth.set(row.index, w);
+      return { ...row, worth: w, rank: w ?? last_worth.get(row.index) };
+    })
+    .sort((a, b) => (b.rank ?? -Infinity) - (a.rank ?? -Infinity)),
 );
 
 // the run without first, then every option, in the data's order

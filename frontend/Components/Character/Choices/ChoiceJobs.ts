@@ -1,18 +1,17 @@
-import { process_chests, type ManifestChest } from "@/Utils/Chest";
 import { as_chest, type Choice } from "@/Utils/Choices";
-import { char_chests } from "@/Utils/Income";
-import type { Snapshot } from "@/Utils/Scans";
+import type { ManifestChest } from "@/Utils/Chest";
 import type { CharProfile } from "@/Stores/CharacterProfile";
 import {
   cached_state,
   fed_state,
-  snapshot_payload,
   states_payload,
+  store_payload,
 } from "@/WasmInterface/PayloadBuilder";
 import { kept, payload_hash, type Job } from "@/WasmInterface/OptimizerJobs";
 
-// The budgets as they are, and with each option of a choice taken, each optimized; an option's run
-// goes on from the plan of the run without it. Kept in the profile by payload hash.
+// The calculator's payload as it is, and with each option of a choice taken, each optimized; an
+// option's run goes on from the plan of the run without it. The run without is the calculator's
+// run: both share `optimizer_cache`. Results kept in the profile by payload hash.
 
 export interface ChoiceJob extends Job {
   // the user's plan's metric, and the tradable gold used (plan 0, which credits no leftovers)
@@ -23,36 +22,33 @@ export interface ChoiceJob extends Job {
 // how many runs a profile keeps
 const KEEP = 300;
 
+// the saved run of `hash`, if it is the last
+const saved = (profile: CharProfile, hash: string) =>
+  profile.optimizer_cache?.hash === hash
+    ? fed_state(profile.optimizer_cache.state)
+    : undefined;
+
 function job_with(
   profile: CharProfile,
-  snapshot: Snapshot,
   extra: ManifestChest[],
-  seed?: CharProfile["choice_seed"],
+  seed_hash?: string,
 ): ChoiceJob {
-  const payload = snapshot_payload(
-    profile,
-    snapshot,
-    process_chests(
-      [...char_chests(snapshot, profile.id), ...extra],
-      profile.tier,
-    ),
-  );
+  const payload = store_payload(extra);
   const key = payload_hash(payload);
   const result = profile.choice_results[key];
+  const seed = seed_hash && saved(profile, seed_hash);
   return {
     hash: key,
     // an option is the budgets with one chest more: a short search from the run without
     payload: seed
-      ? {
-          ...states_payload(payload, profile, fed_state(seed.state)),
-          quick: true,
-        }
+      ? { ...states_payload(payload, profile, seed), quick: true }
       : payload,
     profile,
+    state: extra.length ? undefined : saved(profile, key),
     gold: result?.[0],
     metric: result?.[1],
     store: (out, state) => {
-      if (!extra.length) profile.choice_seed = cached_state(key, state);
+      if (!extra.length) profile.optimizer_cache = cached_state(key, state);
       profile.choice_results = kept(
         profile.choice_results,
         key,
@@ -63,19 +59,11 @@ function job_with(
   };
 }
 
-export const base_job = (profile: CharProfile, snapshot: Snapshot) =>
-  job_with(profile, snapshot, []);
+export const base_job = (profile: CharProfile) => job_with(profile, []);
 
 export const option_job = (
   profile: CharProfile,
-  snapshot: Snapshot,
   base: ChoiceJob,
   choice: Choice,
   option: number,
-) =>
-  job_with(
-    profile,
-    snapshot,
-    [as_chest(choice, option)],
-    profile.choice_seed?.hash === base.hash ? profile.choice_seed : undefined,
-  );
+) => job_with(profile, [as_chest(choice, option)], base.hash);

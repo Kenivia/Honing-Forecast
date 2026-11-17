@@ -61,11 +61,11 @@ export interface CharProfile {
   income_results: Record<string, SnapshotResult>;
   // the difficulty picked by hand per raid on the Choices page
   choice_levels: Record<string, string>;
-  // the calculator's last finished optimizer run, restored in place of a run of the same payload
+  // the last finished optimizer run of the calculator's payload (the calculator's or the Choices
+  // page's run without a choice), restored in place of a run of the same payload
   optimizer_cache: CachedState | null;
-  // the Choices page's runs, [gold, metric] by payload hash, and the state of its run without a choice
+  // the Choices page's runs, [gold, metric] by payload hash
   choice_results: Record<string, [number, number]>;
-  choice_seed: CachedState | null;
 
   auto_start_optimizer: boolean;
   tier: number;
@@ -107,7 +107,6 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
   choice_levels: {},
   optimizer_cache: null,
   choice_results: {},
-  choice_seed: null,
   tier: 0,
   min_resolution: 10,
 

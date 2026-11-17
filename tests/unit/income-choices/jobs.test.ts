@@ -10,7 +10,14 @@ import { PRESET_CHOICES } from "@/Utils/Choices";
 import { budgets_of } from "@/Utils/Scans";
 import { MAX_WEEKS } from "@/Utils/Income";
 import { from_saved, to_saved } from "@/Stores/SavedConfig";
-import { fed_state } from "@/WasmInterface/PayloadBuilder";
+import {
+  cached_state,
+  fed_state,
+  store_payload,
+} from "@/WasmInterface/PayloadBuilder";
+import { payload_hash } from "@/WasmInterface/OptimizerJobs";
+import { MAX_AMOUNT } from "@/Utils/InputColumn";
+import { chest } from "../stores/fixtures";
 import { fake_out, fake_state, snap, want_upgrade } from "./helpers";
 
 // IncomeJobs and ChoiceJobs build the jobs; the queue itself is in optimizer-jobs.test.ts.
@@ -134,17 +141,16 @@ describe("ChoiceJobs", () => {
   const choice = PRESET_CHOICES.find((x) => x.id === "bonus 202124 1");
 
   it("an option goes on from the run without once that is done", () => {
-    const now = snap(1, profile.id, { Gold: 50000 });
-    const base = base_job(profile, now);
+    const base = base_job(profile);
     expect(base.metric).toBeUndefined();
-    const early = option_job(profile, now, base, choice, 1);
+    const early = option_job(profile, base, choice, 1);
     expect(early.payload.chest_states).toBeUndefined();
     expect(early.hash).not.toBe(base.hash);
 
     const state = fake_state(3);
     base.store(fake_out(0, 1234), state);
-    expect(base_job(profile, now).metric).toBe(1234);
-    const seeded = option_job(profile, now, base, choice, 1);
+    expect(base_job(profile).metric).toBe(1234);
+    const seeded = option_job(profile, base, choice, 1);
     expect(seeded.hash).toBe(early.hash);
     expect(seeded.payload.special_state).toEqual([3]);
     expect(Object.keys(seeded.payload.chests)).toHaveLength(1);
@@ -152,31 +158,48 @@ describe("ChoiceJobs", () => {
     expect(seeded.payload.quick).toBe(true);
   });
 
-  it("an option's run sets its metric, not a seed", () => {
-    const now = snap(1, profile.id, { Gold: 60000 });
-    const base = base_job(profile, now);
+  it("an option's run sets its metric, not the saved run", () => {
+    const base = base_job(profile);
     base.store(fake_out(0, 10), fake_state(1));
-    option_job(profile, now, base, choice, 1).store(
-      fake_out(0, 25),
-      fake_state(2),
-    );
-    expect(option_job(profile, now, base, choice, 1).metric).toBe(25);
+    option_job(profile, base, choice, 1).store(fake_out(0, 25), fake_state(2));
+    expect(option_job(profile, base, choice, 1).metric).toBe(25);
     // the next option still goes on from the run without
-    expect(
-      option_job(profile, now, base, choice, 1).payload.special_state,
-    ).toEqual([1]);
+    expect(option_job(profile, base, choice, 1).payload.special_state).toEqual([
+      1,
+    ]);
   });
 
-  it("results and the seed survive a save and load", () => {
-    const now = snap(1, profile.id, { Gold: 70000 });
-    const base = base_job(profile, now);
+  it("the run without is the calculator's, forbidden chests and disabled materials included", () => {
+    const store = useRosterStore();
+    store.roster_config.roster_chests[profile.roster_id] = [chest("A")];
+    profile.forbidden_chests = ["A"];
+    profile.bound_budgets.enabled.Red = false;
+    const base = base_job(profile);
+    expect(base.hash).toBe(payload_hash(store_payload()));
+    expect(base.payload.chests).toEqual({});
+    expect(base.payload.materials.Red.bound).toBe(MAX_AMOUNT);
+    expect(base.state).toBeUndefined();
+    // the calculator's saved run is reused: only its histogram runs
+    profile.optimizer_cache = cached_state(base.hash, fake_state(7));
+    expect(base_job(profile).state.special_state).toEqual([7]);
+    expect(option_job(profile, base, choice, 1).payload.special_state).toEqual([
+      7,
+    ]);
+    // and the run without is saved for the calculator
+    profile.optimizer_cache = null;
+    base.store(fake_out(0, 1), fake_state(8));
+    expect(profile.optimizer_cache.hash).toBe(base.hash);
+  });
+
+  it("results and the saved run survive a save and load", () => {
+    const base = base_job(profile);
     base.store(fake_out(0, 42), fake_state(5));
     const loaded = from_saved(
       JSON.parse(JSON.stringify(to_saved(useRosterStore().roster_config))),
     ).profiles[0];
     // the loaded profile's upgrades come from its grids, so the hashes are compared, not rebuilt
     expect(loaded.choice_results[base.hash]).toEqual([0, 42]);
-    expect(loaded.choice_seed.hash).toBe(base.hash);
-    expect(fed_state(loaded.choice_seed.state).special_state).toEqual([5]);
+    expect(loaded.optimizer_cache.hash).toBe(base.hash);
+    expect(fed_state(loaded.optimizer_cache.state).special_state).toEqual([5]);
   });
 });

@@ -32,7 +32,8 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 - `pnpm test:rust` runs `cargo test -p hf-core -p hf-arena`: the valuation unit tests in `materials.rs`, plus a short Monte Carlo check and a seed-repeats check from the arena.
 - `pnpm test` runs every suite in turn: Rust, node, Vitest, then the browser tests in both browsers (those take several minutes and start `pnpm dev`, which rebuilds the wasm).
 - `pnpm arena <command>` runs the core's test harness. See `Calculator core/Arena.md`.
-- `pnpm build` chains `pnpm test` (every suite) before the wasm and Vite builds and an unused-dependency check that needs nightly. `pnpm no-test-build` skips the tests and the check.
+- `pnpm build` chains `pnpm test` (every suite) before the wasm and Vite builds. `pnpm no-test-build` skips the tests.
+- `pnpm updates` runs `rustup update`, `cargo update` and `pnpm update`: within the declared semver ranges only, never across a major version. Both sides have a release-age cooldown: Cargo `registry.global-min-publish-age = "10 days"` in `.cargo/config.toml` (needs Rust 1.100+), pnpm `minimumReleaseAge: 6767` (minutes) in `pnpm-workspace.yaml`. `cargo upgrade` (cargo-edit) and `pnpm update --latest` cross majors and are deliberately left out.
 - `pnpm deploy` only checks (`scripts/pre_deploy_check.ps1`) you are on a clean `main`, then force-pushes (`--force-with-lease`) `main` to the `Production` branch (assumed to be what the hosted site builds from). It does not run tests.
 - `pnpm cloudflare-deploy` deploys the Worker separately; `pnpm cloudflare-dev` runs it remotely.
 - `pnpm pull-analytics` downloads and deletes the analytics uploads, `pnpm analytics` pulls and then serves the plots (`Frontend/External services.md`).

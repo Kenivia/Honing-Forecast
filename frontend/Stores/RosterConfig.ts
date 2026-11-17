@@ -142,13 +142,16 @@ export const useRosterStore = defineStore("roster", {
           []),
       ];
     },
-    // what the payload sends: the active chests as the character's tier takes them
-    processed_chests(): Chest[] {
+    // the active chests this character may open
+    allowed_chests(): ManifestChest[] {
       const forbidden = this.active_profile.forbidden_chests;
-      return process_chests(
-        this.active_chests.filter((chest) => !forbidden.includes(chest.key)),
-        this.active_profile.tier,
+      return this.active_chests.filter(
+        (chest) => !forbidden.includes(chest.key),
       );
+    },
+    // what the payload sends: the allowed chests as the character's tier takes them
+    processed_chests(): Chest[] {
+      return process_chests(this.allowed_chests, this.active_profile.tier);
     },
     // the forbidden ones, only to be shown: each processed alone, keeping its stored key
     forbidden_processed_chests(): Chest[] {

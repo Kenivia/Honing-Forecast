@@ -3,18 +3,20 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
-- ~~Assume tradability (or and chest type ) on previously seen icons~~
-- ~~no more use previous~~
+- migrate to an actual domain name
 
-- ~~add progress percents~~
-- fix tradable gold chance
-- +N for tradable showing roster bound incorrectly
-- allow forbidding chests on non-mains
-- wealth ticks keep their ranking until overwritten
-- choices optimizer not sharing the results from the calc page
-- lostark.bible login
+- rework tooltips
 - reorganize to info page
-- better warnings on scanners (show icons)
+  - reorganize the top bar
+
+- perscribe a main?
+  - suggest treatment plans?
+  
+- lostark.bible login
+
+- *get the equipment icons somehow* ~~gonna postone this also, prolly gonna have to set up some kind of lostarkcodex -> template matching workflow so that'll be during that~~
+
+- rework changelog page (infinite scroll)
 
 ## Forecast mode
 
@@ -33,15 +35,12 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ## Misc UI
 
-- rework tooltips
-- allow non-mains to ignore roster chests / mats
-  - perscribe a main?
-
 - need to add the UI for choices and hard code some examples
   - ~~need to get paradise data from somewhere~~
   - ~~gold chests~~
   - mari's shop
   - ~~custom chests~~
+- Mari page (this will probably come as part of box optimization, it'll just be a type of 'box' available)
 
 ### LOW PRIO
 
@@ -55,31 +54,36 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 ### Misc
 
-- ~~make special graph always hist~~
 - *add "About" page for various stuff like credits and stuff* this will need like an overhaul of the header layout (which is definitely needed at some point but not now)
 
 - *some hoverable details on juice & whatnot* should probably generalize the tooltip thing instead of relying on v-tooltip (so i can render html in there and look butter), gonna do that at some point that's not now
 - *drag to select* ts is way too hard
 - *make market fetcher fetch yesterday's average price instead of latest price* gonna postpone this until when I do my own price scraping, cant be bothered
 
--*get the equipment icons somehow* gonna postone this also, prolly gonna have to set up some kind of lostarkcodex -> template matching workflow so that'll be during that
-
-- migrate to an actual domain name
-
-- Mari page (this will probably come as part of box optimization, it'll just be a type of 'box' available)
-
-- add assertions to a lot of prepoutput stuff
-  - also make a lot more test_payload that actually cover edge cases
 - start working on visualizing this stuff
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
 
-- use less juice for the very last tap that pushes things to 100 artisan
-  - technically there are cases (infinite juice owned/ 0 juice prices) where it's better to put more than enough juice in there, so ig there needs to be like a binary state there? ~~idk currently the state there doesn't do anything anyway so might as well make use of it~~ actually the pity-1 tap does do somehting currently, so maybe store that info in the pity tap instead. That might cause issues w/ changing state length? idk maybe just an extra field in the state is needed
-
-- maybe use indexdb instead of localstorage? (this will pobably be done as part of either inventory scanning or honing luck scanning)
-
 ## Done / cancelled
 
+- ~~make special graph always hist~~
+- ~~allow non-mains to ignore roster chests / mats~~
+- ~~Assume tradability (or and chest type ) on previously seen icons~~
+- ~~no more use previous~~
+
+- ~~add progress percents~~
+- ~~fix tradable gold chance~~
+- ~~+N for tradable showing roster bound incorrectly~~
+- ~~allow forbidding chests on non-mains~~
+- ~~wealth ticks keep their ranking until overwritten~~
+- ~~choices optimizer not sharing the results from the calc page~~
+
+- ~~better warnings on scanners (show icons)~~
+- ~~add assertions to a lot of prepoutput stuff~~
+  - ~~also make a lot more test_payload that actually cover edge cases~~
+- ~~use less juice for the very last tap that pushes things to 100 artisan~~ cbb
+  - ~~technically there are cases (infinite juice owned/ 0 juice prices) where it's better to put more than enough juice in there, so ig there needs to be like a binary state there? ~~idk currently the state there doesn't do anything anyway so might as well make use of it~~ actually the pity-1 tap does do somehting currently, so maybe store that info in the pity tap instead. That might cause issues w/ changing state length? idk maybe just an extra field in the state is needed~~
+
+- ~~maybe use indexdb instead of localstorage? (this will pobably be done as part of either inventory scanning or honing luck scanning)~~ probably not worth it and we're nowhere near the cap
 - ~~replace mats graph st we have 1 mat at any time, show price history , allow adusting~~
 - ~~show a warning when the char is t4 but serca mats detected in char storage / inv~~
 - ~~hide obtain all and cap length when not shown, consolidate into one panel~~

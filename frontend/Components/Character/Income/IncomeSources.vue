@@ -5,7 +5,6 @@ import { useRosterStore } from "@/Stores/RosterConfig";
 import { BAND_COLORS, BAND_NAMES } from "@/Utils/Constants";
 import { get_icon_path } from "@/Utils/Helpers";
 import { parse_locale_float } from "@/Utils/InputColumn";
-import { snapshot_of } from "@/Utils/Scans";
 import { PRESET_CHOICES, signed_gold, worth_color } from "@/Utils/Choices";
 import {
   raids_for,
@@ -22,7 +21,7 @@ const props = defineProps<{
   result: ReturnType<typeof auto_income>;
   item_level: number;
 }>();
-const { roster_config, active_profile } = storeToRefs(useRosterStore());
+const { active_profile } = storeToRefs(useRosterStore());
 const profile = active_profile;
 
 const set = <K extends keyof SourcesConfig>(key: K, value: SourcesConfig[K]) =>
@@ -63,10 +62,7 @@ const raid_of = (group: string, difficulty: string) =>
   RAIDS.find((x) => x.group === group && x.difficulty === difficulty);
 
 // the Choices page's worth of a gate's bonus chest, when it has been run
-const now = computed(() =>
-  snapshot_of(roster_config.value, profile.value.roster_id, "Manual"),
-);
-const base = computed(() => base_job(profile.value, now.value));
+const base = computed(() => base_job(profile.value));
 function advice(group: string, difficulty: string, gate: number) {
   const choice = PRESET_CHOICES.find(
     (x) =>
@@ -75,7 +71,7 @@ function advice(group: string, difficulty: string, gate: number) {
       x.difficulty?.split(" / ").includes(difficulty),
   );
   if (!choice || base.value.metric === undefined) return undefined;
-  const job = option_job(profile.value, now.value, base.value, choice, 1);
+  const job = option_job(profile.value, base.value, choice, 1);
   return job.metric === undefined ? undefined : job.metric - base.value.metric;
 }
 
@@ -113,8 +109,7 @@ function gives(key: string) {
       .map(([label, amount]) => ({ label, amount, band })),
   );
 }
-const number = (amount: number) =>
-  Math.round(amount).toLocaleString("en-US");
+const number = (amount: number) => Math.round(amount).toLocaleString("en-US");
 const date = (at: number) => new Date(at).toLocaleDateString();
 
 const SIMPLE: {
@@ -142,9 +137,9 @@ const SIMPLE: {
     <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
       <span class="card-title">Auto income</span>
       <span class="text-(--text-muted)">
-        At item level {{ Math.floor(item_level) }}. From the game files, and Tylobic's
-        sheet for Kurzan Front, the Chaos Rift and guardians. Amounts are per
-        week unless dated; gems are not counted.
+        At item level {{ Math.floor(item_level) }}. From the game files, and
+        Tylobic's sheet for Kurzan Front, the Chaos Rift and guardians. Amounts
+        are per week unless dated; gems are not counted.
       </span>
     </div>
     <span class="text-(--text-very-muted)">
@@ -181,7 +176,9 @@ const SIMPLE: {
             class="selector"
             :value="pick.group"
             :aria-label="`Raid ${slot + 1}`"
-            @change="pick_raid(slot, ($event.target as HTMLSelectElement).value)"
+            @change="
+              pick_raid(slot, ($event.target as HTMLSelectElement).value)
+            "
           >
             <option
               v-for="list in raid_list"
@@ -196,7 +193,9 @@ const SIMPLE: {
             []"
             :key="raid.difficulty"
             class="generic-button"
-            :class="{ 'bg-(--gold-muted)!': pick.difficulty === raid.difficulty }"
+            :class="{
+              'bg-(--gold-muted)!': pick.difficulty === raid.difficulty,
+            }"
             :title="`Item level ${raid.item_level}`"
             @click="
               raids()[slot] = {
@@ -243,7 +242,9 @@ const SIMPLE: {
               {{ gate.bonus?.cost.toLocaleString("en-US") }}
             </span>
             <span
-              v-if="advice(pick.group, pick.difficulty, gate.gate) !== undefined"
+              v-if="
+                advice(pick.group, pick.difficulty, gate.gate) !== undefined
+              "
               :style="{
                 color: worth_color(
                   false,
@@ -364,7 +365,9 @@ const SIMPLE: {
         <div class="flex flex-col gap-1">
           <label class="flex items-center gap-1.5">
             <input
-              :checked="key === 'crucible' ? config.crucible : config.event_shop"
+              :checked="
+                key === 'crucible' ? config.crucible : config.event_shop
+              "
               type="checkbox"
               @change="
                 key === 'crucible'
@@ -380,7 +383,10 @@ const SIMPLE: {
               :value="config.crucible_cleared"
               aria-label="Crucible stages cleared"
               @change="
-                set_number('crucible_cleared', $event.target as HTMLInputElement)
+                set_number(
+                  'crucible_cleared',
+                  $event.target as HTMLInputElement,
+                )
               "
             />
             stages cleared

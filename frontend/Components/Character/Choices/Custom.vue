@@ -3,7 +3,6 @@ import { computed, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { get_icon_path } from "@/Utils/Helpers";
-import type { Snapshot } from "@/Utils/Scans";
 import type { InputColumn } from "@/Utils/InputColumn";
 import { ALL_MATERIAL_LABELS, BAND_NAMES } from "@/Utils/Constants";
 import {
@@ -26,7 +25,6 @@ import { option_job, type ChoiceJob } from "./ChoiceJobs";
 // A choice the user makes, shared by the roster: what each option is worth, best first.
 const props = defineProps<{
   base: ChoiceJob;
-  now: Snapshot;
   no_upgrades: boolean;
   baseline_text: string;
   columns: InputColumn[];
@@ -84,7 +82,7 @@ const rows = computed(() =>
     option: choice.value.options[index],
     job: is_empty(choice.value.options[index])
       ? null
-      : option_job(profile.value, props.now, props.base, choice.value, index),
+      : option_job(profile.value, props.base, choice.value, index),
   })),
 );
 const sorted = computed(() =>

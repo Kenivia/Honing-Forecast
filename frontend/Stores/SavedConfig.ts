@@ -80,7 +80,6 @@ export interface SavedProfile {
   choice_levels: Record<string, string>;
   optimizer_cache: CharProfile["optimizer_cache"];
   choice_results: CharProfile["choice_results"];
-  choice_seed: CharProfile["choice_seed"];
 }
 
 export interface SavedConfig {
@@ -186,7 +185,6 @@ function profile_to_saved(profile: CharProfile): SavedProfile {
     choice_levels: profile.choice_levels,
     optimizer_cache: profile.optimizer_cache,
     choice_results: profile.choice_results,
-    choice_seed: profile.choice_seed,
   };
 }
 
@@ -275,7 +273,6 @@ function profile_from_saved(
       ? markRaw(saved.optimizer_cache)
       : null,
     choice_results: saved.choice_results ?? defaults.choice_results,
-    choice_seed: saved.choice_seed ? markRaw(saved.choice_seed) : null,
   };
 }
 

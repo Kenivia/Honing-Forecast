@@ -505,10 +505,16 @@ describe("snapshot_payload", () => {
         [profile.id]: { bound: { Red: 5 }, special: { "Special Leap": 3 } },
       },
     } as unknown as Snapshot;
+    // the default profile's disabled materials are an endless stock
+    const disabled = Object.fromEntries(
+      Object.entries(profile.bound_budgets.enabled)
+        .filter(([, on]) => on === false)
+        .map(([label]) => [label, MAX_AMOUNT]),
+    );
     expect(snapshot_payload(profile, snapshot, [])).toEqual(
       payload_for(
         profile,
-        { Red: 5 },
+        { Red: 5, ...disabled },
         { Red: 10 },
         { Blue: 20 },
         { "Special Leap": 3 },
@@ -522,6 +528,20 @@ describe("snapshot_payload", () => {
     const p = snapshot_payload(profile, snapshot, []);
     expect(p.materials.Red.bound).toBe(0);
     expect(p.special_budget).toBe(0);
+  });
+
+  it("a disabled material is an endless stock, as on the calculator", () => {
+    profile.bound_budgets.enabled.Red = false;
+    const snapshot = {
+      roster_owned: {},
+      tradable: {},
+      prices: {},
+      bundles: {},
+      chars: { [profile.id]: { bound: { Red: 5 } } },
+    } as unknown as Snapshot;
+    expect(snapshot_payload(profile, snapshot, []).materials.Red.bound).toBe(
+      MAX_AMOUNT,
+    );
   });
 });
 

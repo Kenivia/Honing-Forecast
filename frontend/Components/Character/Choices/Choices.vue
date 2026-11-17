@@ -3,7 +3,6 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { get_icon_path, metric_to_text } from "@/Utils/Helpers";
-import { snapshot_of } from "@/Utils/Scans";
 import {
   affordable,
   is_empty,
@@ -30,13 +29,10 @@ import Spinner from "@/Components/Common/Spinner.vue";
 
 // What taking each option of a choice is worth to this character, in average gold under its plan.
 const store = useRosterStore();
-const { roster_config, active_profile } = storeToRefs(store);
+const { active_profile } = storeToRefs(store);
 const profile = active_profile;
 
-const now = computed(() =>
-  snapshot_of(roster_config.value, profile.value.roster_id, "Manual"),
-);
-const base = computed(() => base_job(profile.value, now.value));
+const base = computed(() => base_job(profile.value));
 // with nothing to hone, nothing is worth anything
 const no_upgrades = computed(() => !base.value.payload.upgrade_info.length);
 const item_level = computed(
@@ -83,13 +79,7 @@ const groups = computed(() =>
                 option,
                 job: is_empty(option)
                   ? null
-                  : option_job(
-                      profile.value,
-                      now.value,
-                      base.value,
-                      choice,
-                      index,
-                    ),
+                  : option_job(profile.value, base.value, choice, index),
               }))
               .filter(({ job }) => job),
           })),
@@ -176,7 +166,6 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
     <Custom
       v-if="tab === 'Custom'"
       :base="base"
-      :now="now"
       :no_upgrades="no_upgrades"
       :baseline_text="baseline_text"
       :columns="columns"
@@ -186,7 +175,6 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
     <Paradise
       v-else-if="tab === 'Paradise'"
       :base="base"
-      :now="now"
       :no_upgrades="no_upgrades"
       :item_level="item_level"
       :baseline_text="baseline_text"
