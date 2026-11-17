@@ -49,7 +49,3 @@ body {
   min-width: 100%;
   min-height: 100vh;
 }
-
-[data-pc-name="tooltip"] {
-  border: 1px solid var(--text-muted);
-}

@@ -6,6 +6,7 @@ import ChestPanels from "@/Components/Common/ChestPanels.vue";
 import ChestIcon from "@/Components/Common/ChestIcon.vue";
 import Popup from "@/Components/Common/Popup.vue";
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
+import HoverTip from "@/Components/Common/HoverTip.vue";
 import RegionSelector from "@/Components/Common/RegionSelector.vue";
 import LabeledPieceIcon from "@/Components/Common/LabeledPieceIcon.vue";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
@@ -157,6 +158,36 @@ describe("QuestionMark", () => {
       expect(w.findAll(".question-mark")).toHaveLength(1);
       expect(w.classes()).toContain("ml-2");
     }
+  });
+});
+
+describe("HoverTip", () => {
+  const card = () => document.body.querySelector("[data-side]");
+  const mount_tip = (sticky: boolean) =>
+    mount(HoverTip, {
+      props: { sticky },
+      slots: { default: "42", tip: "<button>act</button>" },
+      attachTo: document.body,
+    });
+
+  it("closes on leave unless sticky and the cursor reaches the card", async () => {
+    vi.useFakeTimers();
+    for (const sticky of [false, true]) {
+      const w = mount_tip(sticky);
+      await w.trigger("mouseenter");
+      vi.advanceTimersByTime(60);
+      await nextTick();
+      expect(card()?.querySelector("button")).toBeTruthy();
+      await w.trigger("mouseleave");
+      card()?.dispatchEvent(new MouseEvent("mouseenter"));
+      vi.advanceTimersByTime(300);
+      await nextTick();
+      expect(card()?.classList.contains("hovertip-leave-active") ?? true).toBe(
+        !sticky,
+      );
+      w.unmount();
+    }
+    vi.useRealTimers();
   });
 });
 

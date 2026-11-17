@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import HoverTip from "@/Components/Common/HoverTip.vue";
 
 const props = defineProps<{
   labelText: string;
@@ -29,24 +30,25 @@ function handleClick() {
 </script>
 
 <template>
-  <button
-    v-tooltip.top="activeTooltip"
-    :disabled="!eligible"
-    class="generic-button tier-button text-wrap!"
-    :style="{
-      color:
-        warning && eligible
-          ? 'var(--warning)'
-          : !eligible
-            ? 'var(--text-very-muted)'
-            : 'inherit',
-      backgroundColor: 'var(--serca-blue)',
-      cursor: !eligible ? 'not-allowed' : 'pointer',
-    }"
-    @click="handleClick"
-  >
-    {{ labelText }}
-  </button>
+  <HoverTip :text="activeTooltip" placement="top" class="flex flex-col">
+    <button
+      :disabled="!eligible"
+      class="generic-button tier-button text-wrap!"
+      :style="{
+        color:
+          warning && eligible
+            ? 'var(--warning)'
+            : !eligible
+              ? 'var(--text-very-muted)'
+              : 'inherit',
+        backgroundColor: 'var(--serca-blue)',
+        cursor: !eligible ? 'not-allowed' : 'pointer',
+      }"
+      @click="handleClick"
+    >
+      {{ labelText }}
+    </button>
+  </HoverTip>
 </template>
 
 <style scoped>

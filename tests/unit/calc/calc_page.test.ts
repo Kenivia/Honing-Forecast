@@ -155,7 +155,10 @@ describe("StatusInput", () => {
 
   it("converting switches the page to Serca", async () => {
     const { wrapper, store } = await status_input();
-    await wrapper.findComponent(TierConvertButton).trigger("click");
+    await wrapper
+      .findComponent(TierConvertButton)
+      .find("button")
+      .trigger("click");
     expect(store.active_profile.tier).toBe(1);
     expect(wrapper.text()).toContain("Normal Honing (Serca)");
     expect(wrapper.text()).not.toContain("Advanced Honing");

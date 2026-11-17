@@ -76,6 +76,7 @@ Each note describes the code as it is now. Where something was tried and failed 
 - `Frontend/State and persistence.md`: the store, data scopes, localStorage and migrations.
 - `Frontend/Wasm contract.md`: payload building, worker protocol, what must match Rust.
 - `Frontend/External services.md`: market prices, character import, analytics uploads, changelogs.
+- `Frontend/UI components.md`: shared components; `HoverTip`, the site's hover tooltip.
 - `Screen scanner/Pipeline.md`: capture to recognised slots, and what is still stubbed.
 - `Screen scanner/Tooltips.md`: reading the hover tooltip, chests among it, and tying it to a slot.
 - `Screen scanner/Config and calibration.md`: the template config and brightness calibration.

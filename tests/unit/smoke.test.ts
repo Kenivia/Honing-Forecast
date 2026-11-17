@@ -9,7 +9,7 @@ describe("setup", () => {
   it("mounts an SFC and emits", async () => {
     const w = mount(TierConvertButton, { props: { labelText: "Go" } });
     expect(w.text()).toBe("Go");
-    await w.trigger("click");
+    await w.find("button").trigger("click");
     expect(w.emitted("change-tier")).toHaveLength(1);
   });
 
@@ -17,7 +17,7 @@ describe("setup", () => {
     const w = mount(TierConvertButton, {
       props: { labelText: "Go", checkEligibility: () => false },
     });
-    await w.trigger("click");
+    await w.find("button").trigger("click");
     expect(w.emitted("change-tier")).toBeUndefined();
   });
 
