@@ -22,6 +22,7 @@ export interface BibleAuth {
   token: string;
   expires_at: number;
   name: string;
+  avatar?: string;
 }
 export interface BibleCharacter {
   name: string;
@@ -99,6 +100,10 @@ export async function handle_callback(): Promise<string> {
     token: tokens.access_token,
     expires_at: Date.now() + tokens.expires_in * 1000,
     name: user.discordGlobalName ?? user.discordUsername,
+    // Discord's default avatar when none is set
+    avatar: user.discordAvatar
+      ? `https://cdn.discordapp.com/avatars/${user.discordId}/${user.discordAvatar}.png?size=64`
+      : `https://cdn.discordapp.com/embed/avatars/${(BigInt(user.discordId) >> 22n) % 6n}.png`,
   };
   rosters_promise = null;
   return pending.back;

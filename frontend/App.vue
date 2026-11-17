@@ -147,7 +147,14 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
           v-if="signed_in"
           class="ml-auto flex flex-row items-center gap-2 px-3 text-sm text-(--text-muted)"
         >
-          <span>lostark.bible: {{ bible_auth.name }}</span>
+          <img
+            v-if="bible_auth.avatar"
+            :src="bible_auth.avatar"
+            :alt="bible_auth.name"
+            :title="bible_auth.name"
+            class="h-8 w-8 rounded-full"
+          />
+          <span v-else>{{ bible_auth.name }}</span>
           <button class="cursor-pointer hover:underline" @click="sign_out">
             Sign out
           </button>

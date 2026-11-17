@@ -6,8 +6,8 @@ import { sign_in, signed_in } from "@/Utils/BibleAuth";
   <button
     v-if="!signed_in"
     @click="sign_in"
-    class="block cursor-pointer text-left text-xs text-(--text-very-muted) hover:underline"
+    class="block cursor-pointer text-left text-xs text-(--uwuowo) underline"
   >
-    Sign in with lostark.bible to fetch your own characters through their API
+    Sign in with lostark.bible to fetch automatically
   </button>
 </template>
