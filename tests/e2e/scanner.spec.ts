@@ -72,7 +72,7 @@ async function budgets(page: Page) {
 }
 
 async function open_scanner(page: Page, name: string) {
-  await hf.open(page, `/${name}/scanner`);
+  await hf.open(page, `/chars/${name}/scanner`);
   await expect(page.getByRole("button", { name: "Share screen" })).toBeVisible({
     timeout: 60_000,
   });
@@ -165,7 +165,7 @@ test("exports merge across characters and are snapshotted", async ({
   await page.waitForTimeout(1000);
 
   // snapshots on Bee's income page: Bee's export against Newchar's
-  await hf.open(page, "/Bee/income");
+  await hf.open(page, "/chars/Bee/income");
   const timeline = page.getByRole("group", { name: "Snapshots" });
   // Bee's "before" is Newchar's "after", so it is not added
   await expect(timeline.getByRole("button")).toHaveCount(3);
@@ -376,7 +376,7 @@ test("a scan moved to another roster counts its roster storage there", async ({
 });
 
 test("chests are edited on the calculator page", async ({ page }) => {
-  await hf.open(page, "/Newchar/calc");
+  await hf.open(page, "/chars/Newchar/calc");
   await page.getByLabel("Edit chests").check();
   await page.getByLabel("New chest count").fill("3");
   await page.getByLabel("New chest name").fill("Test box");
@@ -549,7 +549,7 @@ test("captures of two characters merge as expected", async ({
   await step("Bee", CAPTURES[3]);
 
   // the snapshots: the empty start, and one after the exports that changed something
-  await hf.open(page, "/Newchar/income");
+  await hf.open(page, "/chars/Newchar/income");
   const timeline = page.getByRole("group", { name: "Snapshots" });
   expect(await timeline.getByRole("button").count()).toBeGreaterThanOrEqual(3);
 });

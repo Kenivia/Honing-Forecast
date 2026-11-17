@@ -40,7 +40,7 @@ function scroll_to_bands() {
 
 <template>
   <div
-    class="flex w-fit max-w-[calc(min(100%,1055px))] flex-row flex-wrap items-start justify-center gap-2.5"
+    class="flex w-fit max-w-[calc(min(100%,1032px))] flex-row flex-wrap items-start justify-center gap-2.5"
   >
     <div class="card-shell">
       <div class="card-header">

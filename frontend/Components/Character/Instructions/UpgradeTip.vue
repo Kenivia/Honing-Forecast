@@ -3,11 +3,15 @@ import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
-import { ALL_LABELS, NUM_BASE_MATS } from "@/Utils/Constants";
+import {
+  ALL_LABELS,
+  NUM_BASE_MATS,
+  SPECIAL_LEAP_LABELS,
+} from "@/Utils/Constants";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
 import ItemList from "./ItemList.vue";
 
-// One attempt of an upgrade: base chance and costs, then each optional juice or book.
+// One attempt of an upgrade: base chance and costs, then each optional juice, book or special leap.
 const props = defineProps<{ upgrade: Upgrade }>();
 const { active_profile } = storeToRefs(useRosterStore());
 const runtime = useRuntimeStore();
@@ -28,6 +32,16 @@ const optional = computed(() => {
   const ids: number[] = (
     u.is_normal_honing ? info.normal_uindex_to_id : info.adv_uindex_to_id
   )[u.piece_type_usize][u.upgrade_index];
+  const special =
+    u.is_normal_honing && u.special_cost > 0
+      ? [
+          {
+            label: SPECIAL_LEAP_LABELS[active_profile.value.tier],
+            amount: u.special_cost,
+            effect: "free tap",
+          },
+        ]
+      : [];
   return ids.map((id) => {
     // Rust's HashMap arrives as a Map
     const one = info.all_juices[id][u.piece_type_usize].get(u.upgrade_index);
@@ -38,7 +52,7 @@ const optional = computed(() => {
         ? `+${percent(one.normal_chance)} chance`
         : `${percent(one.adv_chances[0])} / ${percent(one.adv_chances[1])}`,
     };
-  });
+  }).concat(special);
 });
 </script>
 

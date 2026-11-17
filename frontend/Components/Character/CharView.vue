@@ -70,9 +70,6 @@ onUnmounted(() => {
     </template>
     <template #sidebar="{ close }">
       <div class="flex flex-col">
-        <RouterLink to="guide" class="side-bar-link" @click="close">
-          Guide
-        </RouterLink>
         <RouterLink to="calc" class="side-bar-link" @click="close">
           Calc
         </RouterLink>

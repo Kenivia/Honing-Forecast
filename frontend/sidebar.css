@@ -17,7 +17,6 @@
 }
 
 .side-bar-link.router-link-active {
-  color: var(--gold);
   background-color: var(--bg-main);
   border-radius: 0;
   box-shadow: inset 0 -2px 0 var(--gold);

@@ -181,7 +181,7 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
       :taken="taken"
       @take="take"
     />
-    <div v-else class="card-shell w-fit max-w-[min(100%,1055px)] text-sm">
+    <div v-else class="card-shell w-fit max-w-[min(100%,1032px)] text-sm">
       <div class="card-header gap-4">
         <span class="card-title">Choices</span>
         <span v-if="jobs_left" class="text-(--text-muted)">

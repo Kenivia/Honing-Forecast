@@ -88,7 +88,7 @@ const optimizer_working = computed(get_optimizer_working);
             The purpose of this is to do the Free Taps in the specified order.
             There are many other equivalent orderings.
             <RouterLink
-              to="/learn/upgrade-order"
+              to="/info/upgrade-order"
               class="block w-fit text-(--gold)! underline!"
               >Learn more here</RouterLink
             >

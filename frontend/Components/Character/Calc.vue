@@ -31,6 +31,10 @@ const forbidden_keys = computed(() =>
 const editing_chests = ref(false);
 const chests_open = ref(true);
 const show_obtain_all = ref(false);
+// the wide chest card takes its own row, the thin one sits beside the optimizer
+const chests_wide = computed(
+  () => editing_chests.value || show_obtain_all.value,
+);
 // both views, editing or not, put the chests with a choice on the left
 const obtain_all_title = "Obtain-all and trivial selection chests";
 const selection = computed(() =>
@@ -71,40 +75,49 @@ onUnmounted(() => {
 <template>
   <StatusInput />
   <MaterialDist />
-  <ChestEditor
-    v-if="editing_chests"
-    v-model:open="chests_open"
-    v-model:show_obtain_all="show_obtain_all"
-    :obtain_all_title="obtain_all_title"
+  <div
+    class="flex max-w-full gap-2.5"
+    :class="
+      chests_wide
+        ? 'flex-col items-center'
+        : 'flex-wrap items-start justify-center'
+    "
   >
-    <template #controls>
-      <label class="flex items-center gap-1">
-        <input v-model="editing_chests" type="checkbox" />
-        Edit chests
-      </label>
-    </template>
-  </ChestEditor>
-  <ChestPanels
-    v-else
-    v-model:open="chests_open"
-    v-model:show_obtain_all="show_obtain_all"
-    :selection="selection"
-    :obtain_all="chests.filter((chest) => chest.options.length === 1)"
-    selection_title="Chest opening advice"
-    :obtain_all_title="obtain_all_title"
-    :hide_count="true"
-    :states="runtime.histogram.result?.state_bundle.chest_states"
-    :forbidden="forbidden_keys"
-    @forbid="store.toggle_forbid"
-  >
-    <template #controls>
-      <label class="flex items-center gap-1">
-        <input v-model="editing_chests" type="checkbox" />
-        Edit chests
-      </label>
-    </template>
-  </ChestPanels>
-  <OptimizerControlPanel />
+    <ChestEditor
+      v-if="editing_chests"
+      v-model:open="chests_open"
+      v-model:show_obtain_all="show_obtain_all"
+      :obtain_all_title="obtain_all_title"
+    >
+      <template #controls>
+        <label class="flex items-center gap-1">
+          <input v-model="editing_chests" type="checkbox" />
+          Edit chests
+        </label>
+      </template>
+    </ChestEditor>
+    <ChestPanels
+      v-else
+      v-model:open="chests_open"
+      v-model:show_obtain_all="show_obtain_all"
+      :selection="selection"
+      :obtain_all="chests.filter((chest) => chest.options.length === 1)"
+      selection_title="Chest opening advice"
+      :obtain_all_title="obtain_all_title"
+      :hide_count="true"
+      :states="runtime.histogram.result?.state_bundle.chest_states"
+      :forbidden="forbidden_keys"
+      @forbid="store.toggle_forbid"
+    >
+      <template #controls>
+        <label class="flex items-center gap-1">
+          <input v-model="editing_chests" type="checkbox" />
+          Edit chests
+        </label>
+      </template>
+    </ChestPanels>
+    <OptimizerControlPanel class="self-center" />
+  </div>
   <Instructions :is_normal="true" />
   <Instructions :is_normal="false" />
 </template>

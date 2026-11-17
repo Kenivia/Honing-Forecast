@@ -53,9 +53,9 @@ test("single cell cycles NotYet -> Want -> Done", async ({ page }) => {
 for (const route of [
   "/roster-setup",
   "/market-mats",
-  "/Newchar/guide",
-  "/change-logs",
-  "/Newchar/income",
+  "/info/guide",
+  "/info/change-logs",
+  "/chars/Newchar/income",
 ]) {
   test(`${route} renders without errors`, async ({ page }) => {
     await hf.open(page, route);

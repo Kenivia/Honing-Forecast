@@ -1,8 +1,10 @@
 import { mount } from "@vue/test-utils";
+import { h } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import {
   createMemoryHistory,
   createRouter,
+  RouterView,
   type RouteRecordRaw,
 } from "vue-router";
 
@@ -11,15 +13,23 @@ const Empty = { render: () => null };
 const ROUTES: RouteRecordRaw[] = [
   { path: "/market-mats", name: "market", component: Empty },
   { path: "/roster-setup", name: "roster", component: Empty },
-  { path: "/change-logs", name: "change-logs-root", component: Empty },
-  { path: "/change-logs/:version", name: "change-logs", component: Empty },
   {
-    path: "/:characterName",
+    path: "/info",
+    name: "info",
+    component: { render: () => h(RouterView) },
+    children: [
+      { path: "guide", name: "info-guide", component: Empty },
+      { path: "upgrade-order", name: "info-upgrade-order", component: Empty },
+      { path: "change-logs", name: "change-logs-root", component: Empty },
+      { path: "change-logs/:version", name: "change-logs", component: Empty },
+    ],
+  },
+  {
+    path: "/chars/:characterName",
     name: "char",
     component: Empty,
     children: [
       { path: "calc", name: "calc", component: Empty },
-      { path: "guide", name: "char-guide", component: Empty },
       { path: "scanner", name: "char-scanner", component: Empty },
       { path: "income", name: "char-income", component: Empty },
       { path: "choices", name: "char-choices", component: Empty },

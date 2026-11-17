@@ -177,12 +177,12 @@ function toggle_lock(x: Shown) {
     </div>
     <CurrencyDashboard
       v-if="typeof shown === 'string'"
-      class="w-[1055px]! max-w-full"
+      class="w-[1032px]! max-w-full"
       :currency="shown"
     />
     <SlotDashboard
       v-else
-      class="w-[1055px]! max-w-full"
+      class="w-[1032px]! max-w-full"
       :address="shown"
       :items="items"
     />

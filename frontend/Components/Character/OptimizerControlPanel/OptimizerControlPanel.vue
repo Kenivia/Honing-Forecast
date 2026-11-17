@@ -110,7 +110,8 @@ const grid: GridConfig = {
 </script>
 
 <template>
-  <div class="card-shell max-w-[min(800px,100%)]! min-w-[min(800px,100%)]!">
+  <!-- just wide enough for the simple strategy grid -->
+  <div class="card-shell w-[665px]!">
     <div class="control-panel-checkbox-row flex-wrap gap-x-6!">
       <label class="flex items-center gap-2">
         <input v-model="active_profile.auto_start_optimizer" type="checkbox" />

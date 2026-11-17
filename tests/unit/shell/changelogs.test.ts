@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises } from "@vue/test-utils";
-import ChangeLogsView from "@/Components/ChangeLogsView.vue";
+import InfoView from "@/Components/Info/InfoView.vue";
+import ChangeLog from "@/Components/Info/ChangeLog.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import {
   ALL_VERSIONS,
@@ -35,12 +36,16 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 const show = async (version: string) => {
-  const out = await mount_app(ChangeLogsView, {}, `/change-logs/${version}`);
+  const out = await mount_app(
+    InfoView,
+    { global: { stubs: { RouterView: ChangeLog } } },
+    `/info/change-logs/${version}`,
+  );
   await flushPromises();
   return out;
 };
 const go = async (router, version: string) => {
-  await router.push(`/change-logs/${version}`);
+  await router.push(`/info/change-logs/${version}`);
   await flushPromises();
 };
 const body = (w) => w.find(".change-log-html");
@@ -67,7 +72,7 @@ describe("load_change_log", () => {
   });
 });
 
-describe("ChangeLogsView", () => {
+describe("Info change logs", () => {
   it("marks the latest version seen", async () => {
     await show("t-seen");
     expect(useRosterStore().roster_config.last_seen_version).toBe(
@@ -118,12 +123,14 @@ describe("ChangeLogsView", () => {
     expect(urls()).toEqual(["/change-logs/t-leave.md"]);
   });
 
-  it("sidebar links WIP then every version", async () => {
+  it("sidebar links the docs, WIP then every version", async () => {
     const { wrapper } = await show("t-side");
     const links = wrapper.findAll("a.side-bar-link");
     expect(links.map((a) => a.attributes("href"))).toEqual([
-      "/change-logs/WIP",
-      ...ALL_VERSIONS.map((v) => `/change-logs/${v}`),
+      "/info/guide",
+      "/info/upgrade-order",
+      "/info/change-logs/WIP",
+      ...ALL_VERSIONS.map((v) => `/info/change-logs/${v}`),
     ]);
   });
 

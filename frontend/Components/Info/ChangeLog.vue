@@ -1,15 +1,10 @@
 <script setup lang="ts">
-import Sidebar from "@/Components/Common/Sidebar.vue";
 import Spinner from "@/Components/Common/Spinner.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import {
-  ALL_VERSIONS,
-  LATEST_VERSION,
-  load_change_log,
-} from "@/Utils/Changelog";
+import { LATEST_VERSION, load_change_log } from "@/Utils/Changelog";
 import { computedAsync } from "@vueuse/core";
 import { ref } from "vue";
-import { RouterLink, useRoute } from "vue-router";
+import { useRoute } from "vue-router";
 
 const route = useRoute();
 
@@ -28,41 +23,16 @@ const html = computedAsync(
 </script>
 
 <template>
-  <Sidebar :width="1200" header="Change Logs">
-    <template #sidebar="{ close }">
-      <div class="flex flex-col">
-        <RouterLink
-          :to="{ name: 'change-logs', params: { version: 'WIP' } }"
-          class="side-bar-link"
-          @click="close"
-        >
-          Work in Progress
-        </RouterLink>
-        <RouterLink
-          v-for="version in ALL_VERSIONS"
-          :to="'/change-logs/' + version"
-          class="side-bar-link"
-          @click="close"
-          :key="version"
-        >
-          {{ version }}
-        </RouterLink>
-      </div>
-    </template>
-
-    <template #main>
-      <div class="card-shell prose-card">
-        <Spinner
-          v-if="loading"
-          class="mx-auto my-20 h-24 w-24 text-(--text-muted)"
-        />
-        <div v-else-if="html === null" class="text-(--warning)">
-          Could not load this change log.
-        </div>
-        <div v-else class="change-log-html" v-html="html" />
-      </div>
-    </template>
-  </Sidebar>
+  <div class="card-shell prose-card">
+    <Spinner
+      v-if="loading"
+      class="mx-auto my-20 h-24 w-24 text-(--text-muted)"
+    />
+    <div v-else-if="html === null" class="text-(--warning)">
+      Could not load this change log.
+    </div>
+    <div v-else class="change-log-html" v-html="html" />
+  </div>
 </template>
 
 <!-- v-html content, so :deep -->

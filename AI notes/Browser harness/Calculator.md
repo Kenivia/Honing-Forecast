@@ -9,7 +9,7 @@ Read `Overview.md` first. This covers the character calc page plus the market an
 | `/<char>/calc` | Upgrade grids, character settings, costs distribution, optimizer panel, instructions. |
 | `/market-mats` | Roster-bound and tradable materials, market prices, region. |
 | `/roster-setup` | Characters and rosters. |
-| `/<char>/guide`, `/change-logs` | Static content. |
+| `/info/guide`, `/info/change-logs` | Static content. |
 
 A fresh profile has one character, `Newchar`, at ilevel 1640 with nothing selected and zero gold.
 

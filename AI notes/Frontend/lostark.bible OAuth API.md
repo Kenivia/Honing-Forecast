@@ -139,7 +139,7 @@ Users can revoke access to your app at any time from [their Apps page](https://l
 ## How we use it (not from the page)
 - Public client, PKCE, scopes `identify rosters loadouts`; done in the browser with `oauth4webapi` (`Utils/BibleAuth.ts`). Token, revoke and API endpoints all answer CORS `*`. Arctic, which the page suggests, is deprecated on npm.
 - Client ids: dev `VITE_BIBLE_CLIENT_ID` in `.env.development` (redirect `http://localhost:5173/auth/callback`), production in `.env.production` (`https://honing-forecast.com/auth/callback`, `https://honing-forecast.pages.dev/auth/callback`). Ids are public; nothing secret exists for a public client.
-- Redirect URI is `location.origin + "/auth/callback"`, a route placed before `/:characterName`; `AuthCallback.vue` finishes the exchange and returns to the page that started it.
+- Redirect URI is `location.origin + "/auth/callback"`, a route placed before the catch-all old `/:characterName` redirect; `AuthCallback.vue` finishes the exchange and returns to the page that started it.
 - Token stored with `expires_at = now + expires_in`; a 401 forgets it. Sign-out revokes it. The grant is per user + client, not per domain, so moving domain needs a new sign-in only (silent), not a token copy.
 - UI: `SignInHint.vue` (a small muted line under the roster fetch button and on the character page's import card, hidden when signed in); header shows "lostark.bible: <name> · Sign out" when signed in.
 - Signed in, characters refresh on launch and rosters sync at sign-in (`Utils/BibleSync.ts`; `External services.md`, "Character import").

@@ -5,7 +5,6 @@ import {
   get_icon_path,
   get_piece_icon,
   get_piece_bg,
-  vambrace_done_level,
   toOrdinal,
 } from "@/Utils/Helpers";
 import { SPECIAL_LEAP_LABELS } from "@/Utils/Constants";
@@ -71,12 +70,7 @@ const optimizer_working = computed(get_optimizer_working);
         )
       "
       :alt="get_piece_name(upgrade)"
-      :style="
-        get_piece_bg(
-          get_piece_name(upgrade),
-          vambrace_done_level(active_profile),
-        )
-      "
+      :style="get_piece_bg(get_piece_name(upgrade), upgrade.upgrade_index + 1)"
       class="generic-icon piece-icon h-8 w-8"
     />
     <template #tip><UpgradeTip :upgrade="upgrade" /></template>

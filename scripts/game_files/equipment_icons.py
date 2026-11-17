@@ -1,6 +1,7 @@
 """
 Writes public/Icons/Equipments/<T4|Serca>/<class>/<Piece>.webp: each class's honed gear art, the ancient "Destined
 Hellfire" set for T4 and "Destined Tremor" for Serca; the vambrace (Serca only) is the class's ancient Tremor one.
+Each is drawn with the blue honed-gear border (icon_border_inherit.png, from lostark.bible).
 Run after scanner_setup/game_files/extract.py.
 
     python scripts/game_files/equipment_icons.py
@@ -9,6 +10,8 @@ Run after scanner_setup/game_files/extract.py.
 import shutil
 import sys
 from pathlib import Path
+
+from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scanner_setup/game_files"))
 from game import ROOT, icon_art, table
@@ -28,6 +31,8 @@ CLASSES = {
 PIECES = {10201: "Helmet", 10202: "Chest", 10203: "Pants", 10204: "Glove", 10205: "Shoulder", 10206: "Vambrace"}
 SETS = {"T4": (134611000, 134619999), "Serca": (134621000, 134629999)}  # Destined Hellfire, Destined Tremor
 ANCIENT = 6
+# the blue border the game draws on honed gear, taken from lostark.bible (not found in the client's UI packages)
+BORDER = Image.open(Path(__file__).with_name("icon_border_inherit.png")).convert("RGBA")
 
 
 def piece(category):
@@ -36,7 +41,7 @@ def piece(category):
 
 def save(art, path):
     path.parent.mkdir(parents=True, exist_ok=True)
-    art.save(path, "WEBP", quality=90)
+    Image.alpha_composite(art.convert("RGBA"), BORDER).save(path, "WEBP", quality=90)
 
 
 shutil.rmtree(OUT / "T4", ignore_errors=True)

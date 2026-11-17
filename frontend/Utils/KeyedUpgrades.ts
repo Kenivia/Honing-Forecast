@@ -35,6 +35,7 @@ export interface Upgrade {
   extra_chance: number;
   unlock_costs: number[];
   costs: number[];
+  special_cost: number;
 
   // added for UI purpose, not in rust (it's wiped after optimizer run)
   this_special_chance?: number;

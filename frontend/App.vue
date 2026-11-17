@@ -3,7 +3,7 @@ import { RouterLink, RouterView, useRoute } from "vue-router";
 import { get_icon_path } from "@/Utils/Helpers";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { useElementSize, useMediaQuery } from "@vueuse/core";
-import { computed, reactive, useTemplateRef, watch, watchEffect } from "vue";
+import { computed, reactive, ref, useTemplateRef, watch, watchEffect } from "vue";
 import { storeToRefs } from "pinia";
 import { FETCHABLE_REGIONS, start_fetch } from "./Utils/MarketDataFetcher";
 import {
@@ -72,6 +72,15 @@ watch(
   },
   { immediate: true },
 );
+// session only: the Info tab goes back to the last opened info page
+const last_info = ref("/info");
+watch(
+  () => route.path,
+  (p) => {
+    if (p.startsWith("/info/")) last_info.value = route.fullPath;
+  },
+  { immediate: true },
+);
 function roster_target(roster_id: string) {
   const chars = all_profiles.value.filter((p) => p.roster_id === roster_id);
   return chars.find((p) => p.id === last_opened[roster_id]) ?? chars[0];
@@ -115,6 +124,13 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
             Honing Forecast
           </h1>
         </div>
+        <RouterLink
+          :to="last_info"
+          class="nav-tab"
+          :class="{ selected: route.path.startsWith('/info') }"
+        >
+          Info
+        </RouterLink>
         <RouterLink
           to="/roster-setup"
           class="nav-tab"

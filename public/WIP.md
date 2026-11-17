@@ -3,18 +3,7 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
-- lostark.bible login
-
-- ~~get equipment icons~~
 - shift sidebar?
-- rework tooltips
-- reorganize to info page
-  - reorganize the top bar
-
-- perscribe a main?
-  - suggest treatment plans?
-  
-- *get the equipment icons somehow* ~~gonna postone this also, prolly gonna have to set up some kind of lostarkcodex -> template matching workflow so that'll be during that~~
 
 - rework changelog page (infinite scroll)
 
@@ -69,6 +58,19 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
 
 ## Done / cancelled
+
+- ~~lostark.bible login~~
+
+- ~~get equipment icons~~
+
+- ~~rework tooltips~~
+- ~~reorganize to info page~~
+  - ~~reorganize the top bar~~
+
+- ~~perscribe a main?~~
+  - ~~suggest treatment plans?~~
+  
+- *get the equipment icons somehow* ~~gonna postone this also, prolly gonna have to set up some kind of lostarkcodex -> template matching workflow so that'll be during that~~
 
 - ~~make special graph always hist~~
 - ~~allow non-mains to ignore roster chests / mats~~

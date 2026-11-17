@@ -1,28 +1,29 @@
 import { createRouter, createWebHistory } from "vue-router";
 import CharView from "../Components/Character/CharView.vue";
 import Calc from "@/Components/Character/Calc.vue";
-import Guide from "@/Components/Character/Guide.vue";
+import Guide from "@/Components/Info/Guide.vue";
 import Scanner from "@/Components/Character/InventoryScanner/Scanner.vue";
 import MarketView from "@/Components/Market/MarketView.vue";
 import RosterView from "@/Components/RosterView.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog";
-import ChangeLogsView from "@/Components/ChangeLogsView.vue";
+import InfoView from "@/Components/Info/InfoView.vue";
+import ChangeLog from "@/Components/Info/ChangeLog.vue";
 import Income from "@/Components/Character/Income/Income.vue";
 import Choices from "@/Components/Character/Choices/Choices.vue";
 import { guard_switch } from "@/Components/Character/InventoryScanner/ScanSwitch";
 import AuthCallback from "@/Components/Common/Uwuowo/AuthCallback.vue";
-import UpgradeOrder from "@/Components/Learn/UpgradeOrder.vue";
+import UpgradeOrder from "@/Components/Info/UpgradeOrder.vue";
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: "/",
+      path: "/:chars(chars)?",
       redirect: () => {
         const roster_store = useRosterStore();
         const first = roster_store.all_profiles[0];
-        return first ? `/${first.char_name}` : "/roster-setup"; // there should always be at least one tho
+        return first ? `/chars/${first.char_name}` : "/roster-setup"; // there should always be at least one tho
       },
     },
 
@@ -37,61 +38,82 @@ const router = createRouter({
       component: RosterView,
     },
     {
-      path: "/change-logs",
-      name: "change-logs-root",
-      redirect: () => ({
-        name: "change-logs",
-        params: { version: LATEST_VERSION },
-      }),
+      path: "/info",
+      name: "info",
+      component: InfoView,
+      redirect: { name: "info-guide" },
       children: [
+        { path: "guide", name: "info-guide", component: Guide },
         {
-          path: ":version",
+          path: "upgrade-order",
+          name: "info-upgrade-order",
+          component: UpgradeOrder,
+        },
+        {
+          path: "change-logs",
+          name: "change-logs-root",
+          redirect: () => ({
+            name: "change-logs",
+            params: { version: LATEST_VERSION },
+          }),
+        },
+        {
+          path: "change-logs/:version",
           name: "change-logs",
-          component: ChangeLogsView,
+          component: ChangeLog,
         },
         {
-          path: ":pathMatch(.*)*",
-          redirect: () => `/change-logs/${LATEST_VERSION}`,
+          path: "change-logs/:pathMatch(.*)*",
+          redirect: () => `/info/change-logs/${LATEST_VERSION}`,
         },
+        { path: ":pathMatch(.*)*", redirect: { name: "info-guide" } },
       ],
     },
+    // old urls
     {
-      path: "/learn/upgrade-order",
-      name: "learn-upgrade-order",
-      component: UpgradeOrder,
+      path: "/change-logs/:version?",
+      redirect: (to) =>
+        `/info/change-logs/${to.params.version || LATEST_VERSION}`,
     },
+    {
+      path: "/change-logs/:pathMatch(.*)*",
+      redirect: () => `/info/change-logs/${LATEST_VERSION}`,
+    },
+    { path: "/learn/upgrade-order", redirect: { name: "info-upgrade-order" } },
     {
       path: "/auth/callback",
       name: "auth-callback",
       component: AuthCallback,
     },
     {
-      path: "/:characterName",
+      path: "/chars/:characterName",
       name: "char",
       component: CharView,
-      redirect: (c) => `/${c.params.characterName}/calc`,
+      redirect: (c) => `/chars/${c.params.characterName}/calc`,
       children: [
         { path: "calc", name: "calc", component: Calc },
-        { path: "guide", name: "char-guide", component: Guide },
+        { path: "guide", redirect: { name: "info-guide" } },
         { path: "scanner", name: "char-scanner", component: Scanner },
         // Income is dev only until released
         ...(import.meta.env.DEV
           ? [{ path: "income", name: "char-income", component: Income }]
           : []),
         { path: "choices", name: "char-choices", component: Choices },
-        {
-          path: ":x/guide",
-          redirect: (c) => `/${c.params.characterName}/guide`,
-        },
+        { path: ":x/guide", redirect: { name: "info-guide" } },
         {
           path: ":x/scanner",
-          redirect: (c) => `/${c.params.characterName}/scanner`,
+          redirect: (c) => `/chars/${c.params.characterName}/scanner`,
         },
         {
           path: ":pathMatch(.*)*",
-          redirect: (c) => `/${c.params.characterName}/calc`,
+          redirect: (c) => `/chars/${c.params.characterName}/calc`,
         },
       ],
+    },
+    // old character urls, before /chars
+    {
+      path: "/:characterName/:rest(.*)?",
+      redirect: (c) => `/chars/${c.params.characterName}/${c.params.rest}`,
     },
   ],
 });

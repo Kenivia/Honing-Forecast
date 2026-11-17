@@ -107,7 +107,7 @@ watch(
 </script>
 
 <template>
-  <div class="card-shell w-fit max-w-[min(100%,1055px)] text-sm">
+  <div class="card-shell w-fit max-w-[min(100%,1032px)] text-sm">
     <div class="card-header gap-4">
       <span class="card-title">Custom</span>
       <span v-if="jobs_left" class="text-(--text-muted)">
