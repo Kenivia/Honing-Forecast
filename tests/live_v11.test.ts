@@ -2,7 +2,7 @@
 // scan pages for slot-by-slot ones and add forbidden chests (V12), nothing comes from a load
 // fallback, and the result survives load, save, load again.
 import fs from "node:fs";
-import { check, differences, done, section } from "./helpers";
+import { check, differences, done, main_alt_ok, section } from "./helpers";
 import LZString from "lz-string";
 import {
   export_config,
@@ -31,13 +31,17 @@ check("is a V11 save", v11.version === 11);
 const migrated = migrate_to_current(structuredClone(v11), 11);
 const added = differences(migrated, v11).filter((p) => p !== ".version");
 check(
-  "adds only forbidden_chests, class_name and new scan pages",
+  "adds only forbidden_chests, class_name, alt leftover values and new scan pages",
   added.every((p) =>
-    /^\.profiles\.\d+\.(forbidden_chests|class_name)$|^\.scan_(pages|currencies)(\.|$)/.test(
+    /^\.profiles\.\d+\.(forbidden_chests|class_name|band_values\.\d)$|^\.scan_(pages|currencies)(\.|$)/.test(
       p,
     ),
   ),
   show(added),
+);
+check(
+  "  each roster's highest ilevel stays main, the rest on main's values become alts",
+  main_alt_ok(v11.profiles, migrated.profiles),
 );
 check(
   "  scan pages emptied",

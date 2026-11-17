@@ -2,6 +2,7 @@
 import { cssVar, get_icon_path, locale_to_fixed } from "@/Utils/Helpers";
 import { get_modified_cell, InputColumn } from "@/Utils/InputColumn";
 import { linked_labels } from "@/Utils/Constants";
+import HoverTip from "@/Components/Common/HoverTip.vue";
 
 import { computed, ref, watch } from "vue";
 
@@ -33,7 +34,14 @@ const props = defineProps<{
   // "+N <text>" lines on the right, taking plus_width whether shown or not
   plus?: { amount: number; text: string; color?: string }[];
   plus_width?: number;
+  // hover card (HTML) on a result, which is then underlined
+  tip?: string | null;
 }>();
+
+const PLUS_TIP = "These are not included in the input box on the left.";
+const any_plus = computed(() =>
+  props.plus?.some((line) => Math.floor(line.amount) > 0),
+);
 
 const actual_input_width = computed(() => `${props.input_width ?? 100}px`);
 const actual_label_width = computed(() => `${props.label_width ?? 150}px`);
@@ -129,29 +137,34 @@ watch(source_value, (val) => {
       @change="on_change"
       :disabled="!(input_column as InputColumn).enabled[label]"
     />
-    <label
-      v-else
-      class="material-cell-result"
-      :aria-label="aria_name"
-      :style="{
-        color: resolved_color,
-        minWidth: input_width ? actual_input_width : undefined,
-      }"
-      type="text"
-      >{{
-        is_percentage
-          ? locale_to_fixed(as_result()[label] * 100, 2) + "%"
-          : as_result()[label].toLocaleString("en-US", {
-              minimumFractionDigits: 0, // show decimals for small K/M/B
-              maximumFractionDigits: as_result()[label] < 1 ? 2 : 0,
-            })
-      }}</label
-    >
+    <HoverTip v-else :sticky="false" class="flex">
+      <label
+        class="material-cell-result"
+        :class="{ 'underline decoration-dotted decoration-1 underline-offset-2': tip }"
+        :aria-label="aria_name"
+        :style="{
+          color: resolved_color,
+          minWidth: input_width ? actual_input_width : undefined,
+        }"
+        type="text"
+        >{{
+          is_percentage
+            ? locale_to_fixed(as_result()[label] * 100, 2) + "%"
+            : as_result()[label].toLocaleString("en-US", {
+                minimumFractionDigits: 0, // show decimals for small K/M/B
+                maximumFractionDigits: as_result()[label] < 1 ? 2 : 0,
+              })
+        }}</label
+      >
+      <template v-if="tip" #tip><span v-html="tip" /></template>
+    </HoverTip>
     <label class="material-cell-suffix annotation" v-if="suffix">{{
       suffix
     }}</label>
-    <div
+    <HoverTip
       v-if="plus"
+      :text="any_plus ? PLUS_TIP : null"
+      :sticky="false"
       class="flex shrink-0 flex-col gap-1 text-left"
       :style="{ width: actual_plus_width }"
     >
@@ -164,7 +177,7 @@ watch(source_value, (val) => {
       >
         +{{ Math.floor(line.amount).toLocaleString("en-US") }} {{ line.text }}
       </span>
-    </div>
+    </HoverTip>
   </div>
   <!-- <input v-if="customLeftovers" type="text" :value="matsLeftover[label]" @input="setRecordValue(matsLeftover, label, $event)" /> -->
 </template>

@@ -6,6 +6,8 @@ import TierConvertButton from "@/Components/Common/TierConvertButton.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import Uwuowo from "@/Components/Common/Uwuowo/Uwuowo.vue";
 import SignInHint from "@/Components/Common/Uwuowo/SignInHint.vue";
+import QuestionMark from "@/Components/Common/QuestionMark.vue";
+import RoleToggle from "@/Components/Character/RoleToggle.vue";
 import { ilevel } from "@/Utils/HoningUtil.js";
 import { apply_results } from "@/Components/Common/Uwuowo/ApplyResults.js";
 import {
@@ -18,6 +20,9 @@ import {
 const roster_store = useRosterStore();
 const { active_profile, all_profiles, active_region } =
   storeToRefs(roster_store);
+
+const ROLE_TIP =
+  'This controls how we value leftover materials.';
 </script>
 
 <template>
@@ -58,6 +63,11 @@ const { active_profile, all_profiles, active_region } =
         "
       />
       <SignInHint />
+      <div class="my-1 flex flex-row items-center gap-2">
+        <span>Character:</span>
+        <RoleToggle />
+        <QuestionMark :text="ROLE_TIP" />
+      </div>
       <div class="flex flex-col">
         <label class="text-no-wrap text-(--achieved)"
           >Achieved ilevel: {{ ilevel(active_profile, "achieved") }}</label

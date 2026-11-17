@@ -57,7 +57,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 - **Advanced honing**: a separate XP-based system in blocks of ten levels, with "grace" taps and its own consumables.
 - **Juice, books, scrolls**: optional consumables that raise the success chance of a tap. Juices and books apply to normal honing, juices and scrolls to advanced. In code they share one id space ("juice ids").
 - **Special honing / free tap**: an attempt paid for with special leapstones. Success skips the upgrade entirely.
-- **Bound / roster-bound / tradable**: the three ownership bands of a material. What a leftover unit of each is worth is the user's choice, out of nothing / taxed sell price / buy price, and must not decrease across the bands.
+- **Bound / roster-bound / tradable**: the three ownership bands of a material. What a leftover unit of each is worth is the user's choice, out of nothing / taxed sell price / buy price, and must not decrease across the bands. Main and Alt on the character card are presets (`MAIN_BANDS`, the default: nothing / nothing / taxed sell; `ALT_BANDS`: nothing / taxed sell / taxed sell); each band is fine-tuned next to "Avg value of leftover mats" under the cost distribution.
 - **Tier**: 0 is T4, 1 is Serca. Each has its own material set and cost tables.
 - **Express / event**: temporary modifiers to costs and chances.
 

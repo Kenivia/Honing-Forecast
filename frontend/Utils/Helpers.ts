@@ -161,8 +161,9 @@ export function metric_to_text(metric: number | null | undefined) {
 }
 // a whole percentage, with ~ where rounding hides that it is not quite 0 or 100
 export function chance_text(chance: number) {
-  const percent = Math.round(chance * 100);
-  const near = (percent === 0 && chance > 0) || (percent === 100 && chance < 1);
+  const percent = (chance * 100).toFixed(1);
+  const near =
+    (percent === "0.0" && chance > 0) || (percent === "100.0" && chance < 1);
   return `${near ? "~" : ""}${percent}%`;
 }
 export function get_icon_path(name: string) {

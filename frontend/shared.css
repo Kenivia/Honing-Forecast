@@ -188,6 +188,17 @@
   font-weight: 800;
 }
 
+/* every hover card: HoverTip and the material graphs */
+.tooltip-card {
+  background: var(--bg-bright);
+  color: var(--text-main);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  border: 1px solid var(--text-very-muted);
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
+}
+
 .annotation {
   color: var(--text-muted);
   font-size: var(--text-2xs);

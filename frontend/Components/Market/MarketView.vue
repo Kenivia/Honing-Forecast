@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { useRosterStore as useRosterStore } from "@/Stores/RosterConfig";
-import { convert_pooled, CONVERT_SUMMARY } from "@/Utils/Convert";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-import TierConvertButton from "../Common/TierConvertButton.vue";
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
 import Sidebar from "../Common/Sidebar.vue";
 import BudgetGrid from "./BudgetGrid.vue";
@@ -16,12 +14,6 @@ const { roster_config, roster_ids } = storeToRefs(roster_store);
 
 const selected_roster_id = ref(roster_ids.value[0]);
 
-const selected_roster_mats_owned = computed(
-  () => roster_config.value.roster_mats_owned[selected_roster_id.value],
-);
-const selected_tradable_mats_owned = computed(
-  () => roster_config.value.tradable_mats_owned[selected_roster_id.value],
-);
 const selected_region = computed(
   () => roster_config.value.all_regions[selected_roster_id.value],
 );
@@ -109,16 +101,6 @@ const selected_region = computed(
           </option>
         </select>
       </div>
-      <TierConvertButton
-        label-text="Convert owned T4 Roster & Tradable to T4.5 Serca mats"
-        :tooltip-text="`${CONVERT_SUMMARY}. The result is roster bound; the leftover stays.`"
-        @change-tier="
-          convert_pooled(
-            selected_roster_mats_owned,
-            selected_tradable_mats_owned,
-          )
-        "
-      />
     </template>
 
     <template #main>

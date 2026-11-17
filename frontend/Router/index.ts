@@ -12,6 +12,7 @@ import Income from "@/Components/Character/Income/Income.vue";
 import Choices from "@/Components/Character/Choices/Choices.vue";
 import { guard_switch } from "@/Components/Character/InventoryScanner/ScanSwitch";
 import AuthCallback from "@/Components/Common/Uwuowo/AuthCallback.vue";
+import UpgradeOrder from "@/Components/Learn/UpgradeOrder.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -53,6 +54,11 @@ const router = createRouter({
           redirect: () => `/change-logs/${LATEST_VERSION}`,
         },
       ],
+    },
+    {
+      path: "/learn/upgrade-order",
+      name: "learn-upgrade-order",
+      component: UpgradeOrder,
     },
     {
       path: "/auth/callback",

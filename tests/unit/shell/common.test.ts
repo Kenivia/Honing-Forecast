@@ -182,9 +182,7 @@ describe("HoverTip", () => {
       card()?.dispatchEvent(new MouseEvent("mouseenter"));
       vi.advanceTimersByTime(300);
       await nextTick();
-      expect(card()?.classList.contains("hovertip-leave-active") ?? true).toBe(
-        !sticky,
-      );
+      expect(!!card()).toBe(sticky);
       w.unmount();
     }
     vi.useRealTimers();

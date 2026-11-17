@@ -100,28 +100,30 @@ const annotations = computed(() => [
 // a chance given as log10, as a percentage that stays readable however small
 function log_percent(log10_chance: number) {
   const exponent = log10_chance + 2;
+
   if (exponent >= 0) return `${Math.round(10 ** exponent)}%`;
+  if (exponent >= -2) return `${(10 ** exponent).toFixed(2)}%`;
   const whole = Math.floor(exponent);
   return `${(10 ** (exponent - whole)).toFixed(1)}e${whole}%`;
 }
 
 const gold_text = (x: number, color: string) =>
-  `<b style="color: ${color};"> ${Math.round(x).toLocaleString("en-US")} </b> gold`;
+  `<b style="color: ${color};">${Math.round(x).toLocaleString("en-US")}</b> gold`;
 // only the ends are certain
 const ordinary = (x: number, cy: number, color: string) =>
-  `<b style="color: white;">${chance_text(Math.min(Math.max(cy, 1e-9), 1 - 1e-9))} </b> chance to spend <br> ≤ ${gold_text(x, color)}`;
+  `<b style="color: var(--text-bright);">${chance_text(Math.min(Math.max(cy, 1e-9), 1 - 1e-9))}</b> chance to spend<br>≤ ${gold_text(x, color)}`;
 
 function hover_annotation(x, _y, cy, _material, color, is_last): string {
   const end = is_last || x === dist.value.luckiest[0];
   if (!end)
     return ordinary(x, cy, x === owned.value ? "var(--tradable)" : color);
   const text = is_last
-    ? `<b style="color: white;">${log_percent(dist.value.pity[1])} </b> chance to pity EVERYTHING <br> = ${gold_text(x, color)}`
-    : `<b style="color: white;">${log_percent(dist.value.luckiest[1])} </b> chance to use ≤ ${gold_text(x, color)}`;
-  // the owned gold is closest to this end, so it is told here
+    ? `<b style="color: var(--text-bright);">${log_percent(dist.value.pity[1])}</b> chance to pity EVERYTHING<br>= ${gold_text(x, color)}`
+    : `<b style="color: var(--text-bright);">${log_percent(dist.value.luckiest[1])}</b> chance to hit the best-case scenario<br>= ${gold_text(x, color)}`;
+
   const at = is_last ? graph_data.value.length - 1 : 0;
   return owned_index.value === at
-    ? `${text} <br> ${ordinary(owned.value, dist.value.within_budget, "var(--tradable)")}`
+    ? `${text}<br>${ordinary(owned.value, dist.value.within_budget, "var(--tradable)")}`
     : text;
 }
 </script>

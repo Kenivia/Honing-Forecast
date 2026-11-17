@@ -33,7 +33,7 @@ These accessible names are what MCP snapshots show and what the helpers use.
 
 **Results** have no labels and are read from text: `Pending ilevel:`, `Achieved ilevel:`, the gold line ending in `gold spent:`, and `Optimizer progress:`.
 
-**Everything else** (control checkboxes, `Reset this char`, `Convert to T4.5 Serca`, `Auto start optimizer`, `Compare with simple strategies`) is reachable by its visible text. Named controls elsewhere: `Char name` (calc page and each roster row), `Region`, `Active roster`, `Auto fetch`, `Move <name> up` / `down` on the roster page, and `<band> leftover value` in the control panel.
+**Everything else** (control checkboxes, `Reset this char`, `Convert to T4.5 Serca`, `Auto start optimizer`, `Compare with simple strategies`) is reachable by its visible text. Named controls elsewhere: `Char name` (calc page and each roster row), `Region`, `Active roster`, `Auto fetch`, `Move <name> up` / `down` on the roster page, and `<band> leftover value` next to "Avg value of leftover mats" (shown after clicking `Customise`). `Main` / `Alt` (`RoleToggle.vue`, on the character card and as "Treating as" on that line) set all three at once.
 
 A second tab of the site shows a warning banner ("open in another tab"); a test with two pages in one context sees it.
 

@@ -26,26 +26,23 @@ export const tier_warning = (profile: CharProfile) =>
 export function tier_tooltip(profile: CharProfile) {
   if (profile.tier == 0) {
     if (!tier_warning(profile))
-      return "Eligible for conversion to T4.5 Serca gear";
-    return (
-      "Warning! " +
-      [
-        !check_adv_all_done(profile)
-          ? "All Adv honing will be set to +40"
-          : null,
-        !check_all_plus_20(profile)
-          ? "All Gear will be set to +11 (Serca)"
-          : null,
-      ]
-        .filter((x) => x !== null)
-        .join(", \n")
-    );
+      return "Eligible for conversion to T4.5 Serca gear.";
+    return [
+      !check_adv_all_done(profile)
+        ? "All Advanced Honing will be set to +40."
+        : null,
+      !check_all_plus_20(profile)
+        ? "All gear will be set to +11 (Serca)."
+        : null,
+    ]
+      .filter((x) => x !== null)
+      .join("\n");
   }
   return check_revert_ilevel_ok(profile) === true
-    ? "Can go back to T4"
+    ? "Can go back to T4."
     : "Cannot convert back to T4 because +" +
         String(check_revert_ilevel_ok(profile)) +
-        " cannot be mapped directly to a T4 upgrade";
+        " cannot be mapped directly to a T4 upgrade.";
 }
 
 export function change_tier(target_profile: CharProfile, fetched?: boolean) {

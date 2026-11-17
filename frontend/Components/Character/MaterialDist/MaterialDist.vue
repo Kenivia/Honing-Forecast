@@ -11,13 +11,14 @@ import {
   // cheapest_bundles, // Est. gold value column
 } from "@/Utils/Constants";
 import {
-  chance_text,
   has_upgrades_in_range,
+  locale_to_fixed,
   metric_to_text,
 } from "@/Utils/Helpers";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue";
 import GoldDist from "@/Components/Character/MaterialDist/GoldDist.vue";
+import LeftoverBands from "@/Components/Character/MaterialDist/LeftoverBands.vue";
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
@@ -169,7 +170,7 @@ const special_source = computed(() =>
     : undefined,
 );
 
-const tickbox_tooltip = `Untick the box if you don't plan on buying that material from market.`;
+const tickbox_tooltip = `Untick the box if you don't plan on buying that material from the market.`;
 // Est. gold value column, shelved for now (Calculator core/Optimizer.md, "Marginal value")
 // const marginal_tooltip = `The market price per bundle below which the optimizer would use more of this juice or book. "<" means it still didn't at that price, "-" not even for free.`;
 
@@ -210,20 +211,6 @@ const total_gold = computed(
     runtime.histogram.result?.tradable_gold,
 );
 
-// the tradable gold chance cell: raw gold alone, then with the mats bought, once the
-// optimizer is done
-const gold_chance_text = computed(() => {
-  const result = runtime.histogram.result;
-  if (!result) return "";
-  const raw = chance_text(result.chance_within["Gold"][2]);
-  const combined =
-    result.state_bundle.upgrade_arr.length === 0
-      ? chance_text(1)
-      : result.gold_dist
-        ? chance_text(result.gold_dist.within_budget)
-        : "…";
-  return `${raw} chance the raw gold cost fits in your tradable gold (including chests). ${combined} with the gold spent buying mats & juice too.`;
-});
 const leftover_credit = computed(
   () =>
     runtime.histogram.result?.metric_per_plan[0] -
@@ -236,7 +223,7 @@ const any_credited = computed(() =>
 // parallel to chance_band, which also picks the owned column shown
 const CHANCE_TEXTS = ["Char-Bound", "Roster-Bound", "Tradable"].map(
   (band) =>
-    `Chance to succeed all upgrades before running out of ${band} material`,
+    `Chance to succeed at all upgrades before running out of ${band} material.`,
 );
 const CHANCE_COLORS = ["var(--bound)", "var(--roster)", "var(--tradable)"];
 const OWNED_TITLES = ["Bound mats", "Roster mats", "Tradable"];
@@ -266,7 +253,8 @@ const enabled_annotations = computed(() =>
   annotations_shown(active_profile.value.chance_band),
 );
 
-const annotation_values = computed(() => {
+// per label: the average, then the owned total up to each band (null where untraded)
+const lines = computed(() => {
   const traded = [
     active_profile.value.bound_budgets,
     active_roster_mats_owned.value,
@@ -279,10 +267,37 @@ const annotation_values = computed(() => {
       owned.value.map((column) => column[label]),
       [0, 1, 2].map((band) => gain(label, band) + t4_gain(label, band)),
       traded.map((enabled) => enabled[label]),
-    ).filter((_, i) => enabled_annotations.value[i]);
+    );
   }
   return out;
 });
+const annotation_values = computed(() =>
+  Object.fromEntries(
+    Object.entries(lines.value).map(([label, values]) => [
+      label,
+      values.filter((_, i) => enabled_annotations.value[i]),
+    ]),
+  ),
+);
+
+// the chance column's hover card, worded like the graph's
+const percent_html = (chance: number | null) =>
+  `<b style="color: var(--text-bright);">${chance === null ? "…" : locale_to_fixed(chance * 100, 2) + "%"}</b>`;
+function chance_tip(label: string): string | null {
+  const band = active_profile.value.chance_band;
+  const owned_total = lines.value[label]?.[1 + band];
+  if (owned_total == null) return null;
+  const amount = `<b style="color: ${selected_chance_color.value};">${Math.ceil(owned_total).toLocaleString("en-US")}</b>`;
+  if (label !== "Gold" || band !== 2)
+    return `${percent_html(histogram_chances.value[label])} chance to use<br>≤ ${amount} ${label}`;
+  // tradable gold: the raw cost alone, then with the mats and juice bought, once known
+  const result = runtime.histogram.result;
+  const overall =
+    result.state_bundle.upgrade_arr.length === 0
+      ? 1
+      : (result.gold_dist?.within_budget ?? null);
+  return `${percent_html(histogram_chances.value[label])} chance that the raw gold cost<br>≤ ${amount} gold<br>${percent_html(overall)} chance that the overall gold cost<br>≤ ${amount} gold`;
+}
 
 const special_data = computed(() => {
   const bundle = runtime.histogram.result?.state_bundle;
@@ -306,7 +321,7 @@ function hover_annotation(x, _y, cy, material_type, color, is_last): string {
         ),
       );
 
-  return `<b style="color: white;">${(cy * 100).toPrecision(place)}% </b> chance to use <br> ≤ <b style="color: ${color};"> ${Math.ceil(x).toLocaleString("en-US")} </b> ${material_type} `;
+  return `<b style="color: var(--text-bright);">${(cy * 100).toPrecision(place)}%</b> chance to use<br>≤ <b style="color: ${color};">${Math.ceil(x).toLocaleString("en-US")}</b> ${material_type}`;
 }
 function special_hover_annotation(x, y, cy, _material_type, color): string {
   const cumulative = roster_config.value.cumulative_graph;
@@ -326,7 +341,7 @@ function special_hover_annotation(x, y, cy, _material_type, color): string {
             3,
           ),
         );
-  return `<b style="color: white;">${(p * 100).toPrecision(place)}% </b> chance to free tap <br> ${cumulative ? "at least" : "exactly"} <b style="color: ${color};"> ${pieces} </b> piece${pieces === 1 ? "" : "s"}`;
+  return `<b style="color: var(--text-bright);">${(p * 100).toPrecision(place)}%</b> chance to free tap<br>${cumulative ? "at least" : "exactly"} <b style="color: ${color};">${pieces}</b> piece${pieces === 1 ? "" : "s"}`;
 }
 
 const show_special_guide = ref(false);
@@ -372,10 +387,6 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
                 {{ text }}
               </option>
             </select>
-            <QuestionMark
-              text='The "+N (...)" amounts are not included in the input box on the left.'
-              class="absolute bottom-0 left-full mb-1.5 ml-1"
-            />
           </div>
         </div>
         <!-- <div class="flex flex-col items-end text-(--gold)">
@@ -386,9 +397,6 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
           </div>
         </div> -->
         <div class="flex flex-row items-end justify-end gap-1">
-          <span class="text-right" :style="{ color: selected_chance_color }"
-            >Chance</span
-          >
           <QuestionMark
             :text="CHANCE_TEXTS[active_profile.chance_band]"
             class="mb-1.5 self-end!"
@@ -496,18 +504,12 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
             >
           </div>
           <div v-else></div> -->
-            <div
-              v-if="label === 'Gold' && active_profile.chance_band === 2"
-              class="flex items-center justify-end"
-            >
-              <QuestionMark :text="gold_chance_text" />
-            </div>
             <MaterialCell
-              v-else
               :input_column="histogram_chances"
               :label="label"
               :input_color="selected_chance_color"
               :is_percentage="true"
+              :tip="chance_tip(label)"
             />
             <MaterialCell
               :input_column="average_breakdown"
@@ -595,14 +597,16 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
         </div>
       </div>
       <GoldDist :metric="total_gold" />
-      <div v-if="any_credited" class="mats-row border-b-0!">
+      <!-- top aligned, so expanding the band settings does not move the first line -->
+      <div class="mats-row h-auto! min-h-10.5 items-start! border-b-0! py-1.5">
         <!-- col-span-4 with the Est. gold value column -->
         <span class="col-span-3 pr-2 text-right text-lg text-(--text-muted)">
           Avg value of leftover mats:
         </span>
         <span class="metric-result text-right text-lg text-(--text-muted)">
-          {{ metric_to_text(leftover_credit) }}
+          {{ any_credited ? metric_to_text(leftover_credit) : "0" }}
         </span>
+        <LeftoverBands />
       </div>
     </div>
 

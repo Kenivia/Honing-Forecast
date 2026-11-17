@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, useSlots } from "vue";
 import {
-  arrow,
+  computed,
+  onBeforeUnmount,
+  onUpdated,
+  ref,
+  useSlots,
+  watch,
+} from "vue";
+import {
   autoUpdate,
   flip,
   offset,
@@ -10,8 +16,9 @@ import {
   type Placement,
 } from "@floating-ui/vue";
 
-// Wikipedia-style hover card around the default slot. Content is `text` or the #tip slot.
+// Hover card around the default slot. Content is `text` or the #tip slot.
 // Sticky cards stay open while the cursor is on them, so they can hold buttons.
+// `anchor` pins the card to a viewport point (a graph's hovered dot) instead of the wrapper.
 type Side = "top" | "bottom" | "left" | "right";
 
 const props = withDefaults(
@@ -20,58 +27,81 @@ const props = withDefaults(
     placement?: Side;
     sticky?: boolean;
     maxWidth?: number;
+    anchor?: (() => { x: number; y: number }) | null;
   }>(),
-  { text: null, placement: "bottom", sticky: true, maxWidth: 300 },
+  {
+    text: null,
+    placement: "bottom",
+    sticky: true,
+    maxWidth: 300,
+    anchor: null,
+  },
 );
 
-// preferred side, then its opposite, then below / above
+// preferred side, then the rest in this order
 const FALLBACKS: Record<Side, Placement[]> = {
-  bottom: ["top-start"],
-  top: ["bottom-start"],
-  left: ["right-start", "bottom-start", "top-start"],
-  right: ["left-start", "bottom-start", "top-start"],
-};
-// the arrow sits on the card edge facing the reference; these are its two outer edges
-const ARROW_EDGE: Record<Side, string> = {
-  bottom: "top-[-6px] border-t border-l",
-  top: "bottom-[-6px] border-b border-r",
-  right: "left-[-6px] border-b border-l",
-  left: "right-[-6px] border-t border-r",
+  right: ["left", "bottom", "top"],
+  bottom: ["top"],
+  top: ["bottom"],
+  left: ["right", "bottom", "top"],
 };
 
 const slots = useSlots();
-const reference = ref<HTMLElement | null>(null);
+const wrapper = ref<HTMLElement | null>(null);
 const floating = ref<HTMLElement | null>(null);
-const arrow_el = ref<HTMLElement | null>(null);
+const content = ref<HTMLElement | null>(null);
 const open = ref(false);
 
-const { floatingStyles, placement, middlewareData, isPositioned } = useFloating(
+const reference = computed(() => {
+  const anchor = props.anchor;
+  if (!anchor) return wrapper.value;
+  return {
+    getBoundingClientRect: () => {
+      const { x, y } = anchor();
+      return {
+        x,
+        y,
+        left: x,
+        top: y,
+        right: x,
+        bottom: y,
+        width: 0,
+        height: 0,
+      };
+    },
+  };
+});
+
+const { floatingStyles, placement, isPositioned } = useFloating(
   reference,
   floating,
   {
     open,
-    placement: () => `${props.placement}-start` as Placement,
+    placement: () => props.placement,
     transform: false,
     whileElementsMounted: autoUpdate,
     middleware: () => [
-      offset({ mainAxis: 12, alignmentAxis: -10 }),
+      offset(8),
       flip({ fallbackPlacements: FALLBACKS[props.placement] }),
       shift({ padding: 8 }),
-      arrow({ element: arrow_el, padding: 10 }),
     ],
   },
 );
 
 const side = computed(() => placement.value.split("-")[0] as Side);
 const has_tip = computed(() => !!props.text || !!slots.tip);
-// hidden until placed; a closing card is already placed and plays its leave animation
-const visible = computed(() => isPositioned.value || !open.value);
-const arrow_pos = computed(() => {
-  const a = middlewareData.value.arrow;
-  return {
-    left: a?.x != null ? `${a.x}px` : "",
-    top: a?.y != null ? `${a.y}px` : "",
-  };
+
+// a wrapped box stays at its max width in CSS; shrink it to the widest laid-out line
+onUpdated(() => {
+  const el = content.value;
+  if (!el) return;
+  el.style.width = "";
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const rects = [...range.getClientRects()];
+  if (!rects.length) return;
+  const left = Math.min(...rects.map((r) => r.left));
+  el.style.width = `${Math.ceil(Math.max(...rects.map((r) => r.right)) - left)}px`;
 });
 
 let timer = 0;
@@ -83,75 +113,61 @@ function enter() {
   if (has_tip.value) set_open(true, 50);
 }
 function leave() {
-  if (props.sticky) return set_open(false, 0);
+  if (props.sticky) return set_open(false, 50);
   clearTimeout(timer);
   open.value = false;
 }
 function stay() {
   clearTimeout(timer);
 }
-onBeforeUnmount(stay);
+
+// touch has no hover: a tap opens the card, a tap anywhere else closes it
+function tap(event: PointerEvent) {
+  if (event.pointerType !== "touch" || !has_tip.value) return;
+  clearTimeout(timer);
+  open.value = true;
+}
+function outside(event: PointerEvent) {
+  const target = event.target as Node;
+  if (wrapper.value?.contains(target) || floating.value?.contains(target))
+    return;
+  clearTimeout(timer);
+  open.value = false;
+}
+watch(open, (is_open) =>
+  is_open
+    ? document.addEventListener("pointerdown", outside)
+    : document.removeEventListener("pointerdown", outside),
+);
+onBeforeUnmount(() => {
+  stay();
+  document.removeEventListener("pointerdown", outside);
+});
 </script>
 
 <template>
-  <span ref="reference" @mouseenter="enter" @mouseleave="leave">
+  <span
+    ref="wrapper"
+    @mouseenter="enter"
+    @mouseleave="leave"
+    @pointerdown="tap"
+  >
     <slot />
     <Teleport to="body">
-      <Transition name="hovertip">
-        <div
-          v-if="open && has_tip"
-          ref="floating"
-          :data-side="side"
-          class="z-10000 w-max rounded-xs bg-(--bg-muted) p-1 text-left text-sm font-normal text-(--text-main) shadow-[0_30px_90px_-20px_rgba(0,0,0,0.3)] ring-1 ring-(--border-muted)"
-          :class="[
-            visible ? 'hovertip-in' : 'invisible',
-            { 'pointer-events-none': !sticky },
-          ]"
-          :style="{ ...floatingStyles, maxWidth: `${maxWidth}px` }"
-          @mouseenter="stay"
-          @mouseleave="leave"
-        >
-          <div
-            ref="arrow_el"
-            class="absolute size-3 rotate-45 border-(--border-muted) bg-(--bg-muted)"
-            :class="ARROW_EDGE[side]"
-            :style="arrow_pos"
-          />
+      <div
+        v-if="open && has_tip"
+        ref="floating"
+        :data-side="side"
+        class="tooltip-card z-10000 w-max text-left font-normal"
+        :class="{ invisible: !isPositioned, 'pointer-events-none': !sticky }"
+        :style="{ ...floatingStyles, maxWidth: `${maxWidth}px` }"
+        @mouseenter="stay"
+        @mouseleave="leave"
+      >
+        <div ref="content" class="text-balance whitespace-pre-line">
           <slot name="tip">{{ text }}</slot>
         </div>
-      </Transition>
+      </div>
     </Teleport>
   </span>
 </template>
-
-<style scoped>
-/* fades in in place; fades out sliding 20px away from the reference */
-[data-side="bottom"] {
-  --hovertip-from: 0 20px;
-}
-[data-side="top"] {
-  --hovertip-from: 0 -20px;
-}
-[data-side="left"] {
-  --hovertip-from: -20px 0;
-}
-[data-side="right"] {
-  --hovertip-from: 20px 0;
-}
-@keyframes hovertip-in {
-  from {
-    opacity: 0;
-  }
-}
-@keyframes hovertip-out {
-  to {
-    opacity: 0;
-  }
-}
-.hovertip-in {
-  animation: hovertip-in 0.067s ease;
-}
-.hovertip-leave-active {
-  animation: hovertip-out 0.067s ease forwards;
-}
-</style>

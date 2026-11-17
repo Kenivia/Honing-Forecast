@@ -9,7 +9,6 @@ import { fake_histogram } from "./helpers";
 import { mount_app } from "../mount";
 import MaterialDist from "@/Components/Character/MaterialDist/MaterialDist.vue";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
-import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
@@ -98,7 +97,7 @@ describe("MaterialDist columns", () => {
     expect(hist).toHaveBeenCalledOnce();
   });
 
-  it("totals: gross spend, and the leftover credit only when a band is credited", async () => {
+  it("totals: gross spend, and the leftover credit (0 when no band is credited)", async () => {
     const { wrapper, store, runtime } = await setup();
     runtime.histogram.result = fake_histogram(0, {
       metric_per_plan: [-1000, -700],
@@ -109,35 +108,36 @@ describe("MaterialDist columns", () => {
     expect(metrics()).toEqual(["1,000", "300"]);
     store.active_profile.band_values = ["Worthless", "Worthless", "Worthless"];
     await wrapper.vm.$nextTick();
-    expect(metrics()).toEqual(["1,000"]);
+    expect(metrics()).toEqual(["1,000", "0"]);
     // the metric is net of the tradable gold owned; the total shown is not
     runtime.histogram.result = fake_histogram(0, {
       metric_per_plan: [-600, -300],
       tradable_gold: 400,
     });
     await wrapper.vm.$nextTick();
-    expect(metrics()).toEqual(["1,000"]);
+    expect(metrics()[0]).toEqual("1,000");
   });
 
-  it("the tradable gold chance is a question mark: raw, then with mats once the optimizer is done", async () => {
+  it("the tradable gold chance's card: raw, then overall once the optimizer is done", async () => {
     const { wrapper, runtime } = await setup();
     const upgrades = {
       state_bundle: { ...fake_histogram(0).state_bundle, upgrade_arr: [{}] },
     };
     runtime.histogram.result = fake_histogram(0, upgrades);
     await pick_band(wrapper, 2);
-    expect(cells(wrapper, "Gold")).toHaveLength(3);
+    expect(cells(wrapper, "Gold")).toHaveLength(4);
+    // tags dropped, so only the words and numbers are matched
     const text = () =>
-      wrapper
-        .find('.mats-row[aria-label="Gold"]')
-        .findComponent(QuestionMark)
-        .props("text") as string;
-    expect(text()).toMatch(/^90% .*\. … with/);
+      (cells(wrapper, "Gold")[1].props("tip") as string).replace(
+        /<[^>]+>/g,
+        " ",
+      );
+    expect(text()).toMatch(/^ 90\.00% .*raw gold cost.* … .*overall gold cost/);
     runtime.histogram.result = fake_histogram(0, {
       ...upgrades,
       chance_within: {
         ...fake_histogram(0).chance_within,
-        Gold: [0, 0, 0.001],
+        Gold: [0, 0, 0.0001],
       },
       gold_dist: {
         cdf: [],
@@ -147,7 +147,7 @@ describe("MaterialDist columns", () => {
       },
     });
     await wrapper.vm.$nextTick();
-    expect(text()).toMatch(/^~0% .*\. 40% with/);
+    expect(text()).toMatch(/^ 0\.01% .*raw gold cost.* 40\.00% .*overall/);
   });
 
   it("hides juice rows unless wanted, used or show-all", async () => {

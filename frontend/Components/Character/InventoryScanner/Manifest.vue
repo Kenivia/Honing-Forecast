@@ -232,8 +232,7 @@ function export_to_calc() {
       <span class="flex w-full flex-row gap-2 text-(--series-gold)">
         Some information from the previous scan was used.
         <QuestionMark
-          text="We assume that an item that stayed in the same spot hasn't been swapped out for a different, identical looking one. 
-          If you did this, hovering them should fix it."
+          text="We assume that an item that stayed in the same spot hasn't been swapped out for a different, identical-looking one. If you did swap one, hovering over it should fix it."
         />
       </span>
 

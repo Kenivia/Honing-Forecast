@@ -13,6 +13,7 @@ import {
 } from "./InstructionUtils";
 import InstructionRow from "./InstructionRow.vue";
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
+import { RouterLink } from "vue-router";
 import { locale_to_fixed } from "@/Utils/Helpers";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 const runtime = useRuntimeStore();
@@ -83,22 +84,19 @@ const optimizer_working = computed(get_optimizer_working);
         <span>Upgrade</span>
         <div v-if="is_normal" class="flex w-full flex-row justify-center">
           <div class="ml-3 w-min text-wrap">Upgrade order</div>
-          <QuestionMark
-            text="The purpose of this is to do the Free Taps in the specified order. There are many other equivalent orderings."
-            position="right"
-          />
+          <QuestionMark position="right">
+            The purpose of this is to do the Free Taps in the specified order.
+            There are many other equivalent orderings.
+            <RouterLink
+              to="/learn/upgrade-order"
+              class="block w-fit text-(--gold)! underline!"
+              >Learn more here</RouterLink
+            >
+          </QuestionMark>
         </div>
         <span v-if="is_normal">Special usage</span>
         <div class="title-nowrap">
           <span> Juice & {{ is_normal ? "book" : "scroll" }} Instructions</span>
-          <QuestionMark
-            :text="
-              is_normal
-                ? 'Juiced taps mean full-juice (use the maximum amount of Lava / Glacier Breath).'
-                : 'Advanced honing optimization is limited, use these instructions as a rough guide.'
-            "
-            position="right"
-          />
         </div>
         <div class="title-nowrap">
           <span>
@@ -106,13 +104,16 @@ const optimizer_working = computed(get_optimizer_working);
           </span>
           <QuestionMark
             v-if="!is_normal"
-            text="Auto-cost deduction is unavailable, I suggest only doing this when you're not starting from 0. "
+            text="Auto-cost deduction is unavailable. I suggest only using this to change the starting point if needed."
             position="right"
           />
         </div>
       </div>
-      <div
+      <!-- rows slide to their new place when the optimizer reorders them -->
+      <TransitionGroup
         v-if="runtime.optimizer.result && runtime.histogram.result"
+        tag="div"
+        name="reorder"
         class="contents"
       >
         <div
@@ -143,7 +144,7 @@ const optimizer_working = computed(get_optimizer_working);
             :index_in_special_state="index_in_special_state"
           />
         </div>
-      </div>
+      </TransitionGroup>
     </div>
     <button
       v-if="relevant_upgrade_arr.length > COLLAPSED_COUNT"
@@ -159,6 +160,9 @@ const optimizer_working = computed(get_optimizer_working);
   </div>
 </template>
 <style>
+.reorder-move {
+  transition: transform 0.3s ease;
+}
 .title-nowrap {
   display: flex;
   width: 100%;

@@ -10,7 +10,7 @@ import ChestIcon from "./ChestIcon.vue";
 // the page's to say. The default slot is the foot of the card, below both lists, `controls` sits
 // in the header. With `states`, a selection chest whose state fits shows how many go to each
 // option (provisional: the histogram's latest state). A `forbidden` chest is shown greyed, with
-// its allow button even when not editing; only a roster or tradable chest can be forbidden.
+// its allow button; only a roster or tradable chest can be forbidden, editing or not.
 const props = defineProps<{
   selection: Chest[];
   obtain_all: Chest[];
@@ -27,8 +27,7 @@ const emit = defineEmits<{
   forbid: [key: string];
 }>();
 const is_forbidden = (chest: Chest) => !!props.forbidden?.includes(chest.key);
-const can_forbid = (chest: Chest) =>
-  is_forbidden(chest) || (props.editing && chest.band > 0);
+const can_forbid = (chest: Chest) => is_forbidden(chest) || chest.band > 0;
 const BUTTON =
   "flex h-7 w-7 items-center justify-center rounded border border-(--border-main) text-(--text-muted) hover:text-(--text-bright)";
 // a public svg drawn in the text color
@@ -41,7 +40,7 @@ const open = defineModel<boolean>("open", { default: true });
 const show_obtain_all = defineModel<boolean>("show_obtain_all", {
   default: false,
 });
-// fits its content by default, one fixed width otherwise
+// fits its content by default, one fixed width otherwise, where a list alone keeps its half
 const wide = computed(() => props.editing || show_obtain_all.value);
 
 const split = (chest: Chest) => {
@@ -85,7 +84,7 @@ const panels = computed(() => [
       <slot name="controls" />
       <label class="flex items-center gap-1">
         <input v-model="show_obtain_all" type="checkbox" />
-        Show obtain-all chests ({{ obtain_all.length }})
+        Show all chests ({{ obtain_all.length }})
       </label>
     </div>
     <div
@@ -97,7 +96,7 @@ const panels = computed(() => [
         v-for="(panel, at) in panels"
         :key="panel.title"
         class="flex max-w-full min-w-0 flex-col gap-1"
-        :style="{ flex: `1 1 ${HALF}` }"
+        :style="{ flex: `${wide ? 0 : 1} 1 ${HALF}` }"
         role="group"
         :aria-label="panel.title"
       >

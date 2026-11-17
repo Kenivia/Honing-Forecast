@@ -4,6 +4,8 @@ import "./helpers";
 import { flush } from "./helpers";
 import { mount_app } from "../mount";
 import ControlPanel from "@/Components/Character/ControlPanel.vue";
+import LeftoverBands from "@/Components/Character/MaterialDist/LeftoverBands.vue";
+import { ALT_BANDS, MAIN_BANDS } from "@/Utils/Constants";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { export_config } from "@/Stores/ConfigStorage";
 
@@ -18,6 +20,14 @@ async function setup() {
   const { wrapper } = await mount_app(ControlPanel);
   return { wrapper, store: useRosterStore() };
 }
+const button = (wrapper, text: string) =>
+  wrapper.findAll("button").find((b) => b.text() === text)!;
+// the band dropdowns, opened with Customise
+async function setup_bands() {
+  const { wrapper } = await mount_app(LeftoverBands);
+  await button(wrapper, "Customise").trigger("click");
+  return { wrapper, store: useRosterStore() };
+}
 
 // value -> disabled, per dropdown
 const options_of = (wrapper, band: string) =>
@@ -28,16 +38,20 @@ const options_of = (wrapper, band: string) =>
       .map((o) => [o.attributes("value"), o.element.disabled]),
   );
 
-describe("ControlPanel band values", () => {
-  it("lists tradable first and disables values that would decrease across bands", async () => {
-    const { wrapper } = await setup();
+describe("Leftover band values", () => {
+  it("a summary until Customise, then dropdowns that disable values decreasing across bands", async () => {
+    const { wrapper: closed } = await mount_app(LeftoverBands);
+    expect(closed.findAll("select")).toHaveLength(0);
+    expect(closed.text()).toContain("Treating as");
+    expect(closed.text()).not.toContain("We consider");
+    const { wrapper } = await setup_bands();
     const labels = wrapper
       .findAll("select")
       .map((s) => s.attributes("aria-label"));
     expect(labels).toEqual([
-      "Tradable leftover value",
-      "Roster leftover value",
       "Bound leftover value",
+      "Roster leftover value",
+      "Tradable leftover value",
     ]);
     // default plan: nothing, nothing, taxed sell
     expect(options_of(wrapper, "Bound")).toEqual({
@@ -58,7 +72,7 @@ describe("ControlPanel band values", () => {
   });
 
   it("a change writes the band and re-derives what the others allow", async () => {
-    const { wrapper, store } = await setup();
+    const { wrapper, store } = await setup_bands();
     await wrapper
       .find('select[aria-label="Tradable leftover value"]')
       .setValue("Market");
@@ -82,8 +96,23 @@ describe("ControlPanel band values", () => {
     });
   });
 
+  it("Main and Alt set the presets; anything else reads Custom", async () => {
+    const { wrapper, store } = await setup_bands();
+    expect(wrapper.text()).toContain("We consider every possible outcome");
+    await button(wrapper, "Alt").trigger("click");
+    expect(store.active_profile.band_values).toEqual(ALT_BANDS);
+    expect(wrapper.text()).not.toContain("Custom");
+    await wrapper
+      .find('select[aria-label="Tradable leftover value"]')
+      .setValue("Market");
+    expect(wrapper.text()).toContain("Custom");
+    await button(wrapper, "Main").trigger("click");
+    expect(store.active_profile.band_values).toEqual(MAIN_BANDS);
+    expect(wrapper.text()).not.toContain("Custom");
+  });
+
   it("an out-of-order loaded plan leaves a band with no allowed value", async () => {
-    const { wrapper, store } = await setup();
+    const { wrapper, store } = await setup_bands();
     store.active_profile.band_values = ["Market", "Worthless", "Worthless"];
     await wrapper.vm.$nextTick();
     expect(Object.values(options_of(wrapper, "Roster"))).toEqual([

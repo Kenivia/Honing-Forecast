@@ -2,14 +2,17 @@ import LZString from "lz-string";
 import { shallowRef, toRaw } from "vue";
 import {
   ALL_LABELS,
+  ALT_BANDS,
   bundle_key,
   FALLBACK_PRICES,
+  MAIN_BANDS,
   MATERIALS,
   NUM_BANDS,
   SPECIAL_LEAP_LABELS,
 } from "@/Utils/Constants";
 import { parse_locale_int } from "@/Utils/InputColumn";
 import { debounce } from "@/Utils/Helpers";
+import { ilevel } from "@/Utils/HoningUtil";
 import { RosterConfig } from "./RosterConfig";
 import { from_saved, SavedColumn, SavedConfig, to_saved } from "./SavedConfig";
 
@@ -525,13 +528,36 @@ function migrate_10_to_11(data: any): any {
 }
 
 // Scan pages are saved slot by slot: the old page totals are dropped, and the currencies get
-// their own list. Profiles get forbidden chests and a class.
+// their own list. Profiles get forbidden chests and a class. Each roster's highest ilevel
+// character (the first on a tie) stays a main; the others still on the main's leftover values
+// become alts.
 function migrate_11_to_12(data: any): any {
   data.scan_pages = [];
   data.scan_currencies = [];
-  for (const profile of data.profiles ?? []) {
+  const profiles = data.profiles ?? [];
+  for (const profile of profiles) {
     profile.forbidden_chests ??= [];
     profile.class_name ??= "";
+  }
+  const level = (profile: any) => {
+    try {
+      return Number(ilevel(profile, "achieved").replace(/,/g, "")) || -Infinity;
+    } catch {
+      return -Infinity;
+    }
+  };
+  const mains = new Map<string, any>();
+  for (const profile of profiles) {
+    const main = mains.get(profile.roster_id);
+    if (!main || level(profile) > level(main))
+      mains.set(profile.roster_id, profile);
+  }
+  for (const profile of profiles) {
+    const on_main = (profile.band_values ?? MAIN_BANDS).every(
+      (value: string, band: number) => value === MAIN_BANDS[band],
+    );
+    if (mains.get(profile.roster_id) !== profile && on_main)
+      profile.band_values = [...ALT_BANDS];
   }
   data.version = 12;
   return data;

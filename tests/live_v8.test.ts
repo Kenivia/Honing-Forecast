@@ -1,7 +1,7 @@
 // Runs the migrations from V8 against the real save in tests/v8 config, whose Serca book
 // prices the V7 migration had zeroed.
 import fs from "node:fs";
-import { check, differences, done } from "./helpers";
+import { check, differences, done, main_alt_ok } from "./helpers";
 import LZString from "lz-string";
 import { bundle_key, FALLBACK_PRICES } from "@/Utils/Constants";
 import {
@@ -91,14 +91,21 @@ const want = rest.profiles.map((p) => ({
   forbidden_chests: [],
   class_name: "",
 }));
+// leftover values are V12's main / alt split, checked on their own
 const changed = [
-  ...differences(profiles, want).filter(kept),
+  ...differences(profiles, want)
+    .filter(kept)
+    .filter((p) => !/^\.\d+\.band_values\./.test(p)),
   ...differences(again.mats_prices, rest.mats_prices),
 ];
 check(
   "the rest of the save unchanged",
   changed.length === 0,
   changed.slice(0, 10).join("; "),
+);
+check(
+  "each roster's highest ilevel stays main, the rest on main's values become alts",
+  main_alt_ok(rest.profiles, again.profiles),
 );
 
 localStorage.removeItem(STORAGE_KEY);

@@ -2,6 +2,7 @@
 import { FLOAT_TOL, GRAPH_FONT_SIZE, GRAPH_HEIGHT } from "@/Utils/Constants";
 import { cssVar } from "@/Utils/Helpers";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import HoverTip from "@/Components/Common/HoverTip.vue";
 
 type DataPoint = [number, number];
 
@@ -54,6 +55,7 @@ const props = withDefaults(
 );
 
 const rootRef = ref<HTMLElement | null>(null);
+const svgRef = ref<SVGSVGElement | null>(null);
 const width = ref(0);
 const mouseX = ref<number | null>(null);
 let observer: ResizeObserver | null = null;
@@ -244,6 +246,15 @@ function hoverX(point: Point) {
   return (left + point.x) / 2;
 }
 
+// the hovered dot in viewport coordinates, where the tooltip is pinned
+function dotPosition(point: Point) {
+  const rect = svgRef.value!.getBoundingClientRect();
+  return {
+    x: rect.left + scaleX(hoverX(point)),
+    y: rect.top + scaleY(point.y),
+  };
+}
+
 const hoveredPoint = computed(() => {
   if (mouseX.value === null || !points.value.length) return null;
 
@@ -348,147 +359,141 @@ onBeforeUnmount(() => {
     @mousemove="onMouseMove"
     @mouseleave="onMouseLeave"
   >
-    <svg
-      :width="Math.max(width, MIN_GRAPH_WIDTH)"
-      :height="height"
-      role="img"
-      aria-label="Material graph"
+    <HoverTip
+      class="block"
+      placement="left"
+      :sticky="false"
+      :anchor="hoveredPoint && (() => dotPosition(hoveredPoint!))"
     >
-      <defs>
-        <linearGradient
-          :id="`graph-fill-${graphColor.replace(/[^a-z0-9]/gi, '')}`"
-          x1="0"
-          y1="0"
-          x2="0"
-          y2="1"
-        >
-          <stop offset="0%" :stop-color="resolvedColor" stop-opacity="0.38" />
-          <stop offset="100%" :stop-color="resolvedColor" stop-opacity="0.08" />
-        </linearGradient>
-      </defs>
+      <svg
+        ref="svgRef"
+        :width="Math.max(width, MIN_GRAPH_WIDTH)"
+        :height="height"
+        role="img"
+        aria-label="Material graph"
+      >
+        <defs>
+          <linearGradient
+            :id="`graph-fill-${graphColor.replace(/[^a-z0-9]/gi, '')}`"
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="1"
+          >
+            <stop offset="0%" :stop-color="resolvedColor" stop-opacity="0.38" />
+            <stop
+              offset="100%"
+              :stop-color="resolvedColor"
+              stop-opacity="0.08"
+            />
+          </linearGradient>
+        </defs>
 
-      <g>
-        <line
-          x1="0"
-          :x2="plotWidth"
-          :y1="GRAPH_HEIGHT"
-          :y2="GRAPH_HEIGHT"
-          :stroke="axisColor"
-          stroke-width="1"
-        />
-
-        <path
-          v-if="!isEmpty"
-          :d="areaPath"
-          :fill="`url(#graph-fill-${graphColor.replace(/[^a-z0-9]/gi, '')})`"
-          stroke="none"
-        />
-        <path
-          v-if="!isEmpty"
-          :d="linePath"
-          fill="none"
-          :stroke="resolvedColor"
-          stroke-width="2.1"
-        />
-
-        <g v-for="(annotation, index) in processedAnnotations" :key="index">
+        <g>
           <line
-            :x1="annotation.svgX"
-            :x2="annotation.svgX"
+            x1="0"
+            :x2="plotWidth"
             :y1="GRAPH_HEIGHT"
-            :y2="annotation.svgY"
-            :stroke="annotation.color"
+            :y2="GRAPH_HEIGHT"
+            :stroke="axisColor"
             stroke-width="1"
-            stroke-dasharray="4 4"
           />
-          <circle
-            :cx="annotation.svgX"
-            :cy="annotation.svgY"
-            r="3.5"
-            :fill="annotation.color"
+
+          <path
+            v-if="!isEmpty"
+            :d="areaPath"
+            :fill="`url(#graph-fill-${graphColor.replace(/[^a-z0-9]/gi, '')})`"
+            stroke="none"
           />
+          <path
+            v-if="!isEmpty"
+            :d="linePath"
+            fill="none"
+            :stroke="resolvedColor"
+            stroke-width="2.1"
+          />
+
+          <g v-for="(annotation, index) in processedAnnotations" :key="index">
+            <line
+              :x1="annotation.svgX"
+              :x2="annotation.svgX"
+              :y1="GRAPH_HEIGHT"
+              :y2="annotation.svgY"
+              :stroke="annotation.color"
+              stroke-width="1"
+              stroke-dasharray="4 4"
+            />
+            <circle
+              :cx="annotation.svgX"
+              :cy="annotation.svgY"
+              r="3.5"
+              :fill="annotation.color"
+            />
+
+            <text
+              :x="annotation.clampedX"
+              :y="annotation.textY"
+              text-anchor="middle"
+              :font-size="GRAPH_FONT_SIZE"
+              :fill="annotation.color"
+            >
+              {{ annotation.label }}
+            </text>
+          </g>
+
+          <g v-if="hoveredPoint">
+            <line
+              :x1="scaleX(hoverX(hoveredPoint))"
+              :x2="scaleX(hoverX(hoveredPoint))"
+              :y1="GRAPH_HEIGHT"
+              :y2="scaleY(hoveredPoint.y)"
+              stroke="var(--graph-hover-color, #ffffff)"
+              stroke-width="1"
+            />
+            <circle
+              :cx="scaleX(hoverX(hoveredPoint))"
+              :cy="scaleY(hoveredPoint.y)"
+              r="4"
+              fill="var(--graph-hover-color, #ffffff)"
+            />
+          </g>
 
           <text
-            :x="annotation.clampedX"
-            :y="annotation.textY"
-            text-anchor="middle"
-            :font-size="GRAPH_FONT_SIZE"
-            :fill="annotation.color"
+            v-if="isEmpty"
+            x="4"
+            :y="Math.max(16, GRAPH_HEIGHT * 0.55)"
+            font-size="12"
+            :fill="surfaceTextColor"
+            opacity="0.85"
           >
-            {{ annotation.label }}
+            {{ empty_message }}
           </text>
         </g>
-
-        <g v-if="hoveredPoint">
-          <line
-            :x1="scaleX(hoverX(hoveredPoint))"
-            :x2="scaleX(hoverX(hoveredPoint))"
-            :y1="GRAPH_HEIGHT"
-            :y2="scaleY(hoveredPoint.y)"
-            stroke="var(--graph-hover-color, #ffffff)"
-            stroke-width="1"
-          />
-          <circle
-            :cx="scaleX(hoverX(hoveredPoint))"
-            :cy="scaleY(hoveredPoint.y)"
-            r="4"
-            fill="var(--graph-hover-color, #ffffff)"
-          />
-        </g>
-
-        <text
-          v-if="isEmpty"
-          x="4"
-          :y="Math.max(16, GRAPH_HEIGHT * 0.55)"
-          font-size="12"
-          :fill="surfaceTextColor"
-          opacity="0.85"
-        >
-          {{ empty_message }}
-        </text>
-      </g>
-    </svg>
-
-    <div
-      v-if="hoveredPoint"
-      class="graph-tooltip"
-      :style="{ left: scaleX(hoverX(hoveredPoint)) + 'px' }"
-      v-html="
-        props.tooltipTextFn!(
-          hoveredPoint.x,
-          hoveredPoint.y,
-          hoveredPoint.cumulativeY,
-          materialLabel,
-          resolvedColor,
-          hoveredPoint == points[points.length - 1],
-        )
-      "
-    ></div>
+      </svg>
+      <template #tip>
+        <span
+          v-if="hoveredPoint"
+          v-html="
+            props.tooltipTextFn!(
+              hoveredPoint.x,
+              hoveredPoint.y,
+              hoveredPoint.cumulativeY,
+              materialLabel,
+              resolvedColor,
+              hoveredPoint == points[points.length - 1],
+            )
+          "
+        />
+      </template>
+    </HoverTip>
   </div>
 </template>
 
 <style scoped>
 .material-graph {
   width: 100%;
-  position: relative; /* Essential for tooltip positioning */
   cursor: crosshair; /* Helps signal it's interactive */
   height: 41px;
   padding-left: 0.5rem;
-}
-
-/* Tooltip container styling */
-.graph-tooltip {
-  position: absolute;
-  transform: translateX(-110%) translateY(-100%);
-  background: var(--bg-bright);
-  color: var(--text-main);
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  pointer-events: none; /* Prevents tooltip from interfering with mousemove events */
-  white-space: nowrap;
-  border: 1px solid var(--text-very-muted);
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
-  z-index: 999;
 }
 </style>

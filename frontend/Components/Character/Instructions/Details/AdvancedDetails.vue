@@ -110,10 +110,6 @@ const grid: GridConfig = {
       >
         Succeed
       </button>
-      <QuestionMark
-        text="This just removes the upgrade. Costs are not deducted."
-        position="left"
-      />
     </div>
 
     <span class="text-right">Current xp:</span>

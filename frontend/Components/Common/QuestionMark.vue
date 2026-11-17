@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import HoverTip from "@/Components/Common/HoverTip.vue";
 
+// `text`, or the default slot for formatted content
 export interface Props {
-  text: string;
+  text?: string;
   position?: "left" | "right" | "top" | "bottom" | "none";
 }
 
 withDefaults(defineProps<Props>(), {
+  text: "",
   position: "none",
 });
 </script>
@@ -15,6 +17,8 @@ withDefaults(defineProps<Props>(), {
   <HoverTip
     class="question-mark"
     :text="text"
-    :placement="position === 'none' ? 'bottom' : position"
-  />
+    :placement="position === 'none' ? 'right' : position"
+  >
+    <template v-if="$slots.default" #tip><slot /></template>
+  </HoverTip>
 </template>

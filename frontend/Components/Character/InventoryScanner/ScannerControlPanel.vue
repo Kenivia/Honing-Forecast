@@ -6,7 +6,7 @@ import { storeToRefs } from "pinia";
 
 const { roster_config } = storeToRefs(useRosterStore());
 
-const analytics_tooltip = `Sends your materials and chests owned amounts and upgrade progress to help estimate how much players earn (for a future income forecasting feature). Only the numbers & char names are sent, not captured footage.`;
+const analytics_tooltip = `Sends your owned materials and chests, plus your upgrade progress, to help estimate how much players earn (for a future income forecasting feature). Only the numbers and character names are sent, not captured footage.`;
 </script>
 <template>
   <div class="w-full items-center">

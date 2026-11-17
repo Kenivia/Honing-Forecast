@@ -2,7 +2,7 @@
 // the auto income fields (V11) and empty the scan pages for slot-by-slot ones (V12), nothing comes
 // from a load fallback, and the result survives load, save, load again.
 import fs from "node:fs";
-import { check, differences, done, section } from "./helpers";
+import { check, differences, done, main_alt_ok, section } from "./helpers";
 import LZString from "lz-string";
 import {
   export_config,
@@ -33,13 +33,17 @@ for (const fixture of fixtures) {
   const migrated = migrate_to_current(structuredClone(v10), 10);
   const added = differences(migrated, v10).filter((p) => p !== ".version");
   check(
-    "adds only income_auto, income_sources, forbidden_chests, class_name and new scan pages",
+    "adds only income_auto, income_sources, forbidden_chests, class_name, alt leftover values and new scan pages",
     added.every((p) =>
-      /^\.profiles\.\d+\.(income_auto|income_sources|forbidden_chests|class_name)$|^\.scan_(pages|currencies)(\.|$)/.test(
+      /^\.profiles\.\d+\.(income_auto|income_sources|forbidden_chests|class_name|band_values\.\d)$|^\.scan_(pages|currencies)(\.|$)/.test(
         p,
       ),
     ),
     show(added),
+  );
+  check(
+    "  each roster's highest ilevel stays main, the rest on main's values become alts",
+    main_alt_ok(v10.profiles, migrated.profiles),
   );
   check(
     "  scan pages emptied",

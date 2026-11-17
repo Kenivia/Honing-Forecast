@@ -646,7 +646,7 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
           </select>
           <QuestionMark
             v-if="draft.font !== 'Custom'"
-            text="Your game still has to be in English, this is just for the font. This may or may not help, I havn't tested this on non-english fonts."
+            text="Your game still has to be in English; this only changes the font. It may or may not help, as I haven't tested it with non-English fonts."
             position="right"
           />
           <span v-else class="flex items-center gap-2">

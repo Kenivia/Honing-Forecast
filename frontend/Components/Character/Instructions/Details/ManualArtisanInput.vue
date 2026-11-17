@@ -59,7 +59,7 @@ const upgrade_key = computed(() =>
     </div>
     <QuestionMark
       v-if="show_hints"
-      text="You can also input artisan directly here. However, costs will not be auto-deducted"
+      text="You can also input artisan directly here. Costs will not be auto-deducted."
       position="left"
     />
   </div>
@@ -80,7 +80,7 @@ const upgrade_key = computed(() =>
     </button>
     <QuestionMark
       v-if="show_hints"
-      text="Use the slider to update artisan & deduct costs, then press Confirm to re-run the optimizer. Careful that the order of the upgrades can change, check the far left for what upgrade it is. "
+      text="Use the slider to update artisan and deduct costs, then press Confirm to re-run the optimizer."
       position="left"
     />
   </div>

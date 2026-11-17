@@ -134,7 +134,7 @@ describe("StatusInput", () => {
     expect(button.props("labelText")).toBe("Convert to T4.5 Serca");
     expect(button.props("warning")).toBe(true);
     expect(button.props("tooltipText")).toBe(
-      "Warning! All Adv honing will be set to +40, \nAll Gear will be set to +11 (Serca)",
+      "All Advanced Honing will be set to +40.\nAll gear will be set to +11 (Serca).",
     );
   });
 
@@ -148,7 +148,7 @@ describe("StatusInput", () => {
     await wrapper.vm.$nextTick();
     const button = wrapper.findComponent(TierConvertButton);
     expect(button.props("tooltipText")).toBe(
-      "Eligible for conversion to T4.5 Serca gear",
+      "Eligible for conversion to T4.5 Serca gear.",
     );
     expect(button.props("warning")).toBe(false);
   });

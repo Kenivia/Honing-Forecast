@@ -1,15 +1,6 @@
 <script setup lang="ts">
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { export_config, import_config } from "@/Stores/ConfigStorage";
-import {
-  BAND_COLORS,
-  BAND_LABELS,
-  BAND_VALUES,
-  BAND_VALUE_LABELS,
-  BandValue,
-  band_value_allowed,
-} from "@/Utils/Constants";
-import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
@@ -58,20 +49,6 @@ async function load_backup(event: Event) {
     import_error.value = e instanceof Error ? e.message : String(e);
   }
 }
-
-// What a material the character owns but does not end up spending is worth. Calc.vue
-// watches band_values and restarts the workers.
-const leftover_tooltip = `We consider every possible outcome. In the event that you have material leftover, they are converted to gold according to the settings below. 
-`;
-
-// shown tradable first: it is the band people actually change, and the one below it can
-// never be worth more, so the list reads downwards as "and nothing cheaper than this"
-const BAND_ROWS = [...BAND_LABELS.keys()].reverse();
-
-function set_band(band: number, event: Event) {
-  const value = (event.target as HTMLSelectElement).value as BandValue;
-  active_profile.value.band_values[band] = value;
-}
 </script>
 <template>
   <div class="w-full items-center">
@@ -99,43 +76,6 @@ function set_band(band: number, event: Event) {
           Reset this char
         </button>
       </label>
-
-      <div
-        class="control-panel-title mt-2 flex flex-row items-center justify-between pr-2"
-      >
-        <span>Leftover mats are worth</span>
-        <QuestionMark :text="leftover_tooltip" />
-      </div>
-      <div class="px-2 pt-1">
-        <label
-          v-for="band in BAND_ROWS"
-          :key="band"
-          class="flex flex-row items-center gap-2 py-0.5"
-        >
-          <span
-            class="w-16 shrink-0 text-right"
-            :style="{ color: `var(${BAND_COLORS[band]})` }"
-            >{{ BAND_LABELS[band] }}</span
-          >
-          <select
-            class="selector min-w-0 flex-1"
-            :aria-label="`${BAND_LABELS[band]} leftover value`"
-            :value="active_profile.band_values[band]"
-            @change="set_band(band, $event)"
-          >
-            <option
-              v-for="value in BAND_VALUES"
-              :key="value"
-              :value="value"
-              :disabled="
-                !band_value_allowed(active_profile.band_values, band, value)
-              "
-            >
-              {{ BAND_VALUE_LABELS[value] }}
-            </option>
-          </select>
-        </label>
-      </div>
 
       <div class="control-panel-title mt-2">Backup</div>
       <div class="flex flex-row flex-wrap items-center gap-2 px-2 pt-1">

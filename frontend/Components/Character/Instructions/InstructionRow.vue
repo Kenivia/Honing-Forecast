@@ -12,6 +12,8 @@ import {
   get_optimizer_working,
 } from "@/Components/Character/Instructions/InstructionUtils";
 import AdvancedDetails from "@/Components/Character/Instructions/Details/AdvancedDetails.vue";
+import HoverTip from "@/Components/Common/HoverTip.vue";
+import UpgradeTip from "@/Components/Character/Instructions/UpgradeTip.vue";
 
 const { active_profile } = storeToRefs(useRosterStore());
 
@@ -34,7 +36,12 @@ const optimizer_working = computed(get_optimizer_working);
 </script>
 
 <template>
-  <div class="flex flex-col items-center">
+  <HoverTip
+    :sticky="false"
+    placement="right"
+    :max-width="400"
+    class="flex flex-col items-center"
+  >
     <span v-if="upgrade.is_normal_honing">{{
       get_piece_name(upgrade) + " +" + String(upgrade.upgrade_index + 1)
     }}</span>
@@ -53,7 +60,8 @@ const optimizer_working = computed(get_optimizer_working);
       :alt="get_piece_name(upgrade)"
       class="generic-icon h-8 w-8"
     />
-  </div>
+    <template #tip><UpgradeTip :upgrade="upgrade" /></template>
+  </HoverTip>
 
   <div
     v-if="upgrade.is_normal_honing"

@@ -31,7 +31,8 @@ const forbidden_keys = computed(() =>
 const editing_chests = ref(false);
 const chests_open = ref(true);
 const show_obtain_all = ref(false);
-// the only ones with a choice to show
+// both views, editing or not, put the chests with a choice on the left
+const obtain_all_title = "Obtain-all and trivial selection chests";
 const selection = computed(() =>
   chests.value.filter((chest) => chest.options.length > 1),
 );
@@ -74,6 +75,7 @@ onUnmounted(() => {
     v-if="editing_chests"
     v-model:open="chests_open"
     v-model:show_obtain_all="show_obtain_all"
+    :obtain_all_title="obtain_all_title"
   >
     <template #controls>
       <label class="flex items-center gap-1">
@@ -89,7 +91,7 @@ onUnmounted(() => {
     :selection="selection"
     :obtain_all="chests.filter((chest) => chest.options.length === 1)"
     selection_title="Chest opening advice"
-    obtain_all_title="Obtain-all and trivial selection chests"
+    :obtain_all_title="obtain_all_title"
     :hide_count="true"
     :states="runtime.histogram.result?.state_bundle.chest_states"
     :forbidden="forbidden_keys"

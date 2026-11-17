@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import "./helpers";
-import { mount } from "@vue/test-utils";
+import { mount, type VueWrapper } from "@vue/test-utils";
+import { nextTick } from "vue";
 import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue";
 import { GRAPH_HEIGHT } from "@/Utils/Constants";
 
@@ -16,6 +17,15 @@ const graph = (props: Record<string, any>) =>
   mount(MaterialGraph, {
     props: { data: DATA, cumulative: true, materialLabel: "Red", ...props },
   });
+// the tooltip text is only rendered while the hover card is open
+const open_tip = async (w: VueWrapper) => {
+  vi.useFakeTimers();
+  await w.find("span").trigger("mouseenter");
+  vi.advanceTimersByTime(60);
+  vi.useRealTimers();
+  await nextTick();
+};
+const card = () => document.body.querySelector("[data-side]");
 const path_points = (d: string) =>
   [...d.matchAll(/[ML] ([\d.]+) ([\d.]+)/g)].map((m) => [+m[1], +m[2]]);
 const scale_y = (y: number, max = 1) =>
@@ -66,6 +76,7 @@ describe("MaterialGraph", () => {
   it("the hover snaps to the nearest point and passes its slope and cumulative value", async () => {
     const tip = vi.fn(() => "<b>tip</b>");
     const w = graph({ cumulative: false, tooltipTextFn: tip });
+    await open_tip(w);
     await w.trigger("mousemove", { clientX: 80 });
     expect(tip).toHaveBeenLastCalledWith(
       10,
@@ -75,7 +86,7 @@ describe("MaterialGraph", () => {
       "--text-main",
       false,
     );
-    expect(w.find(".graph-tooltip").html()).toContain("<b>tip</b>");
+    expect(card()!.innerHTML).toContain("<b>tip</b>");
     await w.trigger("mousemove", { clientX: 179 });
     expect(tip).toHaveBeenLastCalledWith(
       20,
@@ -85,13 +96,14 @@ describe("MaterialGraph", () => {
       "--text-main",
       true,
     );
-    await w.trigger("mouseleave");
-    expect(w.find(".graph-tooltip").exists()).toBe(false);
+    await w.find("span").trigger("mouseleave");
+    expect(card()).toBeNull();
   });
 
   it("a histogram is hovered at the centre of each bar", async () => {
     const tip = vi.fn((..._args: any[]) => "");
     const w = graph({ histogram: true, tooltipTextFn: tip });
+    await open_tip(w);
     // bar centres at x 0, 5 and 15 of 20
     await w.trigger("mousemove", { clientX: 50 });
     expect(tip.mock.calls.at(-1)![0]).toBe(10);
@@ -111,6 +123,7 @@ describe("MaterialGraph", () => {
         [1, 0.3],
       ],
     });
+    await open_tip(w);
     await w.trigger("mousemove", { clientX: 0 });
     expect(tip.mock.calls.at(-1)!.slice(0, 3)).toEqual([
       0,

@@ -39,23 +39,6 @@ const row = (w: any, tier: string, label: string) =>
 
 beforeEach(() => vi.mocked(start_fetch).mockClear());
 
-describe("convert button", () => {
-  it("converts the selected roster's stock", async () => {
-    const w = mount_view();
-    const cfg = useRosterStore().roster_config;
-    cfg.roster_mats_owned[cfg.profiles[0].roster_id].values.Red = "1,000";
-    cfg.tradable_mats_owned[cfg.profiles[0].roster_id].values.Red = "502";
-    await w.find("button.tier-button").trigger("click");
-    const r = input_column_to_num(
-      cfg.roster_mats_owned[cfg.profiles[0].roster_id],
-    );
-    const t = input_column_to_num(
-      cfg.tradable_mats_owned[cfg.profiles[0].roster_id],
-    );
-    expect([r["Serca Red"], r.Red, t.Red]).toEqual([300, 0, 2]);
-  });
-});
-
 describe("market sidebar", () => {
   it("changing region stores it and fetches it", async () => {
     const w = mount_view();

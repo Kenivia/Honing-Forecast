@@ -54,6 +54,9 @@ export type BandPlan = [BandValue, BandValue, BandValue];
 
 // Nothing is credited: what the user actually spends buying from market.
 export const ALL_WORTHLESS: BandPlan = ["Worthless", "Worthless", "Worthless"];
+// What leftovers are worth on a roster's main and on an alt; the main's is the default.
+export const MAIN_BANDS: BandPlan = ["Worthless", "Worthless", "TaxedSell"];
+export const ALT_BANDS: BandPlan = ["Worthless", "TaxedSell", "TaxedSell"];
 
 export const band_rank = (value: BandValue): number =>
   BAND_VALUES.indexOf(value);

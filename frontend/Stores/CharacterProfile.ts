@@ -3,6 +3,7 @@ import {
   ADV_COLS,
   ALL_MATERIAL_LABELS,
   BandPlan,
+  MAIN_BANDS,
   NORMAL_COLS,
   NUM_ADV_PIECES,
   NUM_PIECES,
@@ -80,7 +81,7 @@ export interface CharProfile {
 
 export const DEFAULT_CHAR_PROFILE: CharProfile = {
   id: "",
-  band_values: ["Worthless", "Worthless", "TaxedSell"],
+  band_values: [...MAIN_BANDS],
   chance_band: 0,
   express_event: false,
   char_name: "Newchar",

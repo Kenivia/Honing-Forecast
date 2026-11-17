@@ -42,14 +42,14 @@ const button = (wrapper, text: string) =>
 const show_obtain_all = (wrapper) =>
   wrapper
     .findAll("label")
-    .find((l) => l.text().startsWith("Show obtain-all"))!
+    .find((l) => l.text().startsWith("Show all chests"))!
     .find("input")
     .setValue(true);
 const panel = (wrapper, title: string) =>
   wrapper.find(`[role="group"][aria-label="${title}"]`);
 
 describe("ChestEditor", () => {
-  it("lists the stored chests unprocessed, split by obtain_all", async () => {
+  it("lists the stored chests unprocessed, split like the calculator view", async () => {
     const { wrapper } = editor(0);
     expect(panel(wrapper, "Obtain-all chests").exists()).toBe(false);
     await show_obtain_all(wrapper);

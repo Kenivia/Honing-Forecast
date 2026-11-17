@@ -8,6 +8,7 @@ import {
   TIER_MATERIALS,
 } from "@/Utils/Constants";
 import ChestPanels from "@/Components/Common/ChestPanels.vue";
+import { process_chests } from "@/Utils/Chest";
 
 // The chests as stored, both tiers in them: this character's own and its roster's. A chest
 // bound to a character goes to the character, any other to the roster.
@@ -26,6 +27,18 @@ function find(key: string) {
     if (index >= 0) return { list, index };
   }
 }
+
+// a choice as the calculator's view has it: more than one option once processed for the tier
+const choice = computed(() =>
+  active_chests.value.filter(
+    (chest) =>
+      (process_chests([chest], active_profile.value.tier)[0]?.options.length ??
+        0) > 1,
+  ),
+);
+const trivial = computed(() =>
+  active_chests.value.filter((chest) => !choice.value.includes(chest)),
+);
 
 function set_count(key: string, event: Event) {
   const input = event.target as HTMLInputElement;
@@ -81,8 +94,8 @@ function add_chest() {
 
 <template>
   <ChestPanels
-    :selection="active_chests.filter((chest) => !chest.obtain_all)"
-    :obtain_all="active_chests.filter((chest) => chest.obtain_all)"
+    :selection="choice"
+    :obtain_all="trivial"
     :editing="true"
     :forbidden="active_profile.forbidden_chests"
     @count="set_count"

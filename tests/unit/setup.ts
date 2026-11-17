@@ -8,4 +8,7 @@ globalThis.Worker = class {
   removeEventListener() {}
 } as unknown as typeof Worker;
 
+// jsdom has no layout; HoverTip measures its lines with this
+Range.prototype.getClientRects = () => [] as unknown as DOMRectList;
+
 beforeEach(() => localStorage.clear());
