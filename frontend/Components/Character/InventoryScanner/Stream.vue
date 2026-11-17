@@ -671,10 +671,7 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
         >
           {{ font_refused }} is not a font with every digit and "+" in it.
         </span>
-        <div
-          v-if="draft_changed"
-          class="flex flex-wrap items-center gap-2"
-        >
+        <div v-if="draft_changed" class="flex flex-wrap items-center gap-2">
           <span v-if="status === 'capturing'" class="text-sm text-(--warning)">
             Applying restarts the scanner and wipes the current scan.
           </span>
@@ -757,10 +754,7 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
             {{ recording ? "recorded" : "ready" }}
           </span>
         </div>
-        <p
-          v-if="recorder_fell_behind"
-          class="text-sm text-(--warning)"
-        >
+        <p v-if="recorder_fell_behind" class="text-sm text-(--warning)">
           Recording stopped: this computer could not keep up with recording
           every frame. What was recorded so far can still be downloaded.
         </p>

@@ -77,7 +77,7 @@ describe("loadouts to import result", () => {
     expect(
       out.pieces.every((p) => p.tier === 1 && isNaN(p.adv) && isNaN(p.ilevel)),
     ).toBe(true);
-    expect(out.class_name).toBe("Devil Hunter Female");
+    expect(out.class_name).toBe("Gunslinger");
     expect(out.achieved_ilevel).toBe("1,781.67");
   });
 

@@ -78,6 +78,22 @@ describe("CharView", () => {
     expect(wrapper.find(".side-bar-header").text()).toBe("Carol");
   });
 
+  it("lists the active character's roster beside the sidebar", async () => {
+    const { wrapper } = await mount_at("/Bob/calc");
+    const chars = wrapper.findAll('nav[aria-label="Characters"] a');
+    expect(chars.map((a) => a.text())).toEqual(["Alice", "Bob"]);
+    expect(wrapper.findAll("a.selected").map((a) => a.text())).toEqual(["Bob"]);
+  });
+
+  it("draws a character's class icon, and none for an unknown class", async () => {
+    const { wrapper, store } = await mount_at("/Bob/calc");
+    store.all_profiles[0].class_name = "Guardianknight";
+    await flushPromises();
+    const icons = wrapper.findAll('nav[aria-label="Characters"] a span');
+    expect(icons).toHaveLength(1);
+    expect(icons[0].attributes("style")).toContain("guardianknight.svg");
+  });
+
   it("switches and cancels the old runs when the name changes", async () => {
     const { store, runtime } = await mount_at("/Alice/calc");
     const cancel = vi.spyOn(runtime, "cancel_active");

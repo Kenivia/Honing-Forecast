@@ -276,11 +276,10 @@ describe("Custom tab", () => {
       .find((b) => b.text() === "Add option")
       .trigger("click");
     await add("Option 3", "Blue", 1000);
-    expect(store.roster_config.custom_choices[store.active_profile.roster_id].options).toEqual([
-      { Red: 500, Gold: -100 },
-      {},
-      { Blue: 1000 },
-    ]);
+    expect(
+      store.roster_config.custom_choices[store.active_profile.roster_id]
+        .options,
+    ).toEqual([{ Red: 500, Gold: -100 }, {}, { Blue: 1000 }]);
     expect(queued()).toHaveLength(2);
     queued()[1].store(fake_out(0, 1200), fake_state());
     await wrapper.vm.$nextTick();

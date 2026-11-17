@@ -53,8 +53,8 @@ const { active_profile, all_profiles, active_region } =
         :region_change="roster_store.active_region_change"
         :region="active_region"
         :apply="
-          (result, force_t4) =>
-            apply_results(active_profile, result, force_t4, false)
+          (result, force_t4, _name, class_name) =>
+            apply_results(active_profile, result, force_t4, false, class_name)
         "
       />
       <SignInHint />

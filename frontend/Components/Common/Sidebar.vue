@@ -19,15 +19,6 @@ const close = () => (sidebarOpen.value = false);
 <template>
   <div class="flex grow flex-col">
     <div class="flex min-h-full grow flex-row">
-      <button
-        v-if="isNarrow"
-        class="burger"
-        @click="open"
-        aria-label="Open navigation"
-      >
-        <span /><span /><span />
-      </button>
-
       <Transition name="backdrop">
         <div v-if="isNarrow && sidebarOpen" class="backdrop" @click="close" />
       </Transition>
@@ -50,26 +41,24 @@ const close = () => (sidebarOpen.value = false);
         <Footer />
       </nav>
 
-      <div
-        class="main-stage cap-width overflow-x-auto overflow-y-hidden"
-        :style="{
-          marginLeft: isNarrow ? '0px' : '',
-          marginRight: isNarrow ? 'auto' : '',
-        }"
-      >
-        <BrokenSaveBanner class="w-full" />
-        <OtherTabBanner class="w-full" />
-        <slot name="main" />
+      <div class="flex min-w-0 grow flex-col">
+        <slot name="top" />
+        <div v-if="isNarrow" class="burger-anchor">
+          <button class="burger" @click="open" aria-label="Open navigation">
+            <span /><span /><span />
+          </button>
+        </div>
+        <div class="main-stage w-full overflow-x-auto overflow-y-hidden">
+          <BrokenSaveBanner class="w-full" />
+          <OtherTabBanner class="w-full" />
+          <slot name="main" />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.cap-width {
-  width: calc(min(100vh, 100%));
-}
-
 /* ── Sidebar header (title + close button) ───────────────── */
 .side-bar-header {
   justify-content: space-between;
@@ -90,12 +79,13 @@ const close = () => (sidebarOpen.value = false);
   width: 200px;
   flex-shrink: 0;
   gap: 2px;
-  padding: calc(234px + 56px) 2px 12px 2px;
+  padding: 56px 2px 12px 2px;
   border-right: 1px solid var(--border-muted);
-  height: max(calc(100vh + 234px - 50px), 100%);
-  top: calc(50px - 234px);
+  height: calc(100vh - var(--top-row-h));
+  top: var(--top-row-h);
+  align-self: flex-start;
   justify-content: space-between;
-  position: fixed;
+  position: sticky;
   z-index: 1;
   background-color: var(--bg-muted);
   display: flex;
@@ -122,9 +112,19 @@ const close = () => (sidebarOpen.value = false);
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
 }
 
+/* below the top slot, under the header once scrolled */
+.burger-anchor {
+  position: sticky;
+  top: var(--top-row-h);
+  align-self: flex-start;
+  width: 0;
+  height: 0;
+  z-index: 100;
+}
+
 .burger {
-  position: fixed;
-  top: 70px;
+  position: absolute;
+  top: 10px;
   left: 14px;
   z-index: 100;
   width: 46px;
@@ -177,7 +177,6 @@ const close = () => (sidebarOpen.value = false);
   justify-content: flex-start;
   align-items: center;
   flex-grow: 1;
-  margin-left: 200px;
   max-width: 100vw;
   background-color: var(--bg-very-muted);
   padding-top: 1rem;

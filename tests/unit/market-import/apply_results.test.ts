@@ -37,6 +37,13 @@ beforeEach(() => {
 });
 
 describe("apply_results", () => {
+  it("keeps the fetched class, and a fetch without one leaves it", () => {
+    apply_results(profile, [t4(20, 0)], false, true, "Bard");
+    expect(profile.class_name).toBe("Bard");
+    apply_results(profile, [t4(20, 0)], false, true);
+    expect(profile.class_name).toBe("Bard");
+  });
+
   it("marks a T4 character's done upgrades as fetched and keeps its wants", () => {
     profile.normal_grid[0] = row(10, 23, Done);
     apply_results(profile, Array(6).fill(t4(20, 20)), false, true);

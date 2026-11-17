@@ -2,7 +2,7 @@
 import {
   FETCH_MSG,
   UwuowoResultBundle,
-  UwuowoPiece,
+  ApplyFetch,
   UwuowoRegions,
 } from "./UwuowoUtils";
 
@@ -13,7 +13,7 @@ import LabeledPieceIcon from "../LabeledPieceIcon.vue";
 const props = defineProps<{
   region: UwuowoRegions;
   char_name: string;
-  apply: (_: UwuowoPiece[], force_t4: boolean, char_name?: string) => void;
+  apply: ApplyFetch;
   char_parsed: UwuowoResultBundle;
   close_on_success: boolean;
 }>();
@@ -27,7 +27,8 @@ function confirm(force_t4: boolean) {
     emit("show_popup", false);
   }
 
-  props.apply(props.char_parsed.result.pieces, force_t4, props.char_name);
+  const { pieces, class_name } = props.char_parsed.result;
+  props.apply(pieces, force_t4, props.char_name, class_name);
 }
 const have_both = computed(() => {
   return (

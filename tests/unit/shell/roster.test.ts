@@ -96,7 +96,9 @@ describe("RosterView", () => {
     expect(config.all_regions[added]).toBe("nae");
     expect(config.roster_mats_owned[added]).toBeDefined();
     expect(config.tradable_mats_owned[added]).toBeDefined();
-    expect(config.roster_mats_owned[added]).not.toBe(config.roster_mats_owned[0]);
+    expect(config.roster_mats_owned[added]).not.toBe(
+      config.roster_mats_owned[0],
+    );
   });
 
   it("make a copy deep-copies under a new id and name", async () => {
@@ -202,12 +204,13 @@ describe("RosterView", () => {
     const uwu = wrapper.findAllComponents({ name: "Uwuowo" });
     uwu[1].props("name_change")("Robert");
     expect(names()).toEqual(["Alice", "Carol", "Robert"]);
-    uwu[1].props("apply")(["result"], true);
+    uwu[1].props("apply")(["result"], true, "Robert", "Bard");
     expect(vi.mocked(apply_results).mock.calls[0]).toEqual([
       store.all_profiles[2],
       ["result"],
       true,
       true,
+      "Bard",
     ]);
   });
 
@@ -221,7 +224,7 @@ describe("RosterView", () => {
       "Alice",
       "Carol",
     ]);
-    fetchers[1].props("apply")(["r"], false, "Dave");
+    fetchers[1].props("apply")(["r"], false, "Dave", "Bard");
     const dave = store.all_profiles.at(-1);
     expect([dave.char_name, dave.roster_id]).toEqual(["Dave", "1"]);
     expect(vi.mocked(apply_results)).toHaveBeenCalledWith(
@@ -229,6 +232,7 @@ describe("RosterView", () => {
       ["r"],
       false,
       true,
+      "Bard",
     );
   });
 

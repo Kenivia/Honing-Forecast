@@ -52,7 +52,12 @@ export const RAIDS: Raid[] = GAME.raids;
 const SHOPS: ShopRow[] = GAME.shops;
 const CRUCIBLE = GAME.crucible as {
   end: string;
-  stages: { stage: number; opens: string | null; item_level: number; items: Item[] }[];
+  stages: {
+    stage: number;
+    opens: string | null;
+    item_level: number;
+    items: Item[];
+  }[];
 };
 const RAID_SLOTS = 3;
 // event tokens per Chaos Dungeon, Kurzan Front, Chaos Rift or guardian clear
@@ -102,8 +107,7 @@ const default_raids = (item_level: number): RaidPick[] =>
   raids_for(item_level)
     .slice(0, RAID_SLOTS)
     .map((list) => {
-      const raid =
-        list.findLast((x) => x.difficulty !== "Solo") ?? list.at(-1);
+      const raid = list.findLast((x) => x.difficulty !== "Solo") ?? list.at(-1);
       return {
         group: raid.group,
         difficulty: raid.difficulty,
@@ -289,7 +293,9 @@ export function auto_income(
     chaos?.name ?? "Kurzan Front / Chaos Rift",
     chaos ? `Item level ${chaos.item_level}, Tylobic` : "Needs 1640",
     chaos
-      ? split(chaos.bag, 0).map((bag) => add({}, bag, config.chaos + config.chaos_rested))
+      ? split(chaos.bag, 0).map((bag) =>
+          add({}, bag, config.chaos + config.chaos_rested),
+        )
       : undefined,
   );
 
@@ -309,8 +315,12 @@ export function auto_income(
   source(
     "cube",
     cube?.name ?? "Ebony Cube",
-    cube ? `gcalc / LoaGuard; gems ${cube.gems} a ticket, not counted` : "Needs 1640",
-    cube ? split(cube.bag, 0).map((bag) => add({}, bag, config.cube)) : undefined,
+    cube
+      ? `gcalc / LoaGuard; gems ${cube.gems} a ticket, not counted`
+      : "Needs 1640",
+    cube
+      ? split(cube.bag, 0).map((bag) => add({}, bag, config.cube))
+      : undefined,
   );
 
   // each sand held adds the base reward once more; the rift drops them
@@ -349,7 +359,8 @@ export function auto_income(
         .filter((grant) => grant.at < end)
     : [];
   if (!config.crucible)
-    for (const stage of stages) items_bag("crucible", stage.items, crucible_picks);
+    for (const stage of stages)
+      items_bag("crucible", stage.items, crucible_picks);
   source(
     "crucible",
     "Paradise Crucible",
@@ -395,7 +406,11 @@ export function auto_income(
     guild.map((row) => `${row.name} x${row.limit}`).join(", ") || "Needs 1640",
     config.guild
       ? split(
-          guild.reduce((bag, row) => add(bag, items_bag("guild", row.items, []), row.limit), {}),
+          guild.reduce(
+            (bag, row) =>
+              add(bag, items_bag("guild", row.items, []), row.limit),
+            {},
+          ),
           0,
         )
       : undefined,
@@ -437,18 +452,21 @@ export function auto_income(
   );
 
   // live event shops: a week's tokens spent each week until the shop closes
-  const event_rows = shop_rows(
-    (row) => !!row.end && Date.parse(row.end) > now,
-  );
-  const tokens =
-    EVENT_TOKENS * (config.chaos + config.guardian);
+  const event_rows = shop_rows((row) => !!row.end && Date.parse(row.end) > now);
+  const tokens = EVENT_TOKENS * (config.chaos + config.guardian);
   const event_picks: Pick[] = [];
   const event = buy(event_rows, tokens, event_picks);
-  const event_end = Math.max(0, ...event_rows.map((row) => Date.parse(row.end)));
+  const event_end = Math.max(
+    0,
+    ...event_rows.map((row) => Date.parse(row.end)),
+  );
   const event_grants: Grant[] = [];
   if (config.event_shop)
     for (let at = now + WEEK_MS; at - WEEK_MS < event_end; at += WEEK_MS)
-      event_grants.push({ at: Math.min(at, event_end), bags: split(event.bag, 0) });
+      event_grants.push({
+        at: Math.min(at, event_end),
+        bags: split(event.bag, 0),
+      });
   source(
     "event",
     event_rows[0]?.shop ?? "Event shop",

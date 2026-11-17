@@ -46,8 +46,12 @@ describe("convert button", () => {
     cfg.roster_mats_owned[cfg.profiles[0].roster_id].values.Red = "1,000";
     cfg.tradable_mats_owned[cfg.profiles[0].roster_id].values.Red = "502";
     await w.find("button.tier-button").trigger("click");
-    const r = input_column_to_num(cfg.roster_mats_owned[cfg.profiles[0].roster_id]);
-    const t = input_column_to_num(cfg.tradable_mats_owned[cfg.profiles[0].roster_id]);
+    const r = input_column_to_num(
+      cfg.roster_mats_owned[cfg.profiles[0].roster_id],
+    );
+    const t = input_column_to_num(
+      cfg.tradable_mats_owned[cfg.profiles[0].roster_id],
+    );
     expect([r["Serca Red"], r.Red, t.Red]).toEqual([300, 0, 2]);
   });
 });
@@ -56,9 +60,11 @@ describe("market sidebar", () => {
   it("changing region stores it and fetches it", async () => {
     const w = mount_view();
     await w.find("select.selector").setValue("euc");
-    expect(useRosterStore().roster_config.all_regions[
-      useRosterStore().roster_ids[0]
-    ]).toBe("euc");
+    expect(
+      useRosterStore().roster_config.all_regions[
+        useRosterStore().roster_ids[0]
+      ],
+    ).toBe("euc");
     expect(start_fetch).toHaveBeenCalledWith("euc");
   });
 
@@ -69,9 +75,8 @@ describe("market sidebar", () => {
     await btn().trigger("click");
     expect(start_fetch).toHaveBeenCalledWith("nae", true);
     expect(w.text()).toContain("Auto fetch");
-    useRosterStore().roster_config.all_regions[
-      useRosterStore().roster_ids[0]
-    ] = "Custom";
+    useRosterStore().roster_config.all_regions[useRosterStore().roster_ids[0]] =
+      "Custom";
     await flushPromises();
     expect(btn().attributes("disabled")).toBeDefined();
     expect(w.text()).not.toContain("Auto fetch");
@@ -133,11 +138,11 @@ describe("budget grid", () => {
       'input[aria-label="Roster bound owned"]',
     );
     await input.setValue("100+20");
-    expect(useRosterStore().roster_config.roster_mats_owned[
-      useRosterStore().roster_ids[0]
-    ].values.Red).toBe(
-      (120).toLocaleString(),
-    );
+    expect(
+      useRosterStore().roster_config.roster_mats_owned[
+        useRosterStore().roster_ids[0]
+      ].values.Red,
+    ).toBe((120).toLocaleString());
   });
 
   it("shard price follows the chosen bag", async () => {

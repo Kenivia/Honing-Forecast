@@ -178,8 +178,8 @@ const grids = computed((): GridConfig[] => [
           v-if="grid.tier == 1"
           class="col-span-full px-2 py-1 text-right text-sm text-(--text-muted)"
         >
-          New serca books price fetching is not available yet, please input
-          them yourself.
+          New serca books price fetching is not available yet, please input them
+          yourself.
         </div>
       </div>
     </div>

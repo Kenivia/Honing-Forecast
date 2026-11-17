@@ -103,7 +103,12 @@ describe("FetchRosterButton", () => {
     expect(w.text()).toContain("Gamma failed: Fetching failed");
     // Gamma failed, so Beta is not the last panel and the popup stays open
     await button(w, "Confirm").trigger("click");
-    expect(apply).toHaveBeenCalledWith(expect.any(Array), false, "Beta");
+    expect(apply).toHaveBeenCalledWith(
+      expect.any(Array),
+      false,
+      "Beta",
+      "Bard",
+    );
     expect(w.text()).not.toContain("Class: Bard");
     expect(w.text()).toContain("Gamma failed");
   });
@@ -151,7 +156,12 @@ describe("FetchCharButton", () => {
     expect(w.text()).toContain("Achieved ilevel: 1,712.50");
     expect(w.text()).not.toContain("(T4)");
     await button(w, "Confirm").trigger("click");
-    expect(apply).toHaveBeenCalledWith(expect.any(Array), false, "Beta");
+    expect(apply).toHaveBeenCalledWith(
+      expect.any(Array),
+      false,
+      "Beta",
+      "Bard",
+    );
     expect(w.text()).not.toContain("This you?");
   });
 
@@ -166,7 +176,12 @@ describe("FetchCharButton", () => {
     await flushPromises();
     expect(w.text()).toContain("both Serca gear and T4 gear");
     await button(w, "Confirm (T4)").trigger("click");
-    expect(apply).toHaveBeenLastCalledWith(expect.any(Array), true, "Beta");
+    expect(apply).toHaveBeenLastCalledWith(
+      expect.any(Array),
+      true,
+      "Beta",
+      "Sorceress",
+    );
   });
 
   it("shows the error and a link on failure; disabled without a region", async () => {

@@ -31,9 +31,9 @@ check("is a V11 save", v11.version === 11);
 const migrated = migrate_to_current(structuredClone(v11), 11);
 const added = differences(migrated, v11).filter((p) => p !== ".version");
 check(
-  "adds only forbidden_chests and new scan pages",
+  "adds only forbidden_chests, class_name and new scan pages",
   added.every((p) =>
-    /^\.profiles\.\d+\.forbidden_chests$|^\.scan_(pages|currencies)(\.|$)/.test(
+    /^\.profiles\.\d+\.(forbidden_chests|class_name)$|^\.scan_(pages|currencies)(\.|$)/.test(
       p,
     ),
   ),
@@ -44,9 +44,11 @@ check(
   migrated.scan_pages.length === 0 && migrated.scan_currencies.length === 0,
 );
 check(
-  "  forbidden chests empty on every profile",
+  "  forbidden chests empty and no class on every profile",
   migrated.version === STORAGE_VERSION &&
-    migrated.profiles.every((p: any) => p.forbidden_chests.length === 0),
+    migrated.profiles.every(
+      (p: any) => p.forbidden_chests.length === 0 && p.class_name === "",
+    ),
 );
 
 localStorage.clear();

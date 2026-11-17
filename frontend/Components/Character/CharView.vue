@@ -7,6 +7,7 @@ import ControlPanel from "@/Components/Character/ControlPanel.vue";
 import ScannerControlPanel from "@/Components/Character/InventoryScanner/ScannerControlPanel.vue";
 import { scanner_shown } from "@/Components/Character/InventoryScanner/ScannerUIutils";
 import Sidebar from "@/Components/Common/Sidebar.vue";
+import ClassIcon from "@/Components/Common/ClassIcon.vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 const DEV = import.meta.env.DEV;
 const runtime = useRuntimeStore();
@@ -37,6 +38,11 @@ watch(
 );
 
 const is_calc = computed(() => route.name === "calc");
+const roster_chars = computed(() =>
+  roster_store.all_profiles.filter(
+    (p) => p.roster_id === active_profile.value.roster_id,
+  ),
+);
 
 onUnmounted(() => {
   // kill workers when going to market / roster view
@@ -45,6 +51,23 @@ onUnmounted(() => {
 </script>
 <template>
   <Sidebar :width="is_calc ? 1255 : 1201" :header="active_profile.char_name">
+    <template #top>
+      <nav
+        aria-label="Characters"
+        class="flex min-h-11 scrollbar-thin flex-row items-center overflow-x-auto border-b border-(--border-muted) bg-(--bg-muted) whitespace-nowrap"
+      >
+        <RouterLink
+          v-for="profile in roster_chars"
+          :key="profile.id"
+          :to="{ name: 'char', params: { characterName: profile.char_name } }"
+          class="nav-tab"
+          :class="{ selected: profile.id === active_profile.id }"
+        >
+          <ClassIcon :class_name="profile.class_name" />
+          {{ profile.char_name }}
+        </RouterLink>
+      </nav>
+    </template>
     <template #sidebar="{ close }">
       <div class="flex flex-col">
         <RouterLink to="guide" class="side-bar-link" @click="close">

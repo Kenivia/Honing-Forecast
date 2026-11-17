@@ -65,7 +65,9 @@ v7.profiles.forEach((p: any, i: number) => {
 });
 check(
   "each roster got one new id",
-  loaded.profiles.every((p, i) => p.roster_id === ids[v7.profiles[i].roster_id]) &&
+  loaded.profiles.every(
+    (p, i) => p.roster_id === ids[v7.profiles[i].roster_id],
+  ) &&
     new Set(Object.values(ids)).size === Object.keys(ids).length &&
     Object.values(ids).every((id) => id.length === 36),
 );
@@ -206,8 +208,9 @@ console.log("\n--- shared materials are stored once, not once per tier");
 for (const label of SHARED_LABELS) {
   check(
     `  ${label} appears once in a column`,
-    Object.keys(loaded.roster_mats_owned[ids[0]].values).filter((k) => k === label)
-      .length === 1,
+    Object.keys(loaded.roster_mats_owned[ids[0]].values).filter(
+      (k) => k === label,
+    ).length === 1,
   );
 }
 check(

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
   DEFAULT_UWUOWO_BUNDLE,
-  UwuowoPiece,
+  ApplyFetch,
   UwuowoRegions,
   UwuowoResultBundle,
   fetch_char,
@@ -17,7 +17,7 @@ import ConfirmPanel from "./ConfirmPanel.vue";
 const props = defineProps<{
   region: UwuowoRegions;
   any_char_name: string;
-  apply?: (_: UwuowoPiece[], force_t4: boolean, char_name?: string) => void;
+  apply?: ApplyFetch;
 }>();
 
 const { all_profiles, roster_ids } = storeToRefs(useRosterStore());
@@ -156,6 +156,7 @@ const spread_multiple = computed(
                   parsed_chars[char_name].result.pieces,
                   false, // assume no forcing t4
                   char_name,
+                  parsed_chars[char_name].result.class_name,
                 );
               }
               delete parsed_chars[char_name];
@@ -187,9 +188,9 @@ const spread_multiple = computed(
           :region="region"
           :char_name="char_name"
           :apply="
-            (result, force_t4, char_name) => {
+            (result, force_t4, char_name, class_name) => {
               delete parsed_chars[char_name];
-              apply(result, force_t4, char_name);
+              apply(result, force_t4, char_name, class_name);
             }
           "
           :char_parsed="parsed_char"

@@ -32,6 +32,59 @@ export interface UwuowoPiece {
   tier: number;
   adv: number;
 }
+// what an import hands its caller to apply
+export type ApplyFetch = (
+  pieces: UwuowoPiece[],
+  force_t4: boolean,
+  char_name?: string,
+  class_name?: string,
+) => void;
+
+// lostark.bible's class ids to the names it shows
+const BIBLE_CLASSES: Record<string, string> = {
+  warrior: "Warrior",
+  berserker: "Berserker",
+  destroyer: "Destroyer",
+  warlord: "Gunlancer",
+  holyknight: "Paladin",
+  warrior_female: "Warrior",
+  berserker_female: "Slayer",
+  holyknight_female: "Valkyrie",
+  magician: "Mage",
+  arcana: "Arcanist",
+  summoner: "Summoner",
+  bard: "Bard",
+  elemental_master: "Sorceress",
+  fighter: "Martial Artist",
+  battle_master: "Wardancer",
+  infighter: "Scrapper",
+  force_master: "Soulfist",
+  lance_master: "Glaivier",
+  fighter_male: "Martial Artist",
+  battle_master_male: "Striker",
+  infighter_male: "Breaker",
+  delain: "Assassin",
+  blade: "Deathblade",
+  demonic: "Shadowhunter",
+  reaper: "Reaper",
+  soul_eater: "Souleater",
+  hunter: "Gunner",
+  hawk_eye: "Sharpshooter",
+  devil_hunter: "Deadeye",
+  blaster: "Artillerist",
+  scouter: "Machinist",
+  hunter_female: "Gunner",
+  devil_hunter_female: "Gunslinger",
+  specialist: "Specialist",
+  yinyangshi: "Artist",
+  weather_artist: "Aeromancer",
+  alchemist: "Wildsoul",
+  specialist_male: "Specialist",
+  dimension_master: "Dimensionalist",
+  dragon_human: "Guardianknight",
+  dragon_knight: "Guardianknight",
+};
+
 export interface UwuowoCharResult {
   pieces: UwuowoPiece[]; // [+n, ilevel, tier , adv]; 7th is the vambrace
   class_name: string;
@@ -168,10 +221,7 @@ export function loadouts_to_result(
   });
   return {
     pieces,
-    class_name: character.class
-      .split("_")
-      .map((w) => w[0].toUpperCase() + w.slice(1))
-      .join(" "),
+    class_name: BIBLE_CLASSES[character.class] ?? character.class,
     achieved_ilevel: character.ilvl.toLocaleString("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,

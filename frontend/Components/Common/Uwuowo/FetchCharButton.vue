@@ -2,7 +2,7 @@
 import {
   DEFAULT_UWUOWO_BUNDLE,
   FETCH_MSG,
-  UwuowoPiece,
+  ApplyFetch,
   UwuowoRegions,
   fetch_char,
   reset_uwuowo_bundle,
@@ -14,7 +14,7 @@ import { ref, watch } from "vue";
 const props = defineProps<{
   region: UwuowoRegions;
   char_name: string;
-  apply: (_: UwuowoPiece[], force_t4: boolean) => void;
+  apply: ApplyFetch;
   counter?: number; // for triggering when char name input changes
 }>();
 

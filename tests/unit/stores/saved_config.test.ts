@@ -109,7 +109,11 @@ describe("to_saved / from_saved: V8-only fields", () => {
     // the default roster's id is fresh each time
     const strip = (config: typeof back) => {
       const saved: any = to_saved({ ...config, profiles: [] });
-      for (const key of ["roster_mats_owned", "tradable_mats_owned", "all_regions"])
+      for (const key of [
+        "roster_mats_owned",
+        "tradable_mats_owned",
+        "all_regions",
+      ])
         saved[key] = Object.values(saved[key]);
       return saved;
     };

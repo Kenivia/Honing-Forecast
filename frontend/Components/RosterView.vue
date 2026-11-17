@@ -87,17 +87,13 @@ const filtered_rosters_lists = computed(() =>
                     roster_config.all_regions[profile_pair.profile.roster_id]
                   "
                   :apply="
-                    (result, force_t4) => {
-                      // console.log(
-                      //   roster_config.profiles[profile_index].char_name,
-                      //   profile_index,
-                      // );
-                      // console.log(result, force_t4);
+                    (result, force_t4, _name, class_name) => {
                       apply_results(
                         profile_pair.profile,
                         result,
                         force_t4,
                         true,
+                        class_name,
                       );
                     }
                   "
@@ -192,10 +188,10 @@ const filtered_rosters_lists = computed(() =>
                 filtered_rosters_lists[roster_index][0].profile.char_name
               "
               :apply="
-                (result, force_t4, char_name) => {
+                (result, force_t4, char_name, class_name) => {
                   const added = roster_store.add_char(roster_id);
                   added.char_name = char_name;
-                  apply_results(added, result, force_t4, true);
+                  apply_results(added, result, force_t4, true, class_name);
                 }
               "
             />

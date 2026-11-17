@@ -182,10 +182,7 @@ const serca_snapshot = {
   roster_mats: serca({ Fusion: 3, "Serca Fusion": 2 }),
   tradable_mats: serca({ Fusion: 4, "Serca Fusion": 3 }),
 };
-const left = compute_remaining_materials(
-  { "Serca Fusion": 6 },
-  serca_snapshot,
-);
+const left = compute_remaining_materials({ "Serca Fusion": 6 }, serca_snapshot);
 const of = (label: string) => [
   left.bound_budgets[label],
   left.roster_mats[label],

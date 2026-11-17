@@ -18,7 +18,9 @@ export function apply_results(
   results: UwuowoPiece[],
   force_t4: boolean,
   dont_run: boolean,
+  class_name?: string,
 ) {
+  if (class_name) target_profile.class_name = class_name;
   const old_tier: number = target_profile.tier;
   const new_tier: number = force_t4
     ? 0

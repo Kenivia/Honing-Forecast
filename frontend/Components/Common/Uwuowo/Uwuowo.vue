@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import CharNameInput from "./CharNameInput.vue";
 import RegionSelector from "../RegionSelector.vue";
-import FetchCharButton from "./FetchCharButton.vue";import { MarketRegions } from "@/Utils/MarketDataFetcher.js";
-import { market_to_uwuowo_region, UwuowoPiece } from "./UwuowoUtils.js";
+import FetchCharButton from "./FetchCharButton.vue";
+import { MarketRegions } from "@/Utils/MarketDataFetcher.js";
+import { ApplyFetch, market_to_uwuowo_region } from "./UwuowoUtils.js";
 import { ref } from "vue";
 
 defineProps<{
@@ -12,7 +13,7 @@ defineProps<{
   region: MarketRegions; // this is needed even if region is hidden (for the fetch)
   hide_region?: boolean;
   region_change?: (_event: any) => void;
-  apply?: (_: UwuowoPiece[], force_t4?: boolean) => void;
+  apply?: ApplyFetch;
 }>();
 
 const counter = ref(0);

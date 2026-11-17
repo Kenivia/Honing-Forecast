@@ -148,7 +148,7 @@ const optimizer_working = computed(get_optimizer_working);
     <button
       v-if="relevant_upgrade_arr.length > COLLAPSED_COUNT"
       @click="expanded = !expanded"
-      class="generic-button block w-fit text-(--text-muted) mx-auto"
+      class="generic-button mx-auto block w-fit text-(--text-muted)"
     >
       {{
         expanded

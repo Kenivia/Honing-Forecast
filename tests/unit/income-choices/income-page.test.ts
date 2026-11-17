@@ -39,7 +39,14 @@ afterEach(() => {
 function add(at: number, red: number, extra: Partial<Snapshot> = {}): Snapshot {
   const profile = store.active_profile;
   set_cell(profile.bound_budgets, "Red", String(red));
-  const snapshot = { ...snapshot_of(store.roster_config, store.active_profile.roster_id, "Manual"), at };
+  const snapshot = {
+    ...snapshot_of(
+      store.roster_config,
+      store.active_profile.roster_id,
+      "Manual",
+    ),
+    at,
+  };
   Object.assign(snapshot, extra);
   store.roster_config.snapshots.push(snapshot);
   return store.roster_config.snapshots.at(-1);
@@ -95,7 +102,14 @@ describe("Income page", () => {
         fake_state(),
       );
     await nextTick();
-    const now = { ...snapshot_of(store.roster_config, store.active_profile.roster_id, "Manual"), at: NOW };
+    const now = {
+      ...snapshot_of(
+        store.roster_config,
+        store.active_profile.roster_id,
+        "Manual",
+      ),
+      at: NOW,
+    };
     expect(last_queue()).toEqual([
       job_for(store.active_profile, now, true).hash,
     ]);
@@ -203,11 +217,15 @@ describe("Income page", () => {
     const profile = store.active_profile;
     expect(profile.income_manual).toBe(true);
     expect(profile.bound_income.Red).toBe(70);
-    expect(store.roster_config.roster_income[store.active_profile.roster_id][1].Red).toBe(0);
+    expect(
+      store.roster_config.roster_income[store.active_profile.roster_id][1].Red,
+    ).toBe(0);
 
     // the table shows tradable: typed into the roster's record
     await wrapper.find('input[aria-label="Red income"]').setValue("12");
-    expect(store.roster_config.roster_income[store.active_profile.roster_id][1].Red).toBe(12);
+    expect(
+      store.roster_config.roster_income[store.active_profile.roster_id][1].Red,
+    ).toBe(12);
     await band("Char bound");
     await wrapper.find('input[aria-label="Red income"]').setValue("abc");
     expect(profile.bound_income.Red).toBe(0);
@@ -217,9 +235,13 @@ describe("Income page", () => {
     open();
     await manual_button().trigger("click");
     await wrapper.find('input[aria-label="Red income"]').setValue("1,000");
-    expect(store.roster_config.roster_income[store.active_profile.roster_id][1].Red).toBe(1000);
+    expect(
+      store.roster_config.roster_income[store.active_profile.roster_id][1].Red,
+    ).toBe(1000);
     await wrapper.find('input[aria-label="Red income"]').setValue("-5");
-    expect(store.roster_config.roster_income[store.active_profile.roster_id][1].Red).toBe(0);
+    expect(
+      store.roster_config.roster_income[store.active_profile.roster_id][1].Red,
+    ).toBe(0);
   });
 
   it("switching to manual keeps what was typed", async () => {

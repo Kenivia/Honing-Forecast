@@ -6,7 +6,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - lostark.bible login
 
 - get equipment icons
-
+- shift sidebar?
 - rework tooltips
 - reorganize to info page
   - reorganize the top bar
@@ -18,6 +18,9 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - rework changelog page (infinite scroll)
 
+- cloud syncing
+
+- change pity to actually use the integer 21500
 - migrate to an actual domain name
 
 ## Forecast mode

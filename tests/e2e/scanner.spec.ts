@@ -231,7 +231,9 @@ test("switching character asks what to do with an unexported scan", async ({
   await open_scanner(page, "Newchar");
   await add_bee(page);
   const link = (name: string) =>
-    page.getByRole("banner").getByRole("link", { name, exact: true });
+    page
+      .getByRole("navigation", { name: "Characters" })
+      .getByRole("link", { name, exact: true });
   const dialog = page.getByRole("dialog", { name: "Switch character" });
   const blue = (amount: number): Put[] => [
     ["CharInventory", 0, 0, "Blue", amount, "CharBound"],
@@ -361,7 +363,7 @@ test("a scan moved to another roster counts its roster storage there", async ({
   await expect(manifest_cell(page, "Red", "Tradable")).toHaveText("999");
   await page
     .getByRole("banner")
-    .getByRole("link", { name: "Cee", exact: true })
+    .getByRole("link", { name: "Roster 2", exact: true })
     .click();
   const dialog = page.getByRole("dialog", { name: "Switch character" });
   await expect(dialog).toContainText("Cee is on another roster");
@@ -614,7 +616,7 @@ test("a scan moved to another character mid-capture reads the same", async ({
     .poll(() => scan_size(page), { timeout: 120_000 })
     .toBeGreaterThan(0);
   await page
-    .getByRole("banner")
+    .getByRole("navigation", { name: "Characters" })
     .getByRole("link", { name: "Bee", exact: true })
     .click();
   await page

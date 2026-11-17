@@ -1,1 +1,4 @@
 crates/core/src/constants/*.json
+# generated data and test fixtures keep the format they are written in
+frontend/Data/*.json
+tests/**/*.json

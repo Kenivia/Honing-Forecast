@@ -81,6 +81,29 @@
   min-width: 10px;
 }
 
+/* header and character-row links: the selected one gets a gold strip along the row's bottom edge */
+.nav-tab {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  gap: 6px;
+  padding: 0 14px;
+  color: var(--text-main);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.nav-tab:hover {
+  background-color: var(--bg-main);
+}
+
+.nav-tab.selected {
+  color: var(--gold);
+  background-color: var(--bg-main);
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+
 .selector {
   padding: var(--spacing);
   border-radius: var(--radius-sm);

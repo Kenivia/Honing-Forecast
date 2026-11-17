@@ -53,7 +53,11 @@ set_cell(profile.bound_budgets, "Fusion", "12");
 set_cell(profile.bound_budgets, "Serca Fusion", "3");
 set_cell(config.tradable_mats_owned[profile.roster_id], "Fusion", "10");
 set_cell(profile.special_budget, "Serca Special Leap", "7");
-const owned = owned_at(snapshot_of(config, profile.roster_id, "Manual"), profile.id, 1);
+const owned = owned_at(
+  snapshot_of(config, profile.roster_id, "Manual"),
+  profile.id,
+  1,
+);
 equal("T4 converted, tradable into roster", owned["Serca Fusion"], [5, 2, 0]);
 equal("one band", value_of(owned, "Serca Fusion", 1), 2);
 equal("free taps are char bound", owned["Serca Special Leap"], [7, 0, 0]);
@@ -78,6 +82,9 @@ equal("char income", loaded.profiles[0].bound_income, { "Serca Fusion": 4 });
 check("manual kept", loaded.profiles[0].income_manual);
 equal("now pinned", loaded.profiles[0].income_now, { budgets: "abc", at: 5 });
 equal("now's runs", loaded.profiles[0].income_results.abc.gold, -1);
-equal("roster income", loaded.roster_income[profile.roster_id], [{ Gold: 100 }, {}]);
+equal("roster income", loaded.roster_income[profile.roster_id], [
+  { Gold: 100 },
+  {},
+]);
 
 done();

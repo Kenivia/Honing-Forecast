@@ -7,7 +7,7 @@ import { start_fetch } from "@/Utils/MarketDataFetcher";
 import { debounced_write_roster_config } from "@/Stores/ConfigStorage";
 import App from "@/App.vue";
 import { mount_app } from "../mount";
-import { names, set_profiles, stub_match_media } from "./helpers";
+import { set_profiles, stub_match_media } from "./helpers";
 
 vi.mock("@/Utils/MarketDataFetcher", async (orig) => ({
   ...(await orig<any>()),
@@ -79,39 +79,40 @@ describe("App", () => {
     expect(runtime.per_char[id]).toBe(bundle);
   });
 
-  it("header lists characters per roster and marks the routed one", async () => {
+  it("has a button per roster, marking the routed character's", async () => {
     const { wrapper } = await mount_shell("/Bob/calc");
-    const groups = wrapper
-      .findAll("nav .flex.flex-row")
-      .filter((g) => g.find("a.header-button").exists());
-    expect(groups.map((g) => g.findAll("a").map((a) => a.text()))).toEqual([
-      ["Alice", "Bob"],
-      ["Carol"],
+    const rosters = wrapper.findAll("header a.nav-tab").slice(2);
+    expect(rosters.map((a) => a.text())).toEqual(["Roster 1", "Roster 2"]);
+    expect(rosters[0].classes()).toContain("selected");
+    expect(rosters[1].classes()).not.toContain("selected");
+  });
+
+  it("one roster is a Character button", async () => {
+    const { wrapper } = await mount_app(App, {}, "/Alice/calc");
+    set_profiles([
+      ["Alice", 0],
+      ["Bob", 0],
     ]);
-    const selected = wrapper.findAll("a.header-button.selected");
-    expect(selected.map((a) => a.text())).toEqual(["Bob"]);
+    await nextTick();
+    expect(wrapper.findAll("header a.nav-tab").at(-1).text()).toBe("Character");
+  });
+
+  it("a roster button goes back to the roster's last opened character", async () => {
+    const { wrapper, router } = await mount_shell("/Bob/calc");
+    await router.push("/Carol/calc");
+    await flushPromises();
+    const roster_1 = wrapper.findAll("header a.nav-tab")[2];
+    expect(roster_1.attributes("href")).toBe("/Bob");
+    await roster_1.trigger("click");
+    await flushPromises();
+    expect(router.currentRoute.value.params.characterName).toBe("Bob");
   });
 
   it("marks the roster and market buttons by path", async () => {
     const { wrapper, router } = await mount_shell("/roster-setup");
-    expect(wrapper.find(".header-button.selected").text()).toBe("Roster setup");
+    expect(wrapper.find(".nav-tab.selected").text()).toBe("Roster setup");
     await router.push("/market-mats");
     await flushPromises();
-    expect(wrapper.find(".header-button.selected").text()).toBe(
-      "Market & Mats",
-    );
-  });
-
-  it("narrow screens with several characters get a dropdown that navigates", async () => {
-    stub_match_media(true);
-    const { wrapper, router } = await mount_shell("/Alice/calc");
-    const select = wrapper.find("select");
-    expect(select.findAll("option").map((o) => o.text())).toEqual([
-      "Character",
-      ...names(),
-    ]);
-    await select.setValue("Carol");
-    await flushPromises();
-    expect(router.currentRoute.value.params.characterName).toBe("Carol");
+    expect(wrapper.find(".nav-tab.selected").text()).toBe("Market & Mats");
   });
 });

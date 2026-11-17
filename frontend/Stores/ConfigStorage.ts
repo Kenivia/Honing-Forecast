@@ -525,11 +525,14 @@ function migrate_10_to_11(data: any): any {
 }
 
 // Scan pages are saved slot by slot: the old page totals are dropped, and the currencies get
-// their own list. Profiles get forbidden chests.
+// their own list. Profiles get forbidden chests and a class.
 function migrate_11_to_12(data: any): any {
   data.scan_pages = [];
   data.scan_currencies = [];
-  for (const profile of data.profiles ?? []) profile.forbidden_chests ??= [];
+  for (const profile of data.profiles ?? []) {
+    profile.forbidden_chests ??= [];
+    profile.class_name ??= "";
+  }
   data.version = 12;
   return data;
 }

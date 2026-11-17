@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
+import { RouterLink, RouterView, useRoute } from "vue-router";
 import { get_icon_path } from "@/Utils/Helpers";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { useMediaQuery } from "@vueuse/core";
-import { computed, watch } from "vue";
+import { useElementSize, useMediaQuery } from "@vueuse/core";
+import { computed, reactive, useTemplateRef, watch, watchEffect } from "vue";
 import { storeToRefs } from "pinia";
 import { FETCHABLE_REGIONS, start_fetch } from "./Utils/MarketDataFetcher";
 import {
@@ -51,28 +51,47 @@ watch(
 const is900Narrow = useMediaQuery("(max-width: 900px)");
 
 const route = useRoute();
-const router = useRouter();
 
-function on_char_select(e: Event) {
-  const select = e.target as HTMLSelectElement;
-  const name = select.value;
-  // back to the shown character if the switch was held up
-  if (name)
-    router
-      .push({ name: "char", params: { characterName: name } })
-      .then(() => (select.value = char_name_from_route.value));
-}
 const char_name_from_route = computed(
   () => (route.params.characterName as string | undefined) ?? "",
+);
+const routed_profile = computed(() =>
+  all_profiles.value.find((p) => p.char_name === char_name_from_route.value),
+);
+
+// session only: a roster button goes back to the roster's last opened character
+const last_opened: Record<string, string> = reactive({});
+watch(
+  routed_profile,
+  (p) => {
+    if (p) last_opened[p.roster_id] = p.id;
+  },
+  { immediate: true },
+);
+function roster_target(roster_id: string) {
+  const chars = all_profiles.value.filter((p) => p.roster_id === roster_id);
+  return chars.find((p) => p.id === last_opened[roster_id]) ?? chars[0];
+}
+
+// the sidebar sticks under the header
+const top_row = useTemplateRef<HTMLElement>("top_row");
+const { height: top_row_h } = useElementSize(top_row, undefined, {
+  box: "border-box",
+});
+watchEffect(() =>
+  document.documentElement.style.setProperty(
+    "--top-row-h",
+    `${top_row_h.value}px`,
+  ),
 );
 FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
 </script>
 
 <template>
   <div class="flex min-h-lvh max-w-full flex-col">
-    <header>
+    <header ref="top_row" class="sticky top-0 z-50">
       <nav
-        class="relative z-50 flex scrollbar-thin flex-row items-center justify-start overflow-x-auto border-b border-(--border-muted) bg-(--bg-muted) whitespace-nowrap"
+        class="flex min-h-12 scrollbar-thin flex-row items-center justify-start overflow-x-auto border-b border-(--border-muted) bg-(--bg-muted) whitespace-nowrap"
       >
         <div
           v-if="!is900Narrow"
@@ -92,69 +111,34 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
             Honing Forecast
           </h1>
         </div>
-        <router-link to="/roster-setup">
-          <div
-            class="header-button header-font"
-            :class="{ selected: route.path == '/roster-setup' }"
-          >
-            Roster setup
-          </div>
-        </router-link>
-        <router-link to="/market-mats">
-          <div
-            class="header-button header-font"
-            :class="{ selected: route.path == '/market-mats' }"
-          >
-            Market & Mats
-          </div>
-        </router-link>
+        <RouterLink
+          to="/roster-setup"
+          class="nav-tab"
+          :class="{ selected: route.path == '/roster-setup' }"
+        >
+          Roster setup
+        </RouterLink>
+        <RouterLink
+          to="/market-mats"
+          class="nav-tab"
+          :class="{ selected: route.path == '/market-mats' }"
+        >
+          Market & Mats
+        </RouterLink>
 
         <div class="header-spacer" />
-        <div class="contents" v-if="!is900Narrow || all_profiles.length <= 1">
-          <div
-            v-for="roster_id in roster_ids"
-            :key="`roster-${roster_id}`"
-            class="flex flex-row"
-          >
-            <div
-              v-for="profile in all_profiles.filter(
-                (p) => p.roster_id === roster_id,
-              )"
-              :key="profile.id"
-            >
-              <RouterLink
-                :to="{
-                  name: 'char',
-                  params: { characterName: profile.char_name },
-                }"
-                class="header-button header-font"
-                :class="{
-                  selected: char_name_from_route === profile.char_name,
-                }"
-              >
-                {{ profile.char_name }}
-              </RouterLink>
-            </div>
-            <span style="width: 16px"></span>
-          </div>
-        </div>
-
-        <!-- Mobile: dropdown -->
-        <select
-          v-else
-          class="header-button header-font"
-          :value="char_name_from_route"
-          @change="on_char_select"
+        <RouterLink
+          v-for="(roster_id, i) in roster_ids"
+          :key="roster_id"
+          :to="{
+            name: 'char',
+            params: { characterName: roster_target(roster_id).char_name },
+          }"
+          class="nav-tab"
+          :class="{ selected: routed_profile?.roster_id === roster_id }"
         >
-          <option value="" disabled key="empty selection">Character</option>
-          <option
-            v-for="profile in all_profiles"
-            :key="profile.id"
-            :value="profile.char_name"
-          >
-            {{ profile.char_name }}
-          </option>
-        </select>
+          {{ roster_ids.length === 1 ? "Character" : `Roster ${i + 1}` }}
+        </RouterLink>
         <div
           v-if="signed_in"
           class="ml-auto flex flex-row items-center gap-2 px-3 text-sm text-(--text-muted)"

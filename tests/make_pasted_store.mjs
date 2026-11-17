@@ -3,9 +3,11 @@
 import fs from "fs";
 import LZString from "lz-string";
 
-const [input = "tests/v8 config", output = "ignored/pasted store"] = process.argv.slice(2);
+const [input = "tests/v8 config", output = "ignored/pasted store"] =
+  process.argv.slice(2);
 const raw = fs.readFileSync(input, "utf8").replace(/\r?\n$/, "");
-if (!LZString.decompressFromUTF16(raw)) throw new Error("input does not decompress");
+if (!LZString.decompressFromUTF16(raw))
+  throw new Error("input does not decompress");
 
 fs.writeFileSync(
   output,

@@ -33,9 +33,9 @@ for (const fixture of fixtures) {
   const migrated = migrate_to_current(structuredClone(v10), 10);
   const added = differences(migrated, v10).filter((p) => p !== ".version");
   check(
-    "adds only income_auto, income_sources, forbidden_chests and new scan pages",
+    "adds only income_auto, income_sources, forbidden_chests, class_name and new scan pages",
     added.every((p) =>
-      /^\.profiles\.\d+\.(income_auto|income_sources|forbidden_chests)$|^\.scan_(pages|currencies)(\.|$)/.test(
+      /^\.profiles\.\d+\.(income_auto|income_sources|forbidden_chests|class_name)$|^\.scan_(pages|currencies)(\.|$)/.test(
         p,
       ),
     ),
@@ -52,7 +52,8 @@ for (const fixture of fixtures) {
         (p: any) =>
           p.income_auto === false &&
           JSON.stringify(p.income_sources) === "{}" &&
-          p.forbidden_chests.length === 0,
+          p.forbidden_chests.length === 0 &&
+          p.class_name === "",
       ),
   );
 
