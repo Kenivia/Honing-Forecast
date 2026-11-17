@@ -60,6 +60,8 @@ export default defineConfig({
     sourcemap: true,
   },
   assetsInclude: ["**/*.md"],
+  // the dep scan would otherwise crawl every .html, stale copies under .tmp included
+  optimizeDeps: { entries: ["index.html"] },
   server: {
     watch: {
       ignored: [

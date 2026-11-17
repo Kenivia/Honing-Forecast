@@ -19,14 +19,21 @@ export function apply_results(
   force_t4: boolean,
   dont_run: boolean,
   class_name?: string,
+  keep_tier?: boolean, // only switch to Serca once every piece is Serca
 ) {
   if (class_name) target_profile.class_name = class_name;
+  target_profile.fetched_at = Date.now();
   const old_tier: number = target_profile.tier;
+  const serca = results.slice(0, NUM_ADV_PIECES).map((x) => x.tier === 1);
   const new_tier: number = force_t4
     ? 0
-    : results.slice(0, NUM_ADV_PIECES).some((x) => x.tier === 1)
-      ? 1
-      : 0;
+    : keep_tier
+      ? serca.every((x) => x)
+        ? 1
+        : old_tier
+      : serca.some((x) => x)
+        ? 1
+        : 0;
   // console.log(results, old_tier, new_tier);
   if (old_tier !== new_tier) {
     change_tier(target_profile, true);
@@ -108,6 +115,12 @@ export function apply_results(
         target_profile.adv_grid[row][col] = UpgradeStatus.FetchedDone;
       }
     }
+    target_profile.keyed_upgrades = grids_to_keyed(
+      target_profile.normal_grid,
+      target_profile.adv_grid,
+      target_profile.keyed_upgrades,
+      target_profile.tier,
+    );
   } else {
     target_profile.keyed_upgrades = grids_to_keyed(
       target_profile.normal_grid,

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm run wasm && vite",
+    "dev": "pnpm run wasm && vite --port 5173 --strictPort",
     "wasm": "wasm-pack build crates/wasm --release --target web",
     "browse": "node scanner_setup/browser/browse.mjs",
     "scanner-profile": "node scanner_setup/browser/profile_scanner.mjs",
@@ -36,6 +36,7 @@
   "dependencies": {
     "@floating-ui/vue": "2.0.1",
     "@msgpack/msgpack": "^3.1.3",
+    "@sindresorhus/transliterate": "^3.0.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/dom-webcodecs": "^0.1.19",
     "@vueuse/core": "^14.4.0",

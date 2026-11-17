@@ -15,6 +15,8 @@ import { useRuntimeStore } from "./Stores/RuntimeState";
 import ScanSwitchDialog from "./Components/Character/InventoryScanner/ScanSwitchDialog.vue";
 import { upload_snapshots } from "./Utils/Analytics";
 import { bible_auth, sign_out, signed_in } from "./Utils/BibleAuth";
+import { auto_refresh } from "./Utils/BibleSync";
+import BibleSyncPopup from "./Components/Common/Uwuowo/BibleSyncPopup.vue";
 
 const roster_store = useRosterStore();
 roster_store.init();
@@ -47,6 +49,8 @@ watch(
   () => upload_snapshots(roster_store.roster_config),
   { immediate: true },
 );
+
+auto_refresh();
 
 const is900Narrow = useMediaQuery("(max-width: 900px)");
 
@@ -153,5 +157,6 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
 
     <RouterView />
     <ScanSwitchDialog />
+    <BibleSyncPopup />
   </div>
 </template>

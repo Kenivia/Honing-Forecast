@@ -52,6 +52,8 @@ export interface CharProfile {
   forbidden_chests: string[];
   // display name from lostark.bible ("Slayer"), "" until fetched
   class_name: string;
+  // ms of the last successful lostark.bible import, 0 if never
+  fetched_at: number;
   // income per week typed by hand, char bound and free taps (under the special leap label)
   income_manual: boolean;
   // income per week from the sources configured on the Income page, when not typed by hand
@@ -102,6 +104,7 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
   chests: [],
   forbidden_chests: [],
   class_name: "",
+  fetched_at: 0,
   income_manual: false,
   income_auto: false,
   income_sources: {},

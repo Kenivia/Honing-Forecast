@@ -72,6 +72,7 @@ export interface SavedProfile {
   chests: ManifestChest[];
   forbidden_chests: string[];
   class_name: string;
+  fetched_at: number;
   income_manual: boolean;
   income_auto: boolean;
   income_sources: CharProfile["income_sources"];
@@ -178,6 +179,7 @@ function profile_to_saved(profile: CharProfile): SavedProfile {
     chests: profile.chests,
     forbidden_chests: profile.forbidden_chests,
     class_name: profile.class_name,
+    fetched_at: profile.fetched_at,
     income_manual: profile.income_manual,
     income_auto: profile.income_auto,
     income_sources: profile.income_sources,
@@ -264,6 +266,7 @@ function profile_from_saved(
     chests: Array.isArray(saved.chests) ? saved.chests : [],
     forbidden_chests: saved.forbidden_chests ?? [],
     class_name: saved.class_name ?? "",
+    fetched_at: saved.fetched_at ?? 0,
     income_manual: saved.income_manual ?? defaults.income_manual,
     income_auto: saved.income_auto ?? defaults.income_auto,
     income_sources: saved.income_sources ?? defaults.income_sources,

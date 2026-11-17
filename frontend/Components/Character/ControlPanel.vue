@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { export_config, import_config } from "@/Stores/ConfigStorage";
+import {
+  export_config,
+  import_config,
+  write_state,
+} from "@/Stores/ConfigStorage";
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
@@ -44,7 +48,10 @@ async function load_backup(event: Event) {
   }
   import_error.value = "";
   try {
+    // reload so runtime state and workers rebuild from the imported config
     store.replace_config(import_config(await file.text()));
+    write_state(store.$state);
+    location.reload();
   } catch (e) {
     import_error.value = e instanceof Error ? e.message : String(e);
   }

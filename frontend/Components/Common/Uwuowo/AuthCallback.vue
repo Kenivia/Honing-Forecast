@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { handle_callback } from "@/Utils/BibleAuth";
+import { sync_rosters } from "@/Utils/BibleSync";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
@@ -8,7 +9,8 @@ const error = ref("");
 
 onMounted(async () => {
   try {
-    router.replace(await handle_callback());
+    await router.replace(await handle_callback());
+    sync_rosters();
   } catch (e) {
     error.value = String(e);
   }

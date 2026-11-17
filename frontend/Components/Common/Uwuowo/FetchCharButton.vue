@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   DEFAULT_UWUOWO_BUNDLE,
-  FETCH_MSG,
   ApplyFetch,
   UwuowoRegions,
   fetch_char,
@@ -9,19 +8,47 @@ import {
 } from "./UwuowoUtils";
 import Popup from "../Popup.vue";
 import ConfirmPanel from "./ConfirmPanel.vue";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
+import { computedAsync, useTimeAgo } from "@vueuse/core";
+import { find_linked, signed_in } from "@/Utils/BibleAuth";
+import { refresh_char, refresh_errors, refreshing } from "@/Utils/BibleSync";
+import { useRosterStore } from "@/Stores/RosterConfig";
 
 const props = defineProps<{
   region: UwuowoRegions;
   char_name: string;
   apply: ApplyFetch;
   counter?: number; // for triggering when char name input changes
+  profile_id?: string;
 }>();
+
+// signed in and the character is in a linked roster: last fetched + refresh instead of the popup
+const linked = computedAsync(
+  async () =>
+    props.profile_id !== undefined &&
+    signed_in.value &&
+    props.region !== null &&
+    (await find_linked(props.region, props.char_name)) !== null,
+  false,
+);
+const profile = computed(() =>
+  useRosterStore().roster_config.profiles.find(
+    (p) => p.id === props.profile_id,
+  ),
+);
+const time_ago = useTimeAgo(() => profile.value?.fetched_at ?? 0);
 
 watch(
   () => props.counter,
-  () => {
-    click();
+  async () => {
+    if (
+      props.profile_id &&
+      signed_in.value &&
+      props.region !== null &&
+      (await find_linked(props.region, props.char_name))
+    )
+      refresh_char(props.profile_id);
+    else click();
   },
 );
 
@@ -51,7 +78,33 @@ async function click() {
 </script>
 
 <template>
+  <div v-if="linked" class="flex w-full flex-col">
+    <div class="flex flex-row items-center gap-2">
+      <span class="text-nowrap text-(--text-muted)"
+        >Last fetched {{ profile?.fetched_at ? time_ago : "never" }}</span
+      >
+      <button
+        class="generic-button flex h-7 w-7 shrink-0 items-center justify-center p-0!"
+        aria-label="Refresh from lostark.bible"
+        :disabled="refreshing.has(profile_id)"
+        @click="refresh_char(profile_id)"
+      >
+        <span
+          class="block h-4 w-4 bg-current"
+          :class="{ 'animate-spin': refreshing.has(profile_id) }"
+          style="
+            mask: url(/Icons/rotate-right-solid-full.svg) center / contain
+              no-repeat;
+          "
+        />
+      </button>
+    </div>
+    <span v-if="refresh_errors[profile_id]" class="text-xs text-(--warning)">{{
+      refresh_errors[profile_id]
+    }}</span>
+  </div>
   <button
+    v-else
     @click="click"
     class="generic-button w-full text-wrap!"
     :disabled="region === null"

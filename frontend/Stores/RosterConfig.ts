@@ -243,14 +243,15 @@ export const useRosterStore = defineStore("roster", {
       this.add_profile(profile);
       return profiles.find((p) => p.id === profile.id);
     },
-    add_roster() {
+    // returns the new roster's first character
+    add_roster(region: MarketRegions = "nae"): CharProfile {
       const config = this.roster_config;
       const roster_id = crypto.randomUUID();
       config.roster_mats_owned[roster_id] = create_default_owned_input_column();
       config.tradable_mats_owned[roster_id] =
         create_default_owned_input_column();
-      config.all_regions[roster_id] = "nae";
-      this.add_char(roster_id);
+      config.all_regions[roster_id] = region;
+      return this.add_char(roster_id);
     },
     // a separate, identical character: chests and income settings are copied too
     duplicate_profile(index: number) {

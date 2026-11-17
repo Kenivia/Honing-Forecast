@@ -13,6 +13,7 @@ import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import ConfirmPanel from "./ConfirmPanel.vue";
+import { norm_name } from "@/Utils/BibleAuth";
 
 const props = defineProps<{
   region: UwuowoRegions;
@@ -51,7 +52,7 @@ async function click() {
   fetching_chars.value = true;
   // one at a time; fetch_uwuowo's rate limit spaces them
   for (const char of roster_result.filter(
-    (x) => !all_names.value.includes(x),
+    (x) => !all_names.value.includes(norm_name(x)),
   )) {
     const result = await fetch_char(region, char);
     if (stale()) break;
@@ -60,7 +61,9 @@ async function click() {
   fetching_chars.value = false;
 }
 
-const all_names = computed(() => all_profiles.value.map((x) => x.char_name));
+const all_names = computed(() =>
+  all_profiles.value.map((x) => norm_name(x.char_name)),
+);
 
 const empty_parsed = computed(
   () =>

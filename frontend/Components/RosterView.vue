@@ -12,6 +12,8 @@ import FetchRosterButton from "./Common/Uwuowo/FetchRosterButton.vue";
 import SignInHint from "./Common/Uwuowo/SignInHint.vue";
 import { market_to_uwuowo_region } from "./Common/Uwuowo/UwuowoUtils";
 import { computed } from "vue";
+import { signed_in } from "@/Utils/BibleAuth";
+import { sync_rosters, syncing } from "@/Utils/BibleSync";
 
 const roster_store = useRosterStore();
 const { roster_config, roster_ids } = storeToRefs(roster_store);
@@ -35,6 +37,14 @@ const filtered_rosters_lists = computed(() =>
         @click="roster_store.add_roster()"
       >
         Add new roster
+      </button>
+      <button
+        v-if="signed_in"
+        class="side-bar-item header-button h-max w-max self-center"
+        :disabled="syncing"
+        @click="sync_rosters()"
+      >
+        {{ syncing ? "Syncing..." : "Sync with lostark.bible" }}
       </button></template
     >
     <template #main>
@@ -83,6 +93,7 @@ const filtered_rosters_lists = computed(() =>
                     }
                   "
                   :hide_region="true"
+                  :profile_id="profile_pair.profile.id"
                   :region="
                     roster_config.all_regions[profile_pair.profile.roster_id]
                   "

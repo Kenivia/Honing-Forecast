@@ -2,6 +2,7 @@
 import * as oauth from "oauth4webapi";
 import { computed } from "vue";
 import { StorageSerializers, useStorage } from "@vueuse/core";
+import transliterate from "@sindresorhus/transliterate";
 
 export const BIBLE = "https://lostark.bible";
 const AS: oauth.AuthorizationServer = {
@@ -29,6 +30,7 @@ export interface BibleCharacter {
 }
 export interface BibleRoster {
   region: "NA" | "CE";
+  world: string;
   characters: BibleCharacter[];
 }
 
@@ -125,8 +127,11 @@ async function bible_get(
   return response.json();
 }
 
+// names typed by hand may lack the in-game accents (Elsa for Ëlsa)
+export const norm_name = (name: string) => transliterate(name).toLowerCase();
+
 let rosters_promise: Promise<BibleRoster[]> | null = null;
-function linked_rosters(): Promise<BibleRoster[]> {
+export function linked_rosters(): Promise<BibleRoster[]> {
   rosters_promise ??= bible_get("/rosters").then((x) => x.rosters);
   rosters_promise.catch(() => (rosters_promise = null));
   return rosters_promise;
@@ -139,7 +144,7 @@ export async function find_linked(region: string, char_name: string) {
     for (const roster of await linked_rosters()) {
       if (roster.region !== region) continue;
       const character = roster.characters.find(
-        (c) => c.name.toLowerCase() === char_name.toLowerCase(),
+        (c) => norm_name(c.name) === norm_name(char_name),
       );
       if (character) return { roster, character };
     }

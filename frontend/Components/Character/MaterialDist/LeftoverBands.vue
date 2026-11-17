@@ -1,5 +1,11 @@
-<script setup lang="ts">
+<script lang="ts">
 import { ref } from "vue";
+
+// shared so the Character tooltip link can open the editor
+export const bands_editing = ref(false);
+</script>
+
+<script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import {
@@ -16,7 +22,7 @@ import RoleToggle from "@/Components/Character/RoleToggle.vue";
 // presets, and with Customise a dropdown per band. Calc.vue watches band_values and restarts
 // the workers. The Customise button sits at the end of the first line so it never moves.
 const { active_profile } = storeToRefs(useRosterStore());
-const editing = ref(false);
+const editing = bands_editing;
 
 function set_band(band: number, event: Event) {
   active_profile.value.band_values[band] = (event.target as HTMLSelectElement)
@@ -25,7 +31,10 @@ function set_band(band: number, event: Event) {
 </script>
 
 <template>
-  <div class="flex w-full flex-col gap-1 pl-2 text-sm">
+  <div
+    id="leftover-bands"
+    class="flex w-full flex-col gap-1 rounded pl-2 text-sm"
+  >
     <div class="flex flex-row items-center justify-between gap-2">
       <span class="flex flex-row items-center gap-2">
         <span class="text-(--text-muted)">Treating as</span>
@@ -66,8 +75,8 @@ function set_band(band: number, event: Event) {
         </template>
       </div>
       <span class="annotation text-left text-xs! leading-4!">
-        We consider every possible outcome. Any leftover material is converted
-        to gold according to these settings.
+        We consider every possible outcome. For each outcome, any leftover
+        material is converted to gold according to these settings.
       </span>
     </template>
   </div>

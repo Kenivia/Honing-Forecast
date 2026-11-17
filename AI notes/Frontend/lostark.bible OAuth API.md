@@ -142,5 +142,6 @@ Users can revoke access to your app at any time from [their Apps page](https://l
 - Redirect URI is `location.origin + "/auth/callback"`, a route placed before `/:characterName`; `AuthCallback.vue` finishes the exchange and returns to the page that started it.
 - Token stored with `expires_at = now + expires_in`; a 401 forgets it. Sign-out revokes it. The grant is per user + client, not per domain, so moving domain needs a new sign-in only (silent), not a token copy.
 - UI: `SignInHint.vue` (a small muted line under the roster fetch button and on the character page's import card, hidden when signed in); header shows "lostark.bible: <name> · Sign out" when signed in.
+- Signed in, characters refresh on launch and rosters sync at sign-in (`Utils/BibleSync.ts`; `External services.md`, "Character import").
 - Only the user's linked rosters are reachable; the hourly analytics follow-ups stay on the Worker's public scraping.
 - Planned next: backup / cross-device sync keyed by the `id` from `/api/oauth/user`, verified by the Worker.

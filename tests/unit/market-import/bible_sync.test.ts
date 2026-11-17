@@ -1,0 +1,85 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { computed } from "vue";
+import { createPinia, setActivePinia } from "pinia";
+import { useRosterStore } from "@/Stores/RosterConfig";
+import {
+  close_sync_popup,
+  refresh_char,
+  sync_pending,
+  sync_rosters,
+} from "@/Utils/BibleSync";
+import { fetch_char } from "@/Components/Common/Uwuowo/UwuowoUtils";
+
+const ROSTERS = vi.hoisted(() => ({ value: [] as any[] }));
+vi.mock("@/Utils/BibleAuth", async (original) => ({
+  ...(await original<any>()),
+  signed_in: computed(() => true),
+  linked_rosters: () => Promise.resolve(ROSTERS.value),
+}));
+vi.mock("@/Components/Common/Uwuowo/UwuowoUtils", async (original) => ({
+  ...(await original<any>()),
+  fetch_char: vi.fn(),
+}));
+
+const piece = (tier: number) => ({ plus_n: 5, ilevel: NaN, tier, adv: 0 });
+const result = (tiers: number[]) => ({
+  pieces: [...tiers.map(piece), piece(1)],
+  class_name: "Bard",
+  achieved_ilevel: "1700.00",
+});
+const roster = (...names: string[]) => ({
+  region: "NA",
+  world: "W",
+  characters: names.map((name) => ({ name, class: "bard", ilvl: 1700 })),
+});
+const names = () =>
+  useRosterStore().roster_config.profiles.map((p) => p.char_name);
+const flush = () => new Promise((r) => setTimeout(r, 0));
+
+let store: ReturnType<typeof useRosterStore>;
+beforeEach(() => {
+  localStorage.clear();
+  setActivePinia(createPinia());
+  store = useRosterStore();
+  store.init();
+  vi.mocked(fetch_char).mockResolvedValue(result([0, 0, 0, 0, 0, 0]));
+});
+
+describe("sync", () => {
+  it("replaces the fresh default character with the linked roster", async () => {
+    ROSTERS.value = [roster("Ëlsa", "Bob")];
+    await sync_rosters();
+    expect(names()).toEqual(["Ëlsa", "Bob"]);
+    expect(store.roster_config.profiles.every((p) => p.fetched_at > 0)).toBe(
+      true,
+    );
+  });
+
+  it("matches accentless names, renames them, and asks about the rest", async () => {
+    store.active_profile.char_name = "Elsa";
+    store.active_profile.fetched_at = 1;
+    store.add_char(store.active_profile.roster_id).char_name = "Typo";
+    ROSTERS.value = [roster("Ëlsa", "Bob", "Cat")];
+    const done = sync_rosters();
+    await flush();
+    expect(names()).toEqual(["Ëlsa", "Typo"]);
+    expect(sync_pending.value[0].bibles).toEqual(["Bob", "Cat"]);
+    sync_pending.value[0].locals[0].choice = "Bob";
+    close_sync_popup(true);
+    await done;
+    expect(names()).toEqual(["Ëlsa", "Bob", "Cat"]);
+  });
+});
+
+describe("refresh tier", () => {
+  it("switches to Serca only once all six pieces are Serca", async () => {
+    const id = store.active_profile.id;
+    store.active_profile.char_name = "Alpha";
+    vi.mocked(fetch_char).mockResolvedValue(result([1, 1, 1, 1, 1, 0]));
+    await refresh_char(id);
+    expect(store.active_profile.tier).toBe(0);
+    vi.mocked(fetch_char).mockResolvedValue(result([1, 1, 1, 1, 1, 1]));
+    await refresh_char(id);
+    expect(store.active_profile.tier).toBe(1);
+  });
+});

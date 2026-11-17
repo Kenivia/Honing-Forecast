@@ -14,6 +14,7 @@ defineProps<{
   hide_region?: boolean;
   region_change?: (_event: any) => void;
   apply?: ApplyFetch;
+  profile_id?: string;
 }>();
 
 const counter = ref(0);
@@ -43,6 +44,7 @@ const counter = ref(0);
       :region="market_to_uwuowo_region(region)"
       :apply="apply"
       :counter="counter"
+      :profile_id="profile_id"
     />
   </div>
 </template>

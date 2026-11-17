@@ -8,6 +8,7 @@ import Uwuowo from "@/Components/Common/Uwuowo/Uwuowo.vue";
 import SignInHint from "@/Components/Common/Uwuowo/SignInHint.vue";
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import RoleToggle from "@/Components/Character/RoleToggle.vue";
+import { bands_editing } from "@/Components/Character/MaterialDist/LeftoverBands.vue";
 import { ilevel } from "@/Utils/HoningUtil.js";
 import { apply_results } from "@/Components/Common/Uwuowo/ApplyResults.js";
 import {
@@ -21,8 +22,20 @@ const roster_store = useRosterStore();
 const { active_profile, all_profiles, active_region } =
   storeToRefs(roster_store);
 
-const ROLE_TIP =
-  'This controls how we value leftover materials.';
+function scroll_to_bands() {
+  bands_editing.value = true;
+  const el = document.getElementById("leftover-bands")!;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  // flash twice once the scroll has mostly settled
+  el.animate(
+    [
+      { backgroundColor: "transparent" },
+      { backgroundColor: "var(--bg-very-bright)" },
+      { backgroundColor: "transparent" },
+    ],
+    { duration: 500, delay: 300, iterations: 2, easing: "ease-in-out" },
+  );
+}
 </script>
 
 <template>
@@ -57,6 +70,7 @@ const ROLE_TIP =
         :name_change="(new_name) => (active_profile.char_name = new_name)"
         :region_change="roster_store.active_region_change"
         :region="active_region"
+        :profile_id="active_profile.id"
         :apply="
           (result, force_t4, _name, class_name) =>
             apply_results(active_profile, result, force_t4, false, class_name)
@@ -66,7 +80,15 @@ const ROLE_TIP =
       <div class="my-1 flex flex-row items-center gap-2">
         <span>Character:</span>
         <RoleToggle />
-        <QuestionMark :text="ROLE_TIP" />
+        <QuestionMark>
+          This controls how we value leftover materials, find out more
+          <button
+            class="underline hover:text-(--text-bright)"
+            @click="scroll_to_bands"
+          >
+            here</button
+          >. You can have multiple 'main's
+        </QuestionMark>
       </div>
       <div class="flex flex-col">
         <label class="text-no-wrap text-(--achieved)"
