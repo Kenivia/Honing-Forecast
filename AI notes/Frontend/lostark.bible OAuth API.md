@@ -1,6 +1,6 @@
 # lostark.bible OAuth API
 
-Verbatim copy of https://lostark.bible/help/oauth-api (saved by the user 2026-11-17; re-check the page if anything disagrees). Planned to replace the Worker's scraping of lostark.bible (`External services.md`); sign-in will be required, no public scraping. Permission obtained from the lostark.bible devs. Our own conclusions are in the last section.
+Verbatim copy of https://lostark.bible/help/oauth-api (saved by the user 2026-11-17; re-check the page if anything disagrees). Used, optionally, for the character import of the user's own characters; public scraping stays for everyone else (`External services.md`, "Character import"). Permission obtained from the lostark.bible devs. Our own conclusions are in the last section.
 
 ---
 
@@ -136,8 +136,11 @@ Users can revoke access to your app at any time from [their Apps page](https://l
   - Other slots: `neck, ear1, ear2, finger1, finger2` (`tier3_accessory`/`tier4_accessory`), `ability_stone`, `bracelet`, `trinity_core` (`orb`), `avatar_*` (`cosmetic`).
 - `logs/{name}`: an **object keyed `"0"`…`"24"`** (not an array) of `{id, name, boss, difficulty, dps, bdps, ndps, rdps, rContribution, buffs, class (display name), spec, gearScore, combatPower, percentile, contributionPercentile, duration, timestamp (ms), isBus, isDead}`.
 
-## Implications for us (not from the page)
-- Only characters in the **signed-in user's own linked rosters** are reachable; looking up arbitrary names is not.
-- Public client + PKCE works fully in the browser (CORS-enabled), no secret needed.
-- The Worker's hourly follow-ups (cron, no user present) would need a stored token per user: 90-day tokens without refresh, so they lapse unless the user signs in again.
-- No response schemas for `user`/`rosters`/`loadouts` and no rate limits are documented; inspect real responses with the dev client.
+## How we use it (not from the page)
+- Public client, PKCE, scopes `identify rosters loadouts`; done in the browser with `oauth4webapi` (`Utils/BibleAuth.ts`). Token, revoke and API endpoints all answer CORS `*`. Arctic, which the page suggests, is deprecated on npm.
+- Client ids: dev `VITE_BIBLE_CLIENT_ID` in `.env.development` (redirect `http://localhost:5173/auth/callback`), production in `.env.production` (`https://honing-forecast.com/auth/callback`, `https://honing-forecast.pages.dev/auth/callback`). Ids are public; nothing secret exists for a public client.
+- Redirect URI is `location.origin + "/auth/callback"`, a route placed before `/:characterName`; `AuthCallback.vue` finishes the exchange and returns to the page that started it.
+- Token stored with `expires_at = now + expires_in`; a 401 forgets it. Sign-out revokes it. The grant is per user + client, not per domain, so moving domain needs a new sign-in only (silent), not a token copy.
+- UI: `SignInHint.vue` (a small muted line under the roster fetch button and on the character page's import card, hidden when signed in); header shows "lostark.bible: <name> · Sign out" when signed in.
+- Only the user's linked rosters are reachable; the hourly analytics follow-ups stay on the Worker's public scraping.
+- Planned next: backup / cross-device sync keyed by the `id` from `/api/oauth/user`, verified by the Worker.

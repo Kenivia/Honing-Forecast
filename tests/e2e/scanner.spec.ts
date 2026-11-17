@@ -141,8 +141,8 @@ test("exports merge across characters and are snapshotted", async ({
   await expect(cover).toBeVisible();
   await expect(cover).toContainText("Newchar");
   await expect(
-    page.getByText(/taken as unchanged: Roster storage page 1/),
-  ).toBeVisible();
+    page.getByText("Not opened in game, taken as unchanged:").locator(".."),
+  ).toContainText("Roster storage page 1");
   await expect(manifest_cell(page, "Red", "Tradable")).toHaveText("100");
   await scan(
     page,
@@ -390,12 +390,14 @@ test("chests are edited on the calculator page", async ({ page }) => {
   await expect(page.getByRole("group", { name: /Obtain-all/ })).toContainText(
     "Test box",
   );
+  // counts are only shown while editing
   await expect(
     page
       .getByRole("group", { name: /Obtain-all/ })
       .getByLabel("Test box count"),
-  ).toHaveValue("5");
+  ).toHaveCount(0);
   await page.getByLabel("Edit chests").check();
+  await expect(page.getByLabel("Test box count")).toHaveValue("5");
   await page.getByRole("button", { name: "Delete Test box" }).click();
   await expect(page.getByLabel("Test box count")).toHaveCount(0);
 });

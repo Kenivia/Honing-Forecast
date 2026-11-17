@@ -2,6 +2,7 @@ import { WORKER_URL } from "@/Utils/Constants";
 import { parse_locale_int } from "@/Utils/InputColumn";
 import { MarketRegions } from "@/Utils/MarketDataFetcher";
 import { Ref } from "vue";
+import { BibleCharacter, find_linked, get_loadouts } from "@/Utils/BibleAuth";
 
 export type UwuowoRegions = "NA" | "CE" | null;
 export const FETCH_MSG = "Fetching from lostark.bible...";
@@ -96,6 +97,86 @@ export async function fetch_and_parse(
     return `Character: ${fetch_request.char_name} not found (region: ${fetch_request.region})`;
   }
   return parsing_func(fetch_request, allDivs, html);
+}
+
+// Signed in and the character is in the user's linked rosters: OAuth API, otherwise public scraping.
+export async function fetch_char(
+  region: UwuowoRegions,
+  char_name: string,
+): Promise<string | UwuowoCharResult> {
+  const linked = await find_linked(region, char_name);
+  if (linked) {
+    await acquire_rate_limit_slot();
+    try {
+      return loadouts_to_result(
+        (await get_loadouts(region, linked.character.name)).loadouts,
+        linked.character,
+      );
+    } catch {
+      // falls back to scraping
+    }
+  }
+  return fetch_and_parse({ region, char_name, suffix: "" }, parse_char);
+}
+
+export async function fetch_roster(
+  region: UwuowoRegions,
+  any_char_name: string,
+): Promise<string | string[]> {
+  const linked = await find_linked(region, any_char_name);
+  if (linked) return linked.roster.characters.map((c) => c.name);
+  return fetch_and_parse(
+    { region, char_name: any_char_name, suffix: "roster" },
+    parse_roster,
+  );
+}
+
+const API_SLOTS = [
+  "head",
+  "shoulder",
+  "upper_body",
+  "lower_body",
+  "hand",
+  "weapon",
+];
+
+// newest loadout; Serca ids start 13462, the vambrace ("bracer") is Serca only
+export function loadouts_to_result(
+  loadouts: any[],
+  character: BibleCharacter,
+): UwuowoCharResult {
+  const newest = loadouts.reduce((a, b) =>
+    b.lastUpdated > a.lastUpdated ? b : a,
+  );
+  const by_slot = (slot: string) =>
+    newest.items.find((item: any) => item.slot === slot);
+  const pieces: UwuowoPiece[] = API_SLOTS.map((slot) => {
+    const item = by_slot(slot);
+    const tier = Math.floor(item.id / 10000) === 13462 ? 1 : 0;
+    return {
+      plus_n: item.data.honing,
+      ilevel: NaN,
+      tier,
+      adv: tier === 0 ? (item.data.advancedHoning ?? 0) : NaN,
+    };
+  });
+  pieces.push({
+    plus_n: by_slot("bracer")?.data.honing ?? 0,
+    ilevel: NaN,
+    tier: 1,
+    adv: NaN,
+  });
+  return {
+    pieces,
+    class_name: character.class
+      .split("_")
+      .map((w) => w[0].toUpperCase() + w.slice(1))
+      .join(" "),
+    achieved_ilevel: character.ilvl.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }),
+  };
 }
 
 export function parse_roster(

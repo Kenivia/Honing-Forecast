@@ -4,9 +4,8 @@ import {
   UwuowoPiece,
   UwuowoRegions,
   UwuowoResultBundle,
-  fetch_and_parse,
-  parse_char,
-  parse_roster,
+  fetch_char,
+  fetch_roster,
   reset_uwuowo_bundle,
 } from "./UwuowoUtils";
 import Popup from "../Popup.vue";
@@ -39,10 +38,7 @@ async function click() {
   const stale = () =>
     props.region !== region || props.any_char_name !== any_char_name;
   show_popup.value = true;
-  const roster_result = await fetch_and_parse(
-    { region, char_name: any_char_name, suffix: "roster" },
-    parse_roster,
-  );
+  const roster_result = await fetch_roster(region, any_char_name);
   if (stale()) return;
   if (typeof roster_result === "string") {
     roster_parsed.value.status = roster_result;
@@ -57,10 +53,7 @@ async function click() {
   for (const char of roster_result.filter(
     (x) => !all_names.value.includes(x),
   )) {
-    const result = await fetch_and_parse(
-      { region, char_name: char, suffix: "" },
-      parse_char,
-    );
+    const result = await fetch_char(region, char);
     if (stale()) break;
     parsed_chars.value[char] = { result, status: "" };
   }

@@ -196,7 +196,9 @@ describe("ChestPanels opening split", () => {
     const text = state_panel([choice], [["k", [1000, 500]]])
       .text()
       .replace(/\s+/g, "");
-    expect(text).toContain("PickoneRosterbound:1,000asx10.3,500asx20x2");
+    expect(text).toContain(
+      "PickoneRosterboundOpen1,000boxesasx10.3,open500boxesasx20x2",
+    );
   });
 
   // the same rule as chest_gains, the "+n from chests" beside it

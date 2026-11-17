@@ -4,8 +4,7 @@ import {
   FETCH_MSG,
   UwuowoPiece,
   UwuowoRegions,
-  fetch_and_parse,
-  parse_char,
+  fetch_char,
   reset_uwuowo_bundle,
 } from "./UwuowoUtils";
 import Popup from "../Popup.vue";
@@ -38,10 +37,7 @@ async function click() {
   const { region, char_name } = props;
   if (region === null) return;
   show_popup.value = true;
-  const char_result = await fetch_and_parse(
-    { region, char_name, suffix: "" },
-    parse_char,
-  );
+  const char_result = await fetch_char(region, char_name);
   // dropped if the name or region changed meanwhile
   if (props.region !== region || props.char_name !== char_name) return;
   if (typeof char_result === "string") {

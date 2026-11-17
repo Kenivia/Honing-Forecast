@@ -5,6 +5,7 @@ import { check_revert_ilevel_ok } from "@/Utils/Helpers";
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import Uwuowo from "@/Components/Common/Uwuowo/Uwuowo.vue";
+import SignInHint from "@/Components/Common/Uwuowo/SignInHint.vue";
 import { ilevel } from "@/Utils/HoningUtil.js";
 import { apply_results } from "@/Components/Common/Uwuowo/ApplyResults.js";
 import {
@@ -56,6 +57,7 @@ const { active_profile, all_profiles, active_region } =
             apply_results(active_profile, result, force_t4, false)
         "
       />
+      <SignInHint />
       <div class="flex flex-col">
         <label class="text-no-wrap text-(--achieved)"
           >Achieved ilevel: {{ ilevel(active_profile, "achieved") }}</label

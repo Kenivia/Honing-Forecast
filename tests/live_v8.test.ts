@@ -23,10 +23,12 @@ const v8 = JSON.parse(LZString.decompressFromUTF16(compressed));
 // the chain up to the current version leaves nothing to a load fallback
 const migrated = migrate_to_current(structuredClone(v8), 8);
 const { version: _m, ...expected } = migrated;
+// an old save's choice_seed is dropped on load
+const kept = (p: string) => !p.endsWith(".choice_seed");
 const fell_back = differences(
   to_saved(from_saved(structuredClone(migrated))),
   expected,
-);
+).filter(kept);
 check(
   "nothing from a fallback",
   fell_back.length === 0,
@@ -89,7 +91,7 @@ const want = rest.profiles.map((p) => ({
   forbidden_chests: [],
 }));
 const changed = [
-  ...differences(profiles, want),
+  ...differences(profiles, want).filter(kept),
   ...differences(again.mats_prices, rest.mats_prices),
 ];
 check(

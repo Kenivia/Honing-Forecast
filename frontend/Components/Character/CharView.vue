@@ -7,8 +7,6 @@ import ControlPanel from "@/Components/Character/ControlPanel.vue";
 import ScannerControlPanel from "@/Components/Character/InventoryScanner/ScannerControlPanel.vue";
 import { scanner_shown } from "@/Components/Character/InventoryScanner/ScannerUIutils";
 import Sidebar from "@/Components/Common/Sidebar.vue";
-import BrokenSaveBanner from "@/Components/Common/BrokenSaveBanner.vue";
-import OtherTabBanner from "@/Components/Common/OtherTabBanner.vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 const DEV = import.meta.env.DEV;
 const runtime = useRuntimeStore();
@@ -73,8 +71,6 @@ onUnmounted(() => {
     </template>
 
     <template #main>
-      <BrokenSaveBanner class="w-full" />
-      <OtherTabBanner class="w-full" />
       <!-- the calculator is remounted per character, so nothing of the last one carries over -->
       <RouterView v-slot="{ Component }">
         <component

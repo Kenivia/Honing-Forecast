@@ -64,7 +64,10 @@ for (const fixture of fixtures) {
 
   check("V10 key consumed", localStorage.getItem(V10_KEY) === null);
   check("profiles kept", loaded.profiles.length === v10.profiles.length);
-  const fell_back = differences(once, expected);
+  // an old save's choice_seed is dropped on load
+  const fell_back = differences(once, expected).filter(
+    (p) => !p.endsWith(".choice_seed"),
+  );
   check(
     "loads as migrated, nothing from a fallback",
     fell_back.length === 0,

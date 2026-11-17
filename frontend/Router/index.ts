@@ -11,6 +11,7 @@ import ChangeLogsView from "@/Components/ChangeLogsView.vue";
 import Income from "@/Components/Character/Income/Income.vue";
 import Choices from "@/Components/Character/Choices/Choices.vue";
 import { guard_switch } from "@/Components/Character/InventoryScanner/ScanSwitch";
+import AuthCallback from "@/Components/Common/Uwuowo/AuthCallback.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -54,6 +55,11 @@ const router = createRouter({
       ],
     },
     {
+      path: "/auth/callback",
+      name: "auth-callback",
+      component: AuthCallback,
+    },
+    {
       path: "/:characterName",
       name: "char",
       component: CharView,
@@ -63,7 +69,9 @@ const router = createRouter({
         { path: "guide", name: "char-guide", component: Guide },
         { path: "scanner", name: "char-scanner", component: Scanner },
         // Income is dev only until released
-        ...(import.meta.env.DEV ? [{ path: "income", name: "char-income", component: Income }] : []),
+        ...(import.meta.env.DEV
+          ? [{ path: "income", name: "char-income", component: Income }]
+          : []),
         { path: "choices", name: "char-choices", component: Choices },
         {
           path: ":x/guide",

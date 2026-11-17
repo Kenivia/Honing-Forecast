@@ -13,9 +13,8 @@ import {
 } from "./Stores/ConfigStorage";
 import { useRuntimeStore } from "./Stores/RuntimeState";
 import ScanSwitchDialog from "./Components/Character/InventoryScanner/ScanSwitchDialog.vue";
-import BrokenSaveBanner from "./Components/Common/BrokenSaveBanner.vue";
-import OtherTabBanner from "./Components/Common/OtherTabBanner.vue";
 import { upload_snapshots } from "./Utils/Analytics";
+import { bible_auth, sign_out, signed_in } from "./Utils/BibleAuth";
 
 const roster_store = useRosterStore();
 roster_store.init();
@@ -52,9 +51,6 @@ watch(
 const is900Narrow = useMediaQuery("(max-width: 900px)");
 
 const route = useRoute();
-const on_char_page = computed(() =>
-  route.matched.some((r) => r.name === "char"),
-);
 const router = useRouter();
 
 function on_char_select(e: Event) {
@@ -159,13 +155,17 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
             {{ profile.char_name }}
           </option>
         </select>
+        <div
+          v-if="signed_in"
+          class="ml-auto flex flex-row items-center gap-2 px-3 text-sm text-(--text-muted)"
+        >
+          <span>lostark.bible: {{ bible_auth.name }}</span>
+          <button class="cursor-pointer hover:underline" @click="sign_out">
+            Sign out
+          </button>
+        </div>
       </nav>
     </header>
-    <!-- character pages show these beside their fixed sidebar instead -->
-    <template v-if="!on_char_page">
-      <BrokenSaveBanner />
-      <OtherTabBanner />
-    </template>
 
     <RouterView />
     <ScanSwitchDialog />

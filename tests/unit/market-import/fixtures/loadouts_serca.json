@@ -1,0 +1,149 @@
+{
+ "loadouts": [
+  {
+   "classification": "most_recent_chaos_dungeon",
+   "lastUpdated": 1761404546000,
+   "itemLevel": 1742.5001,
+   "items": [
+    {
+     "id": 134611230,
+     "slot": "weapon",
+     "data": {
+      "type": "equipment",
+      "honing": 25,
+      "advancedHoning": 40
+     }
+    },
+    {
+     "id": 134613231,
+     "slot": "head",
+     "data": {
+      "type": "equipment",
+      "honing": 22,
+      "advancedHoning": 40
+     }
+    },
+    {
+     "id": 134613232,
+     "slot": "upper_body",
+     "data": {
+      "type": "equipment",
+      "honing": 22,
+      "advancedHoning": 40
+     }
+    },
+    {
+     "id": 134613233,
+     "slot": "lower_body",
+     "data": {
+      "type": "equipment",
+      "honing": 22,
+      "advancedHoning": 40
+     }
+    },
+    {
+     "id": 134613234,
+     "slot": "hand",
+     "data": {
+      "type": "equipment",
+      "honing": 22,
+      "advancedHoning": 40
+     }
+    },
+    {
+     "id": 134613235,
+     "slot": "shoulder",
+     "data": {
+      "type": "equipment",
+      "honing": 22,
+      "advancedHoning": 40
+     }
+    },
+    {
+     "id": 213400220,
+     "slot": "neck",
+     "data": {
+      "type": "tier4_accessory"
+     }
+    }
+   ]
+  },
+  {
+   "classification": "most_recent_raid",
+   "lastUpdated": 1794758813000,
+   "itemLevel": 1781.6661,
+   "items": [
+    {
+     "id": 134621230,
+     "slot": "weapon",
+     "data": {
+      "type": "equipment",
+      "honing": 23,
+      "advancedHoning": 40
+     }
+    },
+    {
+     "id": 134621231,
+     "slot": "head",
+     "data": {
+      "type": "equipment",
+      "honing": 21,
+      "advancedHoning": 40
+     }
+    },
+    {
+     "id": 134621232,
+     "slot": "upper_body",
+     "data": {
+      "type": "equipment",
+      "honing": 21,
+      "advancedHoning": 40
+     }
+    },
+    {
+     "id": 134621233,
+     "slot": "lower_body",
+     "data": {
+      "type": "equipment",
+      "honing": 21,
+      "advancedHoning": 40
+     }
+    },
+    {
+     "id": 134621234,
+     "slot": "hand",
+     "data": {
+      "type": "equipment",
+      "honing": 21,
+      "advancedHoning": 40
+     }
+    },
+    {
+     "id": 134621235,
+     "slot": "shoulder",
+     "data": {
+      "type": "equipment",
+      "honing": 21,
+      "advancedHoning": 40
+     }
+    },
+    {
+     "id": 213400220,
+     "slot": "neck",
+     "data": {
+      "type": "tier4_accessory"
+     }
+    },
+    {
+     "id": 134401206,
+     "slot": "bracer",
+     "data": {
+      "type": "equipment",
+      "honing": 13,
+      "advancedHoning": 0
+     }
+    }
+   ]
+  }
+ ]
+}

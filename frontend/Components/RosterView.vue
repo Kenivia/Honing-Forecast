@@ -9,6 +9,7 @@ import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher.js";
 import { ilevel } from "@/Utils/HoningUtil.js";
 import { apply_results } from "./Common/Uwuowo/ApplyResults.js";
 import FetchRosterButton from "./Common/Uwuowo/FetchRosterButton.vue";
+import SignInHint from "./Common/Uwuowo/SignInHint.vue";
 import { market_to_uwuowo_region } from "./Common/Uwuowo/UwuowoUtils";
 import { computed } from "vue";
 
@@ -197,6 +198,9 @@ const filtered_rosters_lists = computed(() =>
                   apply_results(added, result, force_t4, true);
                 }
               "
+            />
+            <SignInHint
+              v-if="roster_config.all_regions[roster_id] !== 'Custom'"
             />
             <button
               class="generic-button w-full"

@@ -85,7 +85,7 @@ A profile's `chests` are saved as the scanner exported them (title, band, count,
 
 `migrate_10_to_11` gives every profile `income_auto` (off) and `income_sources` (`{}`) where missing; that is all V11 changes.
 
-`migrate_11_to_12` empties `scan_pages`, whose page totals gave way to pages saved slot by slot (`Screen scanner/Manifest.md`), adds an empty `scan_currencies`, and gives every profile an empty `forbidden_chests`; that is all V12 changes. The first export of each character after it starts from nothing saved. `tests/live_v10.test.ts` runs both on the real V10 saves.
+`migrate_11_to_12` empties `scan_pages`, whose page totals gave way to pages saved slot by slot (`Screen scanner/Manifest.md`), adds an empty `scan_currencies`, and gives every profile an empty `forbidden_chests`; that is all V12 changes. The first export of each character after it starts from nothing saved. `tests/live_v10.test.ts` runs both on the real V10 saves, `tests/live_v11.test.ts` the second on a real V11 save.
 
 `migrate_7_to_8` **drops** V7's `optimizer_treatment_plan` rather than mapping it, so `band_values` is left out and `profile_from_saved` supplies the default. `histogram_treatment_plan` is a different setting — which ownership line the chance column reads — and becomes `chance_band`. `leftover_price` is dropped too.
 
@@ -123,3 +123,5 @@ The Backup section of the character control panel writes `export_config` to a JS
 Tailwind utilities, plus a small set of shared classes in `shared.css` and colour variables in `theme.css` (dark theme only; `index.css` sets `color-scheme: dark` so native controls match, and colours `option`/`optgroup` explicitly because Edge ignores it for an open dropdown's list). Long-form text (the guide, the change logs) uses `.prose-card` from `shared.css`. A dismiss ✕ is `Common/CloseButton.vue` (square, `size` in px). Material tables use a shared grid with subgrid rows. Naming is PascalCase for files and folders, snake_case for functions and variables. TypeScript is non-strict.
 
 The free-tap graph (`special_graph_data` in `MaterialDist/DistLines.ts`) is always drawn in steps (`MaterialGraph`'s `histogram`): the bar over [k, k+1] is k pieces tapped, from 0 to the normal upgrade count, P(at least k) when cumulative and P(exactly k) otherwise. In step mode a graph's first point gets a bar one gap wide to its left, cut at 0, so its mass is not dropped. A `histogram` graph's hover sits at the centre of each bar, since a bar is one count; the others hover at the point, the right edge, as they read "≤ x".
+
+The lostark.bible sign-in (`Utils/BibleAuth.ts`) keeps its token in its own localStorage key `bible_auth` (`{token, expires_at, name}`, via `useStorage`), outside the config, so it is never in exports, uploads or the save watch; the PKCE verifier waits in sessionStorage (`bible_auth_pending`) during the redirect.

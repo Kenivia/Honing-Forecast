@@ -2,6 +2,8 @@
 import { useMediaQuery } from "@vueuse/core";
 import { ref } from "vue";
 import Footer from "./Footer.vue";
+import BrokenSaveBanner from "./BrokenSaveBanner.vue";
+import OtherTabBanner from "./OtherTabBanner.vue";
 
 const props = withDefaults(defineProps<{ header?: string; width: number }>(), {
   header: "",
@@ -55,6 +57,8 @@ const close = () => (sidebarOpen.value = false);
           marginRight: isNarrow ? 'auto' : '',
         }"
       >
+        <BrokenSaveBanner class="w-full" />
+        <OtherTabBanner class="w-full" />
         <slot name="main" />
       </div>
     </div>

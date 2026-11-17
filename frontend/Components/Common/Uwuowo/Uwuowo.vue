@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import CharNameInput from "./CharNameInput.vue";
 import RegionSelector from "../RegionSelector.vue";
-import FetchCharButton from "./FetchCharButton.vue";
-import { MarketRegions } from "@/Utils/MarketDataFetcher.js";
+import FetchCharButton from "./FetchCharButton.vue";import { MarketRegions } from "@/Utils/MarketDataFetcher.js";
 import { market_to_uwuowo_region, UwuowoPiece } from "./UwuowoUtils.js";
 import { ref } from "vue";
 

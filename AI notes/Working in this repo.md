@@ -85,7 +85,7 @@ with `tests/shim.mjs` (localStorage, `self`, a stub `Worker`). `tests/helpers.ts
 <substring>` runs one suite.
 
 - `migration.test.ts`: a hand-built V7 payload through the real migration and save path, and a synthetic V10 save through V10 to V11.
-- `live.test.ts`: the same against `tests/V7 config`, a real save; `live_v8.test.ts` runs V8 onwards on `tests/v8 config`; `live_v10.test.ts` runs V10 to V11 on `tests/V10 config` and `tests/V10 config 2` (from the production site). The V8 and V10 suites fail if `to_saved(from_saved(migrated))` differs from the migrated save anywhere, i.e. if anything came from a load fallback; the V7 one cannot, since its chain still leans on them. Each skips itself if its file is absent.
+- `live.test.ts`: the same against `tests/V7 config`, a real save; `live_v8.test.ts` runs V8 onwards on `tests/v8 config`; `live_v10.test.ts` runs V10 onwards on `tests/V10 config` and `tests/V10 config 2` (from the production site); `live_v11.test.ts` runs V11 onwards on `tests/V11 config`. An old save's `choice_seed` is expected to be dropped. The V8 and V10 suites fail if `to_saved(from_saved(migrated))` differs from the migrated save anywhere, i.e. if anything came from a load fallback; the V7 one cannot, since its chain still leans on them. Each skips itself if its file is absent.
 - `relations.test.ts`: cross-tier conversion, bundle pricing, material deduction, a Serca character counting and spending its T4 stock.
 - `chests.test.ts`, `choices.test.ts`, `income.test.ts`, `scans.test.ts`: chest processing, taking a choice's option, income from snapshots, the manifest merge and snapshots.
 

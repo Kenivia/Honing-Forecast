@@ -2,7 +2,7 @@
 
 The app is a static site with no backend of its own. Everything external goes through one Cloudflare Worker.
 
-lostark.bible scraping is planned to move to their OAuth API (sign-in required): `lostark.bible OAuth API.md`.
+Character import can also go through lostark.bible's OAuth API when the user signs in (optional; scraping stays the default): `lostark.bible OAuth API.md`.
 
 ## The Worker
 
@@ -50,6 +50,9 @@ The budget snapshots (`Screen scanner/Manifest.md`) are uploaded so the author c
 ## Character import ("Uwuowo")
 
 `Components/Common/Uwuowo`. The name is historical; the source is lostark.bible.
+
+- Two paths behind `fetch_char` / `fetch_roster` (`UwuowoUtils.ts`): signed in (`Utils/BibleAuth.ts`) and the character is in one of the user's linked rosters (same region, name case-insensitive) → OAuth API; anything else, or any API error → the scraping below. Other people's characters always scrape.
+- API path: the roster list is the linked roster's names; a character is its newest loadout (`loadouts_to_result`): slots `head, shoulder, upper_body, lower_body, hand, weapon` + `bracer` (vambrace, +0 if absent), tier from the item id (Serca `13462xxxx`), `adv` from `advancedHoning` on T4, per-piece item level NaN (blank in the confirm panel), item level and class from the rosters entry.
 
 - The Worker returns the site's HTML and the frontend scrapes it by DOM position. This breaks whenever the site changes its markup, and should be assumed fragile. Equipment is read from the first 12 cells of the equipment grid (armor alternating with accessories); the grid has extra cells after them (Vambrace, Orb). The vambrace cell is found by its "Vambrace" label (top row `Vambrace, +N, T4`, no item level) and becomes a 7th piece (Serca, item level NaN); without one (empty cell or "Not Equipped") it is +0.
 - The vambrace never decides the tier and is applied only when the import ends up Serca (fetched-done up to +N, its wants kept); on T4 its row is left alone, and `upgrade_info` (`PayloadBuilder.ts`) drops T4 vambrace upgrades anyway.
