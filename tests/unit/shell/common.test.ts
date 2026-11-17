@@ -65,7 +65,10 @@ describe("ChestPanels", () => {
   it("read-only unless editing", () => {
     const w = panels();
     expect(w.find("[role=group] input").attributes("disabled")).toBeDefined();
-    expect(w.find("[role=group] button").exists()).toBe(false);
+    // forbidding is allowed outside editing; deleting is not
+    expect(w.find('[role=group] button[aria-label^="Delete"]').exists()).toBe(
+      false,
+    );
   });
 
   it("editing emits count, forbid and remove by key", async () => {
@@ -207,9 +210,39 @@ describe("RegionSelector", () => {
 
 describe("LabeledPieceIcon", () => {
   it("names the piece and draws its icon", () => {
-    const w = mount(LabeledPieceIcon, { props: { piece: "Helmet" } });
+    const w = mount(LabeledPieceIcon, {
+      props: { piece: "Helmet", class_name: "Bard", tier: 1, level: 0 },
+    });
     expect(w.text()).toBe("Helmet");
     expect(w.find("img").attributes("alt")).toBe("Helmet");
+    expect(w.find("img").attributes("src")).toBe(
+      "/Icons/Equipments/Serca/bard/Helmet.webp",
+    );
+  });
+
+  it("falls back to Berserker's gear, and to Serca's vambrace", () => {
+    const src = (props) =>
+      mount(LabeledPieceIcon, { props }).find("img").attributes("src");
+    expect(src({ piece: "Weapon", class_name: "", tier: 0 })).toBe(
+      "/Icons/Equipments/T4/berserker/Weapon.webp",
+    );
+    expect(
+      src({ piece: "Vambrace", class_name: "Slayer", tier: 0, level: 0 }),
+    ).toBe("/Icons/Equipments/Serca/slayer/Vambrace.webp");
+  });
+
+  it("puts the vambrace on its level's rarity", () => {
+    const bg = (piece, level) =>
+      mount(LabeledPieceIcon, {
+        props: { piece, class_name: "", tier: 1, level },
+      })
+        .find("img")
+        .attributes("style");
+    expect(bg("Helmet", 0)).toContain("ancient");
+    expect(bg("Vambrace", 10)).toContain("epic");
+    expect(bg("Vambrace", 11)).toContain("legendary");
+    expect(bg("Vambrace", 20)).toContain("relic");
+    expect(bg("Vambrace", 21)).toContain("ancient");
   });
 });
 

@@ -1,6 +1,7 @@
 import { CharProfile } from "@/Stores/CharacterProfile";
 import {
   ADV_COLS,
+  CLASS_KEYS,
   IconMap,
   NUM_ADV_PIECES,
   PIECE_NAMES,
@@ -168,6 +169,40 @@ export function chance_text(chance: number) {
 }
 export function get_icon_path(name: string) {
   return IconMap[name] ?? "";
+}
+export function class_key(class_name: string) {
+  return (class_name ?? "").toLowerCase().replace(/[^a-z]/g, "");
+}
+// The class's honed gear (scripts/game_files/equipment_icons.py), Berserker's for an unknown class; vambraces are Serca only.
+export function get_piece_icon(
+  piece: string,
+  class_name: string,
+  tier: number,
+) {
+  const key = CLASS_KEYS.has(class_key(class_name))
+    ? class_key(class_name)
+    : "berserker";
+  const set = tier === 1 || piece === "Vambrace" ? "Serca" : "T4";
+  return `/Icons/Equipments/${set}/${key}/${piece}.webp`;
+}
+// Rarity background: honed gear is ancient, the vambrace goes by its level.
+export function get_piece_bg(piece: string, level: number) {
+  const rarity =
+    piece !== "Vambrace" || level > 20
+      ? "ancient"
+      : level > 15
+        ? "relic"
+        : level > 10
+          ? "legendary"
+          : "epic";
+  return { backgroundImage: `url(/Icons/Backgrounds/${rarity}.webp)` };
+}
+export function vambrace_done_level(profile: CharProfile) {
+  return (
+    profile.normal_grid[PIECE_NAMES.indexOf("Vambrace")].findLastIndex(
+      (s) => s === UpgradeStatus.Done || s === UpgradeStatus.FetchedDone,
+    ) + 1
+  );
 }
 export function get_piece_name(upgrade: Upgrade) {
   return PIECE_NAMES[upgrade.piece_index];

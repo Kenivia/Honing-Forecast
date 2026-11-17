@@ -7,6 +7,7 @@ import {
   reset_uwuowo_bundle,
 } from "./UwuowoUtils";
 import Popup from "../Popup.vue";
+import Spinner from "../Spinner.vue";
 import ConfirmPanel from "./ConfirmPanel.vue";
 import { computed, ref, watch } from "vue";
 import { computedAsync, useTimeAgo } from "@vueuse/core";
@@ -89,9 +90,10 @@ async function click() {
         :disabled="refreshing.has(profile_id)"
         @click="refresh_char(profile_id)"
       >
+        <Spinner v-if="refreshing.has(profile_id)" class="h-4 w-4" />
         <span
+          v-else
           class="block h-4 w-4 bg-current"
-          :class="{ 'animate-spin': refreshing.has(profile_id) }"
           style="
             mask: url(/Icons/rotate-right-solid-full.svg) center / contain
               no-repeat;

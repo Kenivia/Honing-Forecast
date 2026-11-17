@@ -90,6 +90,7 @@ const want = rest.profiles.map((p) => ({
   income_sources: {},
   forbidden_chests: [],
   class_name: "",
+  fetched_at: 0,
 }));
 // leftover values are V12's main / alt split, checked on their own
 const changed = [

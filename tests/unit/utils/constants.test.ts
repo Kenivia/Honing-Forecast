@@ -303,5 +303,4 @@ it("every material has an icon", () => {
   for (const label of ALL_MATERIAL_LABELS) {
     expect(IconMap[label]).toMatch(/^\/Icons\/Materials\//);
   }
-  expect(IconMap.Vambrace).toBe("/Icons/Equipments/Vambrace.png");
 });

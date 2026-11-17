@@ -13,6 +13,7 @@ import { grid_change_callback } from "../CharWorkerUtils";
 import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import { click_cell, click_column, column_status } from "@/Utils/StatusGrid";
 import LabeledPieceIcon from "@/Components/Common/LabeledPieceIcon.vue";
+import { vambrace_done_level } from "@/Utils/Helpers";
 
 const { active_profile } = storeToRefs(useRosterStore());
 const props = defineProps<{
@@ -103,13 +104,23 @@ function cell_cursor(status: UpgradeStatus): string {
         :key="index"
         class="flex h-7 items-center justify-end"
       >
-        <LabeledPieceIcon :piece="PIECE_NAMES[index - 1]" />
+        <LabeledPieceIcon
+          :piece="PIECE_NAMES[index - 1]"
+          :class_name="active_profile.class_name"
+          :tier="active_profile.tier"
+          :level="0"
+        />
       </div>
       <div
         v-if="active_profile.tier == 1"
         class="mt-1 flex h-14 items-center justify-end gap-7 border-t border-(--border-main) pt-1"
       >
-        <LabeledPieceIcon :piece="PIECE_NAMES[NUM_PIECES - 1]" />
+        <LabeledPieceIcon
+          :piece="PIECE_NAMES[NUM_PIECES - 1]"
+          :class_name="active_profile.class_name"
+          :tier="active_profile.tier"
+          :level="vambrace_done_level(active_profile)"
+        />
       </div>
     </div>
     <div class="items-start overflow-x-auto">

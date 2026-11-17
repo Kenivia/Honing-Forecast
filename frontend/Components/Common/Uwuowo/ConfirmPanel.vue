@@ -68,7 +68,12 @@ const link = computed(
           :key="piece"
           class="contents"
         >
-          <LabeledPieceIcon :piece="piece" />
+          <LabeledPieceIcon
+            :piece="piece"
+            :class_name="char_parsed.result.class_name"
+            :tier="char_parsed.result.pieces[index]?.tier ?? 0"
+            :level="char_parsed.result.pieces[index]?.plus_n ?? 0"
+          />
           <div v-if="index < char_parsed.result.pieces.length" class="contents">
             <span class="px-1">
               {{

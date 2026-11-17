@@ -8,7 +8,7 @@
 4. `python scanner_setup/templates/make_msg_pack.py` and `pnpm run wasm`, as for any change to the tables.
 5. `bonus_chests.py` writes `frontend/Data/bonus_chests.json`, the raids' bonus chests as choices for the Choices page ("Bonus chests" below). It needs only the tables.
 
-Three more read the same tables through `game.py` but live in `scripts/game_files/`: `honing.py` (the Serca honing constants, "Honing data in the game files" in `Calculator core/Domain model.md`), `paradise.py`, which writes `frontend/Data/paradise.json` ("Paradise" below), and `income.py`, which writes `frontend/Data/income.json` ("Income in the client" below).
+Four more read the same tables through `game.py` but live in `scripts/game_files/`: `honing.py` (the Serca honing constants, "Honing data in the game files" in `Calculator core/Domain model.md`), `paradise.py`, which writes `frontend/Data/paradise.json` ("Paradise" below), `income.py`, which writes `frontend/Data/income.json` ("Income in the client" below), and `equipment_icons.py`, which writes the gear icons ("Equipment icons" below).
 
 `game.py` is what they share (`table`, `text`, `box`, `listed`, `icon_info`, `icon_art`, `load_index`). `find_icon.py` is for looking: it says which icon a slot in a capture is drawn with.
 
@@ -136,6 +136,14 @@ Found 2026-10-26 in the full tables of the snapshot (queries and outputs in `ign
 - **Playtime reward**: `PCRoomDailyReward`, six rows by minutes, no dates or item levels.
 - **Weekly mission rewards** (the 3 Lava / 9 Glacier choice): `GuideWeeklyMissionReward` (four choices per band, 100 points each; which band is which item level is not stored), points from `GuideMission`.
 - **Shops**: `DirectShop` (by `ShopMetaId`; `DirectShopMeta` has event dates), costs in `BarterType` / `BarterItemIndex` / `BarterQuantity`, `ConditionType1` item level and `ConditionType2` guild research, limits in `AcquireLimit` (`RefreshType` 2 is taken as weekly, `ExpeditionLimit` 1 per roster). Guild (Sylmael Bloodstone), Clear Medal (the solo mode shop), Gold Shop, coin shops and the event shops are all there. Event token drops per content are in `EventContentsReward`.
+
+## Equipment icons
+
+`python scripts/game_files/equipment_icons.py` writes `public/Icons/Equipments/<T4|Serca>/<class>/<Piece>.webp` (lossy WebP, 64 px), the site's piece icons per class (`State and persistence.md`, "Styling").
+
+- **The honed sets** are the ancient (`Grade` 6) "Destined Hellfire" for T4 (ids `13461xxxx`) and "Destined Tremor" for Serca (`13462xxxx`). `Category` is the piece: `101xx` weapons, 10201 helm, 10202 chest, 10203 pants, 10204 gloves, 10205 pauldrons, 10206 vambraces. The Hellfire variants (`134611`, `134612`, `134613`...) and the Mayhem ones share a piece's art.
+- **The class is a column**: `Item.For<Class>` is 1 for the classes that can wear it. The client's names are not the site's (`BerserkerFemale` Slayer, `Alchemist` Wildsoul, `DimensionMaster` Dimensionalist, `Yinyangshi` Artist...); the script maps the 30 advanced classes by hand, checked against their weapons. Base-class columns (`Warrior`, `Specialist`...) have no gear.
+- **Vambraces are Serca only** ("Destined Tremor Vambraces", `Bracer_34` to `44` at ancient), one per base class, so related classes share one. T4 has no vambrace.
 
 ## find_icon.py
 

@@ -457,15 +457,42 @@ export const PIECE_NAMES = [
   "Vambrace",
 ];
 
-// Icons for everything that is not a material.
+// Classes with an emblem and gear icons, by display name lower case, letters only.
+export const CLASS_KEYS = new Set([
+  "aeromancer",
+  "arcanist",
+  "artillerist",
+  "artist",
+  "bard",
+  "berserker",
+  "breaker",
+  "deadeye",
+  "deathblade",
+  "destroyer",
+  "dimensionalist",
+  "glaivier",
+  "guardianknight",
+  "gunlancer",
+  "gunslinger",
+  "machinist",
+  "paladin",
+  "reaper",
+  "scrapper",
+  "shadowhunter",
+  "sharpshooter",
+  "slayer",
+  "sorceress",
+  "souleater",
+  "soulfist",
+  "striker",
+  "summoner",
+  "valkyrie",
+  "wardancer",
+  "wildsoul",
+]);
+
+// Icons for everything that is not a material or a piece of gear.
 const OTHER_ICONS: Record<string, string> = {
-  Helmet: "/Icons/Equipments/Helmet.webp",
-  Shoulder: "/Icons/Equipments/Shoulder.webp",
-  Chest: "/Icons/Equipments/Chest.webp",
-  Pants: "/Icons/Equipments/Pants.webp",
-  Glove: "/Icons/Equipments/Gloves.webp",
-  Weapon: "/Icons/Equipments/Weapon.webp",
-  Vambrace: "/Icons/Equipments/Vambrace.png",
   "Forecast Icon": "/Icons/Forecast Icon.webp",
   Pity: "/Icons/Artist Caught.png",
   Warning: "/Icons/Warning.png",

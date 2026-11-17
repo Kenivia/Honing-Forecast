@@ -166,7 +166,12 @@ describe("sign-in callback", () => {
           scope: "identify rosters loadouts",
         }),
       "/api/oauth/user": () =>
-        json({ id: 1, discordUsername: "me", discordGlobalName: "Me" }),
+        json({
+          id: 1,
+          discordId: "80351110224678912",
+          discordUsername: "me",
+          discordGlobalName: "Me",
+        }),
     });
     expect(await handle_callback()).toBe("/roster-setup");
     expect(bible_auth.value).toMatchObject({ token: "uwo_new", name: "Me" });

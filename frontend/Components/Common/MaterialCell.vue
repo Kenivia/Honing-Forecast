@@ -140,7 +140,9 @@ watch(source_value, (val) => {
     <HoverTip v-else :sticky="false" class="flex">
       <label
         class="material-cell-result"
-        :class="{ 'underline decoration-dotted decoration-1 underline-offset-2': tip }"
+        :class="{
+          'underline decoration-dotted decoration-1 underline-offset-2': tip,
+        }"
         :aria-label="aria_name"
         :style="{
           color: resolved_color,

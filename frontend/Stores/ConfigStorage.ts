@@ -528,7 +528,7 @@ function migrate_10_to_11(data: any): any {
 }
 
 // Scan pages are saved slot by slot: the old page totals are dropped, and the currencies get
-// their own list. Profiles get forbidden chests and a class. Each roster's highest ilevel
+// their own list. Profiles get forbidden chests, a class and a fetch time. Each roster's highest ilevel
 // character (the first on a tie) stays a main; the others still on the main's leftover values
 // become alts.
 function migrate_11_to_12(data: any): any {
@@ -538,6 +538,7 @@ function migrate_11_to_12(data: any): any {
   for (const profile of profiles) {
     profile.forbidden_chests ??= [];
     profile.class_name ??= "";
+    profile.fetched_at ??= 0;
   }
   const level = (profile: any) => {
     try {

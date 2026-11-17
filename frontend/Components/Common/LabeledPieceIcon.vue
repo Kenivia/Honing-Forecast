@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { get_icon_path } from "@/Utils/Helpers";
+import { get_piece_bg, get_piece_icon } from "@/Utils/Helpers";
 
-defineProps<{ piece: string }>();
+defineProps<{
+  piece: string;
+  class_name: string;
+  tier: number;
+  level: number;
+}>();
 </script>
 <template>
   <div
@@ -9,9 +14,10 @@ defineProps<{ piece: string }>();
   >
     <span class="text-(--text-muted)">{{ piece }}</span>
     <img
-      :src="get_icon_path(piece)"
+      :src="get_piece_icon(piece, class_name, tier)"
       :alt="piece"
-      class="generic-icon h-6.75 w-6.75"
+      :style="get_piece_bg(piece, level)"
+      class="generic-icon piece-icon h-6.75 w-6.75"
     />
   </div>
 </template>

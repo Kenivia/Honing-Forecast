@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { get_piece_name, get_icon_path, toOrdinal } from "@/Utils/Helpers";
+import {
+  get_piece_name,
+  get_icon_path,
+  get_piece_icon,
+  get_piece_bg,
+  vambrace_done_level,
+  toOrdinal,
+} from "@/Utils/Helpers";
 import { SPECIAL_LEAP_LABELS } from "@/Utils/Constants";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
@@ -56,9 +63,21 @@ const optimizer_working = computed(get_optimizer_working);
       String((upgrade.upgrade_index + 1) * 10)
     }}</span>
     <img
-      :src="get_icon_path(get_piece_name(upgrade))"
+      :src="
+        get_piece_icon(
+          get_piece_name(upgrade),
+          active_profile.class_name,
+          active_profile.tier,
+        )
+      "
       :alt="get_piece_name(upgrade)"
-      class="generic-icon h-8 w-8"
+      :style="
+        get_piece_bg(
+          get_piece_name(upgrade),
+          vambrace_done_level(active_profile),
+        )
+      "
+      class="generic-icon piece-icon h-8 w-8"
     />
     <template #tip><UpgradeTip :upgrade="upgrade" /></template>
   </HoverTip>

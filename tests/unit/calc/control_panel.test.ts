@@ -1,10 +1,12 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/../crates/wasm/pkg/hf_wasm.js", () => ({ default: vi.fn() }));
 import "./helpers";
 import { flush } from "./helpers";
 import { mount_app } from "../mount";
 import ControlPanel from "@/Components/Character/ControlPanel.vue";
-import LeftoverBands from "@/Components/Character/MaterialDist/LeftoverBands.vue";
+import LeftoverBands, {
+  bands_editing,
+} from "@/Components/Character/MaterialDist/LeftoverBands.vue";
 import { ALT_BANDS, MAIN_BANDS } from "@/Utils/Constants";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { export_config } from "@/Stores/ConfigStorage";
@@ -39,6 +41,9 @@ const options_of = (wrapper, band: string) =>
   );
 
 describe("Leftover band values", () => {
+  // the editor's open state is shared module-wide
+  beforeEach(() => (bands_editing.value = false));
+
   it("a summary until Customise, then dropdowns that disable values decreasing across bands", async () => {
     const { wrapper: closed } = await mount_app(LeftoverBands);
     expect(closed.findAll("select")).toHaveLength(0);

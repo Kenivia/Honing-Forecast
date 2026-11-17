@@ -1,44 +1,11 @@
 <script setup lang="ts">
 // The class emblem in the text colour (scripts/class_icons.mjs); the game's helmet for an unknown class.
 import { computed } from "vue";
-
-const CLASSES = new Set([
-  "aeromancer",
-  "arcanist",
-  "artillerist",
-  "artist",
-  "bard",
-  "berserker",
-  "breaker",
-  "deadeye",
-  "deathblade",
-  "destroyer",
-  "dimensionalist",
-  "glaivier",
-  "guardianknight",
-  "gunlancer",
-  "gunslinger",
-  "machinist",
-  "paladin",
-  "reaper",
-  "scrapper",
-  "shadowhunter",
-  "sharpshooter",
-  "slayer",
-  "sorceress",
-  "souleater",
-  "soulfist",
-  "striker",
-  "summoner",
-  "valkyrie",
-  "wardancer",
-  "wildsoul",
-]);
+import { CLASS_KEYS as CLASSES } from "@/Utils/Constants";
+import { class_key } from "@/Utils/Helpers";
 
 const props = defineProps<{ class_name: string }>();
-const key = computed(() =>
-  props.class_name.toLowerCase().replace(/[^a-z]/g, ""),
-);
+const key = computed(() => class_key(props.class_name));
 const mask = (file: string) => ({
   mask: `url(/Icons/Classes/${file}) center / contain no-repeat`,
 });

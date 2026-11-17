@@ -210,6 +210,12 @@
   display: block;
 }
 
+/* Image comes from get_piece_bg */
+.piece-icon {
+  background-position: center;
+  background-size: cover;
+}
+
 .generic-icon.disabled {
   opacity: 0.5;
 }
