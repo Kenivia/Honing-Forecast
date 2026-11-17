@@ -34,7 +34,6 @@ target/
 
 cloudflare/.wrangler/
 
-.env.production
 
 
 scanner_setup/brightness/all icons/*

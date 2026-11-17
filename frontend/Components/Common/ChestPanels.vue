@@ -6,7 +6,7 @@ import { amount_text, state_fits, type Chest } from "@/Utils/Chest";
 import ChestIcon from "./ChestIcon.vue";
 
 // The chests still to be opened, as two lists side by side in one card; each list, and each
-// column in a list, is half the card, one under another below 500px. Which chest goes where is
+// column in a list, is half the card, one under another below 480px. Which chest goes where is
 // the page's to say. The default slot is the foot of the card, below both lists, `controls` sits
 // in the header. With `states`, a selection chest whose state fits shows how many go to each
 // option (provisional: the histogram's latest state). A `forbidden` chest is shown greyed, with
@@ -35,16 +35,25 @@ const BUTTON =
 const mask = (name: string) => ({
   mask: `url(/Icons/${name}.svg) center / contain no-repeat`,
 });
-// half the width, one column below 500px
-const HALF = "min(100%, max(500px, calc(50% - 1rem)))";
+// half the width, one column below 480px
+const HALF = "min(100%, max(480px, calc(50% - 1rem)))";
 const open = defineModel<boolean>("open", { default: true });
 const show_obtain_all = defineModel<boolean>("show_obtain_all", {
   default: false,
 });
+// fits its content by default, one fixed width otherwise
+const wide = computed(() => props.editing || show_obtain_all.value);
 
 const split = (chest: Chest) => {
   const state = props.states?.get(chest.key);
   return state_fits(chest, state) ? state : undefined;
+};
+// the options to show, with the split in the first list; an option split 0 is left out
+const shown = (chest: Chest, at: number) => {
+  const state = at === 0 ? split(chest) : undefined;
+  return chest.options
+    .map((option, index) => ({ option, n: state?.[index] }))
+    .filter((item) => item.n !== 0);
 };
 
 const panels = computed(() => [
@@ -64,7 +73,7 @@ const panels = computed(() => [
 </script>
 
 <template>
-  <div class="card-shell text-sm">
+  <div class="card-shell text-sm" :class="{ 'w-[1055px]!': wide }">
     <div class="card-header justify-start! gap-4">
       <button
         class="card-title cursor-pointer"
@@ -111,8 +120,8 @@ const panels = computed(() => [
             class="grid items-center gap-x-3 border-b border-(--border-very-muted) py-1"
             :class="
               hide_count
-                ? 'grid-cols-[7rem_minmax(0,1fr)_auto]'
-                : 'grid-cols-[4rem_7rem_minmax(0,1fr)_auto]'
+                ? 'grid-cols-[4rem_minmax(0,1fr)_auto]'
+                : 'grid-cols-[4rem_4rem_minmax(0,1fr)_auto]'
             "
           >
             <input
@@ -142,12 +151,19 @@ const panels = computed(() => [
               Forbidden on this character
             </span>
             <span v-else class="flex flex-wrap items-center gap-2">
-              <template v-for="(option, index) in chest.options" :key="index">
-                <span class="text-(--text-very-muted)">
-                  {{ index ? (at === 0 && split(chest) ? "," : "or") : ":" }}
+              <template
+                v-for="({ option, n }, index) in shown(chest, at)"
+                :key="index"
+              >
+                <span
+                  v-if="index || n === undefined"
+                  class="text-(--text-very-muted)"
+                >
+                  {{ index ? (n === undefined ? "or" : ",") : ":" }}
                 </span>
-                <span v-if="at === 0 && split(chest)">
-                  {{ split(chest)[index].toLocaleString() }} as
+                <span v-if="n !== undefined">
+                  {{ index ? "open" : "Open" }} {{ n.toLocaleString() }}
+                  {{ n === 1 ? "box" : "boxes" }} as
                 </span>
                 <span
                   v-for="(amount, label) in option"
@@ -160,7 +176,9 @@ const panels = computed(() => [
                     :alt="label"
                     :title="label"
                   />
-                  x{{ amount_text(amount) }}
+                  <span :class="{ 'opacity-50': n !== undefined }">
+                    x{{ amount_text(amount) }}
+                  </span>
                 </span>
               </template>
             </span>

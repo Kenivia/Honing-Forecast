@@ -2,6 +2,8 @@
 
 The app is a static site with no backend of its own. Everything external goes through one Cloudflare Worker.
 
+lostark.bible scraping is planned to move to their OAuth API (sign-in required): `lostark.bible OAuth API.md`.
+
 ## The Worker
 
 `cloudflare/worker.js`, deployed separately with `pnpm cloudflare-deploy`. Its URL reaches the frontend through `VITE_WORKER_URL`. It does two things as a caching proxy:

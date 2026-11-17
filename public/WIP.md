@@ -3,8 +3,6 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
-- migrate to an actual domain name
-
 - rework tooltips
 - reorganize to info page
   - reorganize the top bar
@@ -13,10 +11,13 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
   - suggest treatment plans?
   
 - lostark.bible login
+- get equipment icons
 
 - *get the equipment icons somehow* ~~gonna postone this also, prolly gonna have to set up some kind of lostarkcodex -> template matching workflow so that'll be during that~~
 
 - rework changelog page (infinite scroll)
+
+- migrate to an actual domain name
 
 ## Forecast mode
 
