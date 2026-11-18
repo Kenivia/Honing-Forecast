@@ -89,7 +89,7 @@ export async function sync_rosters() {
 async function sync_inner() {
   const store = useRosterStore();
   const config = store.roster_config;
-  const bibles = await linked_rosters();
+  const bibles = await linked_rosters(true);
   const first = config.profiles[0];
   // a fresh install's untouched default character is replaced
   const fresh =

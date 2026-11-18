@@ -2,7 +2,12 @@ import { WORKER_URL } from "@/Utils/Constants";
 import { parse_locale_int } from "@/Utils/InputColumn";
 import { MarketRegions } from "@/Utils/MarketDataFetcher";
 import { Ref } from "vue";
-import { BibleCharacter, find_linked, get_loadouts } from "@/Utils/BibleAuth";
+import {
+  BibleCharacter,
+  find_linked,
+  get_loadouts,
+  linked_rosters,
+} from "@/Utils/BibleAuth";
 
 export type UwuowoRegions = "NA" | "CE" | null;
 export const FETCH_MSG = "Fetching from lostark.bible...";
@@ -166,7 +171,8 @@ export async function fetch_char(
         linked.character,
       );
     } catch {
-      // falls back to scraping
+      // maybe unlinked meanwhile; falls back to scraping
+      linked_rosters(true).catch(() => {});
     }
   }
   return fetch_and_parse({ region, char_name, suffix: "" }, parse_char);

@@ -72,7 +72,7 @@ const panels = computed(() => [
 </script>
 
 <template>
-  <div class="card-shell text-sm" :class="{ 'w-[1032px]!': wide }">
+  <div class="card-shell text-sm" :class="{ 'w-258!': wide }">
     <div class="card-header justify-start! gap-4">
       <button
         class="card-title cursor-pointer"

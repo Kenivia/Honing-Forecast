@@ -12,9 +12,8 @@ import FetchRosterButton from "./Common/Uwuowo/FetchRosterButton.vue";
 import SignInHint from "./Common/Uwuowo/SignInHint.vue";
 import { market_to_uwuowo_region } from "./Common/Uwuowo/UwuowoUtils";
 import { computed } from "vue";
-import { find_linked, signed_in } from "@/Utils/BibleAuth";
+import { linked_now, signed_in } from "@/Utils/BibleAuth";
 import { sync_rosters, syncing } from "@/Utils/BibleSync";
-import { computedAsync } from "@vueuse/core";
 import BackupButtons from "./Common/BackupButtons.vue";
 
 const roster_store = useRosterStore();
@@ -31,21 +30,19 @@ const filtered_rosters_lists = computed(() =>
 );
 
 // signed in and any character is in a linked roster: region locked, "fetched" shown in the header
-const linked_rosters = computedAsync(async () => {
-  if (!signed_in.value) return roster_ids.value.map(() => false);
-  return Promise.all(
-    roster_ids.value.map(async (roster_id, roster_index) => {
-      const region = market_to_uwuowo_region(
-        roster_config.value.all_regions[roster_id],
-      );
-      if (region === null) return false;
-      for (const { profile } of filtered_rosters_lists.value[roster_index])
-        if ((await find_linked(region, profile.char_name)) !== null)
-          return true;
-      return false;
-    }),
-  );
-}, []);
+const linked_rosters = computed(() =>
+  roster_ids.value.map((roster_id, roster_index) => {
+    const region = market_to_uwuowo_region(
+      roster_config.value.all_regions[roster_id],
+    );
+    return (
+      region !== null &&
+      filtered_rosters_lists.value[roster_index].some(
+        ({ profile }) => linked_now(region, profile.char_name) !== null,
+      )
+    );
+  }),
+);
 </script>
 
 <template>

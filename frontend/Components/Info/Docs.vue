@@ -12,10 +12,31 @@ import OptimizerDemo from "./Demo/OptimizerDemo.vue";
     <p>
       We want to calculate and minimize
       <span class="font-bold text-(--gold)">Average tradable gold spent</span>.
-      <span class="font-bold">
+      More specifically we model the following use case:
+
+      <ol>
+      <li > You will buy from market if you run out of material (aka you want to hit these upgrades NOW)</li>
+      <li> You don't care about any leftover bound material (you can configure this)</li>
+
+    </ol>
+
+    </p>
+
+    <p>
+
+      In an ideal world I would've loved to model more 
+
+    We chose these assumptions not necessarily because it's the most applicable to everyone,
+    but because it's the only case we can actually compute. In fact
+    in the optimization step we will make even more assumptions to keep things within 
+    the realm of reasonable compute time. 
+    This means that we give up the case of "honing until we run out of x"
+
+
+      <!-- <span class="font-bold">
         We assume any leftover bound material is NOT worth any gold (unless you
         configure otherwise)</span
-      >.
+      >. -->
     </p>
 
     <OptimizerDemo />

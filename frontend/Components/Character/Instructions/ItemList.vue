@@ -22,6 +22,6 @@ defineProps<{
         :src="get_icon_path(item.label)"
         :alt="item.label"
         :title="item.label"
-        class="h-[18px] w-[18px]" /></span
+        class="h-4.5 w-4.5" /></span
   ></template>
 </template>

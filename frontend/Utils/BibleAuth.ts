@@ -1,6 +1,6 @@
 // Optional "Login with lostark.bible" (OAuth public client + PKCE); see AI notes "lostark.bible OAuth API".
 import * as oauth from "oauth4webapi";
-import { computed } from "vue";
+import { computed, shallowRef } from "vue";
 import { StorageSerializers, useStorage } from "@vueuse/core";
 import transliterate from "@sindresorhus/transliterate";
 
@@ -105,14 +105,14 @@ export async function handle_callback(): Promise<string> {
       ? `https://cdn.discordapp.com/avatars/${user.discordId}/${user.discordAvatar}.png?size=64`
       : `https://cdn.discordapp.com/embed/avatars/${(BigInt(user.discordId) >> 22n) % 6n}.png`,
   };
-  rosters_promise = null;
+  clear_rosters();
   return pending.back;
 }
 
 export function sign_out() {
   const token = bible_auth.value?.token;
   bible_auth.value = null;
-  rosters_promise = null;
+  clear_rosters();
   if (token)
     oauth.revocationRequest(AS, client(), oauth.None(), token).catch(() => {});
 }
@@ -126,7 +126,7 @@ async function bible_get(
   });
   if (response.status === 401) {
     bible_auth.value = null;
-    rosters_promise = null;
+    clear_rosters();
   }
   if (!response.ok) throw new Error(`lostark.bible ${response.status}`);
   return response.json();
@@ -135,28 +135,54 @@ async function bible_get(
 // names typed by hand may lack the in-game accents (Elsa for Ëlsa)
 export const norm_name = (name: string) => transliterate(name).toLowerCase();
 
+// linked rosters change on lostark.bible: refetched on sync and after a failed API fetch
+export const bible_rosters = shallowRef<BibleRoster[] | null>(null);
 let rosters_promise: Promise<BibleRoster[]> | null = null;
-export function linked_rosters(): Promise<BibleRoster[]> {
-  rosters_promise ??= bible_get("/rosters").then((x) => x.rosters);
-  rosters_promise.catch(() => (rosters_promise = null));
+function clear_rosters() {
+  rosters_promise = null;
+  bible_rosters.value = null;
+}
+export function linked_rosters(reload = false): Promise<BibleRoster[]> {
+  if (reload) rosters_promise = null;
+  if (rosters_promise === null) {
+    const p: Promise<BibleRoster[]> = bible_get("/rosters").then((x) => {
+      if (rosters_promise === p) bible_rosters.value = x.rosters;
+      return x.rosters;
+    });
+    p.catch(() => {
+      if (rosters_promise === p) rosters_promise = null;
+    });
+    rosters_promise = p;
+  }
   return rosters_promise;
+}
+
+// reactive lookup in the loaded list (starts the load; null until it lands)
+export function linked_now(region: string, char_name: string) {
+  if (!signed_in.value) return null;
+  if (bible_rosters.value === null) {
+    linked_rosters().catch(() => {});
+    return null;
+  }
+  for (const roster of bible_rosters.value) {
+    if (roster.region !== region) continue;
+    const character = roster.characters.find(
+      (c) => norm_name(c.name) === norm_name(char_name),
+    );
+    if (character) return { roster, character };
+  }
+  return null;
 }
 
 // the signed-in user's roster holding this character, or null (signed out, not linked, or an error)
 export async function find_linked(region: string, char_name: string) {
   if (!signed_in.value) return null;
   try {
-    for (const roster of await linked_rosters()) {
-      if (roster.region !== region) continue;
-      const character = roster.characters.find(
-        (c) => norm_name(c.name) === norm_name(char_name),
-      );
-      if (character) return { roster, character };
-    }
+    await linked_rosters();
   } catch {
-    // falls back to public scraping
+    return null; // falls back to public scraping
   }
-  return null;
+  return linked_now(region, char_name);
 }
 
 export const get_loadouts = (region: string, char_name: string) =>

@@ -4,9 +4,8 @@ import RegionSelector from "../RegionSelector.vue";
 import FetchCharButton from "./FetchCharButton.vue";
 import { MarketRegions } from "@/Utils/MarketDataFetcher.js";
 import { ApplyFetch, market_to_uwuowo_region } from "./UwuowoUtils.js";
-import { ref } from "vue";
-import { computedAsync } from "@vueuse/core";
-import { find_linked, signed_in } from "@/Utils/BibleAuth";
+import { computed, ref } from "vue";
+import { linked_now } from "@/Utils/BibleAuth";
 
 const props = defineProps<{
   name: string;
@@ -22,15 +21,14 @@ const props = defineProps<{
 const counter = ref(0);
 
 // signed in and the character is in a linked roster: name and region locked, refresh instead of the popup
-const linked = computedAsync(async () => {
+const linked = computed(() => {
   const region = market_to_uwuowo_region(props.region);
   return (
     props.profile_id !== undefined &&
-    signed_in.value &&
     region !== null &&
-    (await find_linked(region, props.name)) !== null
+    linked_now(region, props.name) !== null
   );
-}, false);
+});
 </script>
 <template>
   <CharNameInput
