@@ -22,6 +22,10 @@ pub fn load() {
         let config = fs::read(format!("{ROOT}/public/ScannerConfig.msgpack")).unwrap();
         set_config(rmp_serde::from_slice(&config).unwrap());
         load_ocr_engine(fs::read(format!("{ROOT}/public/text-recognition.rten")).unwrap());
+        // TEXT_STRIP="levels=60,200" makes tooltip and currency strips another way (TextParams)
+        if let Ok(spec) = std::env::var("TEXT_STRIP") {
+            *crate::ocr::text::TEXT_PARAMS.write() = crate::ocr::text::TextParams::parse(&spec);
+        }
         // NO_SHAPES=1 reads every number by the OCR
         if std::env::var("NO_SHAPES").is_err() {
             load_number_font(fs::read(format!("{ROOT}/public/fonts/English.ttf")).unwrap());

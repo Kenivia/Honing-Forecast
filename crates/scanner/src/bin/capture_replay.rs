@@ -9,7 +9,8 @@
 //                           hovers that had it beside them
 //   --ocr                   every line sent to be read with what it is for, and its text
 //   --from N --to M         the scans --ocr and --dump cover (all by default)
-//   --dump <folder>         the frames scanned and the lines sent in those scans, as PNG
+//   --dump <folder>         the frames scanned and the lines sent in those scans, as PNG, each
+//                           line also as the strip the recogniser reads
 //   --check                 holds the slots against the hand edits of the end record, the only
 //                           right answers a capture has (see capture_edit)
 // TIMINGS=1 also prints each timed stage's total to stderr.
@@ -187,6 +188,10 @@ fn main() {
                 job.line
                     .crop
                     .save(format!("{folder}/line-{:05}.png", job.id))
+                    .unwrap();
+                job.line
+                    .strip()
+                    .save(format!("{folder}/line-{:05}-strip.png", job.id))
                     .unwrap();
             }
         }

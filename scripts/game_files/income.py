@@ -26,7 +26,7 @@ GUILD = 889019  # Sylmael Bloodstone
 MEDAL = 52325000  # Clear Medal
 GUILD_RESEARCH = 6  # the guild shop rows of the highest research level
 GUILD_ITEMS = {71100020, 66102006, 66102106, 66102007, 66102107}  # breath chest, destruction and guardian stones
-EVENT_SHOPS = [10025]  # DirectShopMeta of the live event shops worth buying from
+EVENT_SHOPS = [10026]  # DirectShopMeta of the live event shops worth buying from
 
 LABELS = {row["title"]: row["label"] for row in json.loads(ITEMS.read_text(encoding="utf-8"))}
 

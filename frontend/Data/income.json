@@ -514,6 +514,43 @@
    ]
   },
   {
+   "group": "Act 3: Night of Storms and Darkness",
+   "difficulty": "Extreme",
+   "item_level": 1720,
+   "gates": [
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      0,
+      20000
+     ],
+     "medals": 0,
+     "mats": {}
+    },
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      0,
+      50000
+     ],
+     "medals": 0,
+     "mats": {}
+    },
+    {
+     "gate": 1,
+     "gold": [
+      0,
+      0,
+      50000
+     ],
+     "medals": 0,
+     "mats": {}
+    }
+   ]
+  },
+  {
    "group": "Act 4: Fortress of Destruction",
    "difficulty": "Hard",
    "item_level": 1720,
@@ -3641,186 +3678,6 @@
        "name": "Superior Abidos Fusion Material",
        "bag": {
         "Serca Fusion": 10
-       }
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "shop": "Arktober Festival",
-   "name": "Honing Support Selection Chest III x1",
-   "item_level": 0,
-   "limit": 10,
-   "weekly": true,
-   "per_roster": true,
-   "cost": 10,
-   "currency": "Arktober Special Token",
-   "start": "2026-10-21",
-   "end": "2026-11-18",
-   "items": [
-    {
-     "name": "Honing Support Selection Chest III x1",
-     "options": [
-      {
-       "name": "Lava's Breath x3",
-       "bag": {
-        "Lava's Breath": 3
-       }
-      },
-      {
-       "name": "Glacier's Breath x9",
-       "bag": {
-        "Glacier's Breath": 9
-       }
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "shop": "Arktober Festival",
-   "name": "Destiny Guardian Stone Pouch III x3",
-   "item_level": 0,
-   "limit": 15,
-   "weekly": true,
-   "per_roster": true,
-   "cost": 10,
-   "currency": "Arktober Special Token",
-   "start": "2026-10-21",
-   "end": "2026-11-18",
-   "items": [
-    {
-     "name": "Destiny Guardian Stone Pouch III x3",
-     "options": [
-      {
-       "name": "Destiny Guardian Stone x450",
-       "bag": {
-        "Blue": 450
-       }
-      },
-      {
-       "name": "Destiny Crystallized Guardian Stone x225",
-       "bag": {
-        "Serca Blue": 225
-       }
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "shop": "Arktober Festival",
-   "name": "Destiny Destruction Stone Pouch III x1",
-   "item_level": 0,
-   "limit": 15,
-   "weekly": true,
-   "per_roster": true,
-   "cost": 10,
-   "currency": "Arktober Special Token",
-   "start": "2026-10-21",
-   "end": "2026-11-18",
-   "items": [
-    {
-     "name": "Destiny Destruction Stone Pouch III x1",
-     "options": [
-      {
-       "name": "Destiny Destruction Stone x150",
-       "bag": {
-        "Red": 150
-       }
-      },
-      {
-       "name": "Destiny Crystallized Destruction Stone x75",
-       "bag": {
-        "Serca Red": 75
-       }
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "shop": "Arktober Festival",
-   "name": "Honing Fusion Material Selection Chest III x1",
-   "item_level": 0,
-   "limit": 15,
-   "weekly": true,
-   "per_roster": true,
-   "cost": 10,
-   "currency": "Arktober Special Token",
-   "start": "2026-10-21",
-   "end": "2026-11-18",
-   "items": [
-    {
-     "name": "Honing Fusion Material Selection Chest III x1",
-     "options": [
-      {
-       "name": "Abidos Fusion Material x10",
-       "bag": {
-        "Fusion": 10
-       }
-      },
-      {
-       "name": "Superior Abidos Fusion Material x5",
-       "bag": {
-        "Serca Fusion": 5
-       }
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "shop": "Arktober Festival",
-   "name": "Destiny Shard Pouch (M) x1",
-   "item_level": 0,
-   "limit": 15,
-   "weekly": true,
-   "per_roster": true,
-   "cost": 5,
-   "currency": "Arktober Special Token",
-   "start": "2026-10-21",
-   "end": "2026-11-18",
-   "items": [
-    {
-     "name": "Destiny Shard",
-     "options": [
-      {
-       "name": "Destiny Shard",
-       "bag": {
-        "Shards": 2000
-       }
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "shop": "Arktober Festival",
-   "name": "Honing Leapstone Selection Chest IX x1",
-   "item_level": 0,
-   "limit": 15,
-   "weekly": true,
-   "per_roster": true,
-   "cost": 5,
-   "currency": "Arktober Special Token",
-   "start": "2026-10-21",
-   "end": "2026-11-18",
-   "items": [
-    {
-     "name": "Honing Leapstone Selection Chest IX x1",
-     "options": [
-      {
-       "name": "Destiny Leapstone x10",
-       "bag": {
-        "Leaps": 10
-       }
-      },
-      {
-       "name": "Great Destiny Leapstone x5",
-       "bag": {
-        "Serca Leaps": 5
        }
       }
      ]

@@ -646,6 +646,12 @@ const CHECKED = [
     file: "2026-10-20T11-43-25-861Z",
     pages: ["CharInventory 0", "CharStorage 0", "Roster 1"],
   },
+  {
+    // 1080p, November 2026 client: the Vestiges of the End clear chests
+    name: "a capture with the November 2026 chests",
+    file: "2026-11-18T15-58-07-564Z",
+    pages: ["CharInventory 0", "CharStorage 0", "CharStorage 1", "Roster 0", "Roster 1"],
+  },
 ];
 
 // The slots set by hand in the capture's end record, the only right answers it has, that the

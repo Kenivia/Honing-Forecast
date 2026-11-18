@@ -6,12 +6,13 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - shift sidebar?
 
 - ~~new user / new character setup~~ good enough
-- rework changelog page (infinite scroll)
-- update
+
+- game update
 - ~~change pity to actually use the integer 21500~~
 
 NEXT UPDATE
 
+- rework changelog page (infinite scroll)
 - add scanner out of beta banner
 - cloud syncing
 - migrate to an actual domain name
