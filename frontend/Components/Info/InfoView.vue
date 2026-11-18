@@ -5,7 +5,7 @@ import { RouterLink, RouterView } from "vue-router";
 
 const DOCS = [
   { name: "info-guide", label: "Guide" },
-  { name: "info-upgrade-order", label: "What are we doing here?" },
+  { name: "info-upgrade-order", label: "Introduction" },
 ];
 </script>
 
