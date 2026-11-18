@@ -107,6 +107,7 @@ export interface SavedConfig {
   auto_deduct_costs: boolean;
   auto_fetch: boolean;
   analytics: boolean;
+  show_suggestions: boolean;
 }
 
 // ============================================================================
@@ -376,6 +377,7 @@ export function to_saved(config: RosterConfig): Omit<SavedConfig, "version"> {
     auto_deduct_costs: config.auto_deduct_costs,
     auto_fetch: config.auto_fetch,
     analytics: config.analytics,
+    show_suggestions: config.show_suggestions,
   };
 }
 
@@ -452,6 +454,7 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
   out.roster_income = saved.roster_income ?? {};
   out.custom_choices = saved.custom_choices ?? {};
   out.analytics = saved.analytics ?? out.analytics;
+  out.show_suggestions = saved.show_suggestions ?? out.show_suggestions;
 
   return out;
 }

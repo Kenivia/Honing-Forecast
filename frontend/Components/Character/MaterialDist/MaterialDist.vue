@@ -359,7 +359,25 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
 <template>
   <div class="card-shell">
     <div class="card-header">
-      <div class="card-title">Costs distribution</div>
+      <div class="flex items-center gap-8">
+        <div class="card-title">Costs distribution</div>
+
+        <span
+          v-if="
+            roster_config.show_suggestions &&
+            roster_config.snapshots.length === 0
+          "
+          class="text-sm!"
+        >
+          Input automatically with the
+          <RouterLink
+            :to="{ name: 'char-scanner' }"
+            class="text-(--gold)! underline!"
+          >
+            Screen Scanner</RouterLink
+          >!</span
+        >
+      </div>
     </div>
     <div
       class="card-body outer-grid pt-0! pb-2!"

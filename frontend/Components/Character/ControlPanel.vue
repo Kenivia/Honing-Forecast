@@ -38,6 +38,10 @@ function resetActive() {
         <input v-model="active_profile.lock_fetched_done" type="checkbox" />
         <span>Lock upgrades fetched from lostark.bible</span>
       </label>
+      <label class="control-panel-checkbox-row">
+        <input v-model="roster_config.show_suggestions" type="checkbox" />
+        <span>Show suggestions</span>
+      </label>
       <label>
         <button
           class="generic-button ml-5 text-(--warning-dark)!"

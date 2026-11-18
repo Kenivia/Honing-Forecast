@@ -64,7 +64,7 @@ onUnmounted(() => {
         <RouterLink
           v-for="profile in roster_chars"
           :key="profile.id"
-          :to="{ name: 'char', params: { characterName: profile.char_name } }"
+          :to="{ name: route.name, params: { characterName: profile.char_name } }"
           class="nav-tab"
           :class="{ selected: profile.id === active_profile.id }"
         >

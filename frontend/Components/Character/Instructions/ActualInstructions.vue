@@ -98,7 +98,7 @@ const optimizer_working = computed(
       :key="i"
       :sticky="false"
       placement="top"
-      class="flex w-16 min-w-16 flex-col items-center justify-end"
+      class="flex w-16 min-w-16 flex-col items-center justify-end text-center"
     >
       <template v-if="s.pity">
         <div class="opacity-50">

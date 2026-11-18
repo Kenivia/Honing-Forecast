@@ -113,7 +113,7 @@ function scroll_to_bands() {
         </label>
       </div>
       <div class="my-1 flex flex-row items-center gap-2">
-        <span>Character:</span>
+        <span>Treat as: </span>
         <RoleToggle />
         <QuestionMark>
           This controls how we value leftover materials, find out more
