@@ -36,6 +36,10 @@ export interface Upgrade {
   fail_chances: number[];
   unlock_costs: number[];
   costs: number[];
+  // the event's multiplier on each of costs
+  cost_multipliers: number[];
+  // Rust's Tap, out of RATE_SCALE; default (all 0) for advanced honing
+  tap: { event: number; artisan_percent: number };
   special_cost: number;
 
   // added for UI purpose, not in rust (it's wiped after optimizer run)

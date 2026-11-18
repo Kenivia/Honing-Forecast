@@ -1,6 +1,6 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use crate::chest::Chests;
-use crate::constants::accessor::{get_data, get_special_leap_cost, get_tap};
+use crate::constants::accessor::{get_data, get_multiplier, get_special_leap_cost, get_tap};
 use crate::constants::juice_info::{JuiceInfo, get_event_adjusted_juice_info};
 use crate::constants::*;
 use crate::materials::{MaterialTable, NUM_BASE_MATS, OneMaterial, ValuationPlan, all_bands};
@@ -151,14 +151,18 @@ pub fn parser(
         let this_unlock = &Vec::from_iter(
             (0..NUM_BASE_MATS).map(|cost_type| relevant_unlock[cost_type][upgrade_index]),
         );
+        let multiplier = get_multiplier(express_event, tier, !is_normal_honing, false);
+        let cost_multipliers = Vec::from_iter(
+            (0..NUM_BASE_MATS).map(|cost_type| multiplier[cost_type][upgrade_index]),
+        );
         let this_unlocked: bool = unlocked;
         let this_state_given: Vec<OneState> = state.unwrap_or(Vec::new());
 
-        if is_normal_honing {
+        let mut upgrade = if is_normal_honing {
             let special_cost: i64 = special_leap_cost[piece_type_usize][upgrade_index];
             let starting_artisan: f64 = starting_artisan.unwrap();
             let starting_num_taps: usize = starting_num_taps.unwrap_or(0);
-            out.push(Upgrade::new_normal(
+            Upgrade::new_normal(
                 get_tap(express_event, tier, piece_type_usize, upgrade_index),
                 this_cost,
                 special_cost,
@@ -170,11 +174,11 @@ pub fn parser(
                 this_state_given,
                 this_unlocked,
                 this_unlock,
-            ));
+            )
         } else {
             let this_adv_progress: (usize, usize, bool, bool) = adv_progress.unwrap();
 
-            out.push(Upgrade::new_adv(
+            Upgrade::new_adv(
                 this_cost,
                 piece_index,
                 upgrade_index,
@@ -185,8 +189,10 @@ pub fn parser(
                 juice_info,
                 adv_cache,
                 this_state_given,
-            ));
-        }
+            )
+        };
+        upgrade.cost_multipliers = cost_multipliers;
+        out.push(upgrade);
     }
 
     out

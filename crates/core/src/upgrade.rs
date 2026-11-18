@@ -19,6 +19,9 @@ pub struct Upgrade {
     pub base_chance: f64,
     pub tap: Tap,
     pub costs: Vec<f64>,
+    /// the event's multiplier on each of costs, for the UI
+    #[serde(default)]
+    pub cost_multipliers: Vec<f64>,
 
     pub special_cost: i64,
 
@@ -111,6 +114,7 @@ impl Upgrade {
             base_chance: chance(tap.base),
             tap,
             costs: costs.try_into().unwrap(),
+            cost_multipliers: vec![1.0; NUM_BASE_MATS],
             special_cost,
             clean_prob_dist_len: 0,
             piece_index,
@@ -189,6 +193,7 @@ impl Upgrade {
             base_chance: 0.0,
             tap: Tap::default(),
             costs: costs.try_into().unwrap(),
+            cost_multipliers: vec![1.0; NUM_BASE_MATS],
             special_cost: 0,
             piece_index,
             piece_type,

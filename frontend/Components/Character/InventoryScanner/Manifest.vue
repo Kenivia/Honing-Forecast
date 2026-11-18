@@ -211,7 +211,7 @@ function export_to_calc() {
       class="card-shell card-body flex w-175! max-w-full flex-col items-center gap-2 text-center text-sm"
     >
       <span class="text-(--warning)">
-        This character is set as T4, but Serca materials were found in its
+        This character is set as T4, but Serca materials were found in their
         storage or inventory.
       </span>
       <TierConvertButton

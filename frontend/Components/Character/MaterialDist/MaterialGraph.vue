@@ -151,7 +151,7 @@ function interpolateY(targetX: number) {
   if (!list.length) return GRAPH_HEIGHT;
   // console.log(targetX);
   if (targetX < list[0].x)
-    return stepped.value && targetX >= firstBarX.value
+    return props.histogram && targetX >= firstBarX.value
       ? scaleY(list[0].y)
       : GRAPH_HEIGHT;
 
@@ -159,6 +159,8 @@ function interpolateY(targetX: number) {
     const prev = list[index - 1];
     const cur = list[index];
     if (targetX <= cur.x) {
+      if (centered.value)
+        return scaleY(targetX < (prev.x + cur.x) / 2 ? prev.y : cur.y);
       const dx = cur.x - prev.x;
       const t = stepped.value ? 1 : dx === 0 ? 0 : (targetX - prev.x) / dx;
       const y = prev.y + (cur.y - prev.y) * t;
@@ -189,7 +191,10 @@ const stepped = computed(() => {
   );
 });
 
-// in step mode the first point gets a bar one gap wide to its left
+// a stepped non-histogram centres each bar on its point, so the ends are half bars
+const centered = computed(() => stepped.value && !props.histogram);
+
+// a histogram's first point gets a bar one gap wide to its left
 const firstBarX = computed(() => {
   const pts = points.value;
   if (pts.length < 2) return pts[0]?.x ?? 0;
@@ -199,6 +204,22 @@ const firstBarX = computed(() => {
 const linePath = computed(() => {
   if (!points.value.length) return "";
   const pts = points.value;
+  if (centered.value) {
+    const parts = [
+      `M 0 ${GRAPH_HEIGHT}`,
+      `L ${scaleX(pts[0].x)} ${GRAPH_HEIGHT}`,
+      `L ${scaleX(pts[0].x)} ${scaleY(pts[0].y)}`,
+    ];
+    for (let i = 1; i < pts.length; i++) {
+      const mid = scaleX((pts[i - 1].x + pts[i].x) / 2);
+      parts.push(`L ${mid} ${scaleY(pts[i - 1].y)}`);
+      parts.push(`L ${mid} ${scaleY(pts[i].y)}`);
+    }
+    parts.push(
+      `L ${scaleX(pts[pts.length - 1].x)} ${scaleY(pts[pts.length - 1].y)}`,
+    );
+    return parts.join(" ");
+  }
   if (stepped.value) {
     const parts = [
       `M ${scaleX(firstBarX.value)} ${GRAPH_HEIGHT}`,
@@ -218,7 +239,7 @@ const linePath = computed(() => {
 
 const areaPath = computed(() => {
   if (!points.value.length) return "";
-  const firstX = scaleX(stepped.value ? firstBarX.value : points.value[0].x);
+  const firstX = scaleX(props.histogram ? firstBarX.value : points.value[0].x);
   const lastX = scaleX(points.value[points.value.length - 1].x);
   if (stepped.value) {
     return `${linePath.value} L ${lastX} ${GRAPH_HEIGHT} L ${firstX} ${GRAPH_HEIGHT} Z`;

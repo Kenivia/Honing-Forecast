@@ -10,7 +10,7 @@ import Popup from "../Popup.vue";
 import Spinner from "../Spinner.vue";
 import ConfirmPanel from "./ConfirmPanel.vue";
 import { computed, ref, watch } from "vue";
-import { computedAsync, useTimeAgo } from "@vueuse/core";
+import { useTimeAgo } from "@vueuse/core";
 import { find_linked, signed_in } from "@/Utils/BibleAuth";
 import { refresh_char, refresh_errors, refreshing } from "@/Utils/BibleSync";
 import { useRosterStore } from "@/Stores/RosterConfig";
@@ -21,17 +21,9 @@ const props = defineProps<{
   apply: ApplyFetch;
   counter?: number; // for triggering when char name input changes
   profile_id?: string;
+  linked?: boolean; // last fetched + refresh instead of the popup
 }>();
 
-// signed in and the character is in a linked roster: last fetched + refresh instead of the popup
-const linked = computedAsync(
-  async () =>
-    props.profile_id !== undefined &&
-    signed_in.value &&
-    props.region !== null &&
-    (await find_linked(props.region, props.char_name)) !== null,
-  false,
-);
 const profile = computed(() =>
   useRosterStore().roster_config.profiles.find(
     (p) => p.id === props.profile_id,

@@ -12,10 +12,12 @@ import OptimizerDemo from "./Demo/OptimizerDemo.vue";
     <p>
       We want to calculate and minimize
       <span class="font-bold text-(--gold)">Average tradable gold spent</span>.
+      <span class="font-bold">
+        We assume any leftover bound material is NOT worth any gold (unless you
+        configure otherwise)</span
+      >.
     </p>
 
-
-    <!-- here  -->
     <OptimizerDemo />
 
     <!-- <ol>
@@ -38,7 +40,7 @@ import OptimizerDemo from "./Demo/OptimizerDemo.vue";
     <!-- Naively (and I believe this is what other calculators do), you might think
       to do the following: -->
 
-<!--       
+    <!--       
     <ol>
       <li>
         For all outcomes (All combinations of 1 tap, 2 tap ... pity of every

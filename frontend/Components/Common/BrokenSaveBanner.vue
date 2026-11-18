@@ -33,7 +33,8 @@ function download() {
         There is no room to keep a copy, so saving is paused until you download
         or discard it.
       </template>
-      Download it to restore later with Backup → Import.
+      Download it to restore later with "Import backup from file" on the roster
+      page.
     </span>
     <button class="generic-button" @click="download">Download</button>
     <button class="generic-button" @click="discard_broken(store)">

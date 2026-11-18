@@ -44,6 +44,11 @@ const roster_chars = computed(() =>
   ),
 );
 
+function add_char() {
+  const added = roster_store.add_char(active_profile.value.roster_id);
+  router.push({ params: { characterName: added.char_name } });
+}
+
 onUnmounted(() => {
   // kill workers when going to market / roster view
   runtime.cancel_active();
@@ -66,6 +71,22 @@ onUnmounted(() => {
           <ClassIcon :class_name="profile.class_name" />
           {{ profile.char_name }}
         </RouterLink>
+        <button
+          class="nav-tab"
+          @click="add_char"
+        >
+          <svg
+            class="size-5 shrink-0"
+            viewBox="0 0 20 20"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M10 4v12M4 10h12" />
+          </svg>
+          Add Char
+        </button>
       </nav>
     </template>
     <template #sidebar="{ close }">

@@ -6,6 +6,7 @@ const runtime = useRuntimeStore();
 defineProps<{
   region: MarketRegions;
   region_change: (event) => void;
+  locked?: boolean; // linked to lostark.bible: shown as text
 }>();
 </script>
 <template>
@@ -15,8 +16,12 @@ defineProps<{
       :value="region"
       @change="region_change"
       class="selector"
+      :class="{
+        'cursor-default appearance-none border-transparent! text-inherit opacity-100':
+          locked,
+      }"
       aria-label="Region"
-      :disabled="runtime.is_fetching[region]"
+      :disabled="locked || runtime.is_fetching[region]"
     >
       <option value="nae">NA</option>
       <option value="euc">EU</option>

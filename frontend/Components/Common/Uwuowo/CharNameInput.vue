@@ -6,6 +6,7 @@ import { ref, watch } from "vue";
 const props = defineProps<{
   char_name: string;
   profile_index: number;
+  locked?: boolean; // linked to lostark.bible: shown as text
 }>();
 
 const char_name = ref(props.char_name);
@@ -37,7 +38,12 @@ const emit = defineEmits<{
           emit('char_name_change', new_name);
         }
       "
+      :readonly="locked"
+      :tabindex="locked ? -1 : undefined"
       class="generic-input min-w-full"
+      :class="{
+        'pointer-events-none border-transparent! bg-transparent!': locked,
+      }"
     />
   </div>
 </template>

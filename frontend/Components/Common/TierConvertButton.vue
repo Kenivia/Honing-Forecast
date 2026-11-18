@@ -8,6 +8,7 @@ const props = defineProps<{
   checkEligibility?: () => boolean | null;
   showTooltipOnlyOnDisabled?: boolean | null;
   warning?: boolean;
+  compact?: boolean;
 }>();
 
 const emit = defineEmits(["change-tier"]);
@@ -33,7 +34,8 @@ function handleClick() {
   <HoverTip :text="activeTooltip" placement="top" class="flex flex-col">
     <button
       :disabled="!eligible"
-      class="generic-button tier-button text-wrap!"
+      class="generic-button tier-button"
+      :class="compact ? 'py-0 text-sm' : 'text-wrap!'"
       :style="{
         color:
           warning && eligible

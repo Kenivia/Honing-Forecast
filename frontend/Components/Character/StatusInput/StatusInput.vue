@@ -43,12 +43,23 @@ function scroll_to_bands() {
     class="flex w-fit max-w-[calc(min(100%,1032px))] flex-row flex-wrap items-start justify-center gap-2.5"
   >
     <div class="card-shell">
-      <div class="card-header">
+      <div class="card-header gap-2">
         <span class="card-title"
           >Normal Honing ({{
             active_profile.tier === 1 ? "Serca" : "T4"
           }})</span
         >
+        <TierConvertButton
+          compact
+          :labelText="tier_label(active_profile)"
+          :tooltipText="tier_tooltip(active_profile)"
+          :checkEligibility="
+            () => check_revert_ilevel_ok(active_profile) === true
+          "
+          @change-tier="() => change_tier(active_profile)"
+          :show-tooltip-only-on-disabled="false"
+          :warning="tier_warning(active_profile)"
+        />
       </div>
 
       <TickboxGrid grid_type="normal" />
@@ -77,19 +88,7 @@ function scroll_to_bands() {
         "
       />
       <SignInHint />
-      <div class="my-1 flex flex-row items-center gap-2">
-        <span>Character:</span>
-        <RoleToggle />
-        <QuestionMark>
-          This controls how we value leftover materials, find out more
-          <button
-            class="underline hover:text-(--text-bright)"
-            @click="scroll_to_bands"
-          >
-            here</button
-          >. You can have multiple 'main's
-        </QuestionMark>
-      </div>
+
       <div class="flex flex-col">
         <label class="text-no-wrap text-(--achieved)"
           >Achieved ilevel: {{ ilevel(active_profile, "achieved") }}</label
@@ -97,16 +96,6 @@ function scroll_to_bands() {
         <label class="text-no-wrap text-(--pending)"
           >Pending ilevel: {{ ilevel(active_profile, "pending") }}</label
         >
-        <TierConvertButton
-          :labelText="tier_label(active_profile)"
-          :tooltipText="tier_tooltip(active_profile)"
-          :checkEligibility="
-            () => check_revert_ilevel_ok(active_profile) === true
-          "
-          @change-tier="() => change_tier(active_profile)"
-          :show-tooltip-only-on-disabled="false"
-          :warning="tier_warning(active_profile)"
-        />
         <label class="control-panel-checkbox-row border-0!">
           <input disabled type="checkbox" class="cursor-not-allowed" />
           <span class="text-(--text-muted)"
@@ -122,6 +111,19 @@ function scroll_to_bands() {
             >All adv honing now have x2 grace</span
           >
         </label>
+      </div>
+      <div class="my-1 flex flex-row items-center gap-2">
+        <span>Character:</span>
+        <RoleToggle />
+        <QuestionMark>
+          This controls how we value leftover materials, find out more
+          <button
+            class="underline hover:text-(--text-bright)"
+            @click="scroll_to_bands"
+          >
+            here</button
+          >. You can have multiple 'main's
+        </QuestionMark>
       </div>
     </div>
   </div>

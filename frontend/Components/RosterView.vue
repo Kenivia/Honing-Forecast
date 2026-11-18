@@ -12,8 +12,10 @@ import FetchRosterButton from "./Common/Uwuowo/FetchRosterButton.vue";
 import SignInHint from "./Common/Uwuowo/SignInHint.vue";
 import { market_to_uwuowo_region } from "./Common/Uwuowo/UwuowoUtils";
 import { computed } from "vue";
-import { signed_in } from "@/Utils/BibleAuth";
+import { find_linked, signed_in } from "@/Utils/BibleAuth";
 import { sync_rosters, syncing } from "@/Utils/BibleSync";
+import { computedAsync } from "@vueuse/core";
+import BackupButtons from "./Common/BackupButtons.vue";
 
 const roster_store = useRosterStore();
 const { roster_config, roster_ids } = storeToRefs(roster_store);
@@ -27,6 +29,23 @@ const filtered_rosters_lists = computed(() =>
       .filter((y) => y.profile.roster_id === roster_id),
   ),
 );
+
+// signed in and any character is in a linked roster: region locked, "fetched" shown in the header
+const linked_rosters = computedAsync(async () => {
+  if (!signed_in.value) return roster_ids.value.map(() => false);
+  return Promise.all(
+    roster_ids.value.map(async (roster_id, roster_index) => {
+      const region = market_to_uwuowo_region(
+        roster_config.value.all_regions[roster_id],
+      );
+      if (region === null) return false;
+      for (const { profile } of filtered_rosters_lists.value[roster_index])
+        if ((await find_linked(region, profile.char_name)) !== null)
+          return true;
+      return false;
+    }),
+  );
+}, []);
 </script>
 
 <template>
@@ -45,8 +64,9 @@ const filtered_rosters_lists = computed(() =>
         @click="sync_rosters()"
       >
         {{ syncing ? "Syncing..." : "Sync with lostark.bible" }}
-      </button></template
-    >
+      </button>
+      <BackupButtons
+    /></template>
     <template #main>
       <div
         class="flex w-full max-w-full flex-row flex-wrap justify-around gap-4"
@@ -56,10 +76,21 @@ const filtered_rosters_lists = computed(() =>
           class="card-shell flex h-fit flex-col pb-2"
           :key="roster_id"
         >
-          <div v-if="roster_config.profiles.length > 1" class="card-header">
+          <div
+            v-if="
+              roster_config.profiles.length > 1 || linked_rosters[roster_index]
+            "
+            class="card-header"
+          >
             <span class="card-title"> Roster {{ roster_index + 1 }}</span>
+            <span
+              v-if="linked_rosters[roster_index]"
+              class="text-sm text-(--uwuowo)"
+              >Your roster on lostark.bible</span
+            >
             <RegionSelector
               :region="roster_config.all_regions[roster_id]"
+              :locked="linked_rosters[roster_index]"
               :region_change="
                 (event) => {
                   const new_region = (event.target as HTMLSelectElement)

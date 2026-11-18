@@ -34,6 +34,22 @@ pub fn get_special_leap_cost(tier: usize) -> Vec<Vec<i64>> {
     DATA[tier].SPECIAL_LEAPS_COST.clone()
 }
 
+/// the event's cost multiplier per material and upgrade, all 1 without the event
+pub fn get_multiplier(
+    express_event: bool,
+    tier: usize,
+    is_adv: bool,
+    is_unlock: bool,
+) -> Vec<Vec<f64>> {
+    match (is_adv, express_event, is_unlock) {
+        (_, false, _) => vec![vec![1.0_f64; 25]; 7],
+        (false, true, false) => DATA[tier].EVENT_NORMAL_COST_MULTIPLIER.clone(),
+        (false, true, true) => DATA[tier].EVENT_NORMAL_UNLOCK_MULTIPLIER.clone(),
+        (true, true, false) => DATA[tier].EVENT_ADV_COST_MULTIPLIER.clone(),
+        (true, true, true) => DATA[tier].EVENT_ADV_UNLOCK_MULTIPLIER.clone(),
+    }
+}
+
 pub fn get_data(
     express_event: bool,
     tier: usize,
@@ -55,17 +71,7 @@ pub fn get_data(
         _ => &vec![],
     };
 
-    let multiplier_arr = match (is_adv, express_event, is_unlock) {
-        (false, false, false) => &vec![vec![1.0_f64; 25]; 7],
-        (false, false, true) => &vec![vec![1.0_f64; 25]; 7],
-        (false, true, false) => &DATA[tier].EVENT_NORMAL_COST_MULTIPLIER,
-        (false, true, true) => &DATA[tier].EVENT_NORMAL_UNLOCK_MULTIPLIER,
-        (true, false, false) => &vec![vec![1.0_f64; 25]; 7],
-        (true, false, true) => &vec![vec![1.0_f64; 25]; 7],
-        (true, true, false) => &DATA[tier].EVENT_ADV_COST_MULTIPLIER,
-        (true, true, true) => &DATA[tier].EVENT_ADV_UNLOCK_MULTIPLIER,
-    };
-
+    let multiplier_arr = &get_multiplier(express_event, tier, is_adv, is_unlock);
     let mut result = vec![vec![0.0_f64; if is_adv { 4 } else { 25 }]; 7];
     for (cost_type, row) in base.iter().enumerate() {
         for (u_index, base_val) in row.iter().enumerate() {

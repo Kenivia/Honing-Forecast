@@ -5,8 +5,10 @@ import FetchCharButton from "./FetchCharButton.vue";
 import { MarketRegions } from "@/Utils/MarketDataFetcher.js";
 import { ApplyFetch, market_to_uwuowo_region } from "./UwuowoUtils.js";
 import { ref } from "vue";
+import { computedAsync } from "@vueuse/core";
+import { find_linked, signed_in } from "@/Utils/BibleAuth";
 
-defineProps<{
+const props = defineProps<{
   name: string;
   profile_index: number;
   name_change: (_: string) => void;
@@ -18,11 +20,23 @@ defineProps<{
 }>();
 
 const counter = ref(0);
+
+// signed in and the character is in a linked roster: name and region locked, refresh instead of the popup
+const linked = computedAsync(async () => {
+  const region = market_to_uwuowo_region(props.region);
+  return (
+    props.profile_id !== undefined &&
+    signed_in.value &&
+    region !== null &&
+    (await find_linked(region, props.name)) !== null
+  );
+}, false);
 </script>
 <template>
   <CharNameInput
     :char_name="name"
     :profile_index="profile_index"
+    :locked="linked"
     @char_name_change="
       (new_name) => {
         name_change(new_name);
@@ -37,6 +51,7 @@ const counter = ref(0);
     <RegionSelector
       :region="region"
       :region_change="region_change"
+      :locked="linked"
       v-if="!hide_region"
     />
     <FetchCharButton
@@ -45,6 +60,7 @@ const counter = ref(0);
       :apply="apply"
       :counter="counter"
       :profile_id="profile_id"
+      :linked="linked"
     />
   </div>
 </template>

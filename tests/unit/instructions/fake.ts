@@ -48,6 +48,8 @@ export function fake_upgrade(over: Partial<Upgrade> = {}): Upgrade {
     // Red, Blue, Leaps, Shards, Fusion, Gold, Silver
     unlock_costs: [0, 0, 0, 1000, 0, 0, 0],
     costs: [10, 20, 3, 0, 1, 5, 100],
+    cost_multipliers: [1, 1, 1, 1, 1, 1, 1],
+    tap: { event: 0, artisan_percent: 100 },
     ...over,
   };
 }
