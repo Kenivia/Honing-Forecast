@@ -69,8 +69,8 @@ describe("MaterialGraph", () => {
       .findAll("path")[1]
       .attributes("d");
     const xs = path_points(d).map(([x]) => x);
-    // the first point's bar is cut to nothing at the axis
-    expect(xs).toEqual([0, 0, 0, 0, 60, 60, 120, 120, 180]);
+    // bars centred on their points, so the ends are half bars
+    expect(xs).toEqual([0, 0, 0, 30, 30, 90, 90, 150, 150, 180]);
   });
 
   it("the hover snaps to the nearest point and passes its slope and cumulative value", async () => {

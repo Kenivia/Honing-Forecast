@@ -11,7 +11,7 @@ import {
   max_taps,
   upgrade_name,
 } from "./demo";
-import { chance_text, cssVar, get_icon_path } from "@/Utils/Helpers";
+import { chance_text, cssVar, get_icon_path, mix } from "@/Utils/Helpers";
 import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue";
 import ActualInstructions from "@/Components/Character/Instructions/ActualInstructions.vue";
 import OptimizerRadioButton from "@/Components/Character/OptimizerControlPanel/OptimizerRadioButton.vue";
@@ -22,13 +22,14 @@ import { NormalOverride } from "@/WasmInterface/Overrides";
 import { DEFAULT_CHAR_PROFILE } from "@/Stores/CharacterProfile";
 
 // Two upgrades' joint tap distribution under a juice strategy, and how much fusion each outcome
-// has to buy. The plan comes from the real optimizer (streak length 1) and histogram.
+// has to buy. The plan comes from the real optimizer (streak length 1, or 10 for Optimal x10) and histogram.
 const LEVELS = [10, 9];
 const profile = demo_profile(LEVELS);
-const owned = ref(0);
+const profile_x10 = { ...profile, min_resolution: 10 };
+const owned = ref(420);
 
 const JUICES = demo_juices(LEVELS);
-const juice_owned = ref<number[]>(JUICES.map(() => 0));
+const juice_owned = ref<number[]>(JUICES.map((_, i) => [169, 67][i]));
 // bound stock by label
 const stock = () => ({
   [FUSION_LABEL]: owned.value,
@@ -36,9 +37,11 @@ const stock = () => ({
 });
 // Custom sends the ticked taps as the state, under the Optimizer override so they pass through
 const CUSTOM = -1;
+const OPTIMAL_X10 = -2;
 const strategy = ref<number>(NormalOverride.Optimizer);
 const STRATEGIES = [
   { value: NormalOverride.Optimizer, label: "Optimal" },
+  { value: OPTIMAL_X10, label: "Optimal x10" },
   { value: NormalOverride.Empty, label: "No juice" },
   { value: NormalOverride.Full, label: "Full juice" },
   { value: CUSTOM, label: "Custom" },
@@ -70,18 +73,22 @@ function custom_plan() {
   };
 }
 
+const is_x10 = computed(() => strategy.value === OPTIMAL_X10);
+const active = () => (is_x10.value ? profile_x10 : profile);
+
 function run_histogram() {
   if (!plan.value) return;
   const is_custom = strategy.value === CUSTOM;
-  const s = is_custom ? NormalOverride.Optimizer : strategy.value;
+  const s =
+    is_custom || is_x10.value ? NormalOverride.Optimizer : strategy.value;
   const override = {
     ...structuredClone(DEFAULT_CHAR_PROFILE.optimizer_override),
     normal: { juice: s, book: s },
   };
   histogram.throttled_start(WasmOp.Histogram, {
     ...states_payload(
-      demo_payload(profile, stock()),
-      profile,
+      demo_payload(active(), stock()),
+      active(),
       is_custom ? custom_plan() : plan.value,
       override,
     ),
@@ -89,11 +96,11 @@ function run_histogram() {
   });
 }
 watch(
-  [owned, juice_owned],
+  [owned, juice_owned, is_x10],
   () =>
     optimizer.debounced_start(
       WasmOp.OptimizeAverage,
-      demo_payload(profile, stock()),
+      demo_payload(active(), stock()),
       (result) => {
         if (!result) return;
         plan.value = result;
@@ -102,7 +109,10 @@ watch(
     ),
   { immediate: true, deep: true },
 );
-watch(strategy, run_histogram);
+// switching to or from x10 reruns the optimizer instead
+watch(strategy, (v, old) => {
+  if ((v === OPTIMAL_X10) === (old === OPTIMAL_X10)) run_histogram();
+});
 watch(custom, () => strategy.value === CUSTOM && run_histogram(), {
   deep: true,
 });
@@ -160,11 +170,6 @@ const shortfall = computed(() => {
   return (x: number, y: number) => Math.max(0, used(x, y) - o) / max_cost;
 });
 
-function mix(hex: string, t: number) {
-  const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-  const [r, g, b] = c.map((v) => Math.round(255 + (v - 255) * t));
-  return `rgb(${r},${g},${b})`;
-}
 const blue = cssVar("--series-blue", "#6666ff");
 const orange = cssVar("--series-fusion", "#ff7824");
 const prob_color = computed(() => {
@@ -268,10 +273,10 @@ const gold_tip = (
       >
         <div class="flex items-baseline justify-between gap-2">
           <span class="font-bold">{{ name }}</span>
-          <span class="text-sm text-(--text-very-muted)">
+          <!-- <span class="text-sm text-(--text-very-muted)">
             Pity {{ sizes[i] > 0 ? sizes[i] : axes[i] }} taps,
             {{ costs[i] }} fusion per tap
-          </span>
+          </span> -->
         </div>
         <ActualInstructions
           v-if="shown[i] && result"

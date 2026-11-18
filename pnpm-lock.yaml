@@ -47,6 +47,9 @@ importers:
       marked:
         specifier: ^18.1.1
         version: 18.1.1
+      nouislider:
+        specifier: ^15.8.1
+        version: 15.8.1
       oauth4webapi:
         specifier: ^3.8.8
         version: 3.8.8
@@ -1886,6 +1889,9 @@ packages:
     resolution: {integrity: sha512-df3sBr/6ax9hSGuC3CspvLlbnX8cP5L5nZwXF8cGN8l0zSWR6BvzmQ6jPUKjvo6+/xdpkNvEcucBNUdBeeV13g==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
     hasBin: true
+
+  nouislider@15.8.1:
+    resolution: {integrity: sha512-93TweAi8kqntHJSPiSWQ1o/uZ29VWOmal9YKb6KKGGlCkugaNfAupT7o1qTHqdJvNQ7S0su5rO6qRFCjP8fxtw==}
 
   nth-check@2.1.1:
     resolution: {integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==}
@@ -3904,6 +3910,8 @@ snapshots:
   nopt@10.0.1:
     dependencies:
       abbrev: 5.0.0
+
+  nouislider@15.8.1: {}
 
   nth-check@2.1.1:
     dependencies:

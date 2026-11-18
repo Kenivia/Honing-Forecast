@@ -143,6 +143,13 @@ export function cssVar(name: string, fallback: string) {
   return value || fallback;
 }
 
+// white at t = 0 to the #rrggbb colour at t = 1
+export function mix(hex: string, t: number) {
+  const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const [r, g, b] = c.map((v) => Math.round(255 + (v - 255) * t));
+  return `rgb(${r},${g},${b})`;
+}
+
 export function debounce<T extends (...args: any[]) => void>(
   fn: T,
   delay: number,

@@ -95,7 +95,7 @@ describe("OptimizerControlPanel", () => {
     expect(radio(wrapper, 0, "Original").checked).toBe(false);
   });
 
-  it("special order radios only show once Original and Maxroll are unticked", async () => {
+  it("special order radios only show once Original is unticked", async () => {
     const { wrapper, profile } = await setup();
     await button(wrapper, "Compare with simple strategies").trigger("click");
     const special = () =>
@@ -105,8 +105,8 @@ describe("OptimizerControlPanel", () => {
     expect(special()).toHaveLength(1);
     await wrapper.findAll('input[type="checkbox"]')[2].setValue(false);
     expect(profile.optimizer_override.special.optimizer).toBe(false);
-    // Original, Maxroll and the four order radios
-    expect(special()).toHaveLength(6);
+    // Original and the four order radios
+    expect(special()).toHaveLength(5);
     radio(wrapper, 2, "Armor First").click();
     radio(wrapper, 2, "Lowest first").click();
     await wrapper.vm.$nextTick();
@@ -117,9 +117,6 @@ describe("OptimizerControlPanel", () => {
       highest_first: false,
     });
     expect(radio(wrapper, 2, "Weapon First").checked).toBe(false);
-    await wrapper.findAll('input[type="checkbox"]')[3].setValue(true);
-    expect(profile.optimizer_override.special.maxroll).toBe(true);
-    expect(special()).toHaveLength(2);
   });
 
   it("is greyed out while the optimizer runs", async () => {

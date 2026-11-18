@@ -68,7 +68,7 @@ const grids = computed((): GridConfig[] => [
   },
   {
     tier: 1,
-    grid_template_columns: "250px 100px 120px 138px",
+    grid_template_columns: "250px 100px 150px 138px",
     materials: TIER_MATERIALS[1],
   },
 ]);

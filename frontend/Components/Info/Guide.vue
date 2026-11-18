@@ -25,133 +25,175 @@ const selected_color = computed(() => {
 <template>
   <div class="info-html card-shell card-body prose-card">
     <h1>Guide</h1>
-    <h2>Step 1: Select your upgrades</h2>
-    <img class="mx-auto" src="/Guide/ticks.png" />
-    <h2>Step 2: Input your mats situation</h2>
+    <h2>Step 1: Set up your character</h2>
+    <p>Either option works, fetching is faster.</p>
 
+    <h3>a) Fetch from lostark.bible</h3>
     <p>
-      You should untick any mats you aren't going to buy, and input owned
-      (char-bound) materials.
+      Put your character's name and region in the character card on the
+      Character page, then press <b>Fetch from lostark.bible</b>.
+    </p>
+    <img class="mx-auto" src="/Guide/char-card.png" />
+    <p>
+      If you Sign in, your rosters are linked and all your characters are
+      fetched automatically.
+    </p>
+    <!-- <img class="mx-auto" src="/Guide/signin.png" /> -->
+
+    <h3>b) Input manually</h3>
+    <p>
+      Set the region (this changes the market price), and tick the upgrades you
+      want to do.
+    </p>
+
+    <img class="mx-auto" src="/Guide/ticks.png" />
+
+    <h2>Step 2: Input your materials</h2>
+    <p>Again either option works.</p>
+    <h3>a) Use the screen scanner</h3>
+    <p>
+      Open <b>Scanner</b> in the character page's sidebar, then follow the
+      instructions there
+    </p>
+    <img class="mx-auto" src="/Guide/scanner.png" />
+
+    <h3>b) Input manually</h3>
+    <p>
+      Put your
+      <span class="text-(--bound)">Char-bound</span> materials in the costs
+      distribution on the Character page, and untick any mats you aren't going
+      to buy.
     </p>
     <img class="mx-auto" src="/Guide/cost-dist.png" />
-
-    <p>Let me go through the meaning of each column one by one:</p>
-
-    <h3>
-      1. The checkboxes
-      <input
-        class="pl-2"
-        type="checkbox"
-        aria-label="Example checkbox"
-        v-model="dummy_checkbox"
-      />
-      on the very left
-    </h3>
-
-    <p class="pl-10!">
-      If you don't plan on buying a certain mat, you should un-check the
-      checkbox. The calculations will disregard this material completely.
-      (Un-checking has the same effect as putting in like 99999999 owned)
+    <p>
+      <span class="text-(--roster)">Roster-bound</span> and
+      <span class="text-(--tradable)">Tradable</span> materials go on the
+      <RouterLink to="/market-mats">Market & Mats</RouterLink> page.
     </p>
+    <img class="mx-auto" src="/Guide/market.png" />
 
-    <h3>2. <span class="text-(--bound)">Bound Mats</span></h3>
+    <details class="mt-4">
+      <summary class="cursor-pointer text-xl">
+        What do the columns of the costs distribution mean?
+      </summary>
+      <h3>
+        1. The checkboxes
+        <input
+          class="pl-2"
+          type="checkbox"
+          aria-label="Example checkbox"
+          v-model="dummy_checkbox"
+        />
+        on the very left
+      </h3>
 
-    <p class="pl-10!">
-      This is where you should put your owned
-      <span class="text-(--bound)">Char-bound</span> materials. Roster &
-      Tradable are on a
-      <RouterLink to="/market-mats"> different page</RouterLink>. The difference
-      between Bound & Tradable is that any leftover Bound is treated by the
-      Optimizer as 0 gold, and any leftover Tradable is treated at market price.
-      (There's no difference between Roster & Char bound other than when
-      deducting costs.)
-    </p>
+      <p class="pl-10!">
+        If you don't plan on buying a certain mat, you should un-check the
+        checkbox. The calculations will disregard this material completely.
+        (Un-checking has the same effect as putting in like 99999999 owned)
+      </p>
 
-    <h3>
-      3.
-      <select
-        class="selector"
-        aria-label="Example status"
-        v-model="dummy_select"
-        :style="{
-          color: selected_color,
-        }"
-      >
-        <option>{{ bound_chance_text }}</option>
-        <option>{{ roster_chance_text }}</option>
-        <option>{{ tradable_chance_text }}</option>
-      </select>
-    </h3>
+      <h3>2. <span class="text-(--bound)">Bound Mats</span></h3>
 
-    <p class="pl-10!">
-      To be even more verbose, it's the chance that you succeed all upgrades
-      before running out of
-      <span
-        :style="{
-          color: selected_color,
-        }"
-        >{{
-          selected_color == "var(--bound)"
-            ? "char-bound"
-            : selected_color == "var(--roster)"
-              ? "char-bound AND roster-bound"
-              : "char-bound, roster-bound AND tradable"
-        }}</span
-      >
-      material of a particular material type. I couldn't come up with a name
-      that could fit in the column title.
-    </p>
+      <p class="pl-10!">
+        This is where you should put your owned
+        <span class="text-(--bound)">Char-bound</span> materials. Roster &
+        Tradable are on a
+        <RouterLink to="/market-mats"> different page</RouterLink>. The
+        difference between Bound & Tradable is that any leftover Bound is
+        treated by the Optimizer as 0 gold, and any leftover Tradable is treated
+        at market price. (There's no difference between Roster & Char bound
+        other than when deducting costs.)
+      </p>
 
-    <h3>
-      4.
-      <span class="text-(--average)">Average</span>
-    </h3>
+      <h3>
+        3.
+        <select
+          class="selector"
+          aria-label="Example status"
+          v-model="dummy_select"
+          :style="{
+            color: selected_color,
+          }"
+        >
+          <option>{{ bound_chance_text }}</option>
+          <option>{{ roster_chance_text }}</option>
+          <option>{{ tradable_chance_text }}</option>
+        </select>
+      </h3>
 
-    <p class="pl-10!">The average cost of each material.</p>
+      <p class="pl-10!">
+        To be even more verbose, it's the chance that you succeed all upgrades
+        before running out of
+        <span
+          :style="{
+            color: selected_color,
+          }"
+          >{{
+            selected_color == "var(--bound)"
+              ? "char-bound"
+              : selected_color == "var(--roster)"
+                ? "char-bound AND roster-bound"
+                : "char-bound, roster-bound AND tradable"
+          }}</span
+        >
+        material of a particular material type. I couldn't come up with a name
+        that could fit in the column title.
+      </p>
 
-    <h3>
-      5.
-      <span class="text-(--gold)">Average Tradable Gold used</span>
-    </h3>
-    <p class="pl-10!">
-      This is rather important: it is
-      <span class="font-bold text-(--gold)">
-        the average tradable gold spent on the market</span
-      >
-      if you buy materials when you run out (including juices).
-    </p>
-    <p class="mt-2 pl-10!">
-      The sum of these is what the Optimizer will try to minimize (well actually
-      it's the gold spent minus the sell value of tradables). Note that in most
-      cases this does
-      <span class="font-bold">NOT</span> equal to
-      <span class="font-bold"> Market price </span> x
-      <span class="text-(--average)">Average</span>! What it actually is is
-      slightly convoluted, and it's kinda the whole point of this calculator.
-      See a somewhat intuitive explanation
-      <a
-        href="https://www.reddit.com/r/lostarkgame/comments/1qwskt2/optimize_your_free_tap_juice_usage_with_the_new/"
-        >in my reddit post</a
-      >, <a href="https://github.com/Kenivia/Honing-Forecast">Github Readme</a>.
-      <!-- or for the more mathematically inclined, I typed up the math in Latex
+      <h3>
+        4.
+        <span class="text-(--average)">Average</span>
+      </h3>
+
+      <p class="pl-10!">The average cost of each material.</p>
+
+      <h3>
+        5.
+        <span class="text-(--gold)">Average Tradable Gold used</span>
+      </h3>
+      <p class="pl-10!">
+        This is rather important: it is
+        <span class="font-bold text-(--gold)">
+          the average tradable gold spent on the market</span
+        >
+        if you buy materials when you run out (including juices).
+      </p>
+      <p class="mt-2 pl-10!">
+        The sum of these is what the Optimizer will try to minimize (well
+        actually it's the gold spent minus the sell value of tradables). Note
+        that in most cases this does
+        <span class="font-bold">NOT</span> equal to
+        <span class="font-bold"> Market price </span> x
+        <span class="text-(--average)">Average</span>! What it actually is is
+        slightly convoluted, and it's kinda the whole point of this calculator.
+        See a somewhat intuitive explanation
+        <a
+          href="https://www.reddit.com/r/lostarkgame/comments/1qwskt2/optimize_your_free_tap_juice_usage_with_the_new/"
+          >in my reddit post</a
+        >,
+        <a href="https://github.com/Kenivia/Honing-Forecast">Github Readme</a>.
+        <!-- or for the more mathematically inclined, I typed up the math in Latex
       <a
         href="https://github.com/Kenivia/Honing-Forecast/blob/main/docs/Saddlepoint%20Approximation.pdf"
       >
         here</a
       > -->
-      .
-    </p>
+        .
+      </p>
 
-    <h3>6. The graphs</h3>
+      <h3>6. The graphs</h3>
 
-    <p class="pl-10!">
-      Hover over the graphs to see what they mean. This is a generalized version
-      of column 3.
-    </p>
-    <p class="mt-4">
-      All these above assume that you follow the instructions below.
-    </p>
-    <h2>Step 3-1: The Instructions</h2>
+      <p class="pl-10!">
+        Hover over the graphs to see what they mean. This is a generalized
+        version of column 3.
+      </p>
+      <p class="mt-4">
+        All these above assume that you follow the instructions below.
+      </p>
+    </details>
+
+    <h2>Step 3: The instructions</h2>
 
     <p>
       We'll get to the right half of the instructions later, for now let's focus
@@ -160,33 +202,37 @@ const selected_color = computed(() => {
 
     <img src="/Guide/instructions.png" class="mx-auto" />
 
-    <p>In this example, you should:</p>
+    <p>Go through the upgrades in order. In this example, you should:</p>
     <ol>
       <li>
-        Use special leaps on +20 Shoulder, until you run out of special leaps or
+        Do NOT use special leaps on the first +19. Use juice & books as shown in
+        the Juice & book column (hover over the icons to see exactly which taps
+        to use them on)
+      </li>
+      <li>
+        Use special leaps on the next +20, until you run out of special leaps or
         succeed
       </li>
-      <li>Use special leaps on +20 Chest</li>
-      <li>
-        do NOT use special leaps on +19 Helmet. Use full juice & book on the
-        first 9 taps, then only book on the next 14 taps
-      </li>
-      <li>Use special leaps on +20 Helmet</li>
+      <li>Repeat the same for the remaining pieces, in the order given</li>
     </ol>
     <p class="mt-2">
-      The order we do this is important but also partly arbitrary. The only
-      thing that matters is the order of the free taps, the non-free taps are
-      just there to make sure you can reach them correctly. Furthermore, the
-      order of identical pieces is arbitrary and can be swapped / changed around
-      as long as there's no depedency issues.
+      The order we do this is partly arbitrary. The only thing that matters is
+      the order of the free taps, the non-free taps are just there to make sure
+      you can reach them correctly. Furthermore, the order of identical pieces
+      is arbitrary and can be swapped / changed around as long as there's no
+      dependency issues.
     </p>
     <p class="mt-2">
       All this to say, there are many other equivalent orderings, but if in
       doubt, follow the order given.
     </p>
 
-    <h2>Step 3-2: Updating your progress as you tap</h2>
+    <h2>(Optional) Step 4: Updating your progress as you tap</h2>
 
+    <h3>
+      Doing this only marginally decreases the average cost, following the
+      instructions without updating is completely fine.
+    </h3>
     <p>
       For upgrades that you are supposed to free tap (and if you succeeded),
       input how much special leaps you have left, then press
@@ -214,13 +260,6 @@ const selected_color = computed(() => {
       Using the slider will automatically deduct costs from your owned budgets
       (bottoming out at 0). If you aren't starting an upgrade from 0 artisan,
       you can input your artisan directly into the textbox instead.
-    </p>
-
-    <p class="mt-20 pl-0!">
-      If you've got a quesiton, or think something isn't right, feel free to get
-      in touch via
-      <a href="https://discord.gg/KWDpQyvgzc"> Discord</a>! (or check out the
-      <a href="https://github.com/Kenivia/Honing-Forecast"> GitHub</a>)
     </p>
   </div>
 </template>

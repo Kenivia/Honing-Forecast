@@ -56,6 +56,10 @@ Tests live in `tests/e2e/*.spec.ts` and run in both browsers. The config starts 
 
 Every test should start with `hf.watch_errors` and `hf.stub_market`, as `smoke.spec.ts` does.
 
+## Guide screenshots
+
+`pnpm guide-shots [names...]` (`scripts/guide_shots/shoot.mjs`) re-takes the Guide page's images into `public/Guide/`, one fresh stubbed-price page per shot, against the running dev server. No names = all; names are the keys of `SHOTS` (`signin`, `char-card`, `ticks`, `scanner`, `cost-dist`, `market`, `instructions`, `freetap`, `nonfreetap`). `example_char` sets up the shared example (+19/+20 on Helmet, Shoulder, Chest, 300 special leaps, a few bound mats). `scanner` replays the local `2026-10-20T11-43` capture (about 1.5 min; skipped without it). The optimizer is randomised, so the order of identical pieces in the instruction shots changes between runs; the Guide's text avoids naming them.
+
 ## One-off versus rigorous
 
 | | One-off debugging | Rigorous testing |

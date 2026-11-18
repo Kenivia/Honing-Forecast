@@ -3,11 +3,11 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
-- shift sidebar?
+- ~~shift sidebar?~~
 
 - ~~new user / new character setup~~ good enough
 
-- game update
+- ~~game update~~
 - ~~change pity to actually use the integer 21500~~
 
 NEXT UPDATE

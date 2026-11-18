@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import Sidebar from "@/Components/Common/Sidebar.vue";
+import ContactFooter from "./ContactFooter.vue";
 import { ALL_VERSIONS } from "@/Utils/Changelog";
 import { RouterLink, RouterView } from "vue-router";
 
 const DOCS = [
   { name: "info-guide", label: "Guide" },
-  { name: "info-upgrade-order", label: "Introduction" },
+  { name: "info-upgrade-order", label: "Overview" },
 ];
 </script>
 
@@ -47,6 +48,7 @@ const DOCS = [
 
     <template #main>
       <RouterView />
+      <ContactFooter />
     </template>
   </Sidebar>
 </template>
