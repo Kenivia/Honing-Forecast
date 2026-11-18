@@ -6,7 +6,7 @@ import { RouterLink, RouterView } from "vue-router";
 
 const DOCS = [
   { name: "info-guide", label: "Guide" },
-  { name: "info-upgrade-order", label: "Overview" },
+  { name: "info-overview", label: "Overview" },
 ];
 </script>
 

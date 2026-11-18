@@ -64,17 +64,17 @@ onUnmounted(() => {
         <RouterLink
           v-for="profile in roster_chars"
           :key="profile.id"
-          :to="{ name: route.name, params: { characterName: profile.char_name } }"
+          :to="{
+            name: route.name,
+            params: { characterName: profile.char_name },
+          }"
           class="nav-tab"
           :class="{ selected: profile.id === active_profile.id }"
         >
           <ClassIcon :class_name="profile.class_name" />
           {{ profile.char_name }}
         </RouterLink>
-        <button
-          class="nav-tab"
-          @click="add_char"
-        >
+        <button class="nav-tab" @click="add_char">
           <svg
             class="size-5 shrink-0"
             viewBox="0 0 20 20"
@@ -101,7 +101,8 @@ onUnmounted(() => {
           Choices
         </RouterLink>
         <RouterLink to="scanner" class="side-bar-link" @click="close">
-          Scanner<span class="new-tag ml-2">beta</span>
+          Scanner
+          <!-- span class="new-tag ml-2">beta</span> -->
         </RouterLink>
       </div>
 

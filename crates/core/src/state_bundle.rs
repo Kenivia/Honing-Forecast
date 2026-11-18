@@ -9,7 +9,6 @@ use crate::upgrade::Upgrade;
 use ahash::AHashMap;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use std::f64::NAN;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StateBundle {
@@ -91,7 +90,7 @@ impl StateBundle {
         match self.metric_type {
             0 => unreachable!(), //self.success_prob_metric(performance),
             1 => self.optimizer_average_gold_metric(probe),
-            _ => NAN,
+            _ => f64::NAN,
         }
     }
 

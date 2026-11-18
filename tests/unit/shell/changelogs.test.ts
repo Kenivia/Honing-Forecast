@@ -128,7 +128,7 @@ describe("Info change logs", () => {
     const links = wrapper.findAll("a.side-bar-link");
     expect(links.map((a) => a.attributes("href"))).toEqual([
       "/info/guide",
-      "/info/upgrade-order",
+      "/info/overview",
       "/info/change-logs/WIP",
       ...ALL_VERSIONS.map((v) => `/info/change-logs/${v}`),
     ]);

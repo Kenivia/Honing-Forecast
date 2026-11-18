@@ -3,7 +3,6 @@
 
 use crate::state_bundle::StateBundle;
 use num::traits::Inv;
-use std::f64::NAN;
 
 impl StateBundle {
     pub fn min_guess_max_triplet(
@@ -14,9 +13,9 @@ impl StateBundle {
         mean_var_skew: (f64, f64, f64),
     ) -> (f64, f64, f64) {
         (
-            NAN,
+            f64::NAN,
             inverse_shifted_sigmoid(min_value, max_value, mean_var_skew, budget),
-            NAN,
+            f64::NAN,
         )
     }
 }

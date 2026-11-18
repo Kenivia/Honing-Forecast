@@ -5,7 +5,6 @@ use super::cumulants::KsTuple;
 use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 use crate::{constants::FLOAT_TOL, my_dbg};
-use std::f64::{INFINITY, NEG_INFINITY};
 // there's definitely some fishy business going on with advanced honing
 
 impl StateBundle {
@@ -26,10 +25,10 @@ impl StateBundle {
         mut seed: Option<KsTuple>,
         probe: &mut Probe,
     ) -> Option<(f64, KsTuple)> {
-        let mut lower = NEG_INFINITY;
-        let mut upper = INFINITY;
-        let mut y_lower = NEG_INFINITY;
-        let mut y_upper = INFINITY;
+        let mut lower = f64::NEG_INFINITY;
+        let mut upper = f64::INFINITY;
+        let mut y_lower = f64::NEG_INFINITY;
+        let mut y_upper = f64::INFINITY;
         let mut theta = guess;
 
         for iter in 0..self.tuning.max_root_find_iter {

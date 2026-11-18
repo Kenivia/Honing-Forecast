@@ -54,6 +54,7 @@ import {
   scan_settings,
   settings_overridden,
 } from "./ScanSettings";
+import { subset_numbers } from "./FontSubset";
 import { show_debug } from "./ScannerUIutils";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
@@ -116,7 +117,9 @@ const font_refused = ref<string | null>(null);
 async function pick_font(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (!file) return;
-  const bytes = new Uint8Array(await file.arrayBuffer());
+  const whole = new Uint8Array(await file.arrayBuffer());
+  // only the digits and "+" are kept, as the game's fonts are; whole if that fails
+  const bytes = (await subset_numbers(whole).catch(() => null)) ?? whole;
   if (!(await check_font(bytes))) {
     font_refused.value = file.name;
     return;
@@ -575,10 +578,14 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
         </span>
       </div>
       <button
-        class="flex w-fit items-center gap-1 text-sm text-(--text-muted) enabled:hover:text-(--text-bright)"
+        class="flex w-fit items-center gap-1 text-sm text-(--text-bright) enabled:hover:text-(--text-bright)"
         :aria-expanded="details"
         :disabled="pinned_open"
-        :title="pinned_open ? 'Kept open while a setting is not on its default' : undefined"
+        :title="
+          pinned_open
+            ? 'Kept open while a setting is not on its default'
+            : undefined
+        "
         @click="details_open = !details_open"
       >
         <span class="text-[1.1rem] font-semibold">{{

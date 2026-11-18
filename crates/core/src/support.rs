@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use std::f64::{INFINITY, NEG_INFINITY};
 use std::ops::Deref;
 
 use crate::constants::{FLOAT_TOL, IGNORE_PROB_TOL};
@@ -220,8 +219,8 @@ impl Support {
 
         if self.collapsed_state_hash != self.support_state_hash {
             let mut result: Vec<(f64, f64)> = Vec::with_capacity(self.support.len());
-            let mut max_value: f64 = NEG_INFINITY;
-            let mut min_value: f64 = INFINITY;
+            let mut max_value: f64 = f64::NEG_INFINITY;
+            let mut min_value: f64 = f64::INFINITY;
 
             let mut cur_p = 0.0;
             let front = prob_dist

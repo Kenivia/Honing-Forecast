@@ -6,51 +6,85 @@ Honing Forecast is a Lost Ark honing calculator that takes into account owned ma
 
 Try it here! <https://honing-forecast.pages.dev/>  
 
-## Table of Contents
+## Overview
 
-- [Introduction](#introduction)
-- [How to use](#how-to-use)
-- [Resources](#resources)
-- [Contributing](#contributing)
-- [Feedback](#bug-report--feedback)
+This is the markdown version of the [overview page on the site](honing-forecast.pages.dev/info/overview), which includes interactable demo.
 
-## Introduction
+### 1. What is being minimized?
 
-We want to calculate and minimize **Average gold used**. Naively (and I believe this is what other calculators do), you might think to do the following:
+We want to calculate and minimize **Average tradable gold spent**. More specifically we model the following scenario:
 
-1. *Find the average mat cost*
-2. *Subtract how much we have*
+1. You will buy from market if you run out of material (aka you want to hit these upgrades NOW)
+2. You don't care about any leftover bound material (unless you configure otherwise)
+
+We chose these assumptions not necessarily because it's the most applicable to everyone, but because it's the only case we can actually compute in a reasonable amount of time. The hope is that even if your use case doesn't completely match this, it's still good advice.
+
+There's a demo of 2 upgrades that you can play around with [on the site](https://honing-forecast.pages.dev/info/overview).
+
+### 2. How are the advices generated?
+
+In the real game, you can change your plan after seeing what actually happens in game (e.g. Stop using juice after you run out). However having a rock-cutting-like bot that tells you what to do every step is 1) kind of annoying to use and 2) I don't even know how to start making such an algorithm. Therefore, we do the following:
+
+1. We must come up with a "plan" at the beginning given the information at hand.
+2. We score the plan by considering all outcomes and taking the average.
+
+Of course as players we don't have to follow the plan to the end - we can update the optimizer at any point (as often as you can be bothered to) and the optimizer will give us a more informed plan. Empirically however the gain is quite small (median -0.3% by updating after every tap vs not updating at all), so it's really not that big of a deal at all.
+
+#### How does the optimizer work?
+
+The core algorithm is [Simulated annealing](https://en.wikipedia.org/wiki/Simulated_annealing). I tried a LOT of things but SA with a few post-processing steps seemed to work best. To give some typical examples (I promise these weren't cherry picked), it scores the following:
+
+|                  | 8 upgrades | 22 upgrades  | 24 upgrades |
+| ---------------- | ---------- | ------------ | ----------- |
+| Optimizer result | 270,139.9  | 17,216,792.2 | 7,371,376.4 |
+| Best known       | 269,902.5  | 17,214,843.7 | 7,370,569.9 |
+| Gap              | 237.4 gold | 1,948.5 gold | 806.5 gold  |
+| Gap / best       | 0.088%     | 0.011%       | 0.011%      |
+
+The actual metric we use to evaluate the optimizer is actually Gap / (Avg gold cost if you had NOTHING), because as we will mention very shortly, what we optimize for is affected by the value of leftover materials and thus can be very close to 0, which inflates the metric non-uniformly.
+
+### 3. What do the "leftover values" mean?
+
+In part 1, I said the metric we optimize for is **Average tradable gold spent**, well I lied and it's actually:
+
+> **Average tradable gold spent** - Value of leftover materials
+
+By default (for "main"s) we treat char-bound and roster-bound as worthless, and tradable as the market price minus the 5% tax.
+There's a graph of "how much am I losing" when spending materials of each type [on the site](https://honing-forecast.pages.dev/info/overview) that illustrates the point better than I can in words here.
+
+I should note that raw Gold (used at the honing npc) is treated as just another material that happens to cost 1 gold each.
+
+### 4. What's different about Honing Forecast?
+
+As far as I know, at least for now, all other Lost Ark calculators compute their "Average gold cost" like so:
+
+1. *Find the average cost of each material*
+2. *Subtract how much we have, ignore any negatives*
 3. *Multiply by the price.*
 
 *^ (This is incorrect) ^*
 
-This breaks down very quickly if you think about it. For example, for a +25 weapon, it costs ~2.15m shards on average. Suppose we have 2.15m bound shards on hand. If we get lucky, we have bound shards leftover, netting us no gold; If we get unlucky, we have to buy shards, costing us gold. Clearly the average gold used should be some positive number, but the above would tell us that the average cost is 0.
+This breaks down very quickly if you think about it. For example, for a +15 weapon, it costs ~342 fusion on average. Suppose we have 342 bound fusion on hand, then:
 
-### What we calculate instead
+1. If we get lucky, we have bound fusion leftover, netting us no gold,
+2. If we get unlucky, we have to buy fusion, costing us gold.
 
-1. For all outcomes (All combinations of 1 tap, 2 tap ... pity, for every upgrade), find the material cost.
+Clearly the average gold used should be some positive number, but the naive method would tell us that the average cost is **0 gold**. (In fact it should actually be **~96.5 fusion's worth** of gold.)
+
+To be clear, what is calculated by the naive method is "What is the gold cost if you hit exactly the average scenario", when we should calculate "If you asked a million people to do this upgrade and average their gold costs, what would you get". As you can see above the naive method is not a good approximation for the latter. In math lingo this is a brilliant display of [Jensen's Inequality](https://en.wikipedia.org/wiki/Jensen%27s_inequality), which states that "f(the average of X) is NOT equal to The average of f(X) ". Here the correct one to compute is the latter.
+
+#### What we calculate instead
+
+1. For all outcomes (All combinations of 1 tap, 2 tap ... pity of every upgrade), find the material cost.
 2. (For each outcome) Subtract how much we have, then turn any leftovers to 0.
-3. Multiply by the price and take the weighted average
+3. Multiply by the price
+4. Take the weighted average over all outcomes
 
-So the difference is that we do the subtraction prior to averaging and consider leftover bound mats as 0. This makes the average significantly more difficult to compute, and we use some [very clever maths](/docs/Saddlepoint%20Approximation.pdf) to do so in a reasonable amount of time (instead of what's described above).
-
-This allows us to consider the bound mats and juices that the player owns and make a much better suggestion as to how to spend them.
+So the difference is that we do the subtraction (aka apply "f") prior to averaging. This makes the average significantly more difficult to compute, and we use some very clever maths & algorithms (I will write this up soon™) to do so in a reasonable amount of time instead of using the brute force method described above.
 
 ## How to use
 
-See the [guide on the website](https://honing-forecast.pages.dev/Newchar/guide)
-
-## Resources
-
-I explained how things work in-depth in my [Reddit post](http://reddit.com/r/lostarkgame/comments/1qwskt2/optimize_your_free_tap_juice_usage_with_the_new/), which should be a pretty good starting point. I've also written some other docs:
-
-- [Math behind the average evaluation](/docs/Saddlepoint%20Approximation.pdf)
-- [Optimizer](/docs/Optimizer.md)
-- [Frontend](/docs/Frontend.md)
-- [All docs](/docs/)
-- [Work in progress](/public/WIP.md)
-
-For anything else, feel free to ask me on [Discord server](https://discord.gg/KWDpQyvgzc)
+See the [guide on the site](https://honing-forecast.pages.dev/info/guide)
 
 ## Contributing
 

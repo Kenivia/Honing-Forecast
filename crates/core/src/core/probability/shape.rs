@@ -4,7 +4,6 @@ use crate::core::probability::cumulants::KsTuple;
 use crate::state_bundle::StateBundle;
 use crate::support::Support;
 use num::Integer;
-use std::f64::INFINITY;
 
 pub const MIN_LATTICE_SPAN: f64 = 1.0;
 
@@ -16,7 +15,7 @@ where
     I: Iterator<Item = &'a Support>,
 {
     let mut span: i64 = 0;
-    let mut min_delta: f64 = INFINITY;
+    let mut min_delta: f64 = f64::INFINITY;
     for support in meta_support_arr {
         if support.access_collapsed(false).len() < 2 {
             continue;
@@ -56,7 +55,7 @@ impl StateBundle {
         let (mut min_value, mut max_value, mut mean) = (0.0, 0.0, 0.0);
         let mut product: usize = 1;
         let mut span: i64 = 0;
-        let mut min_delta: f64 = INFINITY;
+        let mut min_delta: f64 = f64::INFINITY;
         let mut zero = KsTuple::default();
         for (index, &u_index) in self.special_state.iter().enumerate() {
             let support = self.support_from_index(u_index, support_index);

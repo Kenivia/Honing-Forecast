@@ -306,6 +306,18 @@ test("a custom number font needs every digit", async ({ page }) => {
   await expect(page.getByText("English.ttf", { exact: true })).toBeVisible();
   await expect(page.getByText("not-a-font.ttf is not a font")).toBeHidden();
   await expect(apply).toBeEnabled();
+
+  // applied, only its digits and "+" are kept, and a reload keeps it in view
+  await apply.click();
+  const stored = await page.evaluate(() => localStorage.getItem("scanner_font"));
+  expect(stored.length).toBeGreaterThan(0);
+  expect(stored.length).toBeLessThan(8000);
+  await page.reload();
+  await expect(page.getByLabel("Number font")).toHaveValue("Custom");
+  await expect(page.getByText("English.ttf", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Troubleshooting/ }),
+  ).toBeDisabled();
 });
 
 test("a scan moved to another roster counts its roster storage there", async ({

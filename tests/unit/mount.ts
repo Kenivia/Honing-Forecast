@@ -19,7 +19,7 @@ const ROUTES: RouteRecordRaw[] = [
     component: { render: () => h(RouterView) },
     children: [
       { path: "guide", name: "info-guide", component: Empty },
-      { path: "upgrade-order", name: "info-upgrade-order", component: Empty },
+      { path: "overview", name: "info-overview", component: Empty },
       { path: "change-logs", name: "change-logs-root", component: Empty },
       { path: "change-logs/:version", name: "change-logs", component: Empty },
     ],

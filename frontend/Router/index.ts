@@ -45,8 +45,8 @@ const router = createRouter({
       children: [
         { path: "guide", name: "info-guide", component: Guide },
         {
-          path: "upgrade-order",
-          name: "info-upgrade-order",
+          path: "overview",
+          name: "info-overview",
           component: UpgradeOrder,
         },
         {
