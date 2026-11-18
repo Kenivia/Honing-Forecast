@@ -1,0 +1,10 @@
+[
+ {
+  "name": "b_real3na_dev",
+  "cmd": "target\\arena\\bin\\sim_b.exe --db arena_data/lab/runs.sqlite --set real3na_dev run sim_b sim_b:algo=maxroll sim_b:algo=maxroll,lab_on=nostock sim_b:algo=maxroll,lab_on=allstock sim_b:algo=maxroll,lab_on=ifreached sim_b:algo=maxroll,lab_on=ifreached+allstock --mode cold --seeds 3 --jobs 16 --resume"
+ },
+ {
+  "name": "b_real3na_test",
+  "cmd": "target\\arena\\bin\\sim_b.exe --db arena_data/lab/runs.sqlite --set real3na_test run sim_b sim_b:algo=maxroll sim_b:algo=maxroll,lab_on=nostock sim_b:algo=maxroll,lab_on=allstock sim_b:algo=maxroll,lab_on=ifreached sim_b:algo=maxroll,lab_on=ifreached+allstock --mode cold --seeds 3 --jobs 16 --resume"
+ }
+]

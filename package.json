@@ -23,7 +23,7 @@
     "check": "vue-tsc --noEmit",
     "no-test-build": "pnpm run wasm && vite build",
     "build": "pnpm run test && pnpm run no-test-build",
-    "updates": "rustup update && cargo update && pnpm update",
+    "updates": "rustup update && cargo install wasm-pack --force && cargo update && pnpm update",
     "no-check-deploy": "git push origin main:Production --force-with-lease",
     "deploy": "pwsh -File ./scripts/pre_deploy_check.ps1 && pnpm run no-check-deploy",
     "cloudflare-deploy": "wrangler deploy --config cloudflare/wrangler.toml",

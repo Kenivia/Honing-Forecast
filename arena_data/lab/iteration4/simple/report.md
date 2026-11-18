@@ -36,3 +36,24 @@ Maxroll's own calculator (read from its client code, 2026-11-16): a per-piece ex
 
 - The rule with band-aware prices (that is the shadow start, `shadow_prices`), or with advanced honing and chests chosen.
 - Maxroll's state-dependent advanced honing policy.
+
+## The calculator's Maxroll override with owned stock (batch `b`, 2026-11-18)
+
+`algo=maxroll` (`lab/maxroll.rs`, snapshot `sim_b`) runs the calculator's override (`optimizer/maxroll.rs`) with juice, books and the free tap order all on. Owned juice and books go to the charged taps of the buy price plans with the most gold saved a unit, as far as the stock covers every tap given them; the plan is those taps and the buy price plan's. Switches: `ifreached` (rank by gold saved if the tap is reached, Maxroll's per-tap value, instead of reach × that), `nostock` (owned stock ignored, the rule before), `allstock` (tradable stock free as well as bound and roster). Default = reach-weighted, bound + roster.
+
+Set `real3na_dev`/`_test` (`scripts/strip_adv.py`): the real3 cold singles at streak 1 with advanced honing removed, 724 cases (108 had any). Best known from default `solve` at 3 seeds (plus earlier runs of identical payloads). `scripts/noadv.py`; gap in % of flow, `diff` = gain over `nostock`, `+`/`-` payloads better/worse by 0.01%.
+
+| variant | mean | p50 | p90 | worst | hit % | diff | + | − |
+|---|---|---|---|---|---|---|---|---|
+| ignore owned (`nostock`) | 5.77 | 4.66 | 13.45 | 28.0 | 12.7 | | | |
+| **reach, bound + roster (default)** | **4.05** | **2.44** | **10.22** | **28.0** | **14.6** | **+1.72** | **403** | **1** |
+| if reached, bound + roster | 4.21 | 2.58 | 10.72 | 28.0 | 14.6 | +1.55 | 384 | 0 |
+| reach, all stock | 4.36 | 2.60 | 10.68 | 52.3 | 13.5 | +1.41 | 404 | 70 |
+| if reached, all stock | 4.51 | 2.69 | 10.98 | 52.3 | 13.5 | +1.26 | 399 | 61 |
+| `solve` default | 0.005 | 0 | 0.009 | 0.41 | 91.3 | | | |
+
+- The default is best in every group. Its gain is mostly where bound juice is 10% of flow or more (390 cases: 6.38 → 3.48).
+- Treating tradable stock as free loses on 70 cases (worst 52% of flow): the metric values a used tradable unit at its sell price.
+- What is left (4% of flow mean) is chests (557 of 724 have them; the rule leaves them as given) and owned base materials, which the rule prices at market.
+- Shipped in the calculator: if reached, bound + roster (the user's pick, 2026-11-18): 0.17% of flow behind reach-weighted, but one line to explain in the frontend. `algo=maxroll`'s default stays reach-weighted, so `sim_b`'s rows keep their meaning.
+- `allstock` was removed afterwards; its rows in `sim_b` stay as evidence.

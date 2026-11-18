@@ -7,7 +7,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - new user / new character setup
 - rework changelog page (infinite scroll)
-
+- update
 - ~~change pity to actually use the integer 21500~~
 
 NEXT UPDATE

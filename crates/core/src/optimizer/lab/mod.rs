@@ -4,6 +4,7 @@
 pub mod cem;
 pub mod check;
 pub mod lns;
+pub mod maxroll;
 pub mod memetic;
 pub mod price;
 pub mod simple;
@@ -15,7 +16,15 @@ use crate::state_bundle::StateBundle;
 use rand::Rng;
 
 /// every lab algorithm, by the name `Tuning::algo` takes
-pub const ALGOS: &[&str] = &["price", "surrogate", "memetic", "cem", "lns", "simple"];
+pub const ALGOS: &[&str] = &[
+    "price",
+    "surrogate",
+    "memetic",
+    "cem",
+    "lns",
+    "simple",
+    "maxroll",
+];
 
 pub fn solve<R: Rng>(
     rng: &mut R,
@@ -31,6 +40,7 @@ pub fn solve<R: Rng>(
         "cem" => cem::solve(rng, state_bundle, previous, probe),
         "lns" => lns::solve(rng, state_bundle, previous, probe),
         "simple" => simple::solve(rng, state_bundle, previous, probe),
+        "maxroll" => maxroll::solve(rng, state_bundle, previous, probe),
         other => panic!("no lab algorithm {other}"),
     }
 }
@@ -47,6 +57,7 @@ pub fn check_switches(tuning: &crate::tuning::Tuning) {
         "cem" => (cem::OFF.to_vec(), cem::ON.to_vec()),
         "lns" => (lns::OFF.to_vec(), lns::ON.to_vec()),
         "simple" => (simple::OFF.to_vec(), simple::ON.to_vec()),
+        "maxroll" => (maxroll::OFF.to_vec(), maxroll::ON.to_vec()),
         other => panic!("no lab algorithm {other}"),
     };
     let solves = tuning.algo.is_empty() || tuning.lab_on.split('+').any(|n| n == "fromsolve");

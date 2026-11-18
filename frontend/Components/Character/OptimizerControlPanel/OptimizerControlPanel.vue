@@ -249,7 +249,8 @@ const grid: GridConfig = {
         </div>
       </div>
       <span v-if="show_override" class="annotation"
-        >Maxroll: use juice/book if Maxroll estimated gold value > market price;
+        >Maxroll: use juice/book if Maxroll estimated gold value > market price
+        OR if we have enough to afford;
         Highest special leap value first.</span
       >
     </div>

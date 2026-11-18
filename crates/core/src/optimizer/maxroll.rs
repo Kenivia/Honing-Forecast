@@ -1,8 +1,10 @@
 //! Maxroll's upgrade calculator's rule, as a comparison strategy: every material at its buy
 //! price. Juice and books where they save more than they cost (the pools not asked for kept as
-//! given), and free taps by gold saved per special leap. Normal honing only.
+//! given), plus owned juice and books on the taps they save the most on, as far as the stock
+//! covers every tap given them. Free taps by gold saved per special leap. Normal honing only.
 
 use super::response::Response;
+use crate::honing_utils::update_normal::chance as to_chance;
 use crate::materials::NUM_BASE_MATS;
 use crate::state_bundle::StateBundle;
 use serde::Deserialize;
@@ -14,26 +16,85 @@ pub struct Maxroll {
     pub special: bool,
 }
 
+/// One charged tap taking one id of a pool, and the expected gold that saves.
+struct Candidate {
+    index: usize,
+    tap: usize,
+    pool: usize,
+    /// what it adds to the tap's option
+    option: usize,
+    on: bool,
+    row: usize,
+    amount: f64,
+    gain: f64,
+}
+
+/// the taps a plan pays juice on, and the chance each is reached
+fn charged(response: &Response, indices: &[usize]) -> Vec<(usize, f64)> {
+    let model = &response.model;
+    let (mut artisan, mut alive, mut out) = (model.artisan, 1.0, Vec::new());
+    for count in 0..model.len {
+        if model.tap.full(artisan) || count + 1 >= model.len {
+            break;
+        }
+        let rate = model.rate(count, model.extra[indices[count]]);
+        let chance = to_chance(rate);
+        if chance == 1.0 {
+            break;
+        }
+        out.push((count, alive));
+        alive *= 1.0 - chance;
+        artisan = model.step(artisan, rate);
+    }
+    out
+}
+
+/// Lab variants of the owned stock rule: whether bound and roster stock is used, and whether
+/// taps go by gold saved if reached rather than expected gold saved.
+#[derive(Debug, Clone, Copy)]
+pub struct Owned {
+    pub stock: bool,
+    pub if_reached: bool,
+}
+
 pub fn apply_maxroll(state_bundle: &mut StateBundle, maxroll: Maxroll) {
+    let owned = Owned {
+        stock: true,
+        if_reached: true,
+    };
+    apply_owned(state_bundle, maxroll, owned);
+}
+
+pub fn apply_owned(state_bundle: &mut StateBundle, maxroll: Maxroll, owned: Owned) {
     if !(maxroll.juice || maxroll.book || maxroll.special) {
         return;
     }
     // the site plans tap by tap, whatever the x10 setting
     let streak_length = std::mem::replace(&mut state_bundle.tuning.streak_length, 1);
-    let prices: Vec<f64> = state_bundle
-        .prep_output
-        .materials
+    let materials = &state_bundle.prep_output.materials;
+    let prices: Vec<f64> = materials.iter().map(|m| m.market_price).collect();
+    let mut stock: Vec<f64> = materials
         .iter()
-        .map(|material| material.market_price)
+        // tradable stock is worth its sell price, so it is bought like the rest
+        .map(|m| {
+            if owned.stock {
+                (m.bound + m.roster).max(0.0)
+            } else {
+                0.0
+            }
+        })
         .collect();
-    // gold a free tap saves for each special leap it takes, by upgrade
-    let mut worth = vec![f64::NEG_INFINITY; state_bundle.upgrade_arr.len()];
+    // the buy price plan of each upgrade, and what juicing each of its charged taps saves
+    let mut plans: Vec<Option<Vec<usize>>> = vec![None; state_bundle.upgrade_arr.len()];
+    let mut candidates = Vec::new();
     for index in 0..state_bundle.upgrade_arr.len() {
-        if !state_bundle.upgrade_arr[index].is_normal_honing {
+        let upgrade = &state_bundle.upgrade_arr[index];
+        if !upgrade.is_normal_honing {
             continue;
         }
         let response = Response::linear(state_bundle, index, &prices);
-        let pools = response.model.pools.len();
+        let model = &response.model;
+        let pools = model.pools.len();
         // the last pool is the books, the rest juices
         let free: Vec<usize> = (0..pools)
             .filter(|&pool| {
@@ -44,13 +105,78 @@ pub fn apply_maxroll(state_bundle: &mut StateBundle, maxroll: Maxroll) {
                 }
             })
             .collect();
-        let upgrade = &state_bundle.upgrade_arr[index];
-        let mut indices = response.model.indices(&upgrade.state.payload);
-        if !free.is_empty() {
-            indices = response.best_free(&indices, &free).1;
-            let plan = response.model.plan(&indices);
-            state_bundle.upgrade_arr[index].state.update_payload(plan);
+        if free.is_empty() {
+            continue;
         }
+        let indices = response
+            .best_free(&model.indices(&upgrade.state.payload), &free)
+            .1;
+        let base = response.score(&indices);
+        for (tap, reach) in charged(&response, &indices) {
+            for &pool in &free {
+                let (stride, ids) = (model.strides[pool], &model.pools[pool]);
+                let now = indices[tap] / stride % (ids.len() + 1);
+                for which in (0..ids.len()).filter(|&which| now == 0 || now == which + 1) {
+                    let mut other = indices.clone();
+                    let gain = if now == 0 {
+                        other[tap] += (which + 1) * stride;
+                        response.score(&other) - base
+                    } else {
+                        other[tap] -= now * stride;
+                        base - response.score(&other)
+                    };
+                    let row = state_bundle.prep_output.table.juice_row(ids[which]);
+                    let amount = state_bundle
+                        .prep_output
+                        .juice_info
+                        .access(ids[which], upgrade.piece_type_usize, upgrade.upgrade_index)
+                        .normal_amt_used as f64;
+                    candidates.push(Candidate {
+                        index,
+                        tap,
+                        pool,
+                        option: (which + 1) * stride,
+                        on: now != 0,
+                        row,
+                        amount,
+                        // with what the juice costs added back
+                        gain: (gain + reach * amount * prices[row])
+                            / if owned.if_reached { reach } else { 1.0 },
+                    });
+                }
+            }
+        }
+        plans[index] = Some(indices);
+    }
+    // owned stock to the most gold saved a unit, as much as is sure to be there
+    candidates.sort_by(|a, b| (b.gain / b.amount).total_cmp(&(a.gain / a.amount)));
+    let mut taken = std::collections::HashSet::new();
+    for c in candidates.iter().filter(|c| c.gain > 0.0) {
+        if stock[c.row] < c.amount || !taken.insert((c.index, c.tap, c.pool)) {
+            continue;
+        }
+        stock[c.row] -= c.amount;
+        if !c.on {
+            plans[c.index].as_mut().unwrap()[c.tap] += c.option;
+        }
+    }
+    // gold a free tap saves for each special leap it takes, by upgrade
+    let mut worth = vec![f64::NEG_INFINITY; state_bundle.upgrade_arr.len()];
+    for index in 0..state_bundle.upgrade_arr.len() {
+        if !state_bundle.upgrade_arr[index].is_normal_honing {
+            continue;
+        }
+        let response = Response::linear(state_bundle, index, &prices);
+        let indices = match plans[index].take() {
+            Some(indices) => {
+                let plan = response.model.plan(&indices);
+                state_bundle.upgrade_arr[index].state.update_payload(plan);
+                indices
+            }
+            None => response
+                .model
+                .indices(&state_bundle.upgrade_arr[index].state.payload),
+        };
         let upgrade = &state_bundle.upgrade_arr[index];
         let unlock: f64 = if upgrade.unlocked {
             0.0
@@ -185,5 +311,41 @@ mod tests {
             special: false,
         };
         assert!(run(true, book) != run(false, book));
+    }
+
+    /// owned juice and books go on more taps than buying them would
+    #[test]
+    fn owned_stock_is_used() {
+        let juiced = |owned: f64| {
+            let mut payload = scenario();
+            for (at, label) in payload.material_labels.clone().iter().enumerate() {
+                if at >= NUM_BASE_MATS {
+                    let material = payload.materials.get_mut(label).unwrap();
+                    material.bound = owned;
+                    material.roster = 0.0;
+                    material.tradable = 0.0;
+                }
+            }
+            let mut bundle = StateBundle::init_from_payload(payload);
+            let both = Maxroll {
+                juice: true,
+                book: true,
+                special: false,
+            };
+            apply_maxroll(&mut bundle, both);
+            bundle
+                .upgrade_arr
+                .iter()
+                .map(|upgrade| {
+                    upgrade
+                        .state
+                        .payload
+                        .iter()
+                        .map(|slot| slot.len())
+                        .sum::<usize>()
+                })
+                .sum::<usize>()
+        };
+        assert!(juiced(1e9) > juiced(0.0));
     }
 }

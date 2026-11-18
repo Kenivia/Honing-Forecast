@@ -17,11 +17,17 @@ import ItemList from "./ItemList.vue";
 const runtime = useRuntimeStore();
 
 const { active_profile } = storeToRefs(useRosterStore());
+// juice_info, tier and working default to the calculator's
 const props = defineProps<{
   upgrade: Upgrade;
+  juice_info?: any;
+  tier?: number;
+  working?: boolean;
 }>();
 
-const juice_info = computed(() => runtime.histogram.result.juice_info);
+const juice_info = computed(
+  () => props.juice_info ?? runtime.histogram.result.juice_info,
+);
 
 const relevant_ids = computed((): number[] => {
   const map = props.upgrade.is_normal_honing
@@ -31,7 +37,7 @@ const relevant_ids = computed((): number[] => {
 });
 
 const label_of = (id: number) =>
-  ALL_LABELS[active_profile.value.tier][id + NUM_BASE_MATS];
+  ALL_LABELS[props.tier ?? active_profile.value.tier][id + NUM_BASE_MATS];
 // how many of a juice or book one tap of this upgrade takes
 const per_tap = (id: number) => {
   const u = props.upgrade;
@@ -76,7 +82,9 @@ const has_breath = (items: { label: string }[]) =>
 const amounts = (items: { id: number; label: string }[], taps: number) =>
   items.map((item) => ({ label: item.label, amount: per_tap(item.id) * taps }));
 
-const optimizer_working = computed(get_optimizer_working);
+const optimizer_working = computed(
+  () => props.working ?? get_optimizer_working(),
+);
 </script>
 
 <template>

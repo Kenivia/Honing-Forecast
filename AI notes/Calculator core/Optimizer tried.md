@@ -97,6 +97,10 @@ Warnings behind `Optimizer.md`: what failed or was ruled out, with the one measu
 - Don't expect the evaluator's cuts to speed a cold 12k run: `max_lattice_work` 20k, `special_tol=3e-4` and `max_memo_size=262144` left CPU and mlog where they were (x0.39–0.41 against 0.41). `coarse_cells=6` is on the curve (x0.22 -2.60 against x0.23 -2.62 with `coarse_shared`), 4 loses hit (79 to 76% at 6k).
 - Don't give each free tap outcome its own step in the shared coarse pass: their steps are within 1.09–1.15 of each other, worth 3–10% of the pass. Don't key kept coarse cells on the exact step: a material's step is the same as at its last evaluation only 12–39% of the time (hence `coarse_cache`'s ladder). Don't expect `target-cpu=x86-64-v2` to change the arena's timings (same CPU within 1%: `floor` is no library call's cost). Don't bother reusing the lattices' buffers or reading the shared coarse pass without copying its grid: identical results, 12k C 136.5 against 137.5 CPU s.
 
+## Maxroll override
+
+- Don't count tradable juice and books as free in the Maxroll override's owned stock rule: the metric values a used tradable unit at its sell price, so 70 of 724 `real3na` cases got worse than ignoring owned stock (worst 52% of flow).
+
 ## Running an optimizer round
 
 - Don't judge a change on the set it was developed on alone: the held-out set caught the small-payload failure above, near 98.1 against 100.

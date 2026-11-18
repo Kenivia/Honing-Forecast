@@ -1,39 +1,108 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import Heatmap from "./Heatmap.vue";
 import {
-  distribution,
+  demo_juices,
+  demo_payload,
+  demo_profile,
+  FUSION_LABEL,
+  PRICES,
   fusion_per_tap,
-  juices,
   max_taps,
-  NUM_LEVELS,
   upgrade_name,
-  type DemoUpgrade,
 } from "./demo";
 import { chance_text, cssVar } from "@/Utils/Helpers";
-import { MATERIALS } from "@/Utils/Constants";
 import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue";
+import ActualInstructions from "@/Components/Character/Instructions/ActualInstructions.vue";
+import OptimizerRadioButton from "@/Components/Character/OptimizerControlPanel/OptimizerRadioButton.vue";
+import { create_worker_bundle } from "@/WasmInterface/WorkerBundle";
+import { WasmOp, type HistogramOutputs } from "@/WasmInterface/WasmTypes";
+import { states_payload } from "@/WasmInterface/PayloadBuilder";
+import { NormalOverride } from "@/WasmInterface/Overrides";
+import { DEFAULT_CHAR_PROFILE } from "@/Stores/CharacterProfile";
 
-// Two upgrades' joint tap distribution, and how much fusion each outcome has to buy.
-const upgrades = reactive<DemoUpgrade[]>([
-  { piece_type: 2, upgrade_index: 10, juice: {} },
-  { piece_type: 2, upgrade_index: 9, juice: {} },
-]);
+// Two upgrades' joint tap distribution under a juice strategy, and how much fusion each outcome
+// has to buy. The plan comes from the real optimizer (streak length 1) and histogram.
+const LEVELS = [10, 9];
+const profile = demo_profile(LEVELS);
 const owned = ref(0);
 
-const dists = computed(() => upgrades.map(distribution));
-const sizes = computed(() => dists.value.map((d) => d.length - 1));
+const JUICES = demo_juices(LEVELS);
+const juice_owned = ref<number[]>(JUICES.map(() => 0));
+// bound stock by label
+const stock = () => ({
+  [FUSION_LABEL]: owned.value,
+  ...Object.fromEntries(JUICES.map((j, i) => [j.label, juice_owned.value[i]])),
+});
+const strategy = ref(NormalOverride.Optimizer);
+const STRATEGIES = [
+  { value: NormalOverride.Optimizer, label: "Optimal" },
+  { value: NormalOverride.Empty, label: "No juice" },
+  { value: NormalOverride.Full, label: "Full juice" },
+  { value: NormalOverride.Maxroll, label: "Maxroll" },
+];
+
+const optimizer = create_worker_bundle();
+const histogram = create_worker_bundle();
+const plan = shallowRef<any>(null);
+onBeforeUnmount(() => {
+  optimizer.cancel();
+  histogram.cancel();
+});
+
+function run_histogram() {
+  if (!plan.value) return;
+  const override = {
+    ...structuredClone(DEFAULT_CHAR_PROFILE.optimizer_override),
+    normal: { juice: strategy.value, book: strategy.value },
+  };
+  histogram.throttled_start(WasmOp.Histogram, {
+    ...states_payload(
+      demo_payload(profile, stock()),
+      profile,
+      plan.value,
+      override,
+    ),
+    dist_plan: 0,
+  });
+}
+watch(
+  [owned, juice_owned],
+  () =>
+    optimizer.debounced_start(
+      WasmOp.OptimizeAverage,
+      demo_payload(profile, stock()),
+      (result) => {
+        if (!result) return;
+        plan.value = result;
+        run_histogram();
+      },
+    ),
+  { immediate: true, deep: true },
+);
+watch(strategy, run_histogram);
+
+const result = computed(() => histogram.result as HistogramOutputs | null);
+const working = computed(
+  () =>
+    optimizer.status === "busy" ||
+    histogram.status === "busy" ||
+    histogram.queued,
+);
+// the result's upgrades in LEVELS order
+const shown = computed(() =>
+  LEVELS.map((l) =>
+    result.value?.state_bundle.upgrade_arr.find((u) => u.upgrade_index === l),
+  ),
+);
+
+const names = LEVELS.map(upgrade_name);
+const costs = LEVELS.map(fusion_per_tap);
 // axes stay at the no-juice pity so juicing doesn't rescale anything
-const axes = computed(() => upgrades.map(max_taps));
-const costs = computed(() => upgrades.map(fusion_per_tap));
-const names = computed(() => upgrades.map(upgrade_name));
-const max_cost = computed(
-  () => axes.value[0] * costs.value[0] + axes.value[1] * costs.value[1],
-);
-const avail = computed(() =>
-  upgrades.map((u) => juices(u.piece_type, u.upgrade_index)),
-);
-watch(max_cost, (m) => (owned.value = Math.min(owned.value, m)));
+const axes = LEVELS.map((l) => max_taps(l));
+const max_cost = axes[0] * costs[0] + axes[1] * costs[1];
+const dists = computed(() => shown.value.map((u) => u?.normal_dist ?? []));
+const sizes = computed(() => dists.value.map((d) => d.length - 1));
 
 const prob = computed(() => {
   const [a, b] = dists.value;
@@ -42,12 +111,13 @@ const prob = computed(() => {
 // log colour range: the least and most likely outcome
 const p_range = computed(() => {
   const [a, b] = dists.value.map((d) => d.slice(1).filter((p) => p > 0));
+  if (!a.length || !b.length) return [1, 1];
   return [Math.min(...a) * Math.min(...b), Math.max(...a) * Math.max(...b)];
 });
-const used = (x: number, y: number) => x * costs.value[0] + y * costs.value[1];
+const used = (x: number, y: number) => x * costs[0] + y * costs[1];
 const shortfall = computed(() => {
-  const [o, [a, b], m] = [owned.value, costs.value, max_cost.value];
-  return (x: number, y: number) => Math.max(0, x * a + y * b - o) / m;
+  const o = owned.value;
+  return (x: number, y: number) => Math.max(0, used(x, y) - o) / max_cost;
 });
 
 function mix(hex: string, t: number) {
@@ -65,8 +135,8 @@ const prob_color = computed(() => {
 const fusion_color = (v: number) => mix(orange, v);
 
 const taps = (x: number, y: number) => [
-  `${names.value[0]}: ${x} taps`,
-  `${names.value[1]}: ${y} taps`,
+  `${names[0]}: ${x} taps`,
+  `${names[1]}: ${y} taps`,
 ];
 const pct = (p: number) => `${(p * 100).toPrecision(3)}%`;
 const prob_tip = computed(() => {
@@ -85,36 +155,15 @@ const fusion_tip = computed(() => {
   ];
 });
 
-// Gold spent = fusion bought at its fallback price, as a CDF on evenly spaced points
-// from 0 to the both-pity cost (MaterialGraph's slope view assumes even gaps).
-const PRICE = MATERIALS["Serca Fusion"].fallback_prices[0];
-const BINS = 100;
+// the histogram's gold distribution of the plan, like the calculator's
 const gold = computed(() => {
-  const [a, b] = dists.value;
-  const [ca, cb] = costs.value;
-  const o = owned.value;
-  const cells: [number, number][] = [];
-  let mean = 0;
-  a.forEach((pa, x) =>
-    b.forEach((pb, y) => {
-      const p = pa * pb;
-      if (!p) return;
-      const g = Math.max(0, x * ca + y * cb - o) * PRICE;
-      cells.push([g, p]);
-      mean += g * p;
-    }),
-  );
-  cells.sort((l, r) => l[0] - r[0]);
-  const top = max_cost.value * PRICE;
-  const cdf: [number, number][] = [];
-  let i = 0;
-  let cum = 0;
-  for (let k = 0; k <= BINS; k++) {
-    const x = (top * k) / BINS;
-    while (i < cells.length && cells[i][0] <= x + 1e-9) cum += cells[i++][1];
-    cdf.push([x, Math.min(1, cum)]);
-  }
-  return { cdf, mean, spends: cells[cells.length - 1][0] > 0 };
+  const r = result.value;
+  if (!r?.gold_dist) return null;
+  const { cdf, luckiest, pity } = r.gold_dist;
+  return {
+    cdf: pity[0] - luckiest[0] >= 1 ? cdf : null,
+    mean: -r.metric_per_plan[0],
+  };
 });
 const gold_tip = (
   x: number,
@@ -123,71 +172,81 @@ const gold_tip = (
   _m: string,
   color: string,
 ) =>
-  `<b style="color: var(--text-bright);">${chance_text(cy)}</b> chance to spend<br>≤ <b style="color: ${color};">${Math.round(x).toLocaleString("en-US")}</b> gold`;
+  `<b style="color: var(--text-bright);">${chance_text(Math.min(Math.max(cy, 1e-9), 1 - 1e-9))}</b> chance to spend<br>≤ <b style="color: ${color};">${Math.round(x).toLocaleString("en-US")}</b> gold`;
 </script>
 
 <template>
   <div class="flex flex-col gap-4 pl-5">
-    <div class="grid gap-4 md:grid-cols-2">
+    <div class="grid gap-4 md:grid-cols-[auto_1fr_1fr]">
       <div
-        v-for="(u, i) in upgrades"
-        :key="i"
-        class="flex flex-col gap-2 rounded-sm border border-(--border-very-muted) p-3"
+        class="flex flex-col gap-1 rounded-sm border border-(--border-very-muted) p-3"
       >
-        <div class="flex items-center gap-2">
-          <span class="text-(--text-muted)">Upgrade {{ i + 1 }}</span>
-          <span>Vambrace</span>
-          <select
-            v-model.number="u.upgrade_index"
-            class="selector bg-(--bg-input)"
-            @change="u.juice = {}"
-          >
-            <option v-for="l in NUM_LEVELS" :key="l" :value="l - 1">
-              +{{ l }}
-            </option>
-          </select>
+        <span class="text-(--text-muted)">Juice & book usage</span>
+        <OptimizerRadioButton
+          :options="STRATEGIES"
+          :model-value="strategy"
+          :on-change="(v) => (strategy = v)"
+        />
+      </div>
+      <div
+        v-for="(name, i) in names"
+        :key="name"
+        class="flex min-w-0 flex-col gap-2 rounded-sm border border-(--border-very-muted) p-3"
+      >
+        <div class="flex items-baseline justify-between gap-2">
+          <span class="font-bold">{{ name }}</span>
+          <span class="text-sm text-(--text-very-muted)">
+            Pity {{ sizes[i] > 0 ? sizes[i] : axes[i] }} taps,
+            {{ costs[i] }} fusion per tap
+          </span>
         </div>
-        <span class="text-sm text-(--text-very-muted)">
-          Pity {{ sizes[i] }} taps, {{ costs[i] }} fusion per tap
+        <ActualInstructions
+          v-if="shown[i] && result"
+          :upgrade="shown[i]"
+          :juice_info="result.juice_info"
+          :tier="profile.tier"
+          :working="working"
+        />
+        <span v-else class="text-sm text-(--text-very-muted)">
+          Waiting for the optimizer
         </span>
-        <label
-          v-for="j in avail[i]"
-          :key="j.id"
-          class="flex items-center gap-2 text-sm"
-        >
-          <span class="w-40 shrink-0">
-            {{ j.label }} (+{{ pct(j.chance) }})
-          </span>
-          <input
-            :value="u.juice[j.id] ?? 0"
-            @input="u.juice[j.id] = +($event.target as HTMLInputElement).value"
-            type="range"
-            class="w-full"
-            :min="0"
-            :max="max_taps(u) - 1"
-          />
-          <span class="w-28 shrink-0 text-right">
-            first {{ u.juice[j.id] ?? 0 }} taps
-          </span>
-        </label>
       </div>
     </div>
 
-    <label class="flex items-center gap-2">
-      <span class="shrink-0">Bound Fusion material owned</span>
-      <input
-        v-model.number="owned"
-        type="range"
-        class="w-full"
-        :min="0"
-        :max="max_cost"
-      />
-      <span class="w-32 shrink-0 text-right">
-        {{ owned.toLocaleString() }} / {{ max_cost.toLocaleString() }}
-      </span>
-    </label>
+    <div class="flex flex-col gap-1">
+      <label class="flex items-center gap-2">
+        <span class="w-56 shrink-0">Bound Fusion material owned</span>
+        <input
+          v-model.number="owned"
+          type="range"
+          class="w-full"
+          :min="0"
+          :max="max_cost"
+        />
+        <span class="w-32 shrink-0 text-right">
+          {{ owned.toLocaleString() }} / {{ max_cost.toLocaleString() }}
+        </span>
+      </label>
+      <label
+        v-for="(j, i) in JUICES"
+        :key="j.label"
+        class="flex items-center gap-2"
+      >
+        <span class="w-56 shrink-0">Bound {{ j.label }} owned</span>
+        <input
+          v-model.number="juice_owned[i]"
+          type="range"
+          class="w-full"
+          :min="0"
+          :max="j.max"
+        />
+        <span class="w-32 shrink-0 text-right">
+          {{ juice_owned[i].toLocaleString() }} / {{ j.max.toLocaleString() }}
+        </span>
+      </label>
+    </div>
 
-    <div class="grid gap-6 md:grid-cols-2">
+    <div class="grid gap-6 md:grid-cols-2" :class="{ 'opacity-50': working }">
       <div class="flex flex-col gap-2">
         <span class="font-bold">Chance of each outcome</span>
         <Heatmap
@@ -231,28 +290,31 @@ const gold_tip = (
       </div>
     </div>
 
-    <div class="flex flex-col gap-1">
+    <div class="flex flex-col gap-1" :class="{ 'opacity-50': working }">
       <div class="flex items-baseline gap-2">
         <span class="text-lg text-nowrap text-(--gold)">
           Average tradable gold spent:
-          {{ Math.round(gold.mean).toLocaleString("en-US") }}
+          {{ gold ? Math.round(gold.mean).toLocaleString("en-US") : "…" }}
         </span>
         <span class="text-sm text-(--text-very-muted)">
-          (Only fusion cost considered)
+          (Only fusion and juice costs considered, their prices are made-up to
+          demonstrate the point)
         </span>
       </div>
       <MaterialGraph
         class="pl-0!"
-        :data="gold.spends ? gold.cdf : null"
+        :data="gold?.cdf ?? null"
         material-label="Gold"
         graph-color="--gold"
         :cumulative="false"
-        :annotations="[gold.mean]"
+        :annotations="[gold?.mean ?? null]"
         :annotation-colors="['--average']"
         :annotation-positions="['graph']"
         :annotation-labels="['Average']"
         :tooltip-text-fn="gold_tip"
-        empty_message="No tradable gold spent"
+        :empty_message="
+          gold ? 'No tradable gold spent' : 'Waiting for the optimizer'
+        "
       />
     </div>
   </div>
