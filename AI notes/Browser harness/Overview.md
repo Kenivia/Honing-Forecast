@@ -72,7 +72,7 @@ Every test should start with `hf.watch_errors` and `hf.stub_market`, as `smoke.s
 ## Things that will trip you up
 
 - **Never wait for network idle.** It does not resolve on this site. Wait for an element or text.
-- **Every launch is a fresh profile** with the default single character `Newchar`, except within one MCP session. `/` redirects to `/Newchar/calc`.
+- **Every launch is a fresh profile** with the default single character `Newchar`, except within one MCP session. `/` redirects to `/chars/Newchar/calc` (old `/<char>/...` urls redirect under `/chars/`).
 - **Saving is debounced.** Wait about a second after the last change before reloading, or the change is lost.
 - **Gold is not reproducible.** The optimizer is randomised, so the same inputs give slightly different gold between runs and browsers, even with stubbed prices.
 - **Live prices hit the author's Worker** on every fresh load. Use the stub for anything run repeatedly.

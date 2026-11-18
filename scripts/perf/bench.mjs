@@ -101,13 +101,12 @@ const blocking = (page, t0) =>
 const on_page = (p, marker, gone = '[aria-label="Normal honing"]') =>
   `decodeURIComponent(location.pathname).endsWith(${JSON.stringify(p)}) && document.querySelector(${JSON.stringify(marker)}) && !document.querySelector(${JSON.stringify(gone)})`;
 const CALC = (name) =>
-  `decodeURIComponent(location.pathname) === ${JSON.stringify(`/${name}/calc`)} && document.querySelector('[aria-label="Normal honing"]') && document.querySelector('input[aria-label="Char name"]')?.value === ${JSON.stringify(name)}`;
+  `decodeURIComponent(location.pathname) === ${JSON.stringify(`/chars/${name}/calc`)} && document.querySelector('[aria-label="Normal honing"]') && document.querySelector('input[aria-label="Char name"]')?.value === ${JSON.stringify(name)}`;
 const PAGES = {
   market: on_page("/market-mats", '[aria-label="T4 materials"]'),
   roster: on_page("/roster-setup", 'input[aria-label="Char name"]'),
   scanner: on_page("/scanner", ".card-shell"),
   choices: on_page("/choices", '[aria-label="Choices"]'),
-  guide: on_page("/guide", ".prose-card"),
 };
 
 async function measure(ctx, name, kind, pred, act) {
@@ -152,12 +151,16 @@ function where_pos(dir, url, pos) {
 
 const header = (page, text) => page.locator("nav").getByRole("link", { name: text, exact: true });
 const side = (page, text) => page.locator("a.side-bar-link", { hasText: text });
+// a character tab of the character page
+const char_tab = (page, name) => page.locator('nav[aria-label="Characters"] a', { hasText: name });
+// the header's tab of the first roster
+const roster_tab = (page) => page.locator("nav").first().getByRole("link", { name: /^(Character|Roster 1)$/ });
 
 async function scenario(ctx, state) {
   const { page } = ctx;
   const chars = await page
-    .locator("nav a.header-button")
-    .evaluateAll((as) => as.map((a) => a.textContent.trim()).filter((t) => !["Roster setup", "Market & Mats"].includes(t)));
+    .locator('nav[aria-label="Characters"] a')
+    .evaluateAll((as) => as.map((a) => a.textContent.trim()));
   const [a, b] = chars;
 
   // calc: a single cell and a column header, each cycled NotYet -> Want -> Done -> NotYet
@@ -190,17 +193,16 @@ async function scenario(ctx, state) {
     const nav = (name, pred, act) => measure(ctx, `${name} #${visit}`, "click", pred, act);
     await nav("calc→market", PAGES.market, () => header(page, "Market & Mats").click());
     await nav("market→roster", PAGES.roster, () => header(page, "Roster setup").click());
-    await nav("roster→calc", CALC(a), () => header(page, a).click());
+    await nav("roster→calc", CALC(a), () => roster_tab(page).click());
     await nav("calc→scanner", PAGES.scanner, () => side(page, "Scanner").click());
     await nav("scanner→choices", PAGES.choices, () => side(page, "Choices").click());
-    await nav("choices→guide", PAGES.guide, () => side(page, "Guide").click());
-    await nav("guide→calc", CALC(a), () => side(page, "Calc").click());
+    await nav("choices→calc", CALC(a), () => side(page, "Calc").click());
   }
 
   if (b) {
     for (const visit of [1, 2]) {
-      await measure(ctx, `char switch #${visit}`, "click", CALC(b), () => header(page, b).click());
-      await measure(ctx, `char switch back #${visit}`, "click", CALC(a), () => header(page, a).click());
+      await measure(ctx, `char switch #${visit}`, "click", CALC(b), () => char_tab(page, b).click());
+      await measure(ctx, `char switch back #${visit}`, "click", CALC(a), () => char_tab(page, a).click());
     }
   } else if (state === "real") throw new Error("real save has one character");
 }

@@ -104,9 +104,6 @@ describe("router", () => {
 
   it("old doc urls redirect into info", async () => {
     expect((await go("/chars/Bob/guide")).fullPath).toBe("/info/guide");
-    expect((await go("/learn/upgrade-order")).fullPath).toBe(
-      "/info/upgrade-order",
-    );
     expect((await go("/change-logs")).fullPath).toBe(
       `/info/change-logs/${LATEST_VERSION}`,
     );

@@ -123,13 +123,16 @@ describe("ControlPanel toggles", () => {
   it("binds the checkboxes to the store", async () => {
     const { wrapper, store } = await setup();
     const boxes = wrapper.findAll('input[type="checkbox"]');
-    expect(boxes).toHaveLength(3);
+    expect(boxes).toHaveLength(4);
     const lock = store.active_profile.lock_fetched_done;
     await boxes[2].setValue(!lock);
     expect(store.active_profile.lock_fetched_done).toBe(!lock);
     const show = store.roster_config.show_all_rows;
     await boxes[0].setValue(!show);
     expect(store.roster_config.show_all_rows).toBe(!show);
+    const suggest = store.roster_config.show_suggestions;
+    await boxes[3].setValue(!suggest);
+    expect(store.roster_config.show_suggestions).toBe(!suggest);
   });
 
   it("resets the active character but keeps who it is", async () => {

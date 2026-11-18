@@ -21,7 +21,7 @@ export default async ({ page, hf }) => {
     };
   });
 
-  await hf.open(page, "/Newchar/scanner");
+  await hf.open(page, "/chars/Newchar/scanner");
   await page.getByLabel("Upload image or video").setInputFiles(FILE);
   await page.getByRole("button", { name: /Show details/ }).click();
   await page

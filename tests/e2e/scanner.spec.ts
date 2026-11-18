@@ -256,15 +256,13 @@ test("switching character asks what to do with an unexported scan", async ({
   await page.getByRole("button", { name: "Export to calculator" }).click();
   expect((await budgets(page)).bound.Blue).toBe(20);
 
-  // exported, so leaving wipes it without asking
+  // exported, so leaving wipes it without asking; the tab keeps the page
   await link("Newchar").click();
-  await expect(page).toHaveURL(/\/Newchar\/calc$/);
+  await expect(page).toHaveURL(/\/Newchar\/scanner$/);
   await expect(dialog).toHaveCount(0);
   expect(await scan_edits(page)).toBe(0);
 
   // wiped, the switch goes to that character's scanner and Bee keeps its export
-  await page.getByRole("link", { name: /^Scanner/ }).click();
-  await expect(page).toHaveURL(/\/Newchar\/scanner$/);
   await scan(page, blue(5), ["CharInventory 0"]);
   await link("Bee").click();
   await dialog.getByRole("button", { name: "Wipe the scan" }).click();

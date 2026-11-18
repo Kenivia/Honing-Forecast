@@ -528,12 +528,13 @@ function migrate_10_to_11(data: any): any {
 }
 
 // Scan pages are saved slot by slot: the old page totals are dropped, and the currencies get
-// their own list. Profiles get forbidden chests, a class and a fetch time. Each roster's highest ilevel
-// character (the first on a tie) stays a main; the others still on the main's leftover values
-// become alts.
+// their own list. Profiles get forbidden chests, a class and a fetch time; the roster gets
+// show_suggestions. Each roster's highest ilevel character (the first on a tie) stays a main; the
+// others still on the main's leftover values become alts.
 function migrate_11_to_12(data: any): any {
   data.scan_pages = [];
   data.scan_currencies = [];
+  data.show_suggestions ??= true;
   const profiles = data.profiles ?? [];
   for (const profile of profiles) {
     profile.forbidden_chests ??= [];

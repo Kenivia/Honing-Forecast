@@ -19,7 +19,7 @@ import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import type { ManifestChest } from "@/Utils/Chest";
 
 async function setup(tier = 0, before?: (store: any) => void) {
-  const { wrapper } = await mount_app(MaterialDist);
+  const { wrapper } = await mount_app(MaterialDist, {}, "/chars/Newchar/calc");
   const store = useRosterStore();
   const runtime = useRuntimeStore();
   store.active_profile.tier = tier;
@@ -64,7 +64,7 @@ const chest = (over: Partial<ManifestChest>): ManifestChest => ({
 
 describe("MaterialDist columns", () => {
   it("shows nothing but N/A before a histogram arrives", async () => {
-    const { wrapper } = await mount_app(MaterialDist);
+    const { wrapper } = await mount_app(MaterialDist, {}, "/chars/Newchar/calc");
     expect(rows(wrapper)).toEqual([]);
     expect(wrapper.find(".metric-result").text()).toBe("N/A");
   });

@@ -79,7 +79,6 @@ const router = createRouter({
       path: "/change-logs/:pathMatch(.*)*",
       redirect: () => `/info/change-logs/${LATEST_VERSION}`,
     },
-    { path: "/learn/upgrade-order", redirect: { name: "info-upgrade-order" } },
     {
       path: "/auth/callback",
       name: "auth-callback",

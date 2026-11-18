@@ -1,6 +1,6 @@
 # Driving the screen scanner
 
-Page: `/<character>/scanner` (capture card, scan loop and slot grid). The capture card shows no preview of the stream.
+Page: `/chars/<character>/scanner` (capture card, scan loop and slot grid). The capture card shows no preview of the stream.
 
 ## Feeding it frames
 
@@ -8,7 +8,7 @@ Screen share cannot be driven headless, so upload a file instead. The capture ca
 
 ```js
 export default async ({ page, hf }) => {
-  await hf.open(page, "/Newchar/scanner");
+  await hf.open(page, "/chars/Newchar/scanner");
   await page.getByLabel("Upload image or video").setInputFiles(file);
   await page.getByLabel("Frames scanned per second").waitFor();
   await page.locator(".grid canvas").nth(20).waitFor({ timeout: 30_000 });

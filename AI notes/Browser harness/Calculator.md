@@ -6,7 +6,7 @@ Read `Overview.md` first. This covers the character calc page plus the market an
 
 | Path | What is there |
 | --- | --- |
-| `/<char>/calc` | Upgrade grids, character settings, costs distribution, optimizer panel, instructions. |
+| `/chars/<char>/calc` | Upgrade grids, character settings, costs distribution, optimizer panel, instructions. |
 | `/market-mats` | Roster-bound and tradable materials, market prices, region. |
 | `/roster-setup` | Characters and rosters. |
 | `/info/guide`, `/info/change-logs` | Static content. |

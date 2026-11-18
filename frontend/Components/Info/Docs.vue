@@ -157,13 +157,13 @@ you can afford with bound mats, hooray.
 <p>
   This breaks down very quickly if you think about it. For example, for a +15 weapon, it costs ~342 fusion on
   average. Suppose we have 342 bound fusion on hand, then:
-  
-  <ol>
-    <li>  If we get lucky, we have bound fusion leftover, netting us no
-  gold, </li>
+</p>
+<ol>
+  <li>If we get lucky, we have bound fusion leftover, netting us no gold, </li>
   <li>If we get unlucky, we have to buy fusion, costing us gold. </li>
-  </ol>
-Clearly the average gold used should be some
+</ol>
+<p>
+  Clearly the average gold used should be some
   positive number, but the naive method would tell us that the average cost is <span  class="font-bold text-(--gold)">0 gold
   </span>. (In fact it should actually be <span class="font-bold text-(--gold)">{{ num(fusion_example_gold, 0) }} </span> gold.
 </p>
