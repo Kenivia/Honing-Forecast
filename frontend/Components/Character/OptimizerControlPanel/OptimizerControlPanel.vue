@@ -41,6 +41,7 @@ const COLUMNS = [
       option(NormalOverride.Optimizer, "Original"),
       option(NormalOverride.Full, "Full juice"),
       option(NormalOverride.Empty, "No juice"),
+      option(NormalOverride.Maxroll, "Maxroll"),
     ],
   },
   {
@@ -51,6 +52,7 @@ const COLUMNS = [
       option(NormalOverride.Optimizer, "Original"),
       option(NormalOverride.Full, "Full Book"),
       option(NormalOverride.Empty, "No Book"),
+      option(NormalOverride.Maxroll, "Maxroll"),
     ],
   },
   { title: "Special Usage", group: "special" },
@@ -206,8 +208,22 @@ const grid: GridConfig = {
                   />
                   <span>Original</span>
                 </label>
-                <template
+                <label
                   v-if="!active_profile.optimizer_override.special.optimizer"
+                  class="control-panel-checkbox-row"
+                >
+                  <input
+                    type="checkbox"
+                    v-model="active_profile.optimizer_override.special.maxroll"
+                    @change="start_eval_hist"
+                  />
+                  <span>Maxroll</span>
+                </label>
+                <template
+                  v-if="
+                    !active_profile.optimizer_override.special.optimizer &&
+                    !active_profile.optimizer_override.special.maxroll
+                  "
                 >
                   <OptimizerRadioButton
                     v-for="pick in SPECIAL"
@@ -233,8 +249,8 @@ const grid: GridConfig = {
         </div>
       </div>
       <span v-if="show_override" class="annotation"
-        >Comparison with Maxroll is unavailable because I couldn't figure out
-        how they calculate their gold values.</span
+        >Maxroll: every material at its buy price, as maxroll.gg's upgrade
+        calculator. Not offered for advanced honing.</span
       >
     </div>
   </div>

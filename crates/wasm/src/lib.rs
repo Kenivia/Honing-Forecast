@@ -2,6 +2,7 @@ use hf_core::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use hf_core::histogram::HistogramOutputs;
 use hf_core::histogram::histogram;
 use hf_core::marginal::use_more_prices;
+use hf_core::optimizer::maxroll::apply_maxroll;
 use hf_core::optimizer::solve;
 use hf_core::payload::Payload;
 use hf_core::probe::Probe;
@@ -65,7 +66,9 @@ pub fn histogram_wrapper(input_payload: JsValue) -> JsValue {
 
     let payload: Payload = from_value(input_payload).unwrap();
     let dist_plan = payload.dist_plan;
+    let maxroll = payload.maxroll;
     let mut state_bundle: StateBundle = StateBundle::init_from_payload(payload);
+    apply_maxroll(&mut state_bundle, maxroll);
     let out: HistogramOutputs = histogram(&mut state_bundle, dist_plan);
     to_value(&out).unwrap()
 }

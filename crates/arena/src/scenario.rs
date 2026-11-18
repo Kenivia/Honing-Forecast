@@ -202,6 +202,7 @@ pub fn dummy() -> Scenario {
         adv_cache: None,
         dist_plan: None,
         quick: false,
+        maxroll: Default::default(),
     };
 
     let mut second = first.clone();

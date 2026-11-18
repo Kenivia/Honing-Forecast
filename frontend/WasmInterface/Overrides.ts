@@ -3,6 +3,7 @@ export enum NormalOverride {
   Full,
   Empty,
   Optimizer,
+  Maxroll,
 }
 export enum AdvOverride {
   Full,
@@ -18,6 +19,8 @@ export interface StateOverride {
 // this kinda of have to work differently from stateoverride because weapon and highsest aren't independent
 export interface SpecialOverride {
   optimizer: boolean;
+  // by gold saved per special leap, in Rust; the two below are then unused
+  maxroll?: boolean;
   weapon_first: boolean;
   highest_first: boolean;
 }

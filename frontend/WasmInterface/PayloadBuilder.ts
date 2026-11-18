@@ -85,6 +85,8 @@ export interface Payload {
   dist_plan?: number | null;
   // the state is of a run of nearly this payload, so a short search from it is enough
   quick?: boolean;
+  // the parts of the plan the histogram takes by Maxroll's rule (Rust's `apply_maxroll`)
+  maxroll?: { juice: boolean; book: boolean; special: boolean };
 }
 
 // what of an optimizer result is fed back into the next payload
@@ -103,7 +105,8 @@ const ADV_OVERRIDE_INDEX = {
   [AdvOverride.Full]: JOINED_ADV_JUICE.length - 1,
 };
 
-// ids 0 and 1 are juices, the rest books; Full takes every id the upgrade can use
+// ids 0 and 1 are juices, the rest books; Full takes every id the upgrade can use. Rust replaces
+// a Maxroll pool whatever it holds.
 function normal_tap(
   tap: number[],
   usable: number[],
@@ -112,7 +115,9 @@ function normal_tap(
   if (override === undefined) return tap;
   const setting = (id: number) => (id <= 1 ? override.juice : override.book);
   return [
-    ...tap.filter((id) => setting(id) === NormalOverride.Optimizer),
+    ...tap.filter((id) =>
+      [NormalOverride.Optimizer, NormalOverride.Maxroll].includes(setting(id)),
+    ),
     ...usable.filter((id) => setting(id) === NormalOverride.Full),
   ];
 }
@@ -189,7 +194,8 @@ export function special_sort_override(
   if (
     special_override === undefined ||
     special_state === undefined ||
-    special_override.optimizer
+    special_override.optimizer ||
+    special_override.maxroll
   ) {
     return special_state;
   }
@@ -383,6 +389,13 @@ export function states_payload(
     ),
     chest_states: state.chest_states,
     adv_cache: state.adv_cache,
+    ...(override && {
+      maxroll: {
+        juice: override.normal.juice === NormalOverride.Maxroll,
+        book: override.normal.book === NormalOverride.Maxroll,
+        special: !override.special.optimizer && !!override.special.maxroll,
+      },
+    }),
   };
 }
 

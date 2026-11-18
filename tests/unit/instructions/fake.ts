@@ -39,6 +39,8 @@ export function fake_upgrade(over: Partial<Upgrade> = {}): Upgrade {
     artisan_rate: 2.15,
     base_chance: 0.25,
     extra_chance: 0,
+    // T4 armor +11's
+    special_cost: 12,
     // Red, Blue, Leaps, Shards, Fusion, Gold, Silver
     unlock_costs: [0, 0, 0, 1000, 0, 0, 0],
     costs: [10, 20, 3, 0, 1, 5, 100],
@@ -52,6 +54,7 @@ export function fake_adv(over: Partial<Upgrade> = {}): Upgrade {
     upgrade_index: 1,
     normal_dist: [],
     state: [[0], [0]],
+    special_cost: 0,
     ...over,
   });
 }

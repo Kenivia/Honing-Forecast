@@ -125,6 +125,7 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
     },
     special: {
       optimizer: true,
+      maxroll: false,
       weapon_first: true,
       highest_first: true,
     },

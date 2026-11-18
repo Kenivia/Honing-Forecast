@@ -15,6 +15,7 @@
 //! code change is a snapshot of the working tree.
 
 pub mod lab;
+pub mod maxroll;
 mod neighbour;
 mod one_batch;
 pub mod response;

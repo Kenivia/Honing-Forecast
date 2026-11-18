@@ -16,8 +16,8 @@ import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue
 
 // Two upgrades' joint tap distribution, and how much fusion each outcome has to buy.
 const upgrades = reactive<DemoUpgrade[]>([
-  { piece_type: 2, upgrade_index: 14, juice: {} },
-  { piece_type: 2, upgrade_index: 15, juice: {} },
+  { piece_type: 2, upgrade_index: 10, juice: {} },
+  { piece_type: 2, upgrade_index: 9, juice: {} },
 ]);
 const owned = ref(0);
 

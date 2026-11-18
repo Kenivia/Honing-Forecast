@@ -695,11 +695,20 @@ impl Response {
     /// The best of every plan that keeps to one id a pool. Two ids of a pool in one plan
     /// are left out: it was the best of a lone upgrade once in thirty, by 0.02% of flow.
     pub fn best(&self) -> (f64, Vec<usize>) {
+        let all: Vec<usize> = (0..self.model.pools.len()).collect();
+        self.best_free(&vec![0; self.model.len], &all)
+    }
+
+    /// `best` over the free pools, the others as the plan has them. What the plan has in the
+    /// free pools does not matter.
+    pub fn best_free(&self, indices: &[usize], free: &[usize]) -> (f64, Vec<usize>) {
         let model = &self.model;
-        let used_pools: Vec<usize> = (0..model.pools.len())
+        let used_pools: Vec<usize> = free
+            .iter()
+            .copied()
             .filter(|&pool| !model.pools[pool].is_empty())
             .collect();
-        let kept = self.kept(&vec![0; model.len], &[]);
+        let kept = self.kept(indices, free);
         let mut which = vec![0; used_pools.len()];
         let mut best = (f64::NEG_INFINITY, vec![0; model.len]);
         loop {

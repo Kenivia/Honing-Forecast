@@ -2,6 +2,7 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use crate::chest::{ChestStates, Chests};
 use crate::materials::{OneMaterial, ValuationPlan};
+use crate::optimizer::maxroll::Maxroll;
 use crate::parser::{OneUpgradeInput, PreparationOutput};
 use crate::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
@@ -47,6 +48,9 @@ pub struct Payload {
     /// as they are), so one fresh chain that finds nothing better is enough; never hashed
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub quick: bool,
+    /// the parts of the plan the histogram takes by Maxroll's rule
+    #[serde(default, skip_serializing)]
+    pub maxroll: Maxroll,
 }
 fn default_one() -> i64 {
     1
