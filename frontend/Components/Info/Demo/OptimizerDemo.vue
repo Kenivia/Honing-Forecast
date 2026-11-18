@@ -39,7 +39,6 @@ const STRATEGIES = [
   { value: NormalOverride.Optimizer, label: "Optimal" },
   { value: NormalOverride.Empty, label: "No juice" },
   { value: NormalOverride.Full, label: "Full juice" },
-  { value: NormalOverride.Maxroll, label: "Maxroll" },
 ];
 
 const optimizer = create_worker_bundle();

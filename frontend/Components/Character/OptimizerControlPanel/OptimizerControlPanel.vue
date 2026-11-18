@@ -41,7 +41,6 @@ const COLUMNS = [
       option(NormalOverride.Optimizer, "Original"),
       option(NormalOverride.Full, "Full juice"),
       option(NormalOverride.Empty, "No juice"),
-      option(NormalOverride.Maxroll, "Maxroll"),
     ],
   },
   {
@@ -52,7 +51,6 @@ const COLUMNS = [
       option(NormalOverride.Optimizer, "Original"),
       option(NormalOverride.Full, "Full Book"),
       option(NormalOverride.Empty, "No Book"),
-      option(NormalOverride.Maxroll, "Maxroll"),
     ],
   },
   { title: "Special Usage", group: "special" },
@@ -208,22 +206,8 @@ const grid: GridConfig = {
                   />
                   <span>Original</span>
                 </label>
-                <label
-                  v-if="!active_profile.optimizer_override.special.optimizer"
-                  class="control-panel-checkbox-row"
-                >
-                  <input
-                    type="checkbox"
-                    v-model="active_profile.optimizer_override.special.maxroll"
-                    @change="start_eval_hist"
-                  />
-                  <span>Maxroll</span>
-                </label>
                 <template
-                  v-if="
-                    !active_profile.optimizer_override.special.optimizer &&
-                    !active_profile.optimizer_override.special.maxroll
-                  "
+                  v-if="!active_profile.optimizer_override.special.optimizer"
                 >
                   <OptimizerRadioButton
                     v-for="pick in SPECIAL"
@@ -249,10 +233,8 @@ const grid: GridConfig = {
         </div>
       </div>
       <span v-if="show_override" class="annotation"
-        >Maxroll: use juice/book if Maxroll estimated gold value > market price
-        OR if we have enough to afford;
-        Highest special leap value first.</span
-      >
+        >Comparison with Maxroll is unavailable.
+      </span>
     </div>
   </div>
 </template>

@@ -1,11 +1,12 @@
 # The Maxroll override's owned stock variants (algo=maxroll) against solve on real3na (real3 cold singles at streak 1, advanced
 # honing removed): gap to the best known in % of flow, by owned juice and chests, and payloads better/worse than the first variant.
 # Best known per payload hash over every run without a streak_length override, as simple.py.
-# usage (repo root): noadv.py variant ...   (first variant is the base for the paired diff)
+# usage (repo root): noadv.py [--best] variant ...   (first variant is the base for the paired diff; --best: gap in % of |best known| not flow)
 import sys, json, sqlite3, collections, math, glob
 DB = 'arena_data/lab/runs.sqlite'
 FLOOR = 0.001
-variants = sys.argv[1:]
+by_best = '--best' in sys.argv
+variants = [v for v in sys.argv[1:] if v != '--best']
 
 info = {}
 for f in glob.glob('arena_data/scenarios/real3_noadv/r3na_*.json'):
@@ -26,14 +27,14 @@ ids = ','.join(map(str, allsteps))
 best = collections.defaultdict(lambda: -1e300); flow = collections.defaultdict(lambda: 1.0)
 runs = collections.defaultdict(list)
 for v, st, m, fl in c.execute(f"select variant, step_id, metric_ref, flow from run where kind='optimize' and error is null and chained=0 and step_id in ({ids})"):
-    if 'streak_length=' in v: continue
     h = allsteps[st]
-    best[h] = max(best[h], m); flow[h] = max(flow[h], fl or 1)
     if st in step: runs[v].append((st, m))
+    if 'streak_length=' in v: continue
+    best[h] = max(best[h], m); flow[h] = max(flow[h], fl or 1)
 
 def gap(st, m):
     h = step[st][1]
-    return max(0.0, best[h] - m) / flow[h] * 100
+    return max(0.0, best[h] - m) / (abs(best[h]) if by_best else flow[h]) * 100 if not by_best or best[h] else 0.0
 
 def jbin(st):
     sc, h = step[st]
@@ -52,6 +53,8 @@ for v in variants:
         acc[st].append(gap(st, m))
     per[v] = {st: sum(L) / len(L) for st, L in acc.items()}
 common = set.intersection(*(set(p) for p in per.values()))
+# the metric is net gold, so it can be 0: those payloads have no % of best
+if by_best: common = {st for st in common if best[step[st][1]] != 0}
 
 print(f"{'group':18s} {'variant':44s} {'n':>4s} {'mean':>7s} {'rms':>7s} {'mlog':>6s} {'hit%':>5s} {'p50':>7s} {'p90':>7s} {'worst':>7s} {'diff':>8s} {'+':>4s} {'-':>4s}")
 for name, pred in groups:
