@@ -47,7 +47,13 @@ import {
   recording,
   SAME_FRAME,
 } from "./Capture";
-import { custom_font, NUMBER_FONTS, scan_settings } from "./ScanSettings";
+import {
+  custom_font,
+  NUMBER_FONTS,
+  save_settings,
+  scan_settings,
+  settings_overridden,
+} from "./ScanSettings";
 import { show_debug } from "./ScannerUIutils";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
@@ -149,11 +155,17 @@ const brightness_choice = computed({
 });
 // idle, they are only kept for the next capture
 function apply_settings() {
-  if (draft.font === "Custom" && picked_font) custom_font.bytes = picked_font;
+  const font_changed = draft.font === "Custom" && !!picked_font;
+  if (font_changed) custom_font.bytes = picked_font;
   Object.assign(scan_settings, structuredClone(toRaw(draft)));
+  save_settings(font_changed);
+  picked_font = null;
   if (status.value === "capturing") restart_scanner();
 }
-const details = ref(false);
+// open while an applied setting is off its default, so that stays in view
+const details_open = ref(false);
+const pinned_open = computed(() => settings_overridden(scan_settings));
+const details = computed(() => details_open.value || pinned_open.value);
 function discard_settings() {
   Object.assign(draft, copy_settings());
   picked_font = null;
@@ -563,9 +575,11 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
         </span>
       </div>
       <button
-        class="flex w-fit items-center gap-1 text-sm text-(--text-muted) hover:text-(--text-bright)"
+        class="flex w-fit items-center gap-1 text-sm text-(--text-muted) enabled:hover:text-(--text-bright)"
         :aria-expanded="details"
-        @click="details = !details"
+        :disabled="pinned_open"
+        :title="pinned_open ? 'Kept open while a setting is not on its default' : undefined"
+        @click="details_open = !details_open"
       >
         <span class="text-[1.1rem] font-semibold">{{
           details ? "▾" : "▸"
