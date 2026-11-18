@@ -45,9 +45,9 @@ const parsed_streaks = computed(() => {
   const u = props.upgrade;
   if (u.state.length === 0) return [];
   const streaks = u.is_normal_honing
-    ? normal_streaks(u, juice_info.value)
+    ? normal_streaks(u)
     : adv_streaks(u, relevant_ids.value);
-  const lines = streak_lines(u, streaks, juice_info.value);
+  const lines = streak_lines(u, streaks);
   let taps = 0;
   return streaks.map((streak, i) => {
     const first = taps + 1;

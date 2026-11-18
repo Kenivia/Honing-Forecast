@@ -64,25 +64,37 @@ A `Chest` is a count, the band it is owned in and its options, each a `label -> 
 
 ## Game data
 
-Costs and chances come from JSON embedded in the binary, in `crates/core/src/constants/` (`constants.rs` picks the file per tier). Only two of the JSON files in that folder are wired in, one per tier: `T4 July 2026 (Vambrace padded).json`, from a Google Sheet, and `Serca Oct 2026.json`, whose normal honing is the game's (below) and the rest the sheet's. Vambrace support is partial: it exists for normal honing and is absent from the advanced tables. Serca's juice ids are Glacier's 0, Lava's 1, then the Tremor books 2 to 5 (12-15 armour, 12-15 weapon, 16-19 armour, 16-19 weapon), the order of their labels in the frontend's `MATERIAL_TABLE` (`Utils/Constants.ts`).
+Costs and chances come from JSON embedded in the binary, in `crates/core/src/constants/` (`constants.rs` picks the file per tier). Only two of the JSON files in that folder are wired in, one per tier: `T4 Nov 2026.json` (rates from the game, the rest from a Google Sheet, `T4 July 2026 (Vambrace padded).json`; T4 has no vambrace, so its rows are padding) and `Serca Oct 2026.json`, whose normal honing is the game's (below) and the rest the sheet's. Vambrace support is partial: it exists for normal honing and is absent from the advanced tables. Serca's juice ids are Glacier's 0, Lava's 1, then the Tremor books 2 to 5 (12-15 armour, 12-15 weapon, 16-19 armour, 16-19 weapon), the order of their labels in the frontend's `MATERIAL_TABLE` (`Utils/Constants.ts`).
+
+### Normal taps are the game's integers
+
+Every normal honing chance and the artisan are integers out of `RATE_SCALE` (100,000, the juice's scale). `Tap` (`honing_utils/update_normal.rs`, built by `get_tap`) holds an upgrade's rule: the rate after n failed taps is `min(base + min(n·bonus, bonus_max) + event + juice, RATE_SCALE)`, each failed tap adds `rate · artisan_percent / 100` to the artisan, and a tap is certain once the artisan reaches `threshold` (215,000). The JSON keeps the game's own units: `NORMAL_CHANCES`, `NORMAL_FAIL_BONUS`, `NORMAL_FAIL_BONUS_MAX`, `ARTISAN_THRESHOLD` and `EVENT_NORMAL_EXTRA_CHANCE` out of 10,000 (scaled by 10 on load), `EVENT_ARTISAN_MULTIPLIER` in percent, and the normal juice column of `JUICE_BOOKS_AVAIL` out of 100,000 (books, out of 10,000 in the game, are written times 10).
+
+- 100,000 is finer than anything modelled needs: every juice at its full count, and every book, is a whole /10,000. Only one unit of a Serca vambrace juice (375 or 25 per unit) is not, and the model never uses part of a stack.
+- The bonus is not always a tenth of the base: T4 +1 to +3 are 10,000 with a bonus of 0.
+- Floats appear only as `rate / RATE_SCALE` where a probability is needed (`chance`). Two orders of the same taps give exactly the same artisan, and an artisan landing exactly on the threshold is certain, which the old floats sometimes missed by one tap (from 0 artisan too).
+- maxroll.gg's calculator (its decompiled wasm and JS fallback) does the same: integers out of 10,000, certain at `artisan >= threshold`, the fail bonus and its cap from the tables.
+- The payload's `starting_artisan` stays a fraction of the threshold; `Upgrade::start_artisan` is it rounded to the integer the taps count from.
+- For the UI, a normal `Upgrade` carries `tap_artisan` (the artisan before each tap of its state, a fraction, worked out with `normal_dist`) and `fail_chances` (the chance with nothing used, by failed taps up to where the bonus stops). The frontend only indexes them (`HoningUtil.ts`); the Introduction demo (`demo.ts`) is the one JS copy of the rule.
 
 ### Honing data in the game files
 
-The same numbers are in the installed game, in the SQLite tables of `EFGame/data2.lpk` (`Screen scanner/Game files.md` has how they are read). **`python scripts/game_files/honing.py`** rebuilds the normal honing of the Serca JSON from them (chances, costs, unlocks, free-tap leapstones, juice and book rows), keeps the advanced and `EVENT_*` fields of the JSON it starts from (`Serca Aug 2026 (Vambrace).json`), prints which fields changed and writes `Serca Oct 2026.json`. T4 is not generated (the discount layer below).
+The same numbers are in the installed game, in the SQLite tables of `EFGame/data2.lpk` (`Screen scanner/Game files.md` has how they are read). **`python scripts/game_files/honing.py`** writes both tiers. For Serca it rebuilds normal honing from the tables (rates, costs, unlocks, free-tap leapstones, juice and book rows), keeping the advanced and `EVENT_*` fields of the JSON it starts from (`Serca Aug 2026 (Vambrace).json`), and writes `Serca Oct 2026.json`. For T4 it takes only the four rate fields from the game and keeps the rest of `T4 July 2026 (Vambrace padded).json`, writing `T4 Nov 2026.json` (the discount layer below). Float fields of the bases are converted to the integers above. It prints which fields changed.
 
-- **Normal honing, all there.** `ItemEnhanceCommon`, one group per gear set and piece type (411100 Serca weapon, 411101 Serca armour, 411102 Serca vambrace, 410500 and 410501 for T4; T4 has no vambrace), `SecondaryKey` 100 plus the level:
-  - `LevelUpSuccessRate` and `LevelUpFailureBonusRate` out of 10,000; the juice (`LevelUpAdditiveId0k`, `Rate0k` a unit, `Max0k` units, `MaxRate` the cap over all) out of 100,000. The vambrace takes both juices, up to its max each;
+- **Normal honing, all there.** `ItemEnhanceCommon`, one group per gear set and piece type (411100 Serca weapon, 411101 Serca armour, 411102 Serca vambrace, 410500 T4 weapon and 410501 T4 armour; T4 has no vambrace), `SecondaryKey` 100 plus the level:
+  - `LevelUpSuccessRate`, `LevelUpFailureBonusRate`, `LevelUpFailureBonusMaxRate` and `LevelUpGuaranteeThreshold` out of 10,000; the juice (`LevelUpAdditiveId0k`, `Rate0k` a unit, `Max0k` units, `MaxRate` the cap over all) out of 100,000. The vambrace takes both juices, up to its max each;
   - shards, silver and gold in `LevelUpCostType/Amount` (type 18 shards, 1 silver, 2 gold);
   - unlock shards as the difference of `AccExp` between levels, unlock silver as that times `FeedSubCost`;
   - free-tap leapstones in `SpecialEnhanceMaterialAmount`.
-  - Stones, leapstones and fusion are in `ItemQualityOption`, the rows whose `EnhanceCommonId` is the group (many items per group, all alike). Books are in `ItemEnhanceMaterial` under the level's `SpecialMaterialGroupId`, one row per book item (event, bound and tradable copies), `EffectType00` 1 and the chance in `EffectArg00` out of 10,000.
+- Stones, leapstones and fusion are in `ItemQualityOption`, the rows whose `EnhanceCommonId` is the group (many items per group, all alike). Books are in `ItemEnhanceMaterial` under the level's `SpecialMaterialGroupId`, one row per book item (event, bound and tradable copies), `EffectType00` 1 and the chance in `EffectArg00` out of 10,000.
 - The client only holds what the installed version has.
 - **Advanced honing** is in `ItemAmplificationBase` (the unlocks per ten levels) and `ItemAmplificationMaterial` (costs, success and great-success rates, juice, scrolls). Only armour was looked at.
 
 **The open part is the discount layer.** The base tables are the undiscounted costs, and the JSON has the discounted ones:
 
 - T4 normal honing gold in the base table is higher than the JSON's for the low levels (and equal from +19). The JSON's number is in `WelcomeBoostEnhance`, which `ItemQualityOption.WelcomeBoostId` points at, and which repeats every cost of the level.
+- **The rates are not discounted.** `WelcomeBoostEnhance` also has `LevelUpSuccessRateBonus` and `LevelUpFailureBonusMultiply`, 0 and 1 at every T4 level, so the base table's T4 rates are the live ones and the generator takes them. The sheet's T4 rates were Serca's.
 - T4 advanced honing stages 1 and 2 are undiscounted in the base table (e.g. Guardian Stones, shards). `ItemAmplificationBoost` has discount rates per material and `ItemAmplificationBase` names boost ids, but which row gives the JSON's numbers was not traced.
 - Rows are gated by `ClassifyType`/`ClassifyIndex`, and the client tables alone do not say which gates are open. With no event running there is nothing live to compare an event discount against, so the `EVENT_*` rows cannot be checked now.
 
-Until that is understood, generating the T4 JSON from the game would get the permanent discounts wrong. Serca has no `WelcomeBoostId` and the game's numbers are the JSON's.
+Until that is understood, generating T4's costs from the game would get the permanent discounts wrong. Serca has no `WelcomeBoostId` and the game's numbers are the JSON's.

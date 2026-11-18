@@ -5,8 +5,9 @@
 //! from what each amount of each material is worth, and the best plan comes from the last
 //! tap backwards. See `AI notes/Calculator core/State space.md`.
 
+use crate::constants::FLOAT_TOL;
 use crate::constants::juice_info::JuiceInfo;
-use crate::constants::{ARTISAN_MULTIPLIER, FLOAT_TOL};
+use crate::honing_utils::update_normal::{Tap, chance as to_chance};
 use crate::materials::NUM_BASE_MATS;
 use crate::probe::Probe;
 use crate::state::{OneState, get_pool_ids};
@@ -23,16 +24,15 @@ pub struct Model {
     pub pools: Vec<Vec<usize>>,
     /// every way to take at most one id of each pool, nothing first
     pub options: Vec<OneState>,
-    pub extra: Vec<f64>,
+    /// what each option adds to a tap's rate
+    pub extra: Vec<i64>,
     /// what picking the nth id of a pool adds to an option's index
     pub strides: Vec<usize>,
     pub len: usize,
     /// taps that take the same, see `StateBundle::block`
     pub block: usize,
-    pub base: f64,
-    pub event: f64,
-    pub rate: f64,
-    pub artisan: f64,
+    pub tap: Tap,
+    pub artisan: i64,
     pub taps: usize,
 }
 
@@ -41,16 +41,12 @@ impl Model {
         let chance = |id: usize| {
             juice_info
                 .access(id, upgrade.piece_type_usize, upgrade.upgrade_index)
-                .normal_chance
+                .normal_rate
         };
         let pools: Vec<Vec<usize>> =
             get_pool_ids(upgrade.piece_type_usize, upgrade.upgrade_index, juice_info)
                 .into_iter()
-                .map(|ids| {
-                    ids.into_iter()
-                        .filter(|&id| chance(id) > FLOAT_TOL)
-                        .collect()
-                })
+                .map(|ids| ids.into_iter().filter(|&id| chance(id) > 0).collect())
                 .collect();
         let mut strides = Vec::new();
         let mut total = 1;
@@ -73,7 +69,7 @@ impl Model {
             .collect();
         let extra = options
             .iter()
-            .map(|option| option.iter().fold(0.0, |sum, &id| sum + chance(id)))
+            .map(|option| option.iter().fold(0, |sum, &id| sum + chance(id)))
             .collect();
         Model {
             pools,
@@ -82,21 +78,18 @@ impl Model {
             strides,
             len: upgrade.state.len(),
             block,
-            base: upgrade.base_chance,
-            event: upgrade.extra_chance,
-            rate: upgrade.artisan_rate,
-            artisan: upgrade.starting_artisan,
+            tap: upgrade.tap,
+            artisan: upgrade.start_artisan,
             taps: upgrade.starting_num_taps,
         }
     }
 
-    pub fn chance(&self, count: usize, extra: f64) -> f64 {
-        let ramp = (count + self.taps).min(10) as f64;
-        (self.base + self.event + (ramp * self.base) * 0.1 + extra).min(1.0)
+    pub fn rate(&self, count: usize, extra: i64) -> i64 {
+        self.tap.rate(count + self.taps, extra)
     }
 
-    pub fn step(&self, artisan: f64, chance: f64) -> f64 {
-        artisan + ARTISAN_MULTIPLIER * chance * self.rate
+    pub fn step(&self, artisan: i64, rate: i64) -> i64 {
+        self.tap.step(artisan, rate)
     }
 
     /// an id no pool has is dropped
@@ -127,14 +120,15 @@ impl Model {
     pub fn pity(&self, indices: &[usize]) -> (usize, bool) {
         let mut artisan = self.artisan;
         for count in 0.. {
-            if artisan >= 1.0 || count + 1 >= self.len {
+            if self.tap.full(artisan) || count + 1 >= self.len {
                 return (count + 1, false);
             }
-            let chance = self.chance(count, self.extra[indices[count]]);
+            let rate = self.rate(count, self.extra[indices[count]]);
+            let chance = to_chance(rate);
             if chance == 1.0 {
                 return (count + 1, true);
             }
-            artisan = self.step(artisan, chance);
+            artisan = self.step(artisan, rate);
         }
         unreachable!()
     }
@@ -452,10 +446,11 @@ impl Response {
                     .sum::<f64>()
         };
         for count in 0.. {
-            if artisan >= 1.0 || count + 1 >= model.len {
+            if model.tap.full(artisan) || count + 1 >= model.len {
                 return out + alive * done(count + 1, &used);
             }
-            let chance = model.chance(count, model.extra[indices[count]]);
+            let rate = model.rate(count, model.extra[indices[count]]);
+            let chance = to_chance(rate);
             if chance == 1.0 {
                 return out + alive * done(count + 1, &used);
             }
@@ -468,7 +463,7 @@ impl Response {
             }
             out += alive * chance * done(count + 1, &used);
             alive *= 1.0 - chance;
-            artisan = model.step(artisan, chance);
+            artisan = model.step(artisan, rate);
         }
         unreachable!()
     }
@@ -520,7 +515,7 @@ impl Response {
         picks: &Picks,
         kept: &Kept,
         start: usize,
-        mut artisan: f64,
+        mut artisan: i64,
         mut used: [usize; 3],
         set: usize,
         memo: &mut Memo,
@@ -528,17 +523,18 @@ impl Response {
         let model = &self.model;
         let (mut value, mut alive) = (0.0, 1.0);
         for count in start..start + model.block {
-            if artisan >= 1.0 || count + 1 >= model.len {
+            if model.tap.full(artisan) || count + 1 >= model.len {
                 return value + alive * self.done(picks, kept, count, count + 1, used);
             }
             let (option, next) = self.taken(picks, set, used);
-            let chance = model.chance(count, model.extra[kept.options[count] + option]);
+            let rate = model.rate(count, model.extra[kept.options[count] + option]);
+            let chance = to_chance(rate);
             if chance == 1.0 {
                 return value + alive * self.done(picks, kept, count, count + 1, used);
             }
             value += alive * chance * self.done(picks, kept, count + 1, count + 1, next);
             alive *= 1.0 - chance;
-            artisan = model.step(artisan, chance);
+            artisan = model.step(artisan, rate);
             used = next;
         }
         value + alive * self.go(picks, kept, start + model.block, artisan, used, memo)
@@ -550,12 +546,12 @@ impl Response {
         picks: &Picks,
         kept: &Kept,
         count: usize,
-        artisan: f64,
+        artisan: i64,
         used: [usize; 3],
         memo: &mut Memo,
     ) -> f64 {
         let model = &self.model;
-        if artisan >= 1.0 || count + 1 >= model.len {
+        if model.tap.full(artisan) || count + 1 >= model.len {
             return self.done(picks, kept, count, count + 1, used);
         }
         let slot = self.slot(picks, count, used);
@@ -595,11 +591,10 @@ impl Response {
         let (mut artisan, mut used) = (model.artisan, [0; 3]);
         let mut set = 0;
         for count in 0.. {
-            if artisan >= 1.0 || count + 1 >= model.len {
+            if model.tap.full(artisan) || count + 1 >= model.len {
                 break;
             }
             if count % model.block == 0 {
-                // two orders of the same taps can differ in the last bit of the artisan, and one of them stop a tap early
                 let (stamp, chosen, _) = memo.cells[self.slot(picks, count, used)];
                 if stamp != memo.stamp {
                     break;
@@ -608,12 +603,13 @@ impl Response {
             }
             let (option, next) = self.taken(picks, set as usize, used);
             indices[count] += option;
-            let chance = model.chance(count, model.extra[indices[count]]);
+            let rate = model.rate(count, model.extra[indices[count]]);
+            let chance = to_chance(rate);
             if chance == 1.0 {
                 break;
             }
             used = next;
-            artisan = model.step(artisan, chance);
+            artisan = model.step(artisan, rate);
         }
         MEMO.set(memo);
         (value, model.filled(&indices))

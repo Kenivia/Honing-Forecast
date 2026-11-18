@@ -8,6 +8,7 @@ How the frontend talks to Rust for the calculator. Scanner operations share the 
 - There are no generated types. `PayloadBuilder.ts` hand-mirrors Rust's `Payload`, and result types are hand-written or untyped. A field rename on either side is a silent break.
 - `WasmTypes.ts` holds `WasmOp` and the result types, and `Overrides.ts` the strategy override enums. Both are free of side effects: the main thread imports these, never `WasmWorker.ts` (that would pull the wasm glue into the main bundle and put the worker's `message` listener on `window`), and the profile imports the overrides without a cycle through `PayloadBuilder`.
 - Results are the serialised Rust structs. Rust hash maps arrive as JS `Map`s, not plain objects.
+- The frontend never recomputes a tap: the artisan slider, the "until X% artisan" lines and the chance input read a normal upgrade's `tap_artisan` and `fail_chances` (`Calculator core/Domain model.md`, "Normal taps are the game's integers"). Juice chances arrive as `normal_rate`, out of `RATE_SCALE`.
 - Extra frontend-only fields on payload objects are tolerated because Rust ignores unknown fields.
 
 ## Building the payload

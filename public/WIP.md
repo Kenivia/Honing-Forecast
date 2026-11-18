@@ -8,9 +8,12 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - new user / new character setup
 - rework changelog page (infinite scroll)
 
-- cloud syncing
+- ~~change pity to actually use the integer 21500~~
 
-- change pity to actually use the integer 21500
+NEXT UPDATE
+
+- add scanner out of beta banner
+- cloud syncing
 - migrate to an actual domain name
 
 ## Forecast mode

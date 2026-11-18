@@ -1,10 +1,6 @@
 // Serca normal honing for the info page demo, mirroring Rust's probability_distribution.
 import SERCA from "../../../../crates/core/src/constants/Serca Oct 2026.json";
-import {
-  ALL_LABELS,
-  DEFAULT_ARTISAN_MULTIPLIER,
-  NUM_BASE_MATS,
-} from "@/Utils/Constants";
+import { ALL_LABELS, NUM_BASE_MATS, RATE_SCALE } from "@/Utils/Constants";
 
 export const PIECE_TYPES = ["Armor", "Weapon", "Vambrace"];
 const FUSION = 4;
@@ -25,6 +21,8 @@ export interface DemoUpgrade {
 export interface Juice {
   id: number;
   label: string;
+  // out of RATE_SCALE, and as a chance
+  rate: number;
   chance: number;
 }
 
@@ -40,30 +38,39 @@ export function juices(piece_type: number, upgrade_index: number): Juice[] {
   ).map((r) => ({
     id: r[0],
     label: ALL_LABELS[1][NUM_BASE_MATS + r[0]],
-    chance: r[4],
+    rate: r[4],
+    chance: r[4] / RATE_SCALE,
   }));
 }
 
 // dist[n] = chance to succeed on tap n (dist[0] = 0)
 export function distribution(u: DemoUpgrade): number[] {
-  const base = SERCA.NORMAL_CHANCES[u.piece_type][u.upgrade_index];
-  const rate = SERCA.EVENT_ARTISAN_MULTIPLIER[u.piece_type][u.upgrade_index];
+  // the game's tables are out of 10,000
+  const at = (table: number[][]) =>
+    table[u.piece_type][u.upgrade_index] * (RATE_SCALE / 10000);
+  const base = at(SERCA.NORMAL_CHANCES);
+  const bonus = at(SERCA.NORMAL_FAIL_BONUS);
+  const bonus_max = at(SERCA.NORMAL_FAIL_BONUS_MAX);
+  const threshold = at(SERCA.ARTISAN_THRESHOLD);
   const avail = juices(u.piece_type, u.upgrade_index);
   const raw = [0];
   let artisan = 0;
   for (let count = 0; ; count++) {
-    if (artisan >= 1) {
+    if (artisan >= threshold) {
       raw.push(1);
       break;
     }
     const extra = avail.reduce(
-      (s, j) => s + (count < (u.juice[j.id] ?? 0) ? j.chance : 0),
+      (s, j) => s + (count < (u.juice[j.id] ?? 0) ? j.rate : 0),
       0,
     );
-    const chance = Math.min(1, base + Math.min(count, 10) * base * 0.1 + extra);
-    raw.push(chance);
-    artisan += DEFAULT_ARTISAN_MULTIPLIER * chance * rate;
-    if (chance === 1) break;
+    const rate = Math.min(
+      RATE_SCALE,
+      base + Math.min(count * bonus, bonus_max) + extra,
+    );
+    raw.push(rate / RATE_SCALE);
+    artisan += rate;
+    if (rate === RATE_SCALE) break;
   }
   let left = 1;
   return raw.map((c) => {

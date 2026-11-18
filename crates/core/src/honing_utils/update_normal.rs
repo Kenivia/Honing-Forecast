@@ -1,16 +1,65 @@
-use crate::constants::ARTISAN_MULTIPLIER;
+use crate::constants::RATE_SCALE;
 use crate::constants::juice_info::JuiceInfo;
 use crate::materials::NUM_BASE_MATS;
 use crate::my_dbg;
 use crate::state::State;
 use crate::support::Outline;
 use crate::upgrade::Upgrade;
+use serde::{Deserialize, Serialize};
 
-pub fn get_extra_arr(state: &State, juice_info: &JuiceInfo, upgrade: &Upgrade) -> Vec<f64> {
+/// A normal tap as the game has it: every chance and the artisan are integers out of RATE_SCALE.
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Default, PartialEq)]
+pub struct Tap {
+    pub base: i64,
+    /// added per failed tap, up to bonus_max
+    pub bonus: i64,
+    pub bonus_max: i64,
+    pub event: i64,
+    /// the artisan at which a tap cannot fail
+    pub threshold: i64,
+    /// of a failed tap's chance, what goes to the artisan
+    pub artisan_percent: i64,
+}
+
+impl Tap {
+    pub fn rate(&self, failed: usize, juice: i64) -> i64 {
+        (self.base + (self.bonus * failed as i64).min(self.bonus_max) + self.event + juice)
+            .min(RATE_SCALE)
+    }
+    pub fn step(&self, artisan: i64, rate: i64) -> i64 {
+        artisan + rate * self.artisan_percent / 100
+    }
+    pub fn full(&self, artisan: i64) -> bool {
+        artisan >= self.threshold
+    }
+    pub fn fraction(&self, artisan: i64) -> f64 {
+        artisan as f64 / self.threshold as f64
+    }
+    pub fn from_fraction(&self, fraction: f64) -> i64 {
+        (fraction * self.threshold as f64).round() as i64
+    }
+    /// the chance with nothing used, by failed taps, up to where the bonus stops
+    pub fn fail_chances(&self) -> Vec<f64> {
+        let steps = if self.bonus > 0 {
+            (self.bonus_max + self.bonus - 1) / self.bonus
+        } else {
+            0
+        };
+        (0..=steps as usize)
+            .map(|failed| chance(self.rate(failed, 0)))
+            .collect()
+    }
+}
+
+pub fn chance(rate: i64) -> f64 {
+    rate as f64 / RATE_SCALE as f64
+}
+
+pub fn get_extra_arr(state: &State, juice_info: &JuiceInfo, upgrade: &Upgrade) -> Vec<i64> {
     state
         .iter()
         .map(|ids| {
-            let mut chance: f64 = 0.0;
+            let mut rate: i64 = 0;
 
             // an id twice on a tap is paid for once, so it counts once
             for id in ids
@@ -24,55 +73,53 @@ pub fn get_extra_arr(state: &State, juice_info: &JuiceInfo, upgrade: &Upgrade) -
                 {
                     my_dbg!(state, upgrade,)
                 }
-                chance += juice_info
+                rate += juice_info
                     .access(*id, upgrade.piece_type_usize, upgrade.upgrade_index)
-                    .normal_chance;
+                    .normal_rate;
             }
-            chance
+            rate
         })
         .collect()
 }
 
-pub fn new_prob_dist(state: &State, juice_info: &JuiceInfo, upgrade: &Upgrade) -> Vec<f64> {
+/// the distribution and the artisan before each tap, as a fraction
+pub fn new_prob_dist(
+    state: &State,
+    juice_info: &JuiceInfo,
+    upgrade: &Upgrade,
+) -> (Vec<f64>, Vec<f64>) {
     probability_distribution(
-        upgrade.base_chance,
-        upgrade.artisan_rate,
+        &upgrade.tap,
         &get_extra_arr(state, juice_info, upgrade),
-        upgrade.starting_artisan,
+        upgrade.start_artisan,
         upgrade.starting_num_taps,
-        upgrade.extra_chance,
     )
 }
 
 // prob distribution of normal honing, adjusting for any juice usage
 pub fn probability_distribution(
-    base: f64,
-    artisan_rate: f64,
-    extra_arr: &[f64],
-    starting_artisan: f64,
+    tap: &Tap,
+    juice: &[i64],
+    start_artisan: i64,
     starting_num_taps: usize,
-    event_extra: f64,
-) -> Vec<f64> {
+) -> (Vec<f64>, Vec<f64>) {
     let mut raw_chances: Vec<f64> = Vec::new();
     raw_chances.push(0.0); // chance to succeed w 0 tap, the probablity has been moved into special but it's still needed here for the unlock cost
-    let mut artisan: f64 = starting_artisan;
+    let mut artisan: i64 = start_artisan;
+    let mut trail = vec![tap.fraction(artisan)];
     let mut count: usize = 0;
 
     loop {
-        let min_count: f64 = std::cmp::min(count + starting_num_taps, 10) as f64;
-
-        let mut current_chance: f64 =
-            (base + event_extra + (min_count * base) * 0.1 + extra_arr.get(count).unwrap_or(&0.0))
-                .min(1.0);
-        if artisan >= 1.0 {
-            current_chance = 1.0;
-            raw_chances.push(current_chance);
+        if tap.full(artisan) {
+            raw_chances.push(1.0);
             break;
         }
-        raw_chances.push(current_chance);
+        let rate = tap.rate(count + starting_num_taps, *juice.get(count).unwrap_or(&0));
+        raw_chances.push(chance(rate));
         count += 1;
-        artisan += ARTISAN_MULTIPLIER * current_chance * artisan_rate;
-        if current_chance == 1.0 {
+        artisan = tap.step(artisan, rate);
+        trail.push(tap.fraction(artisan));
+        if rate == RATE_SCALE {
             break; // for upgrades that have 100% passrate immediately or upgrades that have above 100% success rate (juicing last few taps of like +4 or something)
         }
     }
@@ -99,7 +146,7 @@ pub fn probability_distribution(
     //     *chances.iter_mut().last().unwrap() = 1.0;
     // }
 
-    chances
+    (chances, trail)
 }
 
 impl Upgrade {
@@ -155,8 +202,8 @@ impl Upgrade {
         if self.normal_dist.prob_state_hash == self.state.hash {
             return;
         }
-        let prob_dist: Vec<f64> = new_prob_dist(&self.state, juice_info, self);
-
+        let (prob_dist, trail) = new_prob_dist(&self.state, juice_info, self);
+        self.tap_artisan = trail;
         self.normal_dist.update_payload(prob_dist, self.state.hash);
     }
 }

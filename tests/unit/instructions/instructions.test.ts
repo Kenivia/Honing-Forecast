@@ -83,6 +83,8 @@ describe("ActualInstructions", () => {
   it("an upgrade that always succeeds shows no pity", () => {
     const u = fake_upgrade({
       base_chance: 1,
+      tap_artisan: [0, 1],
+      fail_chances: [1],
       normal_dist: [0, 1],
       state: [[]],
     });

@@ -12,7 +12,7 @@ import {
   CONVERTIBLE_MATERIALS,
   convert_is_cheaper,
   default_selected_bundles,
-  DEFAULT_ARTISAN_MULTIPLIER,
+  RATE_SCALE,
   effective_unit_prices,
   FALLBACK_PRICES,
   GRACE_FIRST_N,
@@ -191,9 +191,8 @@ describe("alignment with the wired Rust constants", () => {
     );
     expect(JOINED_ADV_JUICE.at(-1)).toEqual([255, 255]);
     expect(core("constants/constants.rs")).toContain(
-      "ARTISAN_MULTIPLIER: f64 = 10000.0 / 21500.0",
+      `RATE_SCALE: i64 = ${RATE_SCALE.toLocaleString("en").replace(/,/g, "_")};`,
     );
-    expect(DEFAULT_ARTISAN_MULTIPLIER).toBe(10000.0 / 21500.0);
     expect(core("materials.rs")).toContain(
       `NUM_BASE_MATS: usize = ${NUM_BASE_MATS};`,
     );

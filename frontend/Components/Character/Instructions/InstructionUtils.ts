@@ -118,14 +118,14 @@ export interface Streak {
 
 // Equal taps grouped. The pity tap takes nothing, but Rust does not empty its slot, so it is
 // shown on its own (not for an upgrade that always succeeds, which never reaches artisan).
-export function normal_streaks(upgrade: Upgrade, juice_info: any): Streak[] {
+export function normal_streaks(upgrade: Upgrade): Streak[] {
   const out: Streak[] = [];
   const pity_index = upgrade.normal_dist.length - 2;
   const states = upgrade.state.slice(0, upgrade.normal_dist.length);
   for (const [index, ids] of states.entries()) {
     if (
       index === pity_index &&
-      artisan_number(upgrade, index, juice_info) >= 1
+      artisan_number(upgrade, index) >= 1
     ) {
       out.push({ ids: [], count: 1, grace: null, pity: true });
       break;
@@ -177,7 +177,6 @@ export function adv_streaks(
 export function streak_lines(
   upgrade: Upgrade,
   streaks: Streak[],
-  juice_info: any,
 ): [string, string][] {
   let taps = 0;
   return streaks.map((streak): [string, string] => {
@@ -187,7 +186,7 @@ export function streak_lines(
         ? ["Pity", `occurs on the ${toOrdinal(taps)} tap`]
         : [
             `x${streak.count} taps`,
-            `until ${artisan_string(upgrade, taps, juice_info)}% artisan`,
+            `until ${artisan_string(upgrade, taps)}% artisan`,
           ];
     }
     const grace = streak.grace ? "Grace" : "non-Grace";

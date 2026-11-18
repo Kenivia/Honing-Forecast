@@ -30,9 +30,10 @@ export interface Upgrade {
   starting_num_taps?: number;
   adv_config: AdvConfig;
   cost_dist: Support[];
-  artisan_rate: number;
   base_chance: number;
-  extra_chance: number;
+  // Rust's: the artisan before each tap of the state, and the chance by failed taps with nothing used
+  tap_artisan: number[];
+  fail_chances: number[];
   unlock_costs: number[];
   costs: number[];
   special_cost: number;

@@ -1,4 +1,3 @@
-use crate::constants::FLOAT_TOL;
 use crate::constants::{ALLOWED_JUICE_POOLS, NUM_PIECE_TYPES, juice_info::JuiceInfo};
 use serde::{Deserialize, Serialize};
 use smallvec::{SmallVec, smallvec};
@@ -219,8 +218,8 @@ impl State {
                     // vambrace is temporarily disabled like this
                     if juice_info
                         .access(id, piece_type_usize, upgrade_index)
-                        .normal_chance
-                        > FLOAT_TOL
+                        .normal_rate
+                        > 0
                     {
                         slot.push(id);
                     }
@@ -231,8 +230,8 @@ impl State {
                 for slot in self.payload[len - end..].iter_mut() {
                     if juice_info
                         .access(id, piece_type_usize, upgrade_index)
-                        .normal_chance
-                        > FLOAT_TOL
+                        .normal_rate
+                        > 0
                     {
                         slot.push(id);
                     }

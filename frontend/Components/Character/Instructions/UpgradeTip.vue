@@ -6,6 +6,7 @@ import { useRuntimeStore } from "@/Stores/RuntimeState";
 import {
   ALL_LABELS,
   NUM_BASE_MATS,
+  RATE_SCALE,
   SPECIAL_LEAP_LABELS,
 } from "@/Utils/Constants";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
@@ -49,7 +50,7 @@ const optional = computed(() => {
       label: labels.value[id + NUM_BASE_MATS],
       amount: u.is_normal_honing ? one.normal_amt_used : one.adv_amt_used,
       effect: u.is_normal_honing
-        ? `+${percent(one.normal_chance)} chance`
+        ? `+${percent(one.normal_rate / RATE_SCALE)} chance`
         : `${percent(one.adv_chances[0])} / ${percent(one.adv_chances[1])}`,
     };
   }).concat(special);

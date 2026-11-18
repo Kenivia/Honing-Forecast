@@ -383,12 +383,13 @@ test("chests are edited on the calculator page", async ({ page }) => {
   await page.getByLabel("Option 1 material").selectOption("Red");
   await page.getByLabel("Option 1 amount").fill("10");
   await page.getByRole("button", { name: "Add chest" }).click();
+  // a one-option chest is obtain-all, listed only while all chests are shown
+  await page.getByLabel(/Show all chests/).check();
   const count = page.getByLabel("Test box count");
   await expect(count).toHaveValue("3");
   await count.fill("5");
   await count.blur();
   await page.getByLabel("Edit chests").uncheck();
-  await page.getByLabel(/Show obtain-all/).check();
   await expect(page.getByRole("group", { name: /Obtain-all/ })).toContainText(
     "Test box",
   );

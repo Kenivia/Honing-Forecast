@@ -1,6 +1,7 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 
 use crate::constants::juice_info::JuiceInfo;
+use crate::honing_utils::update_normal::{Tap, chance};
 use crate::materials::NUM_BASE_MATS;
 use crate::state::{OneState, State};
 use crate::support::{ProbDist, Support};
@@ -14,11 +15,12 @@ use std::hash::Hash;
 pub struct Upgrade {
     pub is_normal_honing: bool,
     pub normal_dist: ProbDist,
+    /// tap.base as a chance
     pub base_chance: f64,
+    pub tap: Tap,
     pub costs: Vec<f64>,
 
     pub special_cost: i64,
-    pub artisan_rate: f64,
 
     pub upgrade_index: usize,
 
@@ -32,12 +34,15 @@ pub struct Upgrade {
     pub piece_type: PieceType,
     pub piece_type_usize: usize,
 
+    /// a fraction of the threshold, as given; start_artisan is what the taps count from
     pub starting_artisan: f64,
+    pub start_artisan: i64,
+    /// the artisan before each tap of the state as a fraction, and the chance with nothing used by failed taps, for the UI
+    pub tap_artisan: Vec<f64>,
+    pub fail_chances: Vec<f64>,
     pub starting_num_taps: usize, // this is only used to calculate the starting base chance, not cost (we don't distinguish between manual artisan input vs slider artisan input on the rust side, cost calculation happens in js)
     pub unlocked: bool,
     pub unlock_costs: [f64; NUM_BASE_MATS],
-
-    pub extra_chance: f64,
 
     pub adv_config: AdvConfig,
     pub adv_dists: Vec<ProbDist>,
@@ -86,11 +91,10 @@ pub fn piece_type_to_usize(piece_type: PieceType) -> usize {
 
 impl Upgrade {
     pub fn new_normal(
-        base_chance: f64,
+        tap: Tap,
         costs: &[f64],
         special_cost: i64,
         piece_index: usize,
-        artisan_rate: f64,
         upgrade_index: usize,
         juice_info: &JuiceInfo,
         starting_artisan: f64,
@@ -98,22 +102,20 @@ impl Upgrade {
         state_given: Vec<OneState>,
         unlocked: bool,
         unlock_costs: &[f64],
-
-        extra_chance: f64,
     ) -> Self {
         let state: State = State::new(state_given);
         let piece_type: PieceType = piece_index_to_type(piece_index);
         let mut out = Self {
             is_normal_honing: true,
             normal_dist: ProbDist::default(),
-            base_chance,
+            base_chance: chance(tap.base),
+            tap,
             costs: costs.try_into().unwrap(),
             special_cost,
             clean_prob_dist_len: 0,
             piece_index,
             piece_type,
             piece_type_usize: piece_type_to_usize(piece_type),
-            artisan_rate,
             upgrade_index,
             state, // initialize state with default values
             cost_dist: vec![Support::default(); juice_info.total_num_avail],
@@ -126,11 +128,12 @@ impl Upgrade {
                 string
             },
             starting_artisan,
+            start_artisan: tap.from_fraction(starting_artisan),
+            tap_artisan: Vec::new(),
+            fail_chances: tap.fail_chances(),
             starting_num_taps,
             unlocked, // THIS IS IGNORED RN just assuming alr_failed > 0 <==> ulocked
             unlock_costs: unlock_costs.try_into().unwrap(),
-
-            extra_chance,
             adv_config: AdvConfig::default(),
             adv_dists: Vec::new(),
             spare: None,
@@ -184,12 +187,12 @@ impl Upgrade {
             is_normal_honing: false,
             normal_dist: ProbDist::new(Vec::new()),
             base_chance: 0.0,
+            tap: Tap::default(),
             costs: costs.try_into().unwrap(),
             special_cost: 0,
             piece_index,
             piece_type,
             piece_type_usize,
-            artisan_rate: 0.0,
             upgrade_index,
             clean_prob_dist_len: 0,
             state,
@@ -202,11 +205,12 @@ impl Upgrade {
                 string
             },
             starting_artisan: 0.0,
+            start_artisan: 0,
+            tap_artisan: Vec::new(),
+            fail_chances: Vec::new(),
             starting_num_taps: 0,
             unlocked,
             unlock_costs: unlock_costs.try_into().unwrap(),
-
-            extra_chance: 0.0,
             adv_config: AdvConfig::new(
                 start_xp,
                 start_balls,

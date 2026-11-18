@@ -8,7 +8,7 @@ import {
   streak_lines,
 } from "@/Components/Character/Instructions/InstructionUtils";
 import { chance_percent, chance_to_taps } from "@/Utils/HoningUtil";
-import { fake_adv, fake_juice_info, fake_upgrade } from "./fake";
+import { fail_chances, fake_adv, fake_upgrade } from "./fake";
 
 // Pure logic pulled out of Instructions.vue, ActualInstructions.vue and NormalDetails.vue.
 
@@ -70,17 +70,16 @@ describe("sort_upgrades", () => {
 });
 
 describe("streaks", () => {
-  const info = fake_juice_info();
 
   it("normal: equal taps grouped, the pity on its own", () => {
     const u = fake_upgrade();
-    const streaks = normal_streaks(u, info);
+    const streaks = normal_streaks(u);
     expect(streaks.map((s) => [s.ids, s.count, s.pity])).toEqual([
       [[0], 2, false],
       [[], 2, false],
       [[], 1, true],
     ]);
-    expect(streak_lines(u, streaks, info)).toEqual([
+    expect(streak_lines(u, streaks)).toEqual([
       ["x2 taps", "until 52.50% artisan"],
       ["x2 taps", "until 100.00% artisan"],
       ["Pity", "occurs on the 5th tap"],
@@ -89,7 +88,7 @@ describe("streaks", () => {
 
   it("normal: the same ids in another order are one streak", () => {
     const u = fake_upgrade({ state: [[0, 2], [2, 0], [], [], []] });
-    expect(normal_streaks(u, info)[0].count).toBe(2);
+    expect(normal_streaks(u)[0].count).toBe(2);
   });
 
   const adv = (juice: number, scroll: number) =>
@@ -124,7 +123,7 @@ describe("streaks", () => {
 
   it("advanced lines", () => {
     const u = fake_adv();
-    const lines = (streaks) => streak_lines(u, streaks, info);
+    const lines = (streaks) => streak_lines(u, streaks);
     expect(
       lines([
         { ids: [0], count: 255, grace: true, pity: false },
@@ -142,15 +141,17 @@ describe("streaks", () => {
 });
 
 describe("chance helpers", () => {
-  const u = fake_upgrade({ base_chance: 0.1, extra_chance: 0.05 });
+  const u = fake_upgrade({ fail_chances: fail_chances(0.1, 0.05) });
 
   it("chance_percent adds 10% of base per failure up to 10, plus the extra", () => {
     const got = [0, 3, 10, 15].map((n) => chance_percent(u, n));
     [15, 18, 25, 25].forEach((v, i) => expect(got[i]).toBeCloseTo(v, 9));
-    expect(chance_percent(fake_upgrade({ base_chance: 0.6 }), 10)).toBe(100);
+    expect(
+      chance_percent(fake_upgrade({ fail_chances: fail_chances(0.6) }), 10),
+    ).toBe(100);
   });
 
-  it("chance_to_taps is its inverse, rounded and clamped", () => {
+  it("chance_to_taps is its inverse, nearest and clamped", () => {
     expect([15, 18, 18.4, 99, 3].map((p) => chance_to_taps(u, p))).toEqual([
       0, 3, 3, 10, 0,
     ]);

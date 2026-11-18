@@ -107,7 +107,7 @@ function toggle_compare() {
 
 const grid: GridConfig = {
   grid_template_columns:
-    "minmax(110px,0.75fr) minmax(110px,1fr) minmax(110px,1fr)  minmax(110px,1fr)  minmax(110px,1fr)",
+    "minmax(110px,0.75fr) minmax(110px,1fr) minmax(110px,1fr)  minmax(110px,1.2fr)  minmax(110px,1.2fr)",
 };
 </script>
 
@@ -172,7 +172,7 @@ const grid: GridConfig = {
         </button>
       </div>
     </div>
-    <div class="card-body pt-0! pb-0!">
+    <div class="p-2 pt-0! pb-0!">
       <div
         class="outer-grid mx-auto"
         :style="{
@@ -249,8 +249,8 @@ const grid: GridConfig = {
         </div>
       </div>
       <span v-if="show_override" class="annotation"
-        >Maxroll: every material at its buy price, as maxroll.gg's upgrade
-        calculator. Not offered for advanced honing.</span
+        >Maxroll: use juice/book if Maxroll estimated gold value > market price;
+        Highest special leap value first.</span
       >
     </div>
   </div>

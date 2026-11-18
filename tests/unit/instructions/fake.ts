@@ -9,7 +9,11 @@ import {
 
 // Hand-built stand-ins for the wasm result shapes the instruction components read.
 
-// rate 2.15 makes one tap's artisan gain equal to its chance (DEFAULT_ARTISAN_MULTIPLIER * 2.15 = 1)
+// Rust's chances by failed taps: a tenth of base more per failure, up to double
+export const fail_chances = (base: number, extra = 0) =>
+  Array.from({ length: 11 }, (_, n) => Math.min(1, base * (1 + n / 10) + extra));
+
+// artisan gains each tap's chance, so a 25% base reaches it on the 5th tap
 export function fake_upgrade(over: Partial<Upgrade> = {}): Upgrade {
   return {
     piece_index: 0,
@@ -36,9 +40,9 @@ export function fake_upgrade(over: Partial<Upgrade> = {}): Upgrade {
       non_grace_scroll_target: 0,
     },
     cost_dist: [],
-    artisan_rate: 2.15,
     base_chance: 0.25,
-    extra_chance: 0,
+    tap_artisan: [0, 0.25, 0.525, 0.825, 1.15],
+    fail_chances: fail_chances(0.25),
     // T4 armor +11's
     special_cost: 12,
     // Red, Blue, Leaps, Shards, Fusion, Gold, Silver
@@ -60,8 +64,8 @@ export function fake_adv(over: Partial<Upgrade> = {}): Upgrade {
 }
 
 // ids 0 (juice, 5 per tap) and 2 (book, 1 per tap) at every level, for normal and advanced
-export function fake_juice_info(normal_chance = 0) {
-  const entry = { normal_chance, normal_amt_used: 5, adv_amt_used: 7 };
+export function fake_juice_info(normal_rate = 0) {
+  const entry = { normal_rate, normal_amt_used: 5, adv_amt_used: 7 };
   const levels = [...Array(30).keys()];
   const per_piece = <T>(f: () => T) => [0, 1, 2].map(f);
   return {

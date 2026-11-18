@@ -7,7 +7,7 @@ use ahash::AHashMap;
 use hf_core::advanced_honing::sim::one_sim;
 use hf_core::advanced_honing::utils::MAX_ADV_STATE;
 use hf_core::chest::Chest;
-use hf_core::constants::ARTISAN_MULTIPLIER;
+use hf_core::honing_utils::update_normal::chance as to_chance;
 use hf_core::materials::{BandValue, NUM_BASE_MATS, OneMaterial, ValuationPlan};
 use hf_core::optimizer::solve;
 use hf_core::parser::OneUpgradeInput;
@@ -129,9 +129,10 @@ fn evaluated(payload: &Payload) -> StateBundle {
 /// where a normal upgrade stands after this many more failed taps on its state
 fn after_failed(upgrade: &Upgrade, state_bundle: &StateBundle, taps: usize) -> (f64, usize) {
     let juice_info = &state_bundle.prep_output.juice_info;
-    let mut artisan = upgrade.starting_artisan;
+    let tap = &upgrade.tap;
+    let mut artisan = upgrade.start_artisan;
     for count in 0..taps {
-        let juiced: f64 = upgrade
+        let juiced: i64 = upgrade
             .state
             .get(count)
             .into_iter()
@@ -139,14 +140,15 @@ fn after_failed(upgrade: &Upgrade, state_bundle: &StateBundle, taps: usize) -> (
             .map(|&id| {
                 juice_info
                     .access(id, upgrade.piece_type_usize, upgrade.upgrade_index)
-                    .normal_chance
+                    .normal_rate
             })
             .sum();
-        let ramp = (count + upgrade.starting_num_taps).min(10) as f64 * upgrade.base_chance * 0.1;
-        let chance = (upgrade.base_chance + upgrade.extra_chance + ramp + juiced).min(1.0);
-        artisan += ARTISAN_MULTIPLIER * chance * upgrade.artisan_rate;
+        artisan = tap.step(artisan, tap.rate(count + upgrade.starting_num_taps, juiced));
     }
-    (artisan.min(1.0), (upgrade.starting_num_taps + taps).min(10))
+    (
+        tap.fraction(artisan.min(tap.threshold)),
+        (upgrade.starting_num_taps + taps).min(10),
+    )
 }
 
 fn mean_taps(upgrade: &Upgrade) -> f64 {
@@ -542,7 +544,7 @@ pub fn build_with(a: &[f64], seed: u64, full: bool, given: Option<Vec<OneUpgrade
         .upgrade_arr
         .iter()
         .filter(|this| this.is_normal_honing)
-        .map(|this| this.special_cost as f64 / (this.base_chance + this.extra_chance))
+        .map(|this| this.special_cost as f64 / to_chance(this.tap.base + this.tap.event))
         .sum();
     let free = a[axis("free_taps")];
     if free >= 0.25 {

@@ -7,7 +7,8 @@ use once_cell::sync::Lazy;
 pub const NUM_NORMAL_UPGRADES: usize = 25;
 pub const NUM_ADV_UPGRADES: usize = 4;
 
-pub const ARTISAN_MULTIPLIER: f64 = 10000.0 / 21500.0;
+/// normal honing chances and artisan are integers out of this, the game's finest (its juice)
+pub const RATE_SCALE: i64 = 100_000;
 pub const ALLOWED_JUICE_POOLS: Lazy<Vec<Vec<Vec<usize>>>> = Lazy::new(|| {
     vec![
         vec![vec![0, 1], vec![]],
@@ -32,8 +33,7 @@ pub const DATA: Lazy<Vec<Data>> = Lazy::new(|| {
     let mut out = Vec::new();
 
     out.push(Data::from(
-        serde_json::from_str::<RawData>(include_str!("./T4 July 2026 (Vambrace padded).json"))
-            .unwrap(),
+        serde_json::from_str::<RawData>(include_str!("./T4 Nov 2026.json")).unwrap(),
     ));
 
     out.push(Data::from(

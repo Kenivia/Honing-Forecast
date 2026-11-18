@@ -9,6 +9,7 @@ use crate::generate::{self, axis};
 use crate::scenario::{Scenario, upgrade};
 use crate::worker::Essence;
 use ahash::AHashSet;
+use hf_core::honing_utils::update_normal::chance as to_chance;
 use hf_core::optimizer::response::{Model, Response};
 use hf_core::optimizer::solve;
 use hf_core::parser::OneUpgradeInput;
@@ -33,7 +34,7 @@ trait Explore {
     fn walk(
         &self,
         count: usize,
-        artisan: f64,
+        artisan: i64,
         plan: &mut Vec<usize>,
         out: &mut Option<Vec<Vec<usize>>>,
         total: &mut f64,
@@ -51,13 +52,13 @@ impl Explore for Model {
     fn walk(
         &self,
         count: usize,
-        artisan: f64,
+        artisan: i64,
         plan: &mut Vec<usize>,
         out: &mut Option<Vec<Vec<usize>>>,
         total: &mut f64,
         cap: f64,
     ) {
-        if artisan >= 1.0 || count + 1 >= self.len || *total > cap {
+        if self.tap.full(artisan) || count + 1 >= self.len || *total > cap {
             *total += 1.0;
             if let Some(out) = out {
                 out.push(plan.clone());
@@ -71,7 +72,8 @@ impl Explore for Model {
             plan[count - 1]..plan[count - 1] + 1
         };
         for option in options {
-            let chance = self.chance(count, self.extra[option]);
+            let rate = self.rate(count, self.extra[option]);
+            let chance = to_chance(rate);
             plan[count] = option;
             if chance == 1.0 {
                 *total += 1.0;
@@ -79,7 +81,7 @@ impl Explore for Model {
                     out.push(plan.clone());
                 }
             } else {
-                self.walk(count + 1, self.step(artisan, chance), plan, out, total, cap);
+                self.walk(count + 1, self.step(artisan, rate), plan, out, total, cap);
             }
         }
         plan[count] = 0;
@@ -117,9 +119,9 @@ impl Explore for Model {
     fn after(&self, taps: usize) -> Model {
         let mut out = self.clone();
         for count in 0..taps {
-            out.artisan = self.step(out.artisan, self.chance(count, 0.0));
+            out.artisan = self.step(out.artisan, self.rate(count, 0));
         }
-        out.artisan = out.artisan.min(1.0);
+        out.artisan = out.artisan.min(self.tap.threshold);
         out.taps = (self.taps + taps).min(10);
         out.len = self.len - taps;
         out
@@ -826,7 +828,7 @@ pub fn tiny(count: u32, lone: u32, lone_taps: usize, cap: f64) -> Vec<Scenario> 
         for ((info, model), &taps) in infos.iter_mut().zip(&models).zip(&failed) {
             if taps > 0 {
                 let after = model.after(taps);
-                info.starting_artisan = Some(after.artisan);
+                info.starting_artisan = Some(after.tap.fraction(after.artisan));
                 info.starting_num_taps = Some(after.taps);
                 info.unlocked = true;
             }
@@ -1100,7 +1102,7 @@ mod tests {
                     "labels": prep.table.labels,
                     "bands": prep.bands[prep.optimizer_plan],
                     "costs": base.upgrade_arr[0].costs,
-                    "extra": model.extra, "base": model.base, "artisan": model.artisan,
+                    "extra": model.extra, "base": model.tap.base, "artisan": model.tap.fraction(model.artisan),
                     "best": plan_of(&response.best().1),
                     "streak": plan_of(&best_streak(&response).1),
                 }),

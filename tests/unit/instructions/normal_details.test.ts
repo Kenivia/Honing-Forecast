@@ -20,7 +20,13 @@ import { input_column_to_num, set_cell } from "@/Utils/InputColumn";
 import { SPECIAL_LEAP_LABELS } from "@/Utils/Constants";
 import { UpgradeStatus } from "@/Utils/KeyedUpgrades";
 import { deduct } from "@/Components/Character/Instructions/Details/NormalDetails/SuccessUtils";
-import { add_keyed, fake_upgrade, key_of, set_results } from "./fake";
+import {
+  add_keyed,
+  fail_chances,
+  fake_upgrade,
+  key_of,
+  set_results,
+} from "./fake";
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -127,7 +133,7 @@ describe("NormalDetails, manual input", () => {
 
   it("typed chance keeps the extra chance", async () => {
     const { w, keyed } = setup(
-      fake_upgrade({ base_chance: 0.1, extra_chance: 0.05 }),
+      fake_upgrade({ fail_chances: fail_chances(0.1, 0.05) }),
     );
     expect(chance_input(w).element.value).toBe("15.00");
     await chance_input(w).setValue("18");

@@ -8,7 +8,7 @@
 4. `python scanner_setup/templates/make_msg_pack.py` and `pnpm run wasm`, as for any change to the tables.
 5. `bonus_chests.py` writes `frontend/Data/bonus_chests.json`, the raids' bonus chests as choices for the Choices page ("Bonus chests" below). It needs only the tables.
 
-Four more read the same tables through `game.py` but live in `scripts/game_files/`: `honing.py` (the Serca honing constants, "Honing data in the game files" in `Calculator core/Domain model.md`), `paradise.py`, which writes `frontend/Data/paradise.json` ("Paradise" below), `income.py`, which writes `frontend/Data/income.json` ("Income in the client" below), and `equipment_icons.py`, which writes the gear icons ("Equipment icons" below).
+Four more read the same tables through `game.py` but live in `scripts/game_files/`: `honing.py` (the normal honing constants of both tiers, "Honing data in the game files" in `Calculator core/Domain model.md`), `paradise.py`, which writes `frontend/Data/paradise.json` ("Paradise" below), `income.py`, which writes `frontend/Data/income.json` ("Income in the client" below), and `equipment_icons.py`, which writes the gear icons ("Equipment icons" below).
 
 `game.py` is what they share (`table`, `text`, `box`, `listed`, `icon_info`, `icon_art`, `load_index`). `find_icon.py` is for looking: it says which icon a slot in a capture is drawn with.
 

@@ -1,4 +1,5 @@
-export const DEFAULT_ARTISAN_MULTIPLIER = 10000.0 / 21500.0;
+// normal honing rates are integers out of this, as in Rust
+export const RATE_SCALE = 100000;
 export const FLOAT_TOL = 1e-9;
 
 export const WORKER_URL = import.meta.env.VITE_WORKER_URL;

@@ -15,6 +15,7 @@
 use super::evaluate;
 use crate::advanced_honing::utils::MAX_ADV_STATE;
 use crate::constants::{FLOAT_TOL, SPECIAL_TOL, float_tol};
+use crate::honing_utils::update_normal::chance as to_chance;
 use crate::materials::NUM_BASE_MATS;
 use crate::optimizer::response::{Model, Response};
 use crate::optimizer::{Previous, Solved};
@@ -568,10 +569,11 @@ impl Table {
                     .sum::<f64>()
         };
         for count in 0.. {
-            if artisan >= 1.0 || count + 1 >= model.len {
+            if model.tap.full(artisan) || count + 1 >= model.len {
                 return out + alive * done(count + 1, &used);
             }
-            let chance = model.chance(count, model.extra[indices[count]]);
+            let rate = model.rate(count, model.extra[indices[count]]);
+            let chance = to_chance(rate);
             if chance == 1.0 {
                 return out + alive * done(count + 1, &used);
             }
@@ -584,7 +586,7 @@ impl Table {
             }
             out += alive * chance * done(count + 1, &used);
             alive *= 1.0 - chance;
-            artisan = model.step(artisan, chance);
+            artisan = model.step(artisan, rate);
         }
         unreachable!()
     }
@@ -633,7 +635,7 @@ impl Table {
         picks: &Picks,
         kept: &Kept,
         start: usize,
-        mut artisan: f64,
+        mut artisan: i64,
         mut used: [usize; 3],
         set: usize,
         memo: &mut Memo,
@@ -641,17 +643,18 @@ impl Table {
         let model = &self.model;
         let (mut value, mut alive) = (0.0, 1.0);
         for count in start..start + model.block {
-            if artisan >= 1.0 || count + 1 >= model.len {
+            if model.tap.full(artisan) || count + 1 >= model.len {
                 return value + alive * self.done(picks, kept, count, count + 1, used);
             }
             let (option, next) = self.taken(picks, set, used);
-            let chance = model.chance(count, model.extra[kept.options[count] + option]);
+            let rate = model.rate(count, model.extra[kept.options[count] + option]);
+            let chance = to_chance(rate);
             if chance == 1.0 {
                 return value + alive * self.done(picks, kept, count, count + 1, used);
             }
             value += alive * chance * self.done(picks, kept, count + 1, count + 1, next);
             alive *= 1.0 - chance;
-            artisan = model.step(artisan, chance);
+            artisan = model.step(artisan, rate);
             used = next;
         }
         value + alive * self.go(picks, kept, start + model.block, artisan, used, memo)
@@ -662,12 +665,12 @@ impl Table {
         picks: &Picks,
         kept: &Kept,
         count: usize,
-        artisan: f64,
+        artisan: i64,
         used: [usize; 3],
         memo: &mut Memo,
     ) -> f64 {
         let model = &self.model;
-        if artisan >= 1.0 || count + 1 >= model.len {
+        if model.tap.full(artisan) || count + 1 >= model.len {
             return self.done(picks, kept, count, count + 1, used);
         }
         let slot = self.slot(picks, count, used);
@@ -703,7 +706,7 @@ impl Table {
         let (mut artisan, mut used) = (model.artisan, [0; 3]);
         let mut set = 0;
         for count in 0.. {
-            if artisan >= 1.0 || count + 1 >= model.len {
+            if model.tap.full(artisan) || count + 1 >= model.len {
                 break;
             }
             if count % model.block == 0 {
@@ -715,12 +718,13 @@ impl Table {
             }
             let (option, next) = self.taken(picks, set as usize, used);
             indices[count] += option;
-            let chance = model.chance(count, model.extra[indices[count]]);
+            let rate = model.rate(count, model.extra[indices[count]]);
+            let chance = to_chance(rate);
             if chance == 1.0 {
                 break;
             }
             used = next;
-            artisan = model.step(artisan, chance);
+            artisan = model.step(artisan, rate);
         }
         MEMO.set(memo);
         (value, model.filled(&indices))

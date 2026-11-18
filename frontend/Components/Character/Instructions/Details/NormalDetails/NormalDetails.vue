@@ -79,7 +79,7 @@ watch(
   { immediate: true },
 );
 watch(
-  [() => props.upgrade.starting_num_taps, () => props.upgrade.extra_chance],
+  [() => props.upgrade.starting_num_taps, () => props.upgrade.fail_chances],
   () => {
     current_chance_percentage.value = chance_string(
       props.upgrade.starting_num_taps,
@@ -218,16 +218,8 @@ function slider_input() {
   change_wrapper(true, () => {
     const taps = taps_since_last_input.value;
     if (taps > 0) expand();
-    starting_artisan_string.value = artisan_string(
-      props.upgrade,
-      taps,
-      juice_info.value,
-    );
-    starting_artisan_number.value = artisan_number(
-      props.upgrade,
-      taps,
-      juice_info.value,
-    );
+    starting_artisan_string.value = artisan_string(props.upgrade, taps);
+    starting_artisan_number.value = artisan_number(props.upgrade, taps);
     current_chance_percentage.value = chance_string(
       taps + props.upgrade.starting_num_taps,
     );

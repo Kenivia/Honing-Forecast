@@ -1,8 +1,6 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use crate::chest::Chests;
-use crate::constants::accessor::{
-    get_artisan, get_data, get_event_extra_chance, get_normal_hone_chances, get_special_leap_cost,
-};
+use crate::constants::accessor::{get_data, get_special_leap_cost, get_tap};
 use crate::constants::juice_info::{JuiceInfo, get_event_adjusted_juice_info};
 use crate::constants::*;
 use crate::materials::{MaterialTable, NUM_BASE_MATS, OneMaterial, ValuationPlan, all_bands};
@@ -129,10 +127,7 @@ pub fn parser(
 ) -> Vec<Upgrade> {
     let mut out: Vec<Upgrade> = Vec::new();
 
-    let artisan_rate_arr = get_artisan(express_event, tier);
-    let event_extra_arr = get_event_extra_chance(express_event, tier);
     let special_leap_cost = get_special_leap_cost(tier);
-    let normal_hone_chances = get_normal_hone_chances(tier);
 
     for OneUpgradeInput {
         piece_index,
@@ -161,15 +156,13 @@ pub fn parser(
 
         if is_normal_honing {
             let special_cost: i64 = special_leap_cost[piece_type_usize][upgrade_index];
-            let event_artisan_rate: f64 = artisan_rate_arr[piece_type_usize][upgrade_index];
             let starting_artisan: f64 = starting_artisan.unwrap();
             let starting_num_taps: usize = starting_num_taps.unwrap_or(0);
             out.push(Upgrade::new_normal(
-                normal_hone_chances[piece_type_usize][upgrade_index],
+                get_tap(express_event, tier, piece_type_usize, upgrade_index),
                 this_cost,
                 special_cost,
                 piece_index,
-                event_artisan_rate,
                 upgrade_index,
                 juice_info,
                 starting_artisan,
@@ -177,7 +170,6 @@ pub fn parser(
                 this_state_given,
                 this_unlocked,
                 this_unlock,
-                event_extra_arr[piece_type_usize][upgrade_index],
             ));
         } else {
             let this_adv_progress: (usize, usize, bool, bool) = adv_progress.unwrap();

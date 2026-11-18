@@ -1,28 +1,39 @@
 use crate::upgrade::PieceType::{self, Armor, Vambrace, Weapon};
 
-use super::constants::DATA;
+use super::constants::{DATA, RATE_SCALE};
+use crate::honing_utils::update_normal::Tap;
 
-pub fn get_event_extra_chance(express_event: bool, tier: usize) -> Vec<Vec<f64>> {
-    if !express_event {
-        return vec![vec![0.0; 25]; 3];
+/// the game's tap rule of a normal upgrade, its tables being out of 10,000
+pub fn get_tap(
+    express_event: bool,
+    tier: usize,
+    piece_type_usize: usize,
+    upgrade_index: usize,
+) -> Tap {
+    let data = &DATA[tier];
+    let at = |table: &Vec<Vec<i64>>| table[piece_type_usize][upgrade_index] * (RATE_SCALE / 10000);
+    Tap {
+        base: at(&data.NORMAL_CHANCES),
+        bonus: at(&data.NORMAL_FAIL_BONUS),
+        bonus_max: at(&data.NORMAL_FAIL_BONUS_MAX),
+        event: if express_event {
+            at(&data.EVENT_NORMAL_EXTRA_CHANCE)
+        } else {
+            0
+        },
+        threshold: at(&data.ARTISAN_THRESHOLD),
+        artisan_percent: if express_event {
+            data.EVENT_ARTISAN_MULTIPLIER[piece_type_usize][upgrade_index]
+        } else {
+            100
+        },
     }
-    DATA[tier].EVENT_NORMAL_EXTRA_CHANCE.clone()
-}
-pub fn get_artisan(express_event: bool, tier: usize) -> Vec<Vec<f64>> {
-    if !express_event {
-        return vec![vec![1.0; 25]; 3];
-    }
-
-    DATA[tier].EVENT_ARTISAN_MULTIPLIER.clone()
 }
 
 pub fn get_special_leap_cost(tier: usize) -> Vec<Vec<i64>> {
     DATA[tier].SPECIAL_LEAPS_COST.clone()
 }
 
-pub fn get_normal_hone_chances(tier: usize) -> Vec<Vec<f64>> {
-    DATA[tier].NORMAL_CHANCES.clone()
-}
 pub fn get_data(
     express_event: bool,
     tier: usize,

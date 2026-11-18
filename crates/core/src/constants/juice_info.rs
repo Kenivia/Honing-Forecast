@@ -17,7 +17,8 @@ pub struct OneUindexJuice {
     pub normal_amt_used: i64,
     normal_base_amt_used: i64,
     normal_event_amt_used: i64,
-    pub normal_chance: f64,
+    /// out of RATE_SCALE
+    pub normal_rate: i64,
     // pub can_adv: bool, this information is deduced from being in the uindex_to_id vector or not
     pub adv_chances: (f64, f64),
 
@@ -55,7 +56,7 @@ impl JuiceInfo {
         self.all_juices[id][piece_type_usize][&upgrade_index]
     }
     pub fn new(
-        juice_books_avail: &[(usize, usize, usize, usize, f64, i64, f64, f64)],
+        juice_books_avail: &[(usize, usize, usize, usize, i64, i64, f64, f64)],
         event_multiplier: &[(usize, usize, usize, usize, f64)],
     ) -> JuiceInfo {
         let mut normal_uindex_to_id: Vec<Vec<Vec<usize>>> =
@@ -76,7 +77,7 @@ impl JuiceInfo {
             is_adv,
             piece_type_usize,
             upgrade_plus,
-            normal_chance,
+            normal_rate,
             amt_used,
             gs_chance,
             gsx2_chance,
@@ -120,7 +121,7 @@ impl JuiceInfo {
                 this.normal_amt_used = amt_used;
                 this.normal_base_amt_used = amt_used;
                 this.normal_event_amt_used = this_event_amt;
-                this.normal_chance = normal_chance;
+                this.normal_rate = normal_rate;
             }
         }
         for (id, this_data) in all_data.into_iter().enumerate() {
