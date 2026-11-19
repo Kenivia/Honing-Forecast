@@ -163,8 +163,8 @@ const num = (x: number, digits = 1) =>
 
     <p>
       I'm not sure how much sense this graph makes - you can think of tapping
-      in-game as landing somewhere on the x axis, and the line tells you how
-      much you lose. e.g. if you land on the left, you can afford with bound
+      in-game as landing somewhere on the x axis, and the line height tells you
+      how much you lose. e.g. if you land on the left, you can afford with bound
       mats, hooray.
     </p>
     <p>
@@ -200,19 +200,19 @@ const num = (x: number, digits = 1) =>
     <p>
       Clearly the average gold used should be some positive number, but the
       naive method would tell us that the average cost is
-      <span class="font-bold text-(--gold)">0 gold </span>. (In fact it should
-      actually be
+      <span class="font-bold text-(--gold)">0 gold </span> (When in fact it
+      should actually be
       <span class="font-bold text-(--gold)"
         >{{ num(fusion_example_gold, 0) }}
       </span>
-      gold.
+      gold).
     </p>
 
     <p>
       To be clear, what is calculated by the naive method is "What is the gold
       cost if you hit exactly the average scenario", when we should calculate
-      "If you asked a million people to do this upgrade and average their gold
-      costs, what would you get". As you can see above the naive method is not a
+      "If you asked a million people to do these upgrades and average their gold
+      used, what would you get". As you can see above the naive method is not a
       good approximation for the latter. In math lingo this is a brilliant
       display of
       <a href="https://en.wikipedia.org/wiki/Jensen%27s_inequality"
@@ -229,8 +229,7 @@ const num = (x: number, digits = 1) =>
         upgrade), find the material cost.
       </li>
       <li>
-        (For each outcome) Subtract how much we have, then turn any leftovers to
-        0.
+        (For each outcome) Subtract how much we have, ignore any negatives
       </li>
       <li>Multiply by the price</li>
       <li>Take the weighted average over all outcomes</li>

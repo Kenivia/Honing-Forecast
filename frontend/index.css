@@ -15,13 +15,7 @@
   caret-color: auto;
   scrollbar-width: thin;
 }
-button,
-input,
-select,
-textarea,
-optgroup {
-  font: inherit;
-}
+
 /* Edge draws the open list white unless options are coloured explicitly */
 option,
 optgroup {
@@ -34,11 +28,7 @@ html {
   text-rendering: optimizeLegibility;
   color: var(--text-main);
 }
-a {
-  color: inherit;
-  text-decoration: none;
-  font-size: inherit;
-}
+
 button {
   cursor: pointer;
 }

@@ -124,7 +124,7 @@ onUnmounted(() => {
           :key="is_calc ? active_profile.id : String(route.name)"
         />
       </RouterView>
-      <div class="min-h-300"></div>
+      <div class="min-h-50"></div>
     </template>
   </Sidebar>
 </template>

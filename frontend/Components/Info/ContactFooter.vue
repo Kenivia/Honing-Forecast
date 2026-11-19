@@ -1,5 +1,5 @@
 <template>
-  <p class="mt-8 px-2">
+  <p class="prose-card mt-8 px-2">
     If you've got a quesiton, or think something isn't right, feel free to get
     in touch via
     <a href="https://discord.gg/KWDpQyvgzc"> Discord</a>! (or check out the

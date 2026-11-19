@@ -3,10 +3,7 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
-
 NEXT UPDATE
-
-
 
 - cloud syncing
 - migrate to an actual domain name
@@ -25,6 +22,9 @@ NEXT UPDATE
 
 - chaos dungeon detection (and maybe guardian also)
 - this is lowkey a loa log type job
+
+## PRICE LOGGING AKA MY OWN LOA BUDDY
+
 
 ## Misc UI
 
@@ -58,6 +58,7 @@ NEXT UPDATE
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
 
 ## Done / cancelled
+
 - ~~shift sidebar?~~
 
 - ~~new user / new character setup~~ good enough
