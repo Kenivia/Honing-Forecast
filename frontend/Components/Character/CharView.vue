@@ -20,7 +20,10 @@ const { active_profile } = storeToRefs(roster_store);
 
 // The router guard has already checked the name; this only maps it to the active index.
 const index = computed(() =>
-  roster_store.profile_index_by_name(route.params.characterName as string),
+  roster_store.profile_index_by_route(
+    route.params.region as string,
+    route.params.characterName as string,
+  ),
 );
 watch(
   index,
@@ -31,10 +34,11 @@ watch(
   },
   { immediate: true },
 );
-// a rename moves the route along, so a reload finds the character
+// a rename or region change moves the route along, so a reload finds the character
 watch(
-  () => active_profile.value.char_name,
-  (name) => router.replace({ params: { characterName: name } }),
+  () => roster_store.char_params(active_profile.value),
+  (params) => router.replace({ params }),
+  { deep: true },
 );
 
 const is_calc = computed(() => route.name === "calc");
@@ -46,7 +50,7 @@ const roster_chars = computed(() =>
 
 function add_char() {
   const added = roster_store.add_char(active_profile.value.roster_id);
-  router.push({ params: { characterName: added.char_name } });
+  router.push({ params: roster_store.char_params(added) });
 }
 
 onUnmounted(() => {
@@ -66,7 +70,7 @@ onUnmounted(() => {
           :key="profile.id"
           :to="{
             name: route.name,
-            params: { characterName: profile.char_name },
+            params: roster_store.char_params(profile),
           }"
           class="nav-tab"
           :class="{ selected: profile.id === active_profile.id }"

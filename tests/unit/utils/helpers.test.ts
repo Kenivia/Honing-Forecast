@@ -115,6 +115,17 @@ describe("format_char_name", () => {
     expect(format_char_name("!!", 0, profiles())).toBe("Newchar");
     expect(format_char_name("", 1, profiles("Newchar", "X"))).toBe("Newchar1");
   });
+
+  it("dedups within the character's region only", () => {
+    const all = [
+      { char_name: "Bob", roster_id: "na" },
+      { char_name: "Eve", roster_id: "eu" },
+    ] as any;
+    const regions = { na: "nae", eu: "euc", eu2: "euc" };
+    expect(format_char_name("bob", 1, all, undefined, regions)).toBe("Bob");
+    expect(format_char_name("eve", 2, all, "eu2", regions)).toBe("Eve1");
+    expect(format_char_name("eve", 2, all, "na", regions)).toBe("Eve");
+  });
 });
 
 describe("grid checks on the active profile", () => {

@@ -55,7 +55,7 @@ for (const route of [
   "/market-mats",
   "/info/guide",
   "/info/change-logs",
-  "/chars/Newchar/income",
+  "/chars/NA/Newchar/income",
 ]) {
   test(`${route} renders without errors`, async ({ page }) => {
     await hf.open(page, route);

@@ -8,18 +8,24 @@ const router = useRouter();
 const store = useRosterStore();
 
 function wipe() {
-  const { name } = pending_switch.value;
+  const { name, region } = pending_switch.value;
   pending_switch.value = null;
   wipe_scan();
-  router.push({ name: "char-scanner", params: { characterName: name } });
+  router.push({
+    name: "char-scanner",
+    params: { region, characterName: name },
+  });
 }
 
 // on to the scanner, where the scan goes on
 function move() {
-  const { name } = pending_switch.value;
+  const { name, region } = pending_switch.value;
   pending_switch.value = null;
   move_scan();
-  router.push({ name: "char-scanner", params: { characterName: name } });
+  router.push({
+    name: "char-scanner",
+    params: { region, characterName: name },
+  });
 }
 
 onKeyStroke("Escape", () => (pending_switch.value = null));

@@ -14,7 +14,8 @@ import {
 import InstructionRow from "./InstructionRow.vue";
 import QuestionMark from "@/Components/Common/QuestionMark.vue";
 import { RouterLink } from "vue-router";
-import { locale_to_fixed } from "@/Utils/Helpers";
+import { get_piece_name, locale_to_fixed } from "@/Utils/Helpers";
+import type { Upgrade } from "@/Utils/KeyedUpgrades";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 const runtime = useRuntimeStore();
 
@@ -49,6 +50,11 @@ const grid: GridConfig = props.is_normal
     };
 
 const optimizer_working = computed(get_optimizer_working);
+// accessible name of a row, e.g. "Helmet +16" or "Helmet Advanced +0 - 10"
+const row_name = (u: Upgrade) =>
+  u.is_normal_honing
+    ? `${get_piece_name(u)} +${u.upgrade_index + 1}`
+    : `${get_piece_name(u)} Advanced +${u.upgrade_index * 10} - ${(u.upgrade_index + 1) * 10}`;
 </script>
 <template>
   <div class="card-shell w-[1032px]! max-w-full">
@@ -123,7 +129,9 @@ const optimizer_working = computed(get_optimizer_working);
             perform_order,
           ] in shown_upgrade_arr"
           :key="`instructions-${upgrade.upgrade_index}-${upgrade.piece_index}-${upgrade.is_normal_honing}`"
-          class="mats-row h-fit!"
+          class="mats-row instruction-row h-fit!"
+          role="group"
+          :aria-label="row_name(upgrade)"
         >
           <InstructionRow
             v-if="

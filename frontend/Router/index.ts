@@ -1,11 +1,13 @@
 import { createRouter, createWebHistory } from "vue-router";
+import type { RouteLocation } from "vue-router";
 import CharView from "../Components/Character/CharView.vue";
 import Calc from "@/Components/Character/Calc.vue";
 import Guide from "@/Components/Info/Guide.vue";
 import Scanner from "@/Components/Character/InventoryScanner/Scanner.vue";
 import MarketView from "@/Components/Market/MarketView.vue";
 import RosterView from "@/Components/RosterView.vue";
-import { useRosterStore } from "@/Stores/RosterConfig";
+import { REGION_SLUGS, useRosterStore } from "@/Stores/RosterConfig";
+import type { CharProfile } from "@/Stores/CharacterProfile";
 import { ALL_VERSIONS, LATEST_VERSION } from "@/Utils/Changelog";
 import InfoView from "@/Components/Info/InfoView.vue";
 import ChangeLog from "@/Components/Info/ChangeLog.vue";
@@ -15,15 +17,27 @@ import { guard_switch } from "@/Components/Character/InventoryScanner/ScanSwitch
 import AuthCallback from "@/Components/Common/Uwuowo/AuthCallback.vue";
 import UpgradeOrder from "@/Components/Info/Docs.vue";
 
+const REGIONS = Object.values(REGION_SLUGS).join("|");
+const char_path = (p: CharProfile) => {
+  const { region, characterName } = useRosterStore().char_params(p);
+  return `/chars/${region}/${encodeURIComponent(characterName)}`;
+};
+const base = (c: RouteLocation) =>
+  `/chars/${c.params.region}/${encodeURIComponent(c.params.characterName as string)}`;
+// Redirects run before the store has loaded on the first navigation, so this only guesses the
+// region; the guard below moves it to wherever that name is.
+const old_char = (name: string | string[], rest: string | string[]) =>
+  `/chars/NA/${encodeURIComponent(name as string)}/${rest ?? ""}`;
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
       path: "/:chars(chars)?",
       redirect: () => {
-        const roster_store = useRosterStore();
-        const first = roster_store.all_profiles[0];
-        return first ? `/chars/${first.char_name}` : "/roster-setup"; // there should always be at least one tho
+        const store = useRosterStore();
+        const first = store.all_profiles[0];
+        return first ? char_path(first) : "/roster-setup"; // there should always be at least one tho
       },
     },
 
@@ -85,10 +99,10 @@ const router = createRouter({
       component: AuthCallback,
     },
     {
-      path: "/chars/:characterName",
+      path: `/chars/:region(${REGIONS})/:characterName`,
       name: "char",
       component: CharView,
-      redirect: (c) => `/chars/${c.params.characterName}/calc`,
+      redirect: (c) => `${base(c)}/calc`,
       children: [
         { path: "calc", name: "calc", component: Calc },
         { path: "guide", redirect: { name: "info-guide" } },
@@ -101,18 +115,23 @@ const router = createRouter({
         { path: ":x/guide", redirect: { name: "info-guide" } },
         {
           path: ":x/scanner",
-          redirect: (c) => `/chars/${c.params.characterName}/scanner`,
+          redirect: (c) => `${base(c)}/scanner`,
         },
         {
           path: ":pathMatch(.*)*",
-          redirect: (c) => `/chars/${c.params.characterName}/calc`,
+          redirect: (c) => `${base(c)}/calc`,
         },
       ],
     },
-    // old character urls, before /chars
+    // old character urls without a region: the first character of that name
+    {
+      path: "/chars/:characterName/:rest(.*)?",
+      redirect: (c) => old_char(c.params.characterName, c.params.rest),
+    },
+    // before /chars
     {
       path: "/:characterName/:rest(.*)?",
-      redirect: (c) => `/chars/${c.params.characterName}/${c.params.rest}`,
+      redirect: (c) => old_char(c.params.characterName, c.params.rest),
     },
   ],
 });
@@ -127,15 +146,21 @@ router.beforeEach((to) => {
   )
     return { name: "change-logs", params: { version: LATEST_VERSION } };
   const name = to.params.characterName as string | undefined;
-  if (name === undefined) return;
+  const region = to.params.region as string | undefined;
+  if (name === undefined || region === undefined) return;
   const store = useRosterStore();
-  if (store.profile_index_by_name(name) < 0)
+  if (store.profile_index_by_route(region, name) < 0) {
+    const found = store.profile_index_by_name(name);
     return {
       name: to.name,
-      params: { ...to.params, characterName: store.all_profiles[0].char_name },
+      params: {
+        ...to.params,
+        ...store.char_params(store.all_profiles[Math.max(0, found)]),
+      },
       query: to.query,
       hash: to.hash,
     };
+  }
 });
 router.beforeEach(guard_switch);
 

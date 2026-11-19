@@ -11,6 +11,7 @@ import { scan_unexported } from "./Manifest";
 // the character asked for while the dialog is up
 export const pending_switch = ref<{
   name: string;
+  region: string;
   path: string;
   same_roster: boolean;
 } | null>(null);
@@ -30,9 +31,10 @@ export function move_scan() {
 // a router guard
 export function guard_switch(to: RouteLocationNormalized) {
   const name = to.params.characterName as string | undefined;
-  if (!name) return;
+  const region = to.params.region as string | undefined;
+  if (!name || !region) return;
   const store = useRosterStore();
-  const target = store.all_profiles[store.profile_index_by_name(name)];
+  const target = store.all_profiles[store.profile_index_by_route(region, name)];
   if (!target || target.id === store.active_profile.id) return;
   if (moving) {
     moving = false;
@@ -41,6 +43,7 @@ export function guard_switch(to: RouteLocationNormalized) {
   if (scan_unexported.value) {
     pending_switch.value = {
       name,
+      region,
       path: to.fullPath,
       same_roster: target.roster_id === store.active_profile.roster_id,
     };

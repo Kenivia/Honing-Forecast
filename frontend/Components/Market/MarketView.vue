@@ -29,7 +29,7 @@ const selected_region = computed(
             (event) => {
               const new_region = (event.target as HTMLSelectElement)
                 .value as MarketRegions;
-              roster_config.all_regions[selected_roster_id] = new_region;
+              roster_store.set_region(selected_roster_id, new_region);
               start_fetch(new_region);
             }
           "

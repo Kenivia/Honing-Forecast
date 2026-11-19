@@ -73,20 +73,20 @@ beforeEach(() => stub_match_media(false));
 
 describe("CharView", () => {
   it("makes the routed character active", async () => {
-    const { wrapper, store } = await mount_at("/chars/Carol/calc");
+    const { wrapper, store } = await mount_at("/chars/NA/Carol/calc");
     expect(store.roster_config.active_profile_index).toBe(2);
     expect(wrapper.find(".side-bar-header").text()).toBe("Carol");
   });
 
   it("lists the active character's roster beside the sidebar", async () => {
-    const { wrapper } = await mount_at("/chars/Bob/calc");
+    const { wrapper } = await mount_at("/chars/NA/Bob/calc");
     const chars = wrapper.findAll('nav[aria-label="Characters"] a');
     expect(chars.map((a) => a.text())).toEqual(["Alice", "Bob"]);
     expect(wrapper.findAll("a.selected").map((a) => a.text())).toEqual(["Bob"]);
   });
 
   it("draws a character's class icon, and a helmet for an unknown class", async () => {
-    const { wrapper, store } = await mount_at("/chars/Bob/calc");
+    const { wrapper, store } = await mount_at("/chars/NA/Bob/calc");
     store.all_profiles[0].class_name = "Guardianknight";
     await flushPromises();
     const icons = wrapper.findAll('nav[aria-label="Characters"] a span[style]');
@@ -97,24 +97,24 @@ describe("CharView", () => {
   });
 
   it("switches and cancels the old runs when the name changes", async () => {
-    const { store, runtime } = await mount_at("/chars/Alice/calc");
+    const { store, runtime } = await mount_at("/chars/NA/Alice/calc");
     const cancel = vi.spyOn(runtime, "cancel_active");
-    await router.push("/chars/Bob/choices");
+    await router.push("/chars/NA/Bob/choices");
     await flushPromises();
     expect(store.active_profile.char_name).toBe("Bob");
     expect(cancel).toHaveBeenCalled();
   });
 
   it("an unknown name reached by a param change goes to the first character, same sub-page", async () => {
-    const { store } = await mount_at("/chars/Bob/choices");
-    await router.push("/chars/Nobody/choices");
+    const { store } = await mount_at("/chars/NA/Bob/choices");
+    await router.push("/chars/NA/Nobody/choices");
     await flushPromises();
-    expect(at()).toBe("/chars/Alice/choices");
+    expect(at()).toBe("/chars/NA/Alice/choices");
     expect(store.roster_config.active_profile_index).toBe(0);
   });
 
   it("leaving for another page stays there and cancels runs", async () => {
-    const { runtime } = await mount_at("/chars/Bob/calc");
+    const { runtime } = await mount_at("/chars/NA/Bob/calc");
     const cancel = vi.spyOn(runtime, "cancel_active");
     await router.push("/market-mats");
     await flushPromises();
@@ -123,38 +123,38 @@ describe("CharView", () => {
   });
 
   it("sidebar links are relative to the character", async () => {
-    const { wrapper } = await mount_at("/chars/Bob/calc");
+    const { wrapper } = await mount_at("/chars/NA/Bob/calc");
     const hrefs = wrapper
       .findAll("a.side-bar-link")
       .map((a) => a.attributes("href"));
     expect(hrefs).toEqual([
-      "/chars/Bob/calc",
-      "/chars/Bob/income",
-      "/chars/Bob/choices",
-      "/chars/Bob/scanner",
+      "/chars/NA/Bob/calc",
+      "/chars/NA/Bob/income",
+      "/chars/NA/Bob/choices",
+      "/chars/NA/Bob/scanner",
     ]);
     await wrapper.findAll("a.side-bar-link")[2].trigger("click");
     await flushPromises();
-    expect(at()).toBe("/chars/Bob/choices");
+    expect(at()).toBe("/chars/NA/Bob/choices");
   });
 
   it("control panels follow the sub-page", async () => {
-    const { wrapper } = await mount_at("/chars/Bob/calc");
+    const { wrapper } = await mount_at("/chars/NA/Bob/calc");
     expect(wrapper.find(".ControlPanel").exists()).toBe(true);
     expect(wrapper.find(".ScannerControlPanel").exists()).toBe(false);
     // jsdom has no screen capture, so the scanner would be hidden as on mobile
     scanner_shown.value = true;
-    await router.push("/chars/Bob/scanner");
+    await router.push("/chars/NA/Bob/scanner");
     await flushPromises();
     expect(wrapper.find(".ControlPanel").exists()).toBe(false);
     expect(wrapper.find(".ScannerControlPanel").exists()).toBe(true);
   });
 
   it("a character switch remounts the calculator; a rename does not", async () => {
-    const { store } = await mount_at("/chars/Alice/calc");
+    const { store } = await mount_at("/chars/NA/Alice/calc");
     const [alice, bob] = store.roster_config.profiles.map((p) => p.id);
     calc_log.length = 0;
-    await router.push("/chars/Bob/calc");
+    await router.push("/chars/NA/Bob/calc");
     await flushPromises();
     // the old page's unmount runs after the new one has started its workers
     expect(calc_log).toEqual([`setup ${bob}`, `unmount ${alice}`]);
@@ -165,10 +165,10 @@ describe("CharView", () => {
   });
 
   it("the route follows a rename of the active character", async () => {
-    const { store } = await mount_at("/chars/Bob/choices");
+    const { store } = await mount_at("/chars/NA/Bob/choices");
     store.active_profile.char_name = "Bobby";
     await flushPromises();
-    expect(at()).toBe("/chars/Bobby/choices");
+    expect(at()).toBe("/chars/NA/Bobby/choices");
     expect(store.active_profile.char_name).toBe("Bobby");
   });
 });

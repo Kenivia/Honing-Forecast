@@ -25,7 +25,7 @@ const ROUTES: RouteRecordRaw[] = [
     ],
   },
   {
-    path: "/chars/:characterName",
+    path: "/chars/:region/:characterName",
     name: "char",
     component: Empty,
     children: [

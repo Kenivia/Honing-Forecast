@@ -201,6 +201,7 @@ function profile_from_saved(
   index: number,
   earlier: CharProfile[],
   roster_ids: string[],
+  regions: Record<string, MarketRegions>,
 ): CharProfile {
   const defaults = structuredClone(DEFAULT_CHAR_PROFILE);
   const tier =
@@ -240,6 +241,8 @@ function profile_from_saved(
       saved.char_name ?? defaults.char_name,
       index,
       earlier,
+      roster_id,
+      regions,
     ),
     roster_id,
     tier,
@@ -428,6 +431,7 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
         index,
         profiles,
         Object.keys(out.roster_mats_owned),
+        out.all_regions,
       ),
     );
   });

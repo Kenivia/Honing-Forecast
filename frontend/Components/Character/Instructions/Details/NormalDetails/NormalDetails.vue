@@ -319,6 +319,7 @@ const special_grid: GridConfig = {
               class="ml-1 w-full border-b border-(--border-muted)"
               v-model="taps_since_last_input"
               type="number"
+              aria-label="Taps since last run"
               @input="slider_input"
               :min="0"
               :max="upgrade.normal_dist.length - 1"
@@ -329,6 +330,7 @@ const special_grid: GridConfig = {
         <input
           v-model="taps_since_last_input"
           class="w-full"
+          aria-label="Taps slider"
           :min="0"
           :max="upgrade.normal_dist.length - 1"
           type="range"
@@ -370,6 +372,7 @@ const special_grid: GridConfig = {
       <span class="self-center pr-1 text-right">Special leaps remaining:</span>
       <input
         class="generic-input w-18!"
+        aria-label="Special leaps remaining"
         v-model="new_special_leaps"
         type="number"
         :min="0"

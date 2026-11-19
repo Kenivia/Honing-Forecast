@@ -14,6 +14,7 @@ import { market_to_uwuowo_region } from "./Common/Uwuowo/UwuowoUtils";
 import { computed } from "vue";
 import { linked_now, signed_in } from "@/Utils/BibleAuth";
 import { sync_rosters, syncing } from "@/Utils/BibleSync";
+import { format_char_name } from "@/Utils/Helpers";
 import BackupButtons from "./Common/BackupButtons.vue";
 
 const roster_store = useRosterStore();
@@ -71,6 +72,8 @@ const linked_rosters = computed(() =>
         <div
           v-for="(roster_id, roster_index) in roster_ids"
           class="card-shell flex h-fit flex-col pb-2"
+          role="group"
+          :aria-label="`Roster ${roster_index + 1}`"
           :key="roster_id"
         >
           <div
@@ -92,10 +95,7 @@ const linked_rosters = computed(() =>
                 (event) => {
                   const new_region = (event.target as HTMLSelectElement)
                     .value as MarketRegions;
-                  // console.log(roster_config.all_regions);
-                  // console.log('set roster_id', roster_id);
-                  roster_config.all_regions[roster_id] = new_region;
-                  // console.log(roster_config.all_regions);
+                  roster_store.set_region(roster_id, new_region);
                   start_fetch(new_region);
                 }
               "
@@ -192,14 +192,16 @@ const linked_rosters = computed(() =>
                 <RouterLink
                   :to="{
                     name: 'char',
-                    params: { characterName: profile_pair.profile.char_name },
+                    params: roster_store.char_params(profile_pair.profile),
                   }"
                   class="generic-button"
+                  :aria-label="`Go to character ${profile_pair.profile.char_name}`"
                 >
                   Go to character
                 </RouterLink>
                 <button
                   class="generic-button"
+                  :aria-label="`Make a copy of ${profile_pair.profile.char_name}`"
                   @click="
                     roster_store.duplicate_profile(profile_pair.profile_index)
                   "
@@ -209,6 +211,7 @@ const linked_rosters = computed(() =>
                 <button
                   v-if="roster_config.profiles.length > 1"
                   class="generic-button btn-cancel"
+                  :aria-label="`Delete ${profile_pair.profile.char_name}`"
                   @click="
                     roster_store.delete_profile(profile_pair.profile_index)
                   "
@@ -229,7 +232,12 @@ const linked_rosters = computed(() =>
               :apply="
                 (result, force_t4, char_name, class_name) => {
                   const added = roster_store.add_char(roster_id);
-                  added.char_name = char_name;
+                  added.char_name = format_char_name(
+                    char_name,
+                    roster_store.all_profiles.findIndex(
+                      (p) => p.id === added.id,
+                    ),
+                  );
                   apply_results(added, result, force_t4, true, class_name);
                 }
               "

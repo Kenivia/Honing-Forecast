@@ -1,7 +1,9 @@
 // Refresh and roster sync for signed-in users; see AI notes "External services", "Character import".
 import { reactive, ref } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { CharProfile } from "@/Stores/CharacterProfile";
+import { CharProfile, new_char_profile } from "@/Stores/CharacterProfile";
+import { create_default_owned_input_column } from "@/Stores/RosterConfig";
+import { format_char_name } from "./Helpers";
 import { find_linked, linked_rosters, norm_name, signed_in } from "./BibleAuth";
 import {
   fetch_char,
@@ -74,6 +76,42 @@ export function close_sync_popup(ok: boolean) {
   resolve_popup(ok);
 }
 
+// JSON, not deep-equal: values here come from different realms under jsdom
+const equal = (a: unknown, b: unknown) =>
+  JSON.stringify(a) === JSON.stringify(b);
+
+// the default character with nothing ticked, typed or added, and a roster with no mats
+function untouched(p: CharProfile) {
+  const config = useRosterStore().roster_config;
+  const base = new_char_profile();
+  const empty = create_default_owned_input_column();
+  return (
+    (
+      [
+        "normal_grid",
+        "adv_grid",
+        "bound_budgets",
+        "special_budget",
+        "chests",
+        "forbidden_chests",
+      ] as const
+    ).every((k) => equal(p[k], base[k])) &&
+    equal(config.roster_mats_owned[p.roster_id], empty) &&
+    equal(config.tradable_mats_owned[p.roster_id], empty) &&
+    !config.roster_chests[p.roster_id]?.length
+  );
+}
+
+// a name typed locally may already hold the bible name in that region
+function unique_name(name: string, id: string) {
+  const profiles = useRosterStore().roster_config.profiles;
+  return format_char_name(
+    name,
+    profiles.findIndex((p) => p.id === id),
+    profiles,
+  );
+}
+
 const REGIONS: Record<string, MarketRegions> = { NA: "nae", CE: "euc" };
 
 export async function sync_rosters() {
@@ -95,7 +133,8 @@ async function sync_inner() {
   const fresh =
     config.profiles.length === 1 &&
     first.fetched_at === 0 &&
-    first.char_name.startsWith("Newchar")
+    first.char_name.startsWith("Newchar") &&
+    untouched(first)
       ? first.id
       : null;
 
@@ -115,7 +154,7 @@ async function sync_inner() {
         unmatched.push(c.name);
         continue;
       }
-      local.char_name = c.name;
+      local.char_name = unique_name(c.name, local.id);
       matched.add(local.id);
       counts[local.roster_id] = (counts[local.roster_id] ?? 0) + 1;
     }
@@ -158,7 +197,7 @@ async function sync_inner() {
         for (const local of entry.locals) {
           const p = find_profile(local.id);
           if (!local.choice || !p) continue;
-          p.char_name = local.choice;
+          p.char_name = unique_name(local.choice, p.id);
           matched.add(p.id);
         }
         const chosen = entry.locals.map((l) => l.choice);
@@ -177,7 +216,7 @@ async function sync_inner() {
         ? store.add_char(add.roster_id)
         : store.add_roster(add.region);
       add.roster_id = p.roster_id;
-      p.char_name = name;
+      p.char_name = unique_name(name, p.id);
       to_refresh.push(p.id);
     }
   }

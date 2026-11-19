@@ -6,7 +6,7 @@ Read `Overview.md` first. This covers the character calc page plus the market an
 
 | Path | What is there |
 | --- | --- |
-| `/chars/<char>/calc` | Upgrade grids, character settings, costs distribution, optimizer panel, instructions. |
+| `/chars/<region>/<char>/calc` | Upgrade grids, character settings, costs distribution, optimizer panel, instructions. |
 | `/market-mats` | Roster-bound and tradable materials, market prices, region. |
 | `/roster-setup` | Characters and rosters. |
 | `/info/guide`, `/info/change-logs` | Static content. |
@@ -35,6 +35,14 @@ These accessible names are what MCP snapshots show and what the helpers use.
 
 **Everything else** (control checkboxes, `Reset this char`, `Convert to T4.5 Serca`, `Auto start optimizer`, `Compare with simple strategies`) is reachable by its visible text. Named controls elsewhere: `Char name` (calc page and each roster row), `Region`, `Active roster`, `Auto fetch`, `Move <name> up` / `down` on the roster page, and `<band> leftover value` next to "Avg value of leftover mats" (shown after clicking `Customise`). `Main` / `Alt` (`RoleToggle.vue`, on the character card and as "Treating as" on that line) set all three at once.
 
+**Added for the e2e specs:**
+
+- Instruction rows are groups named by upgrade (`Helmet +16`, `Helmet Advanced +10 - 20`, class `instruction-row`). Only the first shows its details; others need "Show input anyway". Lists collapse to 10 rows: click `Show all N upgrades` after every reload. Detail inputs: `Taps since last run`, `Taps slider`, `Special leaps remaining`, `Current artisan energy`, `Current base chance`, `Current upgrade`, `Current xp`, `Grace progress`, `Chisel`, `Naber's Awl`.
+- Main / Alt carry `aria-pressed`; the two copies sit in groups `Treat as` (character card) and `Treating as` (leftover line). `getByText("Custom")` also hits the Region option; scope it to those groups.
+- Override radio columns are groups `Juice Usage`, `Book Usage`, `Adv Juice Usage`, `Adv Scroll Usage`, `Special Usage`.
+- Chance column options read `Bound mats`, `Roster mats`, `Tradable`. `Special leaps owned` / `Lower tier special leaps owned` have no row group; find them by textbox name.
+- Roster page: cards are groups `Roster N`; row buttons `Go to character <name>`, `Make a copy of <name>`, `Delete <name>`. Header `Sign in` / `Sign out`; the sync pairing popup is the dialog `Match your characters` with selects `Match <local name>`.
+
 A second tab of the site shows a warning banner ("open in another tab"); a test with two pages in one context sees it.
 
 ## The optimizer
@@ -61,6 +69,11 @@ Any change to the grids or materials restarts it when `Auto start optimizer` is 
 | `set_material(scope, label, column, value)` | Fill an input and commit it. |
 | `stub_market(page)` | Serve fixture prices. Call before `open`. |
 | `watch_errors(page)` | Array that collects page and console errors. |
+| `store_eval(page, fn, arg)` | Runs `fn(store, arg)` on the roster store in the page; `fn` is serialised, so self-contained. |
+| `upgrade_row(page, name)` | An instruction row by its group name. |
+| `reload(page)` | Waits out the debounced save, reloads, waits for the shell. |
+
+`tests/e2e/bible_helpers.ts` has the lostark.bible side: `stub_bible` (answers every lostark.bible request, records them; status knobs for 401/500), `sign_in_as` (injects `bible_auth` once per tab, so a reload after sign-out stays out), `stub_character` (the Worker scrape from `tests/unit/market-import/fixtures`), `with_store`, `seed`, `roster_names`. **Route lostark.bible in every signed-in test**: an unstubbed call with a fake token 401s on the real site and wipes the sign-in.
 
 Add to this file when a new interaction is needed more than once.
 
@@ -83,6 +96,15 @@ Add a spec under `tests/e2e/`. Follow `smoke.spec.ts`:
 
 The price fixture is `tests/e2e/fixtures/market.json`, keyed by region slug (`nae`, `euc`), in the market API's response shape. `stub_market` fulfils `GET /market/<region>` with that region's list; if the route or the response shape changes, update both.
 
-## Not covered yet
+## Specs
 
-The instructions section (per-upgrade progress, `Succeed`, `Confirm`), the simple-strategy overrides, tier conversion, character import and multi-roster setups have not been driven through the harness. They have no labels beyond visible text; add labels and helpers when first needed.
+Each test checks the effect (store, page, gold relation) and that it survives a reload, not just that a control fired: unit tests with hand-built data missed a broken Forbid button (stored vs merged chest keys).
+
+- `calc.spec.ts`: forbid on a merged chest stack (injected chests with equal options merge, titles joined `A / B`; forbidden ones list under their own titles), chest editor, advice split, tier conversion and revert, Succeed / slider deduction with auto-deduct on and off, manual artisan / chance, free taps, advanced details, owned tickbox, chance column across two characters, leftover bands, show all mats, Reset this char, optimizer panel (auto start checked by `runtime.optimizer.run_counter`, not the progress text, which flickers while the histogram redraws), long lists, Advanced and vambrace headers.
+- `roster.spec.ts`: add / rename / reorder / copy / delete, regions (a name in two regions, an old region-less link opened cold), accented names, scrape Fetch and Fetch remaining, per-roster mats on the market page.
+- `bible.spec.ts` (mocked): sign-in flow and callback errors, sync (fresh vs touched `Newchar`, accent matching, pairing popup, second sync, NA + CE, Custom skipped, the same name in NA and CE), locks, refresh and its scrape fallback, 401 / expiry, sign-out, auto-refresh once per launch.
+- `bible_live.spec.ts`: against the real API; skipped unless `.env.local` has `BIBLE_TOKEN` (sign in on localhost, then `JSON.parse(localStorage.bible_auth).token`). Revoke is stubbed so it never kills the token.
+
+Quirks: Firefox needs 120 s test timeouts. It errors the workers of a page left mid-run (no message); `WorkerBundle.ts` stays quiet once `beforeunload`/`pagehide` fired, and `hf.open` / `hf.reload` wait for idle runs anyway (`settle`). Click, then wait for its effect before the next click in a list that re-lays out (Allow / Forbid). Chromium logs a stubbed 4xx/5xx as a console error (`ignore_http` in bible_helpers). Typing a char name while signed out opens the scrape popup; close it on the overlay. More than ~3 workers make Firefox page loads time out.
+
+Not covered: tap counts (only in hover tips), the "here" link in the Treat-as hint.

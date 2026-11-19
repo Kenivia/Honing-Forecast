@@ -112,7 +112,7 @@ export function change_tier(target_profile: CharProfile, fetched?: boolean) {
 
 // The row's +n done and wanted in the old tier, as the new tier's. A level with no equal takes
 // the one below it, and below the old floor is the floor. Levels fetched in the old tier stay
-// fetched, and so does the new tier's floor.
+// fetched (when above the old floor), and so does the new tier's floor.
 export function convert_apply_done_want(
   old_tier: number,
   new_tier: number,
@@ -134,7 +134,8 @@ export function convert_apply_done_want(
     to_new(want_plus_n),
     row,
     fetched,
-    fetched_n >= floor ? to_new(fetched_n) : NORMAL_FLOOR[new_tier],
+    // the always-done floor is stored as fetched; only fetches above it carry over
+    fetched_n > NORMAL_FLOOR[old_tier] ? to_new(fetched_n) : NORMAL_FLOOR[new_tier],
   );
 }
 

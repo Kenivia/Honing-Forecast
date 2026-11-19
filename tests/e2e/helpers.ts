@@ -23,7 +23,30 @@ export async function stub_market(page: Page) {
   });
 }
 
+// Firefox logs a failed run when a page is left mid-optimizer, so let any run finish first
+async function settle(page: Page) {
+  const busy = () =>
+    page
+      .evaluate(async () => {
+        const url = performance
+          .getEntriesByType("resource")
+          .map((entry) => entry.name)
+          .filter((name) => name.includes("Stores/RuntimeState.ts"))
+          .pop();
+        if (!url) return false;
+        const runtime = (await import(url)).useRuntimeStore();
+        return (
+          runtime.optimizer.status === "busy" ||
+          runtime.histogram.status === "busy" ||
+          !!runtime.histogram.queued
+        );
+      })
+      .catch(() => false);
+  await expect.poll(busy, { timeout: 60_000 }).toBe(false);
+}
+
 export async function open(page: Page, path = "/") {
+  await settle(page);
   await page.goto(path);
   await expect(page.getByRole("link", { name: "Roster setup" })).toBeVisible();
 }
@@ -83,12 +106,14 @@ export const read_pending_ilevel = (page: Page) =>
 // is used but shows the empty message means its data did not reach the graph, which is
 // what a row-versus-label mix-up looks like from the outside.
 export async function material_graphs(page: Page) {
-  return page.locator(".mats-row[role=group]").evaluateAll((groups) =>
-    groups.map((g) => ({
-      label: g.getAttribute("aria-label"),
-      drawn: !g.textContent.includes("never used"),
-    })),
-  );
+  return page
+    .locator(".mats-row[role=group]:not(.instruction-row)")
+    .evaluateAll((groups) =>
+      groups.map((g) => ({
+        label: g.getAttribute("aria-label"),
+        drawn: !g.textContent.includes("never used"),
+      })),
+    );
 }
 
 // a row of a material table, on the calc or market page
@@ -108,4 +133,33 @@ export async function set_material(
   });
   await input.fill(String(value));
   await input.blur();
+}
+
+// Runs `fn(store, arg)` in the page against the roster store (the app's own module instance).
+export async function store_eval(page: Page, fn: Function, arg?: unknown) {
+  return page.evaluate(
+    async ([src, arg]) => {
+      const url = performance
+        .getEntriesByType("resource")
+        .map((entry) => entry.name)
+        .filter((name) => name.includes("Stores/RosterConfig.ts"))
+        .pop();
+      const { useRosterStore } = await import(url);
+      return (0, eval)(`(${src})`)(useRosterStore(), arg);
+    },
+    [fn.toString(), arg] as [string, unknown],
+  );
+}
+
+// an instruction row, by upgrade name: "Helmet +16" or "Helmet Advanced +0 - 10"
+export function upgrade_row(page: Page, name: string) {
+  return page.getByRole("group", { name, exact: true });
+}
+
+// the debounced save has to land before a reload
+export async function reload(page: Page) {
+  await page.waitForTimeout(1000);
+  await settle(page);
+  await page.reload();
+  await expect(page.getByRole("link", { name: "Roster setup" })).toBeVisible();
 }

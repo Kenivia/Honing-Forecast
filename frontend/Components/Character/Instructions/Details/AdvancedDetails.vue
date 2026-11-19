@@ -99,6 +99,7 @@ const grid: GridConfig = {
       class="generic-input number-border ml-2 w-13"
       type="number"
       v-model.number="current_adv_upgrade"
+      aria-label="Current upgrade"
       :min="upgrade.upgrade_index * 10"
       :max="(upgrade.upgrade_index + 1) * 10 - 1"
       @change="write_adv_progress"
@@ -117,6 +118,7 @@ const grid: GridConfig = {
       class="generic-input number-border ml-2 w-13 self-start"
       type="number"
       v-model.number="current_adv_xp"
+      aria-label="Current xp"
       min="0"
       max="90"
       step="10"
@@ -136,6 +138,7 @@ const grid: GridConfig = {
       class="generic-input number-border ml-2 w-13"
       type="number"
       v-model.number="current_grace_progress"
+      aria-label="Grace progress"
       min="0"
       max="6"
       @change="write_adv_progress"
@@ -148,6 +151,7 @@ const grid: GridConfig = {
         class="ml-2 h-3.5 w-3.5 self-center"
         type="checkbox"
         v-model="next_free"
+        aria-label="Chisel"
         @change="write_adv_progress"
       />
     </div>
@@ -157,6 +161,7 @@ const grid: GridConfig = {
         class="ml-2 h-3.5 w-3.5 self-center"
         type="checkbox"
         v-model="next_big"
+        aria-label="Naber's Awl"
         @change="write_adv_progress"
       />
     </div>

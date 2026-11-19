@@ -67,6 +67,18 @@ describe("convert_apply_done_want", () => {
     convert_apply_done_want(0, 1, 22, 22, row);
     expect(row[12]).toBe(Done);
   });
+
+  it("a round trip keeps hand-ticked levels Done, fetched ones fetched", () => {
+    const row = row_of(10, 20, 22);
+    convert_apply_done_want(0, 1, 20, 22, row);
+    convert_apply_done_want(1, 0, 11, 13, row);
+    expect(row.slice(10, 20).every((x) => x === Done)).toBe(true);
+    expect(shape(row)).toEqual([20, 22]);
+    const fetched = row_of(22, 22, 24);
+    convert_apply_done_want(0, 1, 22, 24, fetched);
+    convert_apply_done_want(1, 0, 13, 16, fetched);
+    expect(fetched.slice(0, 22).every((x) => x === FetchedDone)).toBe(true);
+  });
 });
 
 it("apply_done_want fills done, then want, then not yet", () => {

@@ -10,6 +10,7 @@ const { roster_ids } = storeToRefs(useRosterStore());
 <template>
   <Popup
     :show_popup="sync_pending.length > 0"
+    label="Match your characters"
     @close_popup="close_sync_popup(false)"
   >
     <div class="flex flex-col gap-4">
@@ -25,7 +26,11 @@ const { roster_ids } = storeToRefs(useRosterStore());
         <div class="grid grid-cols-[max-content_1fr] items-center gap-2">
           <template v-for="local in entry.locals" :key="local.id">
             <span>{{ local.name }}</span>
-            <select v-model="local.choice" class="generic-input">
+            <select
+              v-model="local.choice"
+              class="generic-input"
+              :aria-label="`Match ${local.name}`"
+            >
               <option value="">Not on lostark.bible</option>
               <option
                 v-for="name in entry.bibles"

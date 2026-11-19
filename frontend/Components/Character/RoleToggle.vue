@@ -29,6 +29,7 @@ function set_role(plan: BandPlan) {
           plan,
         ),
       }"
+      :aria-pressed="same_bands(active_profile.band_values, plan)"
       @click="set_role(plan)"
     >
       {{ name }}

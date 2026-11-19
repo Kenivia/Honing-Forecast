@@ -3,7 +3,14 @@ import { RouterLink, RouterView, useRoute } from "vue-router";
 import { get_icon_path } from "@/Utils/Helpers";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { useElementSize, useMediaQuery } from "@vueuse/core";
-import { computed, reactive, ref, useTemplateRef, watch, watchEffect } from "vue";
+import {
+  computed,
+  reactive,
+  ref,
+  useTemplateRef,
+  watch,
+  watchEffect,
+} from "vue";
 import { storeToRefs } from "pinia";
 import { FETCHABLE_REGIONS, start_fetch } from "./Utils/MarketDataFetcher";
 import {
@@ -56,11 +63,14 @@ const is900Narrow = useMediaQuery("(max-width: 900px)");
 
 const route = useRoute();
 
-const char_name_from_route = computed(
-  () => (route.params.characterName as string | undefined) ?? "",
-);
-const routed_profile = computed(() =>
-  all_profiles.value.find((p) => p.char_name === char_name_from_route.value),
+const routed_profile = computed(
+  () =>
+    all_profiles.value[
+      roster_store.profile_index_by_route(
+        route.params.region as string,
+        route.params.characterName as string,
+      )
+    ],
 );
 
 // session only: a roster button goes back to the roster's last opened character
@@ -152,7 +162,7 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
           :key="roster_id"
           :to="{
             name: 'char',
-            params: { characterName: roster_target(roster_id).char_name },
+            params: roster_store.char_params(roster_target(roster_id)),
           }"
           class="nav-tab"
           :class="{ selected: routed_profile?.roster_id === roster_id }"

@@ -69,15 +69,23 @@ export function has_upgrades_in_range(
   }
   return false;
 }
+// Names are unique per region (routes are /chars/<region>/<name>). `roster_id` is the named
+// character's roster, needed when it is not in `profiles` yet.
 export function format_char_name(
   raw: string,
   char_index: number,
   profiles?: CharProfile[],
+  roster_id?: string,
+  regions?: Record<string, string>,
 ): string {
   const all_profiles =
     profiles === null || profiles === undefined
       ? storeToRefs(useRosterStore()).all_profiles.value
       : profiles;
+  const roster = roster_id ?? all_profiles[char_index]?.roster_id;
+  const region_of =
+    regions ??
+    (roster === undefined ? {} : useRosterStore().roster_config.all_regions);
 
   let original = raw.replace(/ /g, ""); //
   // 2. Remove non-alphanumeric (keep underscores)
@@ -92,7 +100,11 @@ export function format_char_name(
     "Newchar";
   // 4. If already taken by another profile, append index
   const otherNames = all_profiles
-    .filter((_, i) => i !== char_index)
+    .filter(
+      (p, i) =>
+        i !== char_index &&
+        (roster === undefined || region_of[p.roster_id] === region_of[roster]),
+    )
     .map((x) => x.char_name);
   let dup_count = 1;
   let result = new_string;

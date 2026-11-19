@@ -195,6 +195,8 @@ const grid: GridConfig = {
               <div
                 v-if="column.group === 'special'"
                 class="flex h-full grow flex-col"
+                role="group"
+                :aria-label="column.title"
               >
                 <label class="control-panel-checkbox-row">
                   <input
@@ -212,6 +214,7 @@ const grid: GridConfig = {
                   <OptimizerRadioButton
                     v-for="pick in SPECIAL"
                     :key="pick.key"
+                    :title="pick.key"
                     :options="pick.options"
                     :model-value="
                       active_profile.optimizer_override.special[pick.key]
@@ -222,6 +225,7 @@ const grid: GridConfig = {
               </div>
               <OptimizerRadioButton
                 v-else
+                :title="column.title"
                 :options="column.options"
                 :model-value="
                   active_profile.optimizer_override[column.group][column.key]

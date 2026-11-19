@@ -1,11 +1,11 @@
 <script setup lang="ts">
-defineProps<{ show_popup: boolean }>();
+defineProps<{ show_popup: boolean; label?: string }>();
 defineEmits<{ close_popup: [] }>();
 </script>
 <template>
   <Teleport to="body">
     <div v-if="show_popup" class="popup-overlay" @click="$emit('close_popup')">
-      <div class="popup" @click.stop>
+      <div class="popup" role="dialog" :aria-label="label" @click.stop>
         <slot />
       </div>
     </div>

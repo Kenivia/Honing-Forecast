@@ -53,6 +53,7 @@ const upgrade_key = computed(() =>
           backgroundColor: using_slider ? 'transparent' : 'var(--bg-bright)',
         }"
         v-model="starting_artisan"
+        aria-label="Current artisan energy"
         inputmode="decimal"
         @change="emit('manual_artisan_change')"
       />
@@ -89,6 +90,7 @@ const upgrade_key = computed(() =>
     <input
       class="generic-input number-border w-10 pr-0!"
       v-model="current_chance_percentage"
+      aria-label="Current base chance"
       @change="emit('manual_chance_change')"
       inputmode="decimal"
       :style="{

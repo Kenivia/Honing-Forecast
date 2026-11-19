@@ -120,6 +120,13 @@ export function default_roster_config(): RosterConfig {
   };
 }
 
+// the region segment of character routes
+export const REGION_SLUGS: Record<MarketRegions, string> = {
+  nae: "NA",
+  euc: "EU",
+  Custom: "Custom",
+};
+
 export const useRosterStore = defineStore("roster", {
   state: () => ({
     roster_config: default_roster_config(),
@@ -177,11 +184,27 @@ export const useRosterStore = defineStore("roster", {
     },
 
     all_profiles: (state): CharProfile[] => state.roster_config.profiles,
-    // -1 when no character has that name
+    // -1 when no character has that name; the first of any region (old /chars/<name> links)
     profile_index_by_name:
       (state) =>
       (name: string): number =>
         state.roster_config.profiles.findIndex((p) => p.char_name === name),
+    // names are unique per region only, so a character's route carries both
+    char_params:
+      (state) =>
+      (p: CharProfile): { region: string; characterName: string } => ({
+        region: REGION_SLUGS[state.roster_config.all_regions[p.roster_id]],
+        characterName: p.char_name,
+      }),
+    profile_index_by_route:
+      (state) =>
+      (region: string, name: string): number =>
+        state.roster_config.profiles.findIndex(
+          (p) =>
+            p.char_name === name &&
+            REGION_SLUGS[state.roster_config.all_regions[p.roster_id]] ===
+              region,
+        ),
     // in order of first appearance; add_profile keeps a roster's characters together
     roster_ids: (state): string[] => [
       ...new Set(state.roster_config.profiles.map((x) => x.roster_id)),
@@ -242,7 +265,12 @@ export const useRosterStore = defineStore("roster", {
       const profile = {
         ...new_char_profile(),
         roster_id,
-        char_name: format_char_name("Newchar", profiles.length, profiles),
+        char_name: format_char_name(
+          "Newchar",
+          profiles.length,
+          profiles,
+          roster_id,
+        ),
       };
       this.add_profile(profile);
       return profiles.find((p) => p.id === profile.id);
@@ -263,7 +291,12 @@ export const useRosterStore = defineStore("roster", {
       this.add_profile({
         ...structuredClone(toRaw(profiles[index])),
         id: crypto.randomUUID(),
-        char_name: format_char_name("Newchar", profiles.length, profiles),
+        char_name: format_char_name(
+          "Newchar",
+          profiles.length,
+          profiles,
+          profiles[index].roster_id,
+        ),
       });
     },
     move_profile(i: number, j: number) {
@@ -316,11 +349,19 @@ export const useRosterStore = defineStore("roster", {
       };
     },
 
+    // names taken in the new region get the usual suffix
+    set_region(roster_id: string, region: MarketRegions) {
+      const config = this.roster_config;
+      config.all_regions[roster_id] = region;
+      config.profiles.forEach((p, i) => {
+        if (p.roster_id === roster_id)
+          p.char_name = format_char_name(p.char_name, i, config.profiles);
+      });
+    },
     active_region_change(event: Event) {
       const new_region = (event.target as HTMLSelectElement)
         .value as MarketRegions;
-      this.roster_config.all_regions[this.active_profile.roster_id] =
-        new_region;
+      this.set_region(this.active_profile.roster_id, new_region);
       start_fetch(new_region);
     },
   },

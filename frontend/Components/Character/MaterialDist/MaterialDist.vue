@@ -595,11 +595,12 @@ const is924Narrow = useMediaQuery("(max-width: 924px)"); // this turns out to be
               ...t4_line(t4_gain(SPECIAL_LEAP_LABELS[active_profile.tier], 0)),
             ]"
           ></MaterialCell>
-          <span
-            class="h-max text-xs leading-3 text-(--free-tap) underline hover:text-(--free-tap-bright)"
+          <button
+            class="h-max text-left text-xs leading-3 text-(--free-tap) underline hover:text-(--free-tap-bright)"
             @click="() => (show_special_guide = true)"
-            >Should I use in T4 or convert?</span
           >
+            Should I use in T4 or convert?
+          </button>
           <MaterialGraph
             :data="special_data"
             :material-label="'Special'"

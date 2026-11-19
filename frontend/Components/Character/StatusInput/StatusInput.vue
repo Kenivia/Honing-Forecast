@@ -114,7 +114,7 @@ function scroll_to_bands() {
       </div>
       <div class="my-1 flex flex-row items-center gap-2">
         <span>Treat as: </span>
-        <RoleToggle />
+        <RoleToggle role="group" aria-label="Treat as" />
         <QuestionMark>
           This controls how we value leftover materials, find out more
           <button

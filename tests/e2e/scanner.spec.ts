@@ -72,7 +72,7 @@ async function budgets(page: Page) {
 }
 
 async function open_scanner(page: Page, name: string) {
-  await hf.open(page, `/chars/${name}/scanner`);
+  await hf.open(page, `/chars/NA/${name}/scanner`);
   await expect(page.getByRole("button", { name: "Share screen" })).toBeVisible({
     timeout: 60_000,
   });
@@ -165,7 +165,7 @@ test("exports merge across characters and are snapshotted", async ({
   await page.waitForTimeout(1000);
 
   // snapshots on Bee's income page: Bee's export against Newchar's
-  await hf.open(page, "/chars/Bee/income");
+  await hf.open(page, "/chars/NA/Bee/income");
   const timeline = page.getByRole("group", { name: "Snapshots" });
   // Bee's "before" is Newchar's "after", so it is not added
   await expect(timeline.getByRole("button")).toHaveCount(3);
@@ -180,6 +180,42 @@ test("exports merge across characters and are snapshotted", async ({
   await expect(
     page.getByRole("button", { name: "Take snapshot" }),
   ).toBeDisabled();
+});
+
+// the store holding an export is not enough: the calculator and market pages must show it
+test("an export shows on the calculator and market pages", async ({ page }) => {
+  test.setTimeout(120_000);
+  await open_scanner(page, "Newchar");
+  await scan(
+    page,
+    [
+      ["Roster", 0, 0, "Red", 100, "Tradable"],
+      ["CharStorage", 0, 0, "Blue", 50, "CharBound"],
+      ["CharInventory", 0, 0, "Blue", 20, "RosterBound"],
+    ],
+    ["Roster 0", "CharStorage 0", "CharInventory 0"],
+  );
+  await expect(manifest_cell(page, "Red", "Tradable")).toHaveText("100");
+  await page.getByRole("button", { name: "Export to calculator" }).click();
+  await page.waitForTimeout(1000);
+
+  await hf.open(page, "/chars/NA/Newchar/calc");
+  await hf.toggle_column(page, "normal", 15);
+  const owned = (label: string, column: string) =>
+    hf.material_row(page, label).getByRole("textbox", { name: column });
+  await expect(owned("Blue", "Bound owned")).toHaveValue("50");
+  const chance = page.getByLabel("Chance column");
+  await chance.selectOption({ label: "Roster mats" });
+  await expect(owned("Blue", "Roster bound owned")).toHaveValue("20");
+  await chance.selectOption({ label: "Tradable" });
+  await expect(owned("Red", "Tradable owned")).toHaveValue("100");
+
+  await hf.open(page, "/market-mats");
+  const t4 = page.getByRole("group", { name: "T4 materials" });
+  const market = (label: string, column: string) =>
+    hf.material_row(t4, label).getByRole("textbox", { name: column });
+  await expect(market("Blue", "Roster bound owned")).toHaveValue("20");
+  await expect(market("Red", "Tradable owned")).toHaveValue("100");
 });
 
 test("a page not opened is taken from the last export", async ({ page }) => {
@@ -309,7 +345,9 @@ test("a custom number font needs every digit", async ({ page }) => {
 
   // applied, only its digits and "+" are kept, and a reload keeps it in view
   await apply.click();
-  const stored = await page.evaluate(() => localStorage.getItem("scanner_font"));
+  const stored = await page.evaluate(() =>
+    localStorage.getItem("scanner_font"),
+  );
   expect(stored.length).toBeGreaterThan(0);
   expect(stored.length).toBeLessThan(8000);
   await page.reload();
@@ -386,7 +424,7 @@ test("a scan moved to another roster counts its roster storage there", async ({
 });
 
 test("chests are edited on the calculator page", async ({ page }) => {
-  await hf.open(page, "/chars/Newchar/calc");
+  await hf.open(page, "/chars/NA/Newchar/calc");
   await page.getByLabel("Edit chests").check();
   await page.getByLabel("New chest count").fill("3");
   await page.getByLabel("New chest name").fill("Test box");
@@ -560,7 +598,7 @@ test("captures of two characters merge as expected", async ({
   await step("Bee", CAPTURES[3]);
 
   // the snapshots: the empty start, and one after the exports that changed something
-  await hf.open(page, "/chars/Newchar/income");
+  await hf.open(page, "/chars/NA/Newchar/income");
   const timeline = page.getByRole("group", { name: "Snapshots" });
   expect(await timeline.getByRole("button").count()).toBeGreaterThanOrEqual(3);
 });
@@ -660,7 +698,13 @@ const CHECKED = [
     // 1080p, November 2026 client: the Vestiges of the End clear chests
     name: "a capture with the November 2026 chests",
     file: "2026-11-18T15-58-07-564Z",
-    pages: ["CharInventory 0", "CharStorage 0", "CharStorage 1", "Roster 0", "Roster 1"],
+    pages: [
+      "CharInventory 0",
+      "CharStorage 0",
+      "CharStorage 1",
+      "Roster 0",
+      "Roster 1",
+    ],
   },
 ];
 
@@ -729,3 +773,83 @@ for (const checked of CHECKED) {
     expect(wrong.filter((x) => !misread.includes(x.split(":")[0]))).toEqual([]);
   });
 }
+
+// Uploads one after another on one page, each against the same file on a fresh page: a new upload
+// starts over, whatever ran before it (a finished capture, a still, a capture cut off mid-replay).
+const NEWEST = new URL(
+  "honing-forecast-2026-11-19T00-42-08-166Z.hfcap",
+  RECORDINGS,
+);
+const STILL = fileURLToPath(
+  new URL(
+    "../../scanner_setup/brightness/brightness sweep inputs/1080 char inv/50.png",
+    import.meta.url,
+  ),
+);
+const finished = (page: Page) => page.getByText("Replay finished");
+
+async function upload_capture(page: Page, capture: URL) {
+  await page
+    .getByLabel("Upload image or video")
+    .setInputFiles(fileURLToPath(capture));
+  await expect(finished(page)).toHaveCount(0);
+  await expect(finished(page)).toBeVisible({ timeout: 300_000 });
+  return unordered(await live_pages(page));
+}
+
+// a still never finishes, so wait until its reading and the OCR queue stop changing
+async function upload_still(page: Page) {
+  await page.getByLabel("Upload image or video").setInputFiles(STILL);
+  await expect(finished(page)).toHaveCount(0);
+  const state = async () =>
+    JSON.stringify([
+      await live_pages(page),
+      await page.evaluate(() => (globalThis as any).__ocr_timings?.length),
+    ]);
+  let last = "";
+  await expect
+    .poll(
+      async () => {
+        const now = await state();
+        const same = now === last && (await scan_size(page)) > 0;
+        last = now;
+        return same;
+      },
+      { timeout: 120_000, intervals: [3000] },
+    )
+    .toBe(true);
+  return unordered(await live_pages(page));
+}
+
+test("uploads in sequence on one page read like fresh ones", async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    ![CAPTURES[0], NEWEST].every((capture) => fs.existsSync(capture)) ||
+      browserName !== "chromium",
+    "local recordings, replayed in one browser",
+  );
+  test.setTimeout(2_400_000);
+  const fresh_a = await replay(page, "Newchar", CAPTURES[0]).then(unordered);
+  const fresh_new = await replay(page, "Newchar", NEWEST).then(unordered);
+  await open_scanner(page, "Newchar");
+  const fresh_still = await upload_still(page);
+  expect(Object.keys(fresh_still).length).toBeGreaterThan(1);
+
+  await open_scanner(page, "Newchar");
+  expect(await upload_capture(page, CAPTURES[0])).toEqual(fresh_a);
+  // a capture sets its own aspect and brightness; the still after it must not read with them
+  expect(await upload_still(page)).toEqual(fresh_still);
+  expect(await upload_capture(page, NEWEST)).toEqual(fresh_new);
+
+  // cut off mid-replay by another upload
+  await page
+    .getByLabel("Upload image or video")
+    .setInputFiles(fileURLToPath(NEWEST));
+  await expect(finished(page)).toHaveCount(0);
+  await expect
+    .poll(() => scan_size(page), { timeout: 120_000 })
+    .toBeGreaterThan(0);
+  expect(await upload_capture(page, CAPTURES[0])).toEqual(fresh_a);
+});

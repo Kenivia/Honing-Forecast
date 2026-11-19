@@ -1,6 +1,12 @@
 import { shallowReactive } from "vue";
 import { ocr_job_buffers, WasmOp } from "./WasmTypes";
 
+// Firefox errors the workers of a page being left, with no message
+let leaving = false;
+for (const event of ["beforeunload", "pagehide"])
+  globalThis.addEventListener?.(event, () => (leaving = true));
+globalThis.addEventListener?.("pageshow", () => (leaving = false));
+
 const createWorker = () =>
   new Worker(new URL("./WasmWorker.ts", import.meta.url), { type: "module" });
 
@@ -130,7 +136,7 @@ export function create_worker_bundle(): WorkerBundle {
 
     // a failed worker may hold a broken wasm instance, so it is never reused
     function fail(message: string) {
-      console.error(WasmOp[wasm_op], "failed:", message);
+      if (!leaving) console.error(WasmOp[wasm_op], "failed:", message);
       bundle.error = message;
       cancel_worker();
       callback?.(null);

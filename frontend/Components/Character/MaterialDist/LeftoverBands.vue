@@ -39,7 +39,7 @@ function set_band(band: number, event: Event) {
     <div class="flex flex-row items-center justify-between gap-2">
       <span class="flex flex-row items-center gap-2">
         <span class="text-(--text-muted)">Treating as</span>
-        <RoleToggle />
+        <RoleToggle role="group" aria-label="Treating as" />
       </span>
       <button
         class="w-20 shrink-0 text-right text-(--text-muted) underline hover:text-(--text-bright)"

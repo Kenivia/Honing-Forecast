@@ -21,7 +21,7 @@ vi.mock("@/Components/Character/InventoryScanner/ScanSwitchDialog.vue", () => ({
   default: { render: () => null },
 }));
 
-async function mount_shell(path = "/chars/Bob/calc") {
+async function mount_shell(path = "/chars/NA/Bob/calc") {
   const out = await mount_app(App, {}, path);
   const store = set_profiles([
     ["Alice", 0],
@@ -80,7 +80,7 @@ describe("App", () => {
   });
 
   it("has a button per roster, marking the routed character's", async () => {
-    const { wrapper } = await mount_shell("/chars/Bob/calc");
+    const { wrapper } = await mount_shell("/chars/NA/Bob/calc");
     const rosters = wrapper.findAll("header a.nav-tab").slice(3);
     expect(rosters.map((a) => a.text())).toEqual(["Roster 1", "Roster 2"]);
     expect(rosters[0].classes()).toContain("selected");
@@ -88,7 +88,7 @@ describe("App", () => {
   });
 
   it("one roster is a Character button", async () => {
-    const { wrapper } = await mount_app(App, {}, "/chars/Alice/calc");
+    const { wrapper } = await mount_app(App, {}, "/chars/NA/Alice/calc");
     set_profiles([
       ["Alice", 0],
       ["Bob", 0],
@@ -98,11 +98,11 @@ describe("App", () => {
   });
 
   it("a roster button goes back to the roster's last opened character", async () => {
-    const { wrapper, router } = await mount_shell("/chars/Bob/calc");
-    await router.push("/chars/Carol/calc");
+    const { wrapper, router } = await mount_shell("/chars/NA/Bob/calc");
+    await router.push("/chars/NA/Carol/calc");
     await flushPromises();
     const roster_1 = wrapper.findAll("header a.nav-tab")[3];
-    expect(roster_1.attributes("href")).toBe("/chars/Bob");
+    expect(roster_1.attributes("href")).toBe("/chars/NA/Bob");
     await roster_1.trigger("click");
     await flushPromises();
     expect(router.currentRoute.value.params.characterName).toBe("Bob");

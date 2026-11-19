@@ -3,11 +3,12 @@ defineProps<{
   options: { value: T; label: string }[];
   modelValue: T;
   onChange: (value: T) => void;
+  title?: string;
 }>();
 </script>
 
 <template>
-  <div class="flex grow flex-col">
+  <div class="flex grow flex-col" role="group" :aria-label="title">
     <label
       v-for="option in options"
       :key="String(option.value)"

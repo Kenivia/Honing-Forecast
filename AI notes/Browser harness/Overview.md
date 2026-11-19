@@ -56,6 +56,8 @@ Tests live in `tests/e2e/*.spec.ts` and run in both browsers. The config starts 
 
 Every test should start with `hf.watch_errors` and `hf.stub_market`, as `smoke.spec.ts` does.
 
+Two `playwright test` runs at once share `tests/test-results` and wipe each other's traces (ENOENT on `.playwright-artifacts`); give each its own `--output=<dir>`.
+
 ## Guide screenshots
 
 `pnpm guide-shots [names...]` (`scripts/guide_shots/shoot.mjs`) re-takes the Guide page's images into `public/Guide/`, one fresh stubbed-price page per shot, against the running dev server. No names = all; names are the keys of `SHOTS` (`signin`, `char-card`, `ticks`, `scanner`, `cost-dist`, `market`, `instructions`, `freetap`, `nonfreetap`). `example_char` sets up the shared example (+19/+20 on Helmet, Shoulder, Chest, 300 special leaps, a few bound mats). `scanner` replays the local `2026-10-20T11-43` capture (about 1.5 min; skipped without it). The optimizer is randomised, so the order of identical pieces in the instruction shots changes between runs; the Guide's text avoids naming them.
@@ -72,7 +74,7 @@ Every test should start with `hf.watch_errors` and `hf.stub_market`, as `smoke.s
 ## Things that will trip you up
 
 - **Never wait for network idle.** It does not resolve on this site. Wait for an element or text.
-- **Every launch is a fresh profile** with the default single character `Newchar`, except within one MCP session. `/` redirects to `/chars/Newchar/calc` (old `/<char>/...` urls redirect under `/chars/`).
+- **Every launch is a fresh profile** with the default single character `Newchar`, except within one MCP session. `/` redirects to `/chars/NA/Newchar/calc` (old `/chars/<char>/...` and `/<char>/...` urls redirect to the character's region).
 - **Saving is debounced.** Wait about a second after the last change before reloading, or the change is lost.
 - **Gold is not reproducible.** The optimizer is randomised, so the same inputs give slightly different gold between runs and browsers, even with stubbed prices.
 - **Live prices hit the author's Worker** on every fresh load. Use the stub for anything run repeatedly.
