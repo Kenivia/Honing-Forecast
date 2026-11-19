@@ -204,11 +204,7 @@ const selected_color = computed(() => {
 
     <p>Go through the upgrades in order. In this example, you should:</p>
     <ol>
-      <li>
-        Do NOT use special leaps on the first +19. Use juice & books as shown in
-        the Juice & book column (hover over the icons to see exactly which taps
-        to use them on)
-      </li>
+      <li>Do NOT use special leaps on the first +19. Use book on all taps</li>
       <li>
         Use special leaps on the next +20, until you run out of special leaps or
         succeed
