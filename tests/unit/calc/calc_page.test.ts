@@ -89,6 +89,35 @@ describe("Calc page", () => {
     expect(panels.props("states")).toBeUndefined();
   });
 
+  it("forbid outside editing forbids every stored chest in the stack", async () => {
+    const { wrapper, store } = await calc();
+    const box = (key: string, title: string, red: number) => ({
+      key,
+      title,
+      band: 1,
+      count: 1,
+      options: [{ Red: red }, { Blue: 1 }],
+      obtain_all: false,
+    });
+    store.roster_config.roster_chests[store.active_profile.roster_id] = [
+      box("a", "Box A", 1),
+      box("b", "Box B", 1),
+      box("c", "Box C", 2),
+    ];
+    await wrapper.vm.$nextTick();
+    // a and b merge into one stack, keyed by contents
+    await wrapper
+      .find('button[aria-label="Forbid Box A / Box B on this character"]')
+      .trigger("click");
+    expect(store.active_profile.forbidden_chests).toEqual(["a", "b"]);
+    expect(store.processed_chests.map((c) => c.title)).toEqual(["Box C"]);
+    // each forbidden one is shown alone, its tick lifting only its own forbid
+    await wrapper
+      .find('button[aria-label="Allow Box A on this character"]')
+      .trigger("click");
+    expect(store.active_profile.forbidden_chests).toEqual(["b"]);
+  });
+
   it("Edit chests swaps the panels for the editor", async () => {
     const { wrapper } = await calc();
     expect(wrapper.findComponent(ChestEditor).exists()).toBe(false);

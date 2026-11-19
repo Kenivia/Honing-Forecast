@@ -3,17 +3,11 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
-- ~~shift sidebar?~~
-
-- ~~new user / new character setup~~ good enough
-
-- ~~game update~~
-- ~~change pity to actually use the integer 21500~~
 
 NEXT UPDATE
 
-- rework changelog page (infinite scroll)
-- add scanner out of beta banner
+
+
 - cloud syncing
 - migrate to an actual domain name
 
@@ -46,6 +40,7 @@ NEXT UPDATE
 - save where a chest was detected from? (there'll be multiple tho?) and show it with hover?
 - enhanced book distinguishing (can i be bothered)
 - constant extraction script / update script
+- rework changelog page (infinite scroll)
 
 ## Price forecasting
 
@@ -63,7 +58,13 @@ NEXT UPDATE
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
 
 ## Done / cancelled
+- ~~shift sidebar?~~
 
+- ~~new user / new character setup~~ good enough
+
+- ~~game update~~
+- ~~change pity to actually use the integer 21500~~
+- ~~add scanner out of beta banner~~
 - ~~lostark.bible login~~
 
 - ~~get equipment icons~~

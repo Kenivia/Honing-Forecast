@@ -11,6 +11,7 @@ import { start_all_workers } from "./CharWorkerUtils.js";
 import { useRosterStore } from "@/Stores/RosterConfig.js";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 import { settle_deductions } from "./Instructions/Details/NormalDetails/SuccessUtils";
+import { process_chests } from "@/Utils/Chest";
 const runtime = useRuntimeStore();
 const store = useRosterStore();
 const {
@@ -27,6 +28,13 @@ const chests = computed(() => [...processed_chests.value, ...forbidden.value]);
 const forbidden_keys = computed(() =>
   forbidden.value.map((chest) => chest.key),
 );
+// a processed key stands for every stored chest that merges into it
+const forbid = (key: string) => {
+  if (forbidden_keys.value.includes(key)) return store.toggle_forbid(key);
+  for (const chest of store.allowed_chests)
+    if (process_chests([chest], active_profile.value.tier)[0]?.key === key)
+      store.toggle_forbid(chest.key);
+};
 // the stored chests are shown in place of these while editing
 const editing_chests = ref(false);
 const chests_open = ref(true);
@@ -107,7 +115,7 @@ onUnmounted(() => {
       :hide_count="true"
       :states="runtime.histogram.result?.state_bundle.chest_states"
       :forbidden="forbidden_keys"
-      @forbid="store.toggle_forbid"
+      @forbid="forbid"
     >
       <template #controls>
         <label class="flex items-center gap-1">
