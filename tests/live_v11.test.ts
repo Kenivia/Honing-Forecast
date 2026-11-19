@@ -31,9 +31,9 @@ check("is a V11 save", v11.version === 11);
 const migrated = migrate_to_current(structuredClone(v11), 11);
 const added = differences(migrated, v11).filter((p) => p !== ".version");
 check(
-  "adds only forbidden_chests, class_name, fetched_at, alt leftover values, new scan pages and show_suggestions",
+  "adds only forbidden_chests, class_name, fetched_at, bands_manual, alt leftover values, new scan pages and show_suggestions",
   added.every((p) =>
-    /^\.profiles\.\d+\.(forbidden_chests|class_name|fetched_at|band_values\.\d)$|^\.scan_(pages|currencies)(\.|$)|^\.show_suggestions$/.test(
+    /^\.profiles\.\d+\.(forbidden_chests|class_name|fetched_at|bands_manual|band_values\.\d)$|^\.scan_(pages|currencies)(\.|$)|^\.show_suggestions$/.test(
       p,
     ),
   ),

@@ -27,6 +27,7 @@ const editing = bands_editing;
 function set_band(band: number, event: Event) {
   active_profile.value.band_values[band] = (event.target as HTMLSelectElement)
     .value as BandValue;
+  active_profile.value.bands_manual = true;
 }
 </script>
 

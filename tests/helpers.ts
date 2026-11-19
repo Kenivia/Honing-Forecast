@@ -37,7 +37,7 @@ export function differences(got: any, want: any, path = ""): string[] {
 
 // The V12 migration's main / alt split, checked against the profiles before and after it: per
 // roster the highest achieved ilevel (first on a tie) keeps its values, every other profile
-// still on the main's values (or none) is on the alt's, the rest are untouched.
+// still on the main's values (or none) is on the alt's, the rest are untouched and marked manual.
 export function main_alt_ok(before: any[], after: any[]): boolean {
   const same = (a: unknown, b: unknown) =>
     JSON.stringify(a) === JSON.stringify(b);
@@ -48,6 +48,7 @@ export function main_alt_ok(before: any[], after: any[]): boolean {
     const top = Math.max(...roster.map(level));
     const main = roster.find((q) => level(q) === top);
     const was = p.band_values ?? MAIN_BANDS;
+    if (after[i].bands_manual !== !same(was, MAIN_BANDS)) return false;
     if (main === p || !same(was, MAIN_BANDS))
       return same(after[i].band_values ?? MAIN_BANDS, was);
     return same(after[i].band_values, ALT_BANDS);

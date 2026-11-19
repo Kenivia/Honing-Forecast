@@ -11,6 +11,10 @@ const ROLES: [string, BandPlan][] = [
 ];
 const same_bands = (a: BandPlan, b: BandPlan) =>
   a.every((value, band) => value === b[band]);
+function set_role(plan: BandPlan) {
+  active_profile.value.band_values = [...plan];
+  active_profile.value.bands_manual = true;
+}
 </script>
 
 <template>
@@ -25,7 +29,7 @@ const same_bands = (a: BandPlan, b: BandPlan) =>
           plan,
         ),
       }"
-      @click="active_profile.band_values = [...plan]"
+      @click="set_role(plan)"
     >
       {{ name }}
     </button>

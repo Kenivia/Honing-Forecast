@@ -32,6 +32,8 @@ export interface CharProfile {
 
   // what a leftover unit of each ownership band is worth
   band_values: BandPlan;
+  // whether the user has ever set band_values (Main / Alt or a band), not the default or migration
+  bands_manual: boolean;
   // which cumulative ownership band the chance column and graph annotation show, 0 to 2
   chance_band: number;
   express_event: boolean;
@@ -84,6 +86,7 @@ export interface CharProfile {
 export const DEFAULT_CHAR_PROFILE: CharProfile = {
   id: "",
   band_values: [...MAIN_BANDS],
+  bands_manual: false,
   chance_band: 0,
   express_event: false,
   char_name: "Newchar",

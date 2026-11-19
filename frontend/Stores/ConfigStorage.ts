@@ -530,7 +530,7 @@ function migrate_10_to_11(data: any): any {
 // Scan pages are saved slot by slot: the old page totals are dropped, and the currencies get
 // their own list. Profiles get forbidden chests, a class and a fetch time; the roster gets
 // show_suggestions. Each roster's highest ilevel character (the first on a tie) stays a main; the
-// others still on the main's leftover values become alts.
+// others still on the main's leftover values become alts. bands_manual marks those off them.
 function migrate_11_to_12(data: any): any {
   data.scan_pages = [];
   data.scan_currencies = [];
@@ -558,6 +558,7 @@ function migrate_11_to_12(data: any): any {
     const on_main = (profile.band_values ?? MAIN_BANDS).every(
       (value: string, band: number) => value === MAIN_BANDS[band],
     );
+    profile.bands_manual = !on_main;
     if (mains.get(profile.roster_id) !== profile && on_main)
       profile.band_values = [...ALT_BANDS];
   }

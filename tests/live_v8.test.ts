@@ -92,11 +92,11 @@ const want = rest.profiles.map((p) => ({
   class_name: "",
   fetched_at: 0,
 }));
-// leftover values are V12's main / alt split, checked on their own
+// leftover values and bands_manual are V12's main / alt split, checked on their own
 const changed = [
   ...differences(profiles, want)
     .filter(kept)
-    .filter((p) => !/^\.\d+\.band_values\./.test(p)),
+    .filter((p) => !/^\.\d+\.(band_values\.|bands_manual$)/.test(p)),
   ...differences(again.mats_prices, rest.mats_prices),
 ];
 check(

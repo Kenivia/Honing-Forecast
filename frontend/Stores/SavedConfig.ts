@@ -63,6 +63,7 @@ export interface SavedProfile {
   lock_fetched_done: boolean;
   pretend_30_40_x2_grace: boolean;
   band_values: BandPlan;
+  bands_manual: boolean;
   chance_band: number;
   normal_grid: StatusGrid;
   adv_grid: StatusGrid;
@@ -171,6 +172,7 @@ function profile_to_saved(profile: CharProfile): SavedProfile {
     lock_fetched_done: profile.lock_fetched_done,
     pretend_30_40_x2_grace: profile.pretend_30_40_x2_grace,
     band_values: profile.band_values,
+    bands_manual: profile.bands_manual,
     chance_band: profile.chance_band,
     normal_grid: profile.normal_grid,
     adv_grid: profile.adv_grid,
@@ -248,6 +250,7 @@ function profile_from_saved(
     pretend_30_40_x2_grace:
       saved.pretend_30_40_x2_grace ?? defaults.pretend_30_40_x2_grace,
     band_values: valid_band_values(saved.band_values, defaults.band_values),
+    bands_manual: saved.bands_manual ?? defaults.bands_manual,
     chance_band: Math.min(
       Math.max(saved.chance_band ?? defaults.chance_band, 0),
       NUM_BANDS - 1,
