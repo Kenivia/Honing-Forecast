@@ -27,6 +27,7 @@ import {
   moved_save,
   use_moved_save,
 } from "./ConfigStorage";
+import { settle_import } from "@/Utils/MoveReport";
 import { process_chests, type Chest, type ManifestChest } from "@/Utils/Chest";
 import type { ScanCurrencies, ScanPage, Snapshot } from "@/Utils/Scans";
 import type { CustomChoice } from "@/Utils/Choices";
@@ -272,10 +273,13 @@ export const useRosterStore = defineStore("roster", {
     init() {
       let config = load_roster_config();
       const save = moved_in_save();
-      if (save && fresh_profile_id(config) && !config.snapshots.length) {
+      const applied =
+        !!save && !!fresh_profile_id(config) && !config.snapshots.length;
+      if (applied) {
         use_moved_save(save);
         config = load_roster_config();
       } else moved_save.value = save;
+      settle_import(!save || applied);
       this.roster_config = config;
     },
     replace_config(config: RosterConfig) {

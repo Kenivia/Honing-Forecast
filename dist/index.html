@@ -27,7 +27,7 @@
             const safe = (p) => (p && p[0] === "/" && p[1] !== "/" && p[1] !== "\\" ? p : "/");
             const to = safe(step ? h.get("to") : location.pathname + location.search + location.hash);
             // via migrate/ so it sets the "moved" banner; once moved, straight to the app
-            const go = () => location.replace(TO + "/migrate/#" + new URLSearchParams({ hfm: "arrive", to }));
+            const go = (why, err = "") => location.replace(TO + "/migrate/#" + new URLSearchParams({ hfm: "arrive", to, why, err }));
             const straight = () => location.replace(TO + to);
             try {
                 if (step === "done") localStorage.setItem(MOVED, "1");
@@ -36,7 +36,7 @@
                 if (part === 0) {
                     // a browser that never gets through stops trying after 3 visits
                     const tries = Number(localStorage.getItem(TRIES) ?? 0);
-                    if (tries >= 3) return go();
+                    if (tries >= 3) return go("gave_up");
                     localStorage.setItem(TRIES, String(tries + 1));
                 }
                 const entries = {};
@@ -46,7 +46,7 @@
                 }
                 if (!Object.keys(entries).length) {
                     localStorage.setItem(MOVED, "1");
-                    return go();
+                    return go("empty");
                 }
                 const stream = new Blob([JSON.stringify(entries)]).stream().pipeThrough(new CompressionStream("deflate-raw"));
                 const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
@@ -54,15 +54,15 @@
                 for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
                 const data = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
                 const of = Math.ceil(data.length / CHUNK);
-                if (!(part >= 0 && part < of)) return go();
+                if (!(part >= 0 && part < of)) return go("bad_part");
                 const q = new URLSearchParams({ n: part, of, len: data.length, to });
                 location.replace(TO + "/migrate/#" + q + "&d=" + data.slice(part * CHUNK, (part + 1) * CHUNK));
-            } catch {
-                go();
+            } catch (e) {
+                go("error", String(e).slice(0, 200));
             }
         })();
     </script>
-  <script type="module" crossorigin src="/assets/main-DKfkhc5q.js"></script>
+  <script type="module" crossorigin src="/assets/main-CUUrAUoR.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/main-5V5_0S7S.css">
 </head>
 

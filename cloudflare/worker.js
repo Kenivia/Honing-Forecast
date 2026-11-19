@@ -64,6 +64,10 @@ export default {
         return await handleSnapshots(request, env, ctx);
       }
 
+      if (request.method === "POST" && url.pathname === "/moves") {
+        return await handleMove(request, env);
+      }
+
       return reply("Not Found", 404);
     } catch (e) {
       return reply(`Worker error: ${e.message}`, 500);
@@ -161,6 +165,30 @@ const valid_name = (name) => !!name && !/^Newchar\d*$/.test(name);
 
 // One roster's snapshots, stored with each character's recent raids from lostark.bible and
 // without anything that names the character.
+// one row per domain-move outcome a browser reports
+async function handleMove(request, env) {
+  const body = await request.text();
+  if (body.length > 2000) return reply("Too large", 413);
+  const { site, version, outcome, error, chunks, bytes } = JSON.parse(body);
+  if (typeof outcome !== "string") return reply("Bad report", 400);
+  const text = (v) => (typeof v === "string" ? v.slice(0, 300) : null);
+  const int = (v) => (Number.isInteger(v) ? v : null);
+  await env.DB.prepare(
+    `INSERT INTO moves (received, site, version, outcome, error, chunks, bytes) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  )
+    .bind(
+      Date.now(),
+      text(site),
+      text(version),
+      text(outcome),
+      text(error),
+      int(chunks),
+      int(bytes),
+    )
+    .run();
+  return reply("ok", 200, "text/plain", false);
+}
+
 async function handleSnapshots(request, env, ctx) {
   const body = await request.text();
   if (body.length > MAX_UPLOAD) {

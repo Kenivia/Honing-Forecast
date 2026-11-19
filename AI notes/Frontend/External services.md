@@ -36,6 +36,10 @@ The budget snapshots (`Screen scanner/Manifest.md`) are uploaded so the author c
   - **Tying spending to upgrades**: only scan-to-scan changes ("After export" to a later "After export" of the same character) are what the game shows; "After" to the next "Before" is the app's own auto-deduction and hand edits. A Want to FetchedDone flip can come from a lostark.bible fetch with no spending at all. Roster-bound and tradable stock is shared, so the roster's other characters must not have upgraded in the same window. Shards and gold are currencies and keep their saved value when not read. A check that works: per material, (decrease minus unlock cost) / expected tap cost should come out one factor (taps relative to expected); armour and weapon apart, since Blue is armour-only and Red weapon-only in Serca. A material the character has disabled (the default for Shards) is not deducted; uploads say so in `disabled` (`Manifest.md`, "Snapshots").
 - **Testing**: the deployed Worker is whitelisted by lostark.bible (Workers are blocked by default), the logs endpoint included. `wrangler dev --local` runs the route against a local D1 (keyed by `database_id`; apply the schema with `d1 execute --local --file`), but lostark.bible answers 403 to it, the character proxy included, so raids come back as "error 403" there. Point a dev server at it with `VITE_WORKER_URL=http://localhost:8788 npx vite --port <p>`; a Playwright-driven page needs `navigator.webdriver` overridden in an init script to upload at all.
 
+## Domain move reports
+
+`POST /moves` stores one row per domain-move outcome in D1 `moves`; see `Domain move.md`, "Monitoring".
+
 ## Market prices
 
 `Utils/MarketDataFetcher.ts`.

@@ -16,16 +16,31 @@ import {
 } from "@/Stores/ConfigStorage";
 import { other_tabs } from "@/Utils/OtherTabs";
 import { download_json } from "@/Utils/Helpers";
+import { send_move_report } from "@/Utils/MoveReport";
 
 const store = useRosterStore();
 const OLD_SITE = import.meta.env.VITE_MIGRATE_FROM;
-const host = location.host;
+// const host = location.host;
 
 // the store reloads too, or pagehide would write this site's save back
-function use_old_save() {
+async function use_old_save() {
   use_moved_save(moved_save.value);
   store.init();
+  await send_move_report({ outcome: "chose_old" });
   location.reload();
+}
+
+function download_old_save() {
+  download_json(
+    "honing-forecast-old-site-save.json",
+    moved_backup(moved_save.value),
+  );
+  send_move_report({ outcome: "chose_download" });
+}
+
+function discard_old_save() {
+  discard_moved_save();
+  send_move_report({ outcome: "chose_discard" });
 }
 </script>
 
@@ -34,31 +49,20 @@ function use_old_save() {
     Your save from {{ OLD_SITE }} was not loaded, because this site already has
     one. Download it to keep as a backup, or use it in place of this one.
     <template #actions>
-      <button
-        class="generic-button"
-        @click="
-          download_json(
-            'honing-forecast-old-site-save.json',
-            moved_backup(moved_save),
-          )
-        "
-      >
+      <button class="generic-button" @click="download_old_save">
         Download
       </button>
       <button class="generic-button" @click="use_old_save">
         Use it instead
       </button>
-      <button class="generic-button" @click="discard_moved_save">
-        Discard
-      </button>
+      <button class="generic-button" @click="discard_old_save">Discard</button>
     </template>
   </Banner>
   <Banner v-else-if="moved_notice === 'failed'">
-    Your saved data couldn't be moved from the old site. Open
-    <a class="underline" :href="`${OLD_SITE}/roster-setup?stay`">{{
-      OLD_SITE
-    }}</a>, download a backup under Backup on the roster page, then import it
-    here.
+    Your saved data couldn't be moved from the old site.
+    <a class="underline" :href="`${OLD_SITE}/roster-setup?stay`"
+      >Use this link</a
+    >, download a backup under Backup on the roster page, then import it here.
     <template #actions>
       <button class="generic-button" @click="dismiss_moved_notice">
         Dismiss
@@ -66,7 +70,7 @@ function use_old_save() {
     </template>
   </Banner>
   <Banner v-else-if="moved_notice === 'moved'" tone="info">
-    Honing Forecast has moved to a real domain name! ({{ host }}).
+    Honing Forecast has moved to a real domain name!.
     <template #actions>
       <button class="generic-button" @click="dismiss_moved_notice">
         Dismiss

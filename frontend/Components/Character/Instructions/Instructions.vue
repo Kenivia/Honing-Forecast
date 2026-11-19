@@ -93,11 +93,6 @@ const row_name = (u: Upgrade) =>
           <QuestionMark position="right">
             The purpose of this is to do the Free Taps in the specified order.
             There are many other equivalent orderings.
-            <RouterLink
-              to="/info/overview"
-              class="block w-fit text-(--gold)! underline!"
-              >Learn more here</RouterLink
-            >
           </QuestionMark>
         </div>
         <span v-if="is_normal">Special usage</span>

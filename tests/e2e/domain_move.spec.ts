@@ -19,9 +19,24 @@ const SAVE = LZString.compressToUTF16(BACKUP);
 const FIRST_CHAR = JSON.parse(BACKUP).profiles[0].char_name;
 
 let errors: string[];
+// what the app reported to the Worker's /moves (Utils/MoveReport.ts), stubbed so nothing reaches D1
+let reports: Record<string, unknown>[];
+const outcomes = () => reports.map((r) => r.outcome);
 test.beforeEach(async ({ page }) => {
   errors = hf.watch_errors(page);
+  reports = [];
   await hf.stub_market(page);
+  await page.route(/workers\.dev\/moves$/, (r) => {
+    if (r.request().method() === "POST")
+      reports.push(r.request().postDataJSON());
+    return r.fulfill({
+      body: "ok",
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
+    });
+  });
   // Cloudflare Web Analytics, injected on the deployed sites; its beacon logs a CORS error on pages.dev
   await page.route(/cloudflareinsights\.com/, (r) =>
     r.fulfill({ contentType: "text/javascript", body: "" }),
@@ -66,6 +81,8 @@ test("nothing saved: redirects, keeps the path, says it moved once", async ({
   await expect(moved_notice(page)).toHaveCount(0);
   await arrive(page, "/roster-setup"); // through the old link again
   await expect(moved_notice(page)).toHaveCount(0);
+  await expect.poll(outcomes).toEqual(["empty"]);
+  expect(reports[0].site).toBe(new URL(NEW).host);
 });
 
 test("a save moves over, then later visits redirect straight away", async ({
@@ -79,6 +96,8 @@ test("a save moves over, then later visits redirect straight away", async ({
   expect(moved.scanner_settings).toBe('{"a":1}');
   expect(moved.hf_moved_in).toBeUndefined();
   expect((await storage(page, OLD)).hf_moved).toBe("1");
+  await expect.poll(outcomes).toEqual(["moved"]);
+  expect(reports[0]).toMatchObject({ chunks: 1, version: "development" });
 
   const hops: string[] = [];
   page.on(
@@ -96,6 +115,7 @@ test("the new site's untouched default save is replaced", async ({ page }) => {
   await storage(page, OLD, { [SAVE_KEY]: SAVE });
   await arrive(page, "/roster-setup");
   await expect(first_char(page)).toBeVisible();
+  expect(outcomes()).toEqual(["moved"]);
 });
 
 test("the new site's own save stays; the old one can be used instead", async ({
@@ -124,6 +144,9 @@ test("the new site's own save stays; the old one can be used instead", async ({
   // a full reload, slow in Firefox under parallel load
   await expect(first_char(page)).toBeVisible({ timeout: 20_000 });
   await expect(banner).toHaveCount(0);
+  await expect
+    .poll(outcomes)
+    .toEqual(["conflict", "chose_download", "chose_old"]);
 });
 
 test("a large save moves in several chunks", async ({ page }) => {
@@ -159,12 +182,17 @@ test("a failed move says so; ?stay keeps the old site open", async ({
     `${NEW}/migrate/#n=0&of=1&len=4&to=%2Froster-setup&d=AAAA`,
   );
   await page.waitForURL(NEW + "/roster-setup");
-  await expect(
-    page.getByRole("alert").filter({ hasText: "couldn't be moved" }),
-  ).toBeVisible();
+  const banner = page
+    .getByRole("alert")
+    .filter({ hasText: "couldn't be moved" });
+  await expect(banner).toBeVisible();
   errors.length = 0; // the receiver logs the failure
+  await expect.poll(outcomes).toEqual(["failed"]);
+  expect(reports[0].error).toBeTruthy();
 
-  await hf.open(page, `${OLD}/roster-setup?stay`);
+  await banner.getByRole("link", { name: "Use this link" }).click();
+  await page.waitForURL(`${OLD}/roster-setup?stay`);
+  await expect(page.getByRole("link", { name: "Roster setup" })).toBeVisible();
   expect(page.url()).toBe(`${OLD}/roster-setup?stay`);
 });
 
@@ -177,6 +205,8 @@ test("gives up sending after 3 visits", async ({ page }) => {
     await page.goto(OLD + "/roster-setup");
     await page.waitForURL(/#n=0/);
   }
+  await page.unroute(`${NEW}/migrate/`);
   await page.goto(OLD + "/roster-setup");
-  await page.waitForURL(/#hfm=arrive/);
+  await page.waitForURL(NEW + "/roster-setup");
+  await expect.poll(outcomes).toEqual(["gave_up"]);
 });
