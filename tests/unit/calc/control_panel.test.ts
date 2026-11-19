@@ -94,7 +94,7 @@ describe("Leftover band values", () => {
 
   it("Main and Alt set the presets; anything else reads Custom", async () => {
     const { wrapper, store } = await setup_bands();
-    expect(wrapper.text()).toContain("We consider every possible outcome");
+    expect(wrapper.text()).toContain("We consider all possible outcomes");
     await button(wrapper, "Alt").trigger("click");
     expect(store.active_profile.band_values).toEqual(ALT_BANDS);
     expect(wrapper.text()).not.toContain("Custom");

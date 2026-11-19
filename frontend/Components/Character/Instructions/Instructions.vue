@@ -41,17 +41,17 @@ const grid: GridConfig = props.is_normal
   ? {
       grid_template_columns:
         //  66 px fits Weapon, Shoulder still doesn't fit but whatever
-        "minmax(66px, 70px) minmax(70px,100px) minmax(80px,100px) minmax(256px, max-content) max-content",
+        "minmax(66px, 70px) minmax(70px,100px) minmax(80px,100px) minmax(256px, 1fr) max-content",
     }
   : {
       grid_template_columns:
-        "minmax(75px, 85px) minmax(256px, max-content)  max-content",
+        "minmax(75px, 85px) minmax(256px, 1fr)  max-content",
     };
 
 const optimizer_working = computed(get_optimizer_working);
 </script>
 <template>
-  <div class="card-shell">
+  <div class="card-shell w-[1032px]! max-w-full">
     <div class="card-header">
       <div class="card-title">
         {{
@@ -75,7 +75,7 @@ const optimizer_working = computed(get_optimizer_working);
     </div>
 
     <div
-      class="card-body outer-grid"
+      class="card-body outer-grid w-full!"
       :style="{
         '--grid-cols': grid.grid_template_columns,
       }"

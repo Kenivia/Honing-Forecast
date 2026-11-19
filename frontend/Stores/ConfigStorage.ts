@@ -16,13 +16,14 @@ import { ilevel } from "@/Utils/HoningUtil";
 import { RosterConfig } from "./RosterConfig";
 import { from_saved, SavedColumn, SavedConfig, to_saved } from "./SavedConfig";
 
-export const STORAGE_VERSION = 12;
-export const STORAGE_KEY = "HF_CONFIG_V12_COMPRESSED";
+export const STORAGE_VERSION = 13;
+export const STORAGE_KEY = "HF_CONFIG_V13_COMPRESSED";
 
 // Older keys, newest first. On a version bump, move the current key to the top of
 // this list. `version` is only a fallback for pre-V8 saves, which carry no version
 // inside the payload.
 const LEGACY_KEYS: { key: string; version: number }[] = [
+  { key: "HF_CONFIG_V12_COMPRESSED", version: 12 },
   { key: "HF_CONFIG_V11_COMPRESSED", version: 11 },
   { key: "HF_CONFIG_V10_COMPRESSED", version: 10 },
   { key: "HF_CONFIG_V9_COMPRESSED", version: 9 },
@@ -47,6 +48,7 @@ const MIGRATIONS: Record<number, (data: any) => any> = {
   9: migrate_9_to_10,
   10: migrate_10_to_11,
   11: migrate_11_to_12,
+  12: migrate_12_to_13,
 };
 
 // ============================================================================
@@ -563,5 +565,12 @@ function migrate_11_to_12(data: any): any {
       profile.band_values = [...ALT_BANDS];
   }
   data.version = 12;
+  return data;
+}
+
+// The free-tap "only if all free taps failed" hint can be dismissed.
+function migrate_12_to_13(data: any): any {
+  data.hide_free_tap_hint ??= false;
+  data.version = 13;
   return data;
 }

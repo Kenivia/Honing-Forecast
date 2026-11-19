@@ -76,10 +76,10 @@ function set_band(band: number, event: Event) {
         </template>
       </div>
       <span class="annotation text-left text-xs! leading-4!">
-        We consider every possible outcome. For each outcome, any leftover
+        We consider all possible outcomes. For each outcome, any leftover
         material is converted to gold according to these settings. For example,
-        if Roster is set to "nothing", then any leftover roster-bound material
-        is considered 0 gold.
+        if Roster-bound is set to "nothing", then any leftover roster-bound
+        material is considered 0 gold.
       </span>
     </template>
   </div>

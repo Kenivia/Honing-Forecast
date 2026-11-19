@@ -31,9 +31,6 @@ const actual_expanded = computed(
 </script>
 
 <template>
-  <div v-if="free_tap_this_upgrade && !actual_expanded">
-    <!-- placeholder  to push details to the right -->
-  </div>
   <div
     v-if="!actual_expanded"
     class="flex w-full flex-col items-center"

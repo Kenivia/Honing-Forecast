@@ -64,6 +64,7 @@ export interface RosterConfig {
   // budget snapshots are uploaded unless the user opts out (Utils/Analytics.ts)
   analytics: boolean;
   show_suggestions: boolean;
+  hide_free_tap_hint: boolean;
 }
 
 export function create_default_owned_input_column(): InputColumn {
@@ -115,6 +116,7 @@ export function default_roster_config(): RosterConfig {
     auto_fetch: true,
     analytics: true,
     show_suggestions: true,
+    hide_free_tap_hint: false,
   };
 }
 

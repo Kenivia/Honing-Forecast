@@ -298,7 +298,7 @@ const special_grid: GridConfig = {
 
 <template>
   <div
-    :class="is_free_tap ? 'col-span-2 grid' : 'grid w-full pl-5'"
+    class="grid w-full pl-5"
     :style="{
       gridTemplateColumns: is_free_tap
         ? special_grid.grid_template_columns
@@ -383,14 +383,15 @@ const special_grid: GridConfig = {
         Succeed
       </button>
 
-      <span class="self-center pr-1 text-right"
+      <span class="annotation col-span-3 py-1 text-right"
         >({{ locale_to_fixed(upgrade.this_special_chance * 100, 2) }}% chance to
         succeed{{
           index_in_special_state === 0 ? "" : " this upgrade AND the above"
         }})
       </span>
+      <div></div>
       <button
-        class="generic-button col-span-2 mr-5 text-(--free-tap)!"
+        class="generic-button col-span-2 text-(--free-tap)!"
         @click="special_fail_click"
       >
         All free taps failed

@@ -28,7 +28,7 @@ Data in `roster_config` lives at four scopes:
 | Per character | Upgrade grids, keyed upgrades, bound material budgets, free-tap budget, chests, forbidden chest keys (its own or the roster's), tier, band values, optimizer settings. |
 | Per roster | Roster-owned materials, tradable materials, roster chests, region, the scanner's saved pages and the budget snapshots (both lists in the config, filtered by roster), manual roster-bound and tradable income, the Choices page's custom choice. |
 | Per region | Market prices per bundle, the chosen bundle per material, the last fetched market response. |
-| Global | UI flags, the active character index, last seen version, whether the scanner's beta banner was dismissed, whether snapshots are shared (`analytics`). |
+| Global | UI flags, the active character index, last seen version, whether the scanner's beta banner was dismissed, whether snapshots are shared (`analytics`), whether the free-tap juice hint was dismissed (`hide_free_tap_hint`). |
 
 A profile's `bands_manual` records whether the user has ever set its band values: any Main / Alt click (even on the selected one) or band dropdown sets it; the default, the V12 split and `Reset this char` leave it false. Nothing reads it yet (kept for a later feature, not shown).
 
@@ -60,7 +60,7 @@ Runtime worker bundles are keyed by profile id. `App.vue` watches the list of id
 
 `SavedConfig.ts` defines the saved shape and converts to and from it; `ConfigStorage.ts` owns localStorage and the migrations.
 
-- One key, `HF_CONFIG_V12_COMPRESSED`, lz-string-compressed JSON, with the version **also inside** the payload. The key carries the version so a save is never read by code that predates it; the payload version drives the migration chain.
+- One key, `HF_CONFIG_V13_COMPRESSED`, lz-string-compressed JSON, with the version **also inside** the payload. The key carries the version so a save is never read by code that predates it; the payload version drives the migration chain.
 - One column per scope, not one per tier, so a material shared between tiers is stored once.
 - Two rules govern the shape: nothing derivable from `Constants.ts` is stored, and material values are keyed by **label**, never by row index. Reordering, inserting or removing a material row is therefore not a save-shape change.
 - `to_saved` / `from_saved` are explicit. A field that is not listed is not saved, so transient state cannot leak in by being added to the store.
@@ -90,6 +90,7 @@ A profile's `chests` are saved as the scanner exported them (title, band, count,
 `migrate_10_to_11` gives every profile `income_auto` (off) and `income_sources` (`{}`) where missing; that is all V11 changes.
 
 `migrate_11_to_12` empties `scan_pages`, whose page totals gave way to pages saved slot by slot (`Screen scanner/Manifest.md`), adds an empty `scan_currencies` and `show_suggestions` (on), and gives every profile an empty `forbidden_chests`, an empty `class_name` and a `fetched_at` of 0. It also splits each roster into a main and alts: the highest achieved ilevel (first in the list on a tie, "?" lowest) keeps its `band_values`, and every other profile still on `MAIN_BANDS` (or with none) gets `ALT_BANDS`; hand-set values are kept. It also sets `bands_manual`: true for a profile that was off `MAIN_BANDS` (hand-set), false otherwise, whether it stayed a main or became an alt. That is all V12 changes. The first export of each character after it starts from nothing saved. `tests/live_v10.test.ts` runs both on the real V10 saves, `tests/live_v11.test.ts` the second on a real V11 save.
+`migrate_12_to_13` adds `hide_free_tap_hint` (off); that is all V13 changes. `tests/live_v12.test.ts` runs it on a real V12 export.
 
 `migrate_7_to_8` **drops** V7's `optimizer_treatment_plan` rather than mapping it, so `band_values` is left out and `profile_from_saved` supplies the default. `histogram_treatment_plan` is a different setting — which ownership line the chance column reads — and becomes `chance_band`. `leftover_price` is dropped too.
 

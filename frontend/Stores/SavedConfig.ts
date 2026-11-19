@@ -109,6 +109,7 @@ export interface SavedConfig {
   auto_fetch: boolean;
   analytics: boolean;
   show_suggestions: boolean;
+  hide_free_tap_hint: boolean;
 }
 
 // ============================================================================
@@ -381,6 +382,7 @@ export function to_saved(config: RosterConfig): Omit<SavedConfig, "version"> {
     auto_fetch: config.auto_fetch,
     analytics: config.analytics,
     show_suggestions: config.show_suggestions,
+    hide_free_tap_hint: config.hide_free_tap_hint,
   };
 }
 
@@ -458,6 +460,7 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
   out.custom_choices = saved.custom_choices ?? {};
   out.analytics = saved.analytics ?? out.analytics;
   out.show_suggestions = saved.show_suggestions ?? out.show_suggestions;
+  out.hide_free_tap_hint = saved.hide_free_tap_hint ?? out.hide_free_tap_hint;
 
   return out;
 }

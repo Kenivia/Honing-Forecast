@@ -21,7 +21,7 @@ import AdvancedDetails from "@/Components/Character/Instructions/Details/Advance
 import HoverTip from "@/Components/Common/HoverTip.vue";
 import UpgradeTip from "@/Components/Character/Instructions/UpgradeTip.vue";
 
-const { active_profile } = storeToRefs(useRosterStore());
+const { active_profile, roster_config } = storeToRefs(useRosterStore());
 
 const props = defineProps<{
   upgrade: Upgrade;
@@ -114,7 +114,25 @@ const optimizer_working = computed(get_optimizer_working);
     </span>
   </div>
 
-  <ActualInstructions v-if="!free_tap_this_upgrade" :upgrade="props.upgrade" />
+  <!-- on a free-tap row the juice instructions only apply once the free taps fail -->
+  <div class="flex min-w-0 flex-row items-center">
+    <div
+      v-if="free_tap_this_upgrade && !roster_config.hide_free_tap_hint"
+      class="annotation flex shrink-0 flex-col items-center gap-1 px-2 text-nowrap"
+    >
+      <span>&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;</span>
+      <span>Only if all</span>
+      <span>free taps failed</span>
+      <span>&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;</span>
+      <button
+        class="annotation cursor-pointer underline"
+        @click="roster_config.hide_free_tap_hint = true"
+      >
+        OK
+      </button>
+    </div>
+    <ActualInstructions class="min-w-0" :upgrade="props.upgrade" />
+  </div>
 
   <div class="contents" v-if="!any_overwritten">
     <NormalDetailsWrapper
@@ -142,7 +160,6 @@ const optimizer_working = computed(get_optimizer_working);
     class="flex w-full flex-col text-left"
     :style="{
       backgroundColor: any_overwritten ? 'var(--warning-dark)' : 'transparent',
-      gridColumn: free_tap_this_upgrade ? 'span 2' : 'span 1',
     }"
   >
     <span> &lt;&lt;&lt; FOR COMPARISON PURPOSE ONLY, DO NOT FOLLOW!</span>
