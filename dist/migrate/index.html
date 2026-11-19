@@ -7,7 +7,7 @@
     <link rel="icon" type="image/webp" href="/Icons/Forecast Icon.webp" />
     <title>Honing Forecast</title>
     <style>
-        html { color-scheme: dark; }
+        html { background: #0d0d11; color-scheme: dark; } /* --bg-very-muted */
     </style>
     <script>
         // Domain move, new site's side: collects the old site's chunks (index.html), fills in the keys this browser
@@ -24,7 +24,7 @@
             const to = safe(h.get("to"));
             const open = (notice) => {
                 try {
-                    if (notice) localStorage.setItem(NOTICE, notice);
+                    if (notice && localStorage.getItem(NOTICE) !== "seen") localStorage.setItem(NOTICE, notice);
                 } catch {}
                 location.replace(to);
             };
@@ -57,7 +57,7 @@
                 }
                 if (Object.keys(save).length) localStorage.setItem("hf_moved_in", JSON.stringify(save));
                 localStorage.setItem(DONE, "1");
-                localStorage.setItem(NOTICE, "moved");
+                if (localStorage.getItem(NOTICE) !== "seen") localStorage.setItem(NOTICE, "moved");
                 back({ hfm: "done" });
             } catch (e) {
                 console.error("domain move failed", e);

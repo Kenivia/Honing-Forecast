@@ -17,6 +17,7 @@
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:e2e:staging": "playwright test --config playwright.staging.config.ts",
     "browsers": "playwright install chromium firefox && playwright-mcp install-browser firefox",
     "arena": "cargo run --release -q -p hf-arena --",
     "lab": "node scripts/lab/lab.mjs",

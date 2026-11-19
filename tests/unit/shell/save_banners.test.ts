@@ -88,7 +88,7 @@ describe("save banners", () => {
     const w = banners();
     expect(w.find('[role="status"]').text()).toContain("has moved to");
     await w.find('[role="status"] button').trigger("click");
-    expect(localStorage.getItem("hf_moved_notice")).toBeNull();
+    expect(localStorage.getItem("hf_moved_notice")).toBe("seen");
     expect(w.find('[role="status"]').exists()).toBe(false);
   });
 });

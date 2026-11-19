@@ -65,9 +65,8 @@ function use_old_save() {
       </button>
     </template>
   </Banner>
-  <Banner v-else-if="moved_notice" tone="info">
-    Honing Forecast has moved to <b>{{ host }}</b>. Anything you had saved on
-    the old site came with it; please update your bookmarks.
+  <Banner v-else-if="moved_notice === 'moved'" tone="info">
+    Honing Forecast has moved to a real domain name! ({{ host }}).
     <template #actions>
       <button class="generic-button" @click="dismiss_moved_notice">
         Dismiss

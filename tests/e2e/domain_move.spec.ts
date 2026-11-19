@@ -7,8 +7,9 @@ import crypto from "node:crypto";
 import LZString from "lz-string";
 import * as hf from "./helpers.ts";
 
-const OLD = "http://localhost:5174";
-const NEW = "http://127.0.0.1:5174";
+// playwright.staging.config.ts points these at the deployed staging pair
+const OLD = process.env.HF_MOVE_OLD ?? "http://localhost:5174";
+const NEW = process.env.HF_MOVE_NEW ?? "http://127.0.0.1:5174";
 const SAVE_KEY = "HF_CONFIG_V13_COMPRESSED";
 const BACKUP = fs.readFileSync(
   new URL("../honing-forecast-2026-10-17.json", import.meta.url),
@@ -21,6 +22,10 @@ let errors: string[];
 test.beforeEach(async ({ page }) => {
   errors = hf.watch_errors(page);
   await hf.stub_market(page);
+  // Cloudflare Web Analytics, injected on the deployed sites; its beacon logs a CORS error on pages.dev
+  await page.route(/cloudflareinsights\.com/, (r) =>
+    r.fulfill({ contentType: "text/javascript", body: "" }),
+  );
   for (const site of [OLD, NEW])
     await page.route(`${site}/seed`, (r) =>
       r.fulfill({ contentType: "text/html", body: "<html></html>" }),
@@ -52,11 +57,15 @@ const first_char = (page: Page) =>
 const moved_notice = (page: Page) =>
   page.getByRole("status").filter({ hasText: "has moved to" });
 
-test("nothing saved: redirects, keeps the path, says it moved", async ({
+test("nothing saved: redirects, keeps the path, says it moved once", async ({
   page,
 }) => {
   await arrive(page, "/roster-setup");
   await expect(moved_notice(page)).toBeVisible();
+  await hf.open(page, NEW + "/roster-setup");
+  await expect(moved_notice(page)).toHaveCount(0);
+  await arrive(page, "/roster-setup"); // through the old link again
+  await expect(moved_notice(page)).toHaveCount(0);
 });
 
 test("a save moves over, then later visits redirect straight away", async ({
@@ -77,7 +86,7 @@ test("a save moves over, then later visits redirect straight away", async ({
     (f) => f === page.mainFrame() && hops.push(f.url()),
   );
   await arrive(page, "/roster-setup");
-  expect(hops.filter((u) => u.includes("#n=")).length).toBe(0);
+  expect(hops.filter((u) => u.includes("/migrate/")).length).toBe(0);
 });
 
 test("the new site's untouched default save is replaced", async ({ page }) => {
