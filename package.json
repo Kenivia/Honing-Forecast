@@ -23,6 +23,7 @@
     "change-log": "python ./scripts/change_log_helper/build.py",
     "check": "vue-tsc --noEmit",
     "no-test-build": "pnpm run wasm && vite build",
+    "staging-build": "pnpm run wasm && vite build --mode staging",
     "build": "pnpm run test && pnpm run no-test-build",
     "updates": "rustup update && cargo install wasm-pack --force && cargo update && pnpm update",
     "no-check-deploy": "git push origin main:Production --force-with-lease",
