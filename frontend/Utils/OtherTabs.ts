@@ -2,7 +2,7 @@ import { useBroadcastChannel } from "@vueuse/core";
 import { ref, watch } from "vue";
 
 // Every tab saves the whole config, so a second one overwrites the first's changes. Tabs
-// greet each other here, once per page load, and OtherTabBanner warns while another is open.
+// greet each other here, once per page load, and a banner in Sidebar.vue warns while another is open.
 type Message = { id: string; kind: "hello" | "here" | "bye" };
 
 const id = crypto.randomUUID();

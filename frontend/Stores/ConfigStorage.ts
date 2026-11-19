@@ -109,6 +109,39 @@ export function discard_broken(state: { roster_config: RosterConfig }) {
   if (paused) write_state(state);
 }
 
+// The old domain's save keys, parked by migrate/index.html until RosterConfig's init uses them or,
+// when this site already has a save of its own, the user picks in its banner (Sidebar.vue).
+const MOVED_IN_KEY = "hf_moved_in";
+export const moved_save = shallowRef<Record<string, string> | null>(null);
+
+export function moved_in_save(): Record<string, string> | null {
+  return JSON.parse(localStorage.getItem(MOVED_IN_KEY) ?? "null");
+}
+
+export function use_moved_save(save: Record<string, string>) {
+  for (const { key } of ALL_KEYS) localStorage.removeItem(key);
+  for (const [key, raw] of Object.entries(save)) localStorage.setItem(key, raw);
+  discard_moved_save();
+}
+
+export function discard_moved_save() {
+  localStorage.removeItem(MOVED_IN_KEY);
+  moved_save.value = null;
+}
+
+// "moved" or "failed", set by migrate/index.html until dismissed
+const NOTICE_KEY = "hf_moved_notice";
+export const moved_notice = shallowRef(localStorage.getItem(NOTICE_KEY));
+export function dismiss_moved_notice() {
+  localStorage.removeItem(NOTICE_KEY);
+  moved_notice.value = null;
+}
+
+export function moved_backup(save: Record<string, string>): string {
+  const { key, version } = ALL_KEYS.find((k) => k.key in save);
+  return broken_backup({ key, version, raw: save[key], kept: true });
+}
+
 function load_compressed(key: string): any {
   const compressed = localStorage.getItem(key);
   if (compressed === null) {

@@ -7,6 +7,7 @@ import {
 } from "@/Stores/ConfigStorage";
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
+import { download_json } from "@/Utils/Helpers";
 
 const store = useRosterStore();
 const { roster_config } = storeToRefs(store);
@@ -15,16 +16,11 @@ const file_input = ref<HTMLInputElement | null>(null);
 const import_error = ref("");
 
 function download_backup() {
-  const blob = new Blob([export_config(roster_config.value)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
   const today = new Date().toISOString().slice(0, 10);
-  link.download = `honing-forecast-${today}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
+  download_json(
+    `honing-forecast-${today}.json`,
+    export_config(roster_config.value),
+  );
 }
 
 async function load_backup(event: Event) {

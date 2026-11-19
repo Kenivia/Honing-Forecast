@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/webp" href="/Icons/Forecast Icon.webp" />
+    <title>Honing Forecast</title>
+    <style>
+        html { color-scheme: dark; }
+    </style>
+    <script>
+        // Domain move, new site's side: collects the old site's chunks (index.html), fills in the keys this browser
+        // lacks and parks the save in hf_moved_in for the app (RosterConfig init), then tells the old site it's done.
+        // See AI notes "Frontend/Domain move".
+        (async () => {
+            const FROM = "";
+            const DONE = "hf_imported";
+            const BUF = "hf_import_buffer";
+            const NOTICE = "hf_moved_notice";
+            const SAVE = /^HF_(CONFIG|UI_STATE)_V\d+_COMPRESSED$/;
+            const h = new URLSearchParams(location.hash.slice(1));
+            const safe = (p) => (p && p[0] === "/" && p[1] !== "/" && p[1] !== "\\" ? p : "/");
+            const to = safe(h.get("to"));
+            const open = (notice) => {
+                try {
+                    if (notice) localStorage.setItem(NOTICE, notice);
+                } catch {}
+                location.replace(to);
+            };
+            const back = (q) => location.replace(FROM + "/#" + new URLSearchParams({ ...q, to }));
+            try {
+                if (h.get("hfm") === "arrive") return open(localStorage.getItem(NOTICE) ?? "moved");
+                if (!FROM || !document.referrer.startsWith(FROM + "/")) return open(null);
+                if (localStorage.getItem(DONE)) return back({ hfm: "done" });
+                const n = Number(h.get("n"));
+                const of = Number(h.get("of"));
+                const len = Number(h.get("len"));
+                if (!(n >= 0 && n < of && len > 0)) return open(null);
+                const prev = n === 0 ? { len, data: "" } : JSON.parse(sessionStorage.getItem(BUF) ?? "null");
+                if (!prev || prev.len !== len) throw new Error("chunk out of order");
+                const data = prev.data + (h.get("d") ?? "");
+                if (n + 1 < of) {
+                    sessionStorage.setItem(BUF, JSON.stringify({ len, data }));
+                    return back({ hfm: "part", part: n + 1 });
+                }
+                sessionStorage.removeItem(BUF);
+                if (data.length !== len) throw new Error("length mismatch");
+                const bytes = Uint8Array.from(atob(data.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+                const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+                const entries = JSON.parse(await new Response(stream).text());
+                const save = {};
+                for (const [k, v] of Object.entries(entries)) {
+                    if (typeof v !== "string") continue;
+                    if (SAVE.test(k)) save[k] = v;
+                    else if (localStorage.getItem(k) === null) localStorage.setItem(k, v);
+                }
+                if (Object.keys(save).length) localStorage.setItem("hf_moved_in", JSON.stringify(save));
+                localStorage.setItem(DONE, "1");
+                localStorage.setItem(NOTICE, "moved");
+                back({ hfm: "done" });
+            } catch (e) {
+                console.error("domain move failed", e);
+                sessionStorage.removeItem(BUF);
+                open("failed");
+            }
+        })();
+    </script>
+</head>
+
+<body></body>
+
+</html>

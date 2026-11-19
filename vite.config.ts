@@ -58,6 +58,13 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
+    // migrate/: the domain move's receiver
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+        migrate: path.resolve(__dirname, "migrate/index.html"),
+      },
+    },
   },
   assetsInclude: ["**/*.md"],
   // the dep scan would otherwise crawl every .html, stale copies under .tmp included

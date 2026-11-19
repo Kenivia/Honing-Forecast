@@ -1,8 +1,8 @@
 // Refresh and roster sync for signed-in users; see AI notes "External services", "Character import".
 import { reactive, ref } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { CharProfile, new_char_profile } from "@/Stores/CharacterProfile";
-import { create_default_owned_input_column } from "@/Stores/RosterConfig";
+import { CharProfile } from "@/Stores/CharacterProfile";
+import { fresh_profile_id } from "@/Stores/RosterConfig";
 import { format_char_name } from "./Helpers";
 import { find_linked, linked_rosters, norm_name, signed_in } from "./BibleAuth";
 import {
@@ -76,32 +76,6 @@ export function close_sync_popup(ok: boolean) {
   resolve_popup(ok);
 }
 
-// JSON, not deep-equal: values here come from different realms under jsdom
-const equal = (a: unknown, b: unknown) =>
-  JSON.stringify(a) === JSON.stringify(b);
-
-// the default character with nothing ticked, typed or added, and a roster with no mats
-function untouched(p: CharProfile) {
-  const config = useRosterStore().roster_config;
-  const base = new_char_profile();
-  const empty = create_default_owned_input_column();
-  return (
-    (
-      [
-        "normal_grid",
-        "adv_grid",
-        "bound_budgets",
-        "special_budget",
-        "chests",
-        "forbidden_chests",
-      ] as const
-    ).every((k) => equal(p[k], base[k])) &&
-    equal(config.roster_mats_owned[p.roster_id], empty) &&
-    equal(config.tradable_mats_owned[p.roster_id], empty) &&
-    !config.roster_chests[p.roster_id]?.length
-  );
-}
-
 // a name typed locally may already hold the bible name in that region
 function unique_name(name: string, id: string) {
   const profiles = useRosterStore().roster_config.profiles;
@@ -128,15 +102,8 @@ async function sync_inner() {
   const store = useRosterStore();
   const config = store.roster_config;
   const bibles = await linked_rosters(true);
-  const first = config.profiles[0];
   // a fresh install's untouched default character is replaced
-  const fresh =
-    config.profiles.length === 1 &&
-    first.fetched_at === 0 &&
-    first.char_name.startsWith("Newchar") &&
-    untouched(first)
-      ? first.id
-      : null;
+  const fresh = fresh_profile_id(config);
 
   const matched = new Set<string>();
   const per_roster = bibles.map((b) => {

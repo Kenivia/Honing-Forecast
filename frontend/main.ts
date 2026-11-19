@@ -8,8 +8,11 @@ import "@/index.css";
 import "@/sidebar.css";
 import router from "@/Router";
 
-const pinia = createPinia();
-const app = createApp(App);
-app.use(pinia);
-app.use(router);
-app.mount("#root");
+// index.html's domain-move sender is taking this visit to the new site
+if (!(window as any).hf_leaving) {
+  const pinia = createPinia();
+  const app = createApp(App);
+  app.use(pinia);
+  app.use(router);
+  app.mount("#root");
+}

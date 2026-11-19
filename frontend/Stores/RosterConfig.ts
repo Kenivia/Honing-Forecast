@@ -21,7 +21,12 @@ import { format_char_name } from "@/Utils/Helpers";
 
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
 
-import { load_roster_config } from "./ConfigStorage";
+import {
+  load_roster_config,
+  moved_in_save,
+  moved_save,
+  use_moved_save,
+} from "./ConfigStorage";
 import { process_chests, type Chest, type ManifestChest } from "@/Utils/Chest";
 import type { ScanCurrencies, ScanPage, Snapshot } from "@/Utils/Scans";
 import type { CustomChoice } from "@/Utils/Choices";
@@ -69,6 +74,35 @@ export interface RosterConfig {
 
 export function create_default_owned_input_column(): InputColumn {
   return create_input_column(InputType.Int, ALL_MATERIAL_LABELS);
+}
+
+// JSON, not deep-equal: values here come from different realms under jsdom
+const equal = (a: unknown, b: unknown) =>
+  JSON.stringify(a) === JSON.stringify(b);
+
+// a fresh install's lone default character with nothing ticked, typed or added, and a roster with no mats
+export function fresh_profile_id(config: RosterConfig): string | null {
+  const p = config.profiles[0];
+  const base = new_char_profile();
+  const empty = create_default_owned_input_column();
+  const fresh =
+    config.profiles.length === 1 &&
+    p.fetched_at === 0 &&
+    p.char_name.startsWith("Newchar") &&
+    (
+      [
+        "normal_grid",
+        "adv_grid",
+        "bound_budgets",
+        "special_budget",
+        "chests",
+        "forbidden_chests",
+      ] as const
+    ).every((k) => equal(p[k], base[k])) &&
+    equal(config.roster_mats_owned[p.roster_id], empty) &&
+    equal(config.tradable_mats_owned[p.roster_id], empty) &&
+    !config.roster_chests[p.roster_id]?.length;
+  return fresh ? p.id : null;
 }
 
 function default_prices(region: MarketRegions): InputColumn {
@@ -234,8 +268,15 @@ export const useRosterStore = defineStore("roster", {
       if (index >= 0) forbidden.splice(index, 1);
       else forbidden.push(key);
     },
+    // a save moved in from the old domain replaces a fresh one, else waits for its banner (Sidebar.vue)
     init() {
-      this.roster_config = load_roster_config();
+      let config = load_roster_config();
+      const save = moved_in_save();
+      if (save && fresh_profile_id(config) && !config.snapshots.length) {
+        use_moved_save(save);
+        config = load_roster_config();
+      } else moved_save.value = save;
+      this.roster_config = config;
     },
     replace_config(config: RosterConfig) {
       this.roster_config = config;

@@ -74,6 +74,7 @@ Each note describes the code as it is now. Where something was tried and failed 
 - `Calculator core/Optimizer lab results.md`: what those investigations found, by topic: candidates for production, what makes a result good, open questions.
 - `Working in this repo.md`: line endings, scratch space, what the type checker cannot see, and the test suites. Read before a large edit.
 - `Frontend/State and persistence.md`: the store, data scopes, localStorage and migrations.
+- `Frontend/Domain move.md`: handing each browser's localStorage from pages.dev to honing-forecast.com; staging and launch steps.
 - `Frontend/Wasm contract.md`: payload building, worker protocol, what must match Rust.
 - `Frontend/External services.md`: market prices, character import, analytics uploads, changelogs.
 - `Frontend/UI components.md`: shared components; `HoverTip`, the site's hover tooltip.

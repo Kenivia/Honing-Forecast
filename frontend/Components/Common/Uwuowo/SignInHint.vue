@@ -8,7 +8,7 @@ const roster_store = useRosterStore();
   <button
     v-if="!signed_in && roster_store.roster_config.show_suggestions"
     @click="sign_in"
-    class="block cursor-pointer text-left text-xs text-(--uwuowo) underline"
+    class="block cursor-pointer text-left text-(--uwuowo) underline"
   >
     Sign in with lostark.bible to fetch automatically
   </button>

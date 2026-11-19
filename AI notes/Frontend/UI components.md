@@ -24,6 +24,10 @@ Every hover tooltip on the site, including the material and gold graphs' (Chart.
 - The instruction rows are a `TransitionGroup`, so they slide (0.3s) to their new place when the optimizer reorders them. The rows are real subgrid boxes, which the move animation needs.
 - The instruction cards are 1032px wide, like the material dist card; the juice column is `1fr`, so it takes up the spare width. Free-tap rows still show the juice instructions, after an annotation block (">>>>>", "Only if all", "free taps failed", ">>>>>") that indents them; its underlined "OK" sets `hide_free_tap_hint` (global, saved) and hides the block on every row. The free-tap controls (`NormalDetails`) stay in the progress column only.
 
+## Banners
+
+`Banner.vue` is the one strip across the top of a page's main area: `tone` `warning` (default, red text, `role="alert"`) or `info` (`role="status"`), text in the default slot, buttons in `#actions`. Every use is in `TopBanners.vue` (domain move, unreadable save, other tab open), which `Sidebar.vue` renders first in `.main-stage`; keep them there, since a banner's reactive source read in `Sidebar`'s own render re-renders the whole page (BroadcastChannel updates did, and in Vitest that surfaced as `process is not defined` from RouterLinks after teardown). `download_json` (`Utils/Helpers.ts`) saves their downloads and the backup.
+
 ## Calculator layout
 
 - The chest card and the optimizer panel share a row in `Calc.vue` while the chest card is thin; once it is wide (editing, or "Show all chests", 1032px) the optimizer goes under it. The optimizer panel is a fixed 665px, just enough for the simple strategy grid (662px at max-content); widen it if those columns grow.

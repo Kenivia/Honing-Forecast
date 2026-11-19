@@ -2,8 +2,7 @@
 import { useMediaQuery } from "@vueuse/core";
 import { ref } from "vue";
 import Footer from "./Footer.vue";
-import BrokenSaveBanner from "./BrokenSaveBanner.vue";
-import OtherTabBanner from "./OtherTabBanner.vue";
+import TopBanners from "./TopBanners.vue";
 
 const props = withDefaults(defineProps<{ header?: string; width: number }>(), {
   header: "",
@@ -49,8 +48,7 @@ const close = () => (sidebarOpen.value = false);
           </button>
         </div>
         <div class="main-stage w-full overflow-x-auto overflow-y-hidden">
-          <BrokenSaveBanner class="w-full" />
-          <OtherTabBanner class="w-full" />
+          <TopBanners />
           <slot name="main" />
         </div>
       </div>
