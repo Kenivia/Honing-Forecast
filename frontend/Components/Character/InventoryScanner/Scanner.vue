@@ -8,7 +8,7 @@ import {
   OneIconConfig,
 } from "./LoadStorage.js";
 import { process_result } from "./ScanStore";
-import { SHARED_ICONS } from "./Manifest";
+import { choices, SHARED_ICONS } from "./Manifest";
 import Manifest from "./Manifest.vue";
 import ScanGuide from "./ScanGuide.vue";
 import SlotGrid from "./SlotGrid.vue";
@@ -36,7 +36,7 @@ function show_anyway() {
 const items = computed(() =>
   (config.value ?? [])
     .filter((icon) => icon.tag === "Icon")
-    .flatMap((icon) => SHARED_ICONS[icon.name] ?? [icon.name])
+    .flatMap((icon) => SHARED_ICONS[icon.name] ?? choices(icon.name))
     .sort(),
 );
 </script>

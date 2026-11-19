@@ -661,8 +661,6 @@ const CHECKED = [
     name: "a capture with the November 2026 chests",
     file: "2026-11-18T15-58-07-564Z",
     pages: ["CharInventory 0", "CharStorage 0", "CharStorage 1", "Roster 0", "Roster 1"],
-    // its one hover read "20,000 Gold Bars" as "220.000"; another hover would fix it
-    misread: ["CharInventory 0 3,0"],
   },
 ];
 

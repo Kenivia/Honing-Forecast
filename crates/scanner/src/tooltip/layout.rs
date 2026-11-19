@@ -276,13 +276,11 @@ pub fn parse_layout(buffer: &Buffer, bar: &TitleBar, s: f64) -> Layout {
 
         let to_frame = |(top, bottom): (usize, usize)| {
             let (first, last) = extent(top, bottom, text_left, TEXT).unwrap();
-            // The recogniser wants a little room around the text and no more: a wider margin lets
-            // the icon's edge in on the left, and it then reads next to nothing.
-            let (across, down) = ((5.33 * s).round() as usize, (2.67 * s).round() as usize);
+            let down = (2.67 * s).round() as usize;
             (
-                left + (first - across).max(text_left),
+                left + first,
                 title_bottom + top - down,
-                left + (last + across + 1).min(columns),
+                left + last + 1,
                 title_bottom + bottom + down,
             )
         };
@@ -301,6 +299,8 @@ pub fn parse_layout(buffer: &Buffer, bar: &TitleBar, s: f64) -> Layout {
         }
         Some(ChestLayout {
             kind,
+            text_left: left + text_left,
+            text_right: left + columns,
             rows: chest_rows
                 .iter()
                 .filter(|lines| lines.len() >= 2)

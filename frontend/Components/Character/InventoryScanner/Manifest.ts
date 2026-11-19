@@ -64,6 +64,9 @@ type Opens = {
   content_binds?: (string | null)[];
   // only there to tell a slot from the chest it is drawn like
   irrelevant?: boolean;
+  top?: boolean;
+  rarity?: string;
+  binds?: string[];
 };
 
 // a slot the manifest is short of, and why; a currency has no address
@@ -102,13 +105,63 @@ for (const chest of CHESTS as any[]) {
   if (!titles.includes(chest.title)) titles.push(chest.title);
 }
 
-// what to call a slot's icon: a chest's is named after its art, which says nothing
-export function item_name(icon: string | null) {
-  const titles = icon ? CHEST_ICONS[icon] : undefined;
-  if (!titles) return icon;
-  const more = titles.length > 2 ? ` and ${titles.length - 2} more` : "";
-  return titles.slice(0, 2).join(" / ") + more;
+// An icon drawn for chests that open to different things says no more than a shared one: the
+// user picks one of its groups, as "<icon>#<n>", and the edit keeps the group's chests.
+export const CHEST_GROUPS: Record<string, number[][]> = {};
+for (const chest of CHESTS as any[]) {
+  if (!chest.top || chest.irrelevant) continue;
+  const groups = (CHEST_GROUPS[`${chest.icon}@${chest.rarity}`] ??= []);
+  const group = groups.find((ids) => same_as(ids[0]) === same_as(chest.id));
+  if (group) group.push(chest.id);
+  else groups.push([chest.id]);
 }
+for (const icon in CHEST_GROUPS)
+  if (CHEST_GROUPS[icon].length < 2) delete CHEST_GROUPS[icon];
+
+// what can be picked for an icon
+export const choices = (icon: string) =>
+  CHEST_GROUPS[icon]?.map((_, n) => `${icon}#${n}`) ?? [icon];
+
+// a choice as the item it sets and, for a group, its chests
+export function split_choice(choice: string) {
+  const [item, n] = choice.split("#");
+  return { item, group: n === undefined ? undefined : CHEST_GROUPS[item][+n] };
+}
+
+// the choice for an icon read as these chests, the icon itself while they span groups
+export function choice_of(icon: string, variants: number[]) {
+  const groups = CHEST_GROUPS[icon];
+  const ids = variants.filter((id) => OPENS[id] && !OPENS[id].irrelevant);
+  const n = groups?.findIndex((group) => ids.every((id) => group.includes(id)));
+  return ids.length && n !== undefined && n >= 0 ? `${icon}#${n}` : icon;
+}
+
+// how these chests are bound, when all are bound one way; nothing bound to a character is in roster storage
+export function bound_alike(variants: number[], window: string) {
+  const binds = variants
+    .flatMap((id) => OPENS[id]?.binds ?? [])
+    .filter((x) => !ROSTER_WINDOWS.includes(window) || x !== "CharBound");
+  return binds.length && binds.every((x) => x === binds[0]) ? binds[0] : null;
+}
+
+// what to call a slot's icon: a chest's is named after its art, which says nothing
+export function item_name(choice: string | null) {
+  if (!choice) return choice;
+  const { item, group } = split_choice(choice);
+  const titles = group ? titles_of(group) : CHEST_ICONS[item];
+  if (!titles) return item;
+  const more = titles.length > 2 ? ` and ${titles.length - 2} more` : "";
+  const name = titles.slice(0, 2).join(" / ") + more;
+  // groups of one icon can share titles, and then the first content tells them apart
+  const alike = (CHEST_GROUPS[item] ?? []).filter(
+    (other) => titles_of(other).join() === titles.join(),
+  );
+  const [title, amount] = OPENS[group?.[0]]?.contents[0] ?? [];
+  return group && alike.length > 1 ? `${name} (${title} x${amount})` : name;
+}
+const titles_of = (group: number[]) => [
+  ...new Set(group.map((id) => OPENS[id].title)),
+];
 
 // What a chest opens to, all the way down, as text, gold with how it is bound: two chests are the
 // same to the manifest when this is.
@@ -128,12 +181,25 @@ function opens_to(id: number): string {
   ]);
 }
 
+// the same, a chest that only holds one obtain-all chest being that one
+function same_as(id: number): string {
+  const chest = OPENS[id];
+  const [only, ...rest] = chest.contents;
+  const inner = only?.[2] ? OPENS[only[2]] : undefined;
+  return chest.kind === "ObtainAll" &&
+    !rest.length &&
+    only[1] === 1 &&
+    inner?.kind === "ObtainAll"
+    ? same_as(inner.id)
+    : opens_to(id);
+}
+
 // The one chest these are, as far as what they open to goes. Chests that list the same things
 // can hold different chests inside, and then there is no telling.
 function settle(variants: number[]): Opens | undefined {
   const [first, ...rest] = variants;
   if (first === undefined) return undefined;
-  const same = rest.every((other) => opens_to(other) === opens_to(first));
+  const same = rest.every((other) => same_as(other) === same_as(first));
   return same ? OPENS[first] : undefined;
 }
 
@@ -314,7 +380,7 @@ export const live = computed(() => {
     }
     // the chest read off a tooltip, else whatever its icon can only be
     const read = chest_read(address, item, amount);
-    const variants = read?.variants ?? slot?.variants ?? [];
+    const variants = read?.variants ?? edit?.variants ?? slot?.variants ?? [];
     if (!edit && !read && !all_irrelevant(variants) && !settle(variants)) {
       miss();
       continue;

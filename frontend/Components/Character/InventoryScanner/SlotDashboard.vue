@@ -10,7 +10,15 @@ import {
   slot_key,
   slots,
 } from "./ScanStore";
-import { item_name, SHARED_ICONS } from "./Manifest";
+import {
+  bound_alike,
+  CHEST_GROUPS,
+  choice_of,
+  choices,
+  item_name,
+  SHARED_ICONS,
+  split_choice,
+} from "./Manifest";
 import { STATUS_NAMES } from "./ScannerUIutils";
 import SlotCell from "./SlotCell.vue";
 
@@ -36,12 +44,32 @@ const read_item = computed(() => {
 });
 const item = computed(() => (edit.value ? edit.value.item : read_item.value));
 
+// the chests the slot was read as: its tooltip's, else what its icon can be
+const read_variants = computed(() => {
+  const read =
+    props.address && read_item.value
+      ? chests_for(props.address, read_item.value)
+      : [];
+  return read.length
+    ? read.flatMap((chest) => chest.variants)
+    : (slot.value?.variants ?? []);
+});
+// the item as a choice of the list, a chest's group where it is known
+const read_choice = computed(
+  () => read_item.value && choice_of(read_item.value, read_variants.value),
+);
+const choice = computed(() =>
+  edit.value
+    ? edit.value.item && choice_of(edit.value.item, edit.value.variants ?? [])
+    : read_choice.value,
+);
+
 // the icons the slot scored close to, a shared icon as its materials
 const candidates = computed(() => {
   const icon = slot.value?.icon_name_score?.[0];
   if (!icon) return [];
   return [icon, ...slot.value.alternatives]
-    .flatMap((name) => SHARED_ICONS[name] ?? [name])
+    .flatMap((name) => SHARED_ICONS[name] ?? choices(name))
     .filter((name) => props.items.includes(name));
 });
 const likely_only = ref(true);
@@ -92,29 +120,48 @@ watch(
   // also when the slot is saved, retried or first read
   [key, edit, () => !slot.value],
   () => {
-    draft.item = item.value ?? "";
+    draft.item = choice.value ?? "";
     draft.amount = edit.value ? edit.value.amount : (slot.value?.value ?? null);
-    draft.tradability = tradability.value ?? "";
+    draft.tradability = tradability.value ?? group_bind() ?? "";
     loaded.value = JSON.stringify(draft);
   },
   { immediate: true },
 );
 
-// an item needs its amount and tradability; an irrelevant slot needs neither
+// a chest group binds its chests one way, which then needs no picking
+function group_bind() {
+  const { group } = split_choice(draft.item);
+  return group && props.address
+    ? bound_alike(group, props.address.inventory_type)
+    : null;
+}
+function pick_item() {
+  draft.tradability = group_bind() ?? draft.tradability;
+}
+
+// an item needs its amount and tradability, a chest which of its icon's chests it is; an
+// irrelevant slot needs none
+const unsettled = computed(() => !!CHEST_GROUPS[draft.item]);
 const no_amount = computed(
   () => !!draft.item && (draft.amount === null || (draft.amount as any) === ""),
 );
-const no_tradability = computed(() => !!draft.item && !draft.tradability);
-const incomplete = computed(() => no_amount.value || no_tradability.value);
+const no_tradability = computed(
+  () => !!draft.item && !unsettled.value && !draft.tradability,
+);
+const incomplete = computed(
+  () => unsettled.value || no_amount.value || no_tradability.value,
+);
 const missing_style = (missing: boolean) =>
   missing ? { borderColor: "var(--warning)" } : {};
 
 function save() {
+  const { item, group } = split_choice(draft.item);
   set_edit({
     address: props.address,
-    item: draft.item || null,
-    amount: draft.item ? Math.max(0, Math.round(Number(draft.amount))) : null,
-    tradability: draft.item ? draft.tradability : null,
+    item: item || null,
+    amount: item ? Math.max(0, Math.round(Number(draft.amount))) : null,
+    tradability: item ? draft.tradability : null,
+    variants: group ?? (item === read_item.value ? read_variants.value : []),
   });
 }
 
@@ -132,6 +179,7 @@ function accept() {
     item: item.value,
     amount: slot.value?.value ?? null,
     tradability: slot.value?.tradability ?? null,
+    variants: read_variants.value,
   });
 }
 </script>
@@ -157,7 +205,7 @@ function accept() {
           <div class="flex min-w-0 flex-col">
             <span class="text-base wrap-break-word text-(--text-bright)">
               {{
-                item_name(item) ??
+                item_name(choice) ??
                 (slot || edit ? "No known item" : "Not seen yet")
               }}
             </span>
@@ -183,9 +231,15 @@ function accept() {
         <span class="text-(--text-bright)">Correct it</span>
 
         <span class="text-(--text-muted)">Item</span>
-        <span class="wrap-break-word">{{ item_name(read_item) ?? "-" }}</span>
+        <span class="wrap-break-word">{{ item_name(read_choice) ?? "-" }}</span>
         <div class="flex items-center gap-2">
-          <select v-model="draft.item" class="selector w-56" aria-label="Item">
+          <select
+            v-model="draft.item"
+            class="selector w-56"
+            :style="missing_style(unsettled)"
+            aria-label="Item"
+            @change="pick_item"
+          >
             <option value="">Irrelevant</option>
             <!-- memoized: Vue rewrites every bound option value on each render, which resets an open dropdown's highlight -->
             <option
@@ -255,11 +309,13 @@ function accept() {
         <div class="col-start-3 flex flex-col gap-1 pt-1">
           <span v-if="incomplete" class="text-(--warning)">
             {{
-              no_amount && no_tradability
-                ? "Amount and tradability are needed."
-                : no_amount
-                  ? "The amount is needed."
-                  : "The tradability is needed."
+              unsettled
+                ? "Pick which chest this is."
+                : no_amount && no_tradability
+                  ? "Amount and tradability are needed."
+                  : no_amount
+                    ? "The amount is needed."
+                    : "The tradability is needed."
             }}
           </span>
           <div class="flex gap-2">

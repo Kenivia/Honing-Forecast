@@ -50,6 +50,7 @@ Warnings behind `Tooltips.md`: what failed or was ruled out in reading the toolt
 
 ## Chests
 
+- Don't cut a chest row at one margin across: "20,000 Gold Bars" (Clear: Vestiges of the End (Hard), 1080p) came back as "0.000" on every read at 4 and 5 px and right at 3 and 7, so the chest never matched and its slot got no tradability.
 - Don't require a chest's contents to be exactly the rows: the tooltip stops at 10 rows ("Offensive Battle Item Chest" holds 12). Nine of the 52 rows of "Legendary Class Engraving Recipe Selection Chest" were read, which used to need exactly 10 and fell to a pouch that lists by class.
 - Don't count any chest fitting in part: "Bracelet Bonus Rework Ticket x3", the one row of a chest not in the table, came out as "Clear: Phantom Manifestor Brelshaza", which counts; two gems as "T4 Gem Chest (Lv. 1-3)".
 - Don't compare a roman numeral as read. Over the suite some 70 reads of one came back as "II", "I", "?I", "?", "Ill", "!", "VI", "IV", glued to the word before it or not. Comparing the name as it is lets the nearest tier win ("II" read as "I" picks the wrong chest with full confidence); a longer list of look-alike characters fails on the next read; cutting the last word when all its characters are of `ivxl!|?1` missed "Una+1 Exchange Silver Pouch!" (no such last word). Not tried: counting the strokes in the row's pixels, which would tell the one group of chests nothing tells apart now.

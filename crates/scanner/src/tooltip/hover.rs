@@ -37,6 +37,9 @@ const MAX_READS: usize = 6; // amount, chest and icon reads one hover gets, agre
 // margin and not at the next ("3300,000 Gold Bar Pile"), and on a lossless capture the same crop
 // is the same read however often it is sent.
 const TITLE_MARGINS: [f64; 3] = [5.0, 4.0, 6.0];
+// The same across a chest row, which the icon's edge must not reach: "20,000 Gold Bars" lost its
+// 2 at 5.33 and not at 4 or 9.33 (1440p px).
+const CHEST_MARGINS: [f64; 3] = [5.33, 4.0, 9.33];
 const LOOK_CHANGED: f64 = 4.0; // title columns that differ once the cursor has moved over it
 // Reads of one kind a hover may have out at once. With one, a hover asks for its next read only
 // when the last came back, so what it asks for follows what the OCR workers can do. Three were
@@ -306,7 +309,10 @@ impl ScannerState {
             if highest_vote_count(&hover.chest_votes) + hover.waiting[2] < SETTLED
                 && hover.sent[2] < MAX_READS
             {
-                strips.chest = Some(timed("tooltip/chest", || chest_strips(&self.buffer, chest)));
+                let across = (CHEST_MARGINS[hover.sent[2] % CHEST_MARGINS.len()] * s).round();
+                strips.chest = Some(timed("tooltip/chest", || {
+                    chest_strips(&self.buffer, chest, across as usize)
+                }));
             }
         }
         // Which book a book is: its description says so more often than its title, whose start

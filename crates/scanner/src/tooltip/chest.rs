@@ -70,11 +70,19 @@ pub struct ChestRowLayout {
 
 pub struct ChestLayout {
     pub kind: ChestKind,
+    // names and counts are cut to their text across; the margin is added per read, within these
     pub rows: Vec<ChestRowLayout>,
+    pub text_left: usize,
+    pub text_right: usize,
 }
 
-pub fn chest_strips(buffer: &Buffer, layout: &ChestLayout) -> Vec<ChestRowStrips> {
-    let strip = |(x0, y0, x1, y1): Rect| text_line(buffer, x0, y0, x1, y1);
+// `across` px of margin either side, never reaching the icon
+pub fn chest_strips(buffer: &Buffer, layout: &ChestLayout, across: usize) -> Vec<ChestRowStrips> {
+    let strip = |(x0, y0, x1, y1): Rect| {
+        let x0 = x0.saturating_sub(across).max(layout.text_left);
+        let x1 = (x1 + across).min(layout.text_right);
+        text_line(buffer, x0, y0, x1, y1)
+    };
     layout
         .rows
         .iter()

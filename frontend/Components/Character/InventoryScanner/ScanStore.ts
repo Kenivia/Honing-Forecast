@@ -22,6 +22,8 @@ export interface SlotEdit {
   retry?: boolean;
   // the icon matched there when it was set, which a later scan's prior goes by
   icon?: string | null;
+  // for a chest, the chests it was set or read as
+  variants?: number[];
 }
 
 export const WINDOW_NAMES = {
