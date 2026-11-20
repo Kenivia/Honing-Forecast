@@ -1,7 +1,7 @@
 """
 Writes public/Icons/Equipments/<T4|Serca>/<class>/<Piece>.webp: each class's honed gear art, the ancient "Destined
 Hellfire" set for T4 and "Destined Tremor" for Serca; the vambrace (Serca only) is the class's ancient Tremor one.
-Each is drawn with the blue honed-gear border (icon_border_inherit.png, from lostark.bible).
+Serca pieces are drawn with the blue honed-gear border (icon_border_inherit.png, from lostark.bible); T4 has none.
 Run after scanner_setup/game_files/extract.py.
 
     python scripts/game_files/equipment_icons.py
@@ -39,9 +39,10 @@ def piece(category):
     return "Weapon" if 10100 <= category < 10200 else PIECES.get(category)
 
 
-def save(art, path):
+def save(art, path, border):
     path.parent.mkdir(parents=True, exist_ok=True)
-    Image.alpha_composite(art.convert("RGBA"), BORDER).save(path, "WEBP", quality=90)
+    art = art.convert("RGBA")
+    (Image.alpha_composite(art, BORDER) if border else art).save(path, "WEBP", quality=90)
 
 
 shutil.rmtree(OUT / "T4", ignore_errors=True)
@@ -61,7 +62,7 @@ for tier, (low, high) in SETS.items():
             key = (label, name)
             if row[f"For{column}"] and key not in written:
                 written.add(key)
-                save(icon_art(f"{row['Icon']}_{row['IconIndex']}".lower()), OUT / tier / label.lower() / f"{name}.webp")
+                save(icon_art(f"{row['Icon']}_{row['IconIndex']}".lower()), OUT / tier / label.lower() / f"{name}.webp", tier == "Serca")
     expected = len(CLASSES) * (7 if tier == "Serca" else 6)
     assert len(written) == expected, (tier, len(written), expected)
     print(tier, len(written))

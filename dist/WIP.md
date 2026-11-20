@@ -5,7 +5,6 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 NEXT UPDATE
 
-- cloud syncing
 - migrate to an actual domain name
 
 ## Forecast mode
@@ -17,6 +16,8 @@ NEXT UPDATE
     - something happening over n weeks?
 
 - expected weeks until afforded? will need monto carlo for tis
+- cloud syncing
+  - mostly for the user data
 
 ## income logging?
 
@@ -25,6 +26,9 @@ NEXT UPDATE
 
 ## PRICE LOGGING AKA MY OWN LOA BUDDY
 
+## CP increase comparison
+
+- shouldn't be that hard, hard part (for me) is the cp formula for other stuff
 
 ## Misc UI
 

@@ -175,8 +175,9 @@ const num = (x: number, digits = 1) =>
     <h3>4. What's different about Honing Forecast?</h3>
 
     <p>
-      As far as I know, at least for now, all other Lost Ark calculators compute
-      their "Average gold cost" like so:
+      As far as I know, at least for now, all other Lost Ark calculators that
+      can do multiple upgrades at the same time compute their "Average gold
+      cost" like so:
     </p>
 
     <ol>

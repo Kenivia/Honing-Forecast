@@ -62,7 +62,7 @@ function discard_old_save() {
     Your saved data couldn't be moved from the old site.
     <a class="underline" :href="`${OLD_SITE}/roster-setup?stay`"
       >Use this link</a
-    >, download a backup under Backup on the roster page, then import it here.
+    >, export a backup on the roster page, then import it here.
     <template #actions>
       <button class="generic-button" @click="dismiss_moved_notice">
         Dismiss
