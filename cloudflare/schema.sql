@@ -28,3 +28,15 @@ CREATE TABLE IF NOT EXISTS limits (
   minute INTEGER,
   n INTEGER
 );
+
+-- how each browser's domain move went (frontend/Utils/MoveReport.ts); no names, no save contents
+CREATE TABLE IF NOT EXISTS moves (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  received INTEGER,
+  site TEXT,
+  version TEXT,
+  outcome TEXT,
+  error TEXT,
+  chunks INTEGER,
+  bytes INTEGER
+);

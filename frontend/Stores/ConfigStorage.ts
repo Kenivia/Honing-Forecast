@@ -129,12 +129,13 @@ export function discard_moved_save() {
   moved_save.value = null;
 }
 
-// "moved" or "failed", set by migrate/index.html until dismissed
+// set by migrate/index.html: "moved" shows once ever (then "seen"), "failed" until dismissed
 const NOTICE_KEY = "hf_moved_notice";
 export const moved_notice = shallowRef(localStorage.getItem(NOTICE_KEY));
+if (moved_notice.value === "moved") localStorage.setItem(NOTICE_KEY, "seen");
 export function dismiss_moved_notice() {
-  localStorage.removeItem(NOTICE_KEY);
-  moved_notice.value = null;
+  localStorage.setItem(NOTICE_KEY, "seen");
+  moved_notice.value = "seen";
 }
 
 export function moved_backup(save: Record<string, string>): string {

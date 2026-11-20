@@ -21,6 +21,7 @@ import {
 import { useRuntimeStore } from "./Stores/RuntimeState";
 import ScanSwitchDialog from "./Components/Character/InventoryScanner/ScanSwitchDialog.vue";
 import { upload_snapshots } from "./Utils/Analytics";
+import { flush_move_report } from "./Utils/MoveReport";
 import { bible_auth, sign_in, sign_out, signed_in } from "./Utils/BibleAuth";
 import { auto_refresh } from "./Utils/BibleSync";
 import BibleSyncPopup from "./Components/Common/Uwuowo/BibleSyncPopup.vue";
@@ -58,6 +59,7 @@ watch(
 );
 
 auto_refresh();
+flush_move_report();
 
 const is900Narrow = useMediaQuery("(max-width: 900px)");
 
@@ -128,11 +130,13 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
                 class="h-9 w-9"
               /></div
           ></router-link>
-          <h1
-            class="color-(--text-main) flex flex-row items-center font-semibold"
+          <router-link to="/">
+            <h1
+              class="color-(--text-main) flex flex-row items-center font-semibold"
+            >
+              Honing Forecast
+            </h1></router-link
           >
-            Honing Forecast
-          </h1>
         </div>
         <RouterLink
           :to="last_info"

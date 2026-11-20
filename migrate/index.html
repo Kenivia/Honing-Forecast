@@ -7,7 +7,7 @@
     <link rel="icon" type="image/webp" href="/Icons/Forecast Icon.webp" />
     <title>Honing Forecast</title>
     <style>
-        html { color-scheme: dark; }
+        html { background: #0d0d11; color-scheme: dark; } /* --bg-very-muted */
     </style>
     <script>
         // Domain move, new site's side: collects the old site's chunks (index.html), fills in the keys this browser
@@ -24,13 +24,23 @@
             const to = safe(h.get("to"));
             const open = (notice) => {
                 try {
-                    if (notice) localStorage.setItem(NOTICE, notice);
+                    if (notice && localStorage.getItem(NOTICE) !== "seen") localStorage.setItem(NOTICE, notice);
                 } catch {}
                 location.replace(to);
             };
+            // sent by the app (Utils/MoveReport.ts) once loaded, so reporting never slows the move
+            const report = (r) => {
+                try {
+                    if (!JSON.parse(localStorage.getItem("hf_move_reported") ?? "[]").includes(r.outcome))
+                        localStorage.setItem("hf_move_report", JSON.stringify(r));
+                } catch {}
+            };
             const back = (q) => location.replace(FROM + "/#" + new URLSearchParams({ ...q, to }));
             try {
-                if (h.get("hfm") === "arrive") return open(localStorage.getItem(NOTICE) ?? "moved");
+                if (h.get("hfm") === "arrive") {
+                    report({ outcome: h.get("why") || "arrive", error: h.get("err") || undefined });
+                    return open(localStorage.getItem(NOTICE) ?? "moved");
+                }
                 if (!FROM || !document.referrer.startsWith(FROM + "/")) return open(null);
                 if (localStorage.getItem(DONE)) return back({ hfm: "done" });
                 const n = Number(h.get("n"));
@@ -57,10 +67,12 @@
                 }
                 if (Object.keys(save).length) localStorage.setItem("hf_moved_in", JSON.stringify(save));
                 localStorage.setItem(DONE, "1");
-                localStorage.setItem(NOTICE, "moved");
+                report({ outcome: "imported", chunks: of, bytes: len });
+                if (localStorage.getItem(NOTICE) !== "seen") localStorage.setItem(NOTICE, "moved");
                 back({ hfm: "done" });
             } catch (e) {
                 console.error("domain move failed", e);
+                report({ outcome: "failed", error: String(e).slice(0, 200), chunks: Number(h.get("of")) || undefined, bytes: Number(h.get("len")) || undefined });
                 sessionStorage.removeItem(BUF);
                 open("failed");
             }

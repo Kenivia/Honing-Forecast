@@ -8,7 +8,7 @@ withDefaults(defineProps<{ tone?: "warning" | "info" }>(), {
 <template>
   <div
     :role="tone === 'warning' ? 'alert' : 'status'"
-    class="flex w-full flex-wrap items-center gap-x-4 gap-y-2 border-b bg-(--bg-muted) px-4 py-2 text-sm [.main-stage>&:first-child]:-mt-4"
+    class="m-auto flex w-fit flex-wrap items-center gap-x-4 gap-y-2 border-x border-b bg-(--bg-muted) px-4 py-2 text-sm [.main-stage>&:first-child]:-mt-4"
     :class="
       tone === 'warning' ? 'border-(--warning-dark)' : 'border-(--bg-bright)'
     "
