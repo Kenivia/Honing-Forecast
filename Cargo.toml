@@ -4,6 +4,7 @@ members = [
     "crates/wasm",
     "crates/arena",
     "crates/scanner",
+    "crates/market",
 ]
 resolver="3"
 

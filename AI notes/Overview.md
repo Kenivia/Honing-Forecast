@@ -12,6 +12,7 @@ These notes are high-level. They cover what is hard to work out from reading one
 | --- | --- |
 | `crates/core` (`hf-core`) | All honing maths: domain model, average-gold evaluation, optimizer. |
 | `crates/scanner` (`hf-scanner`) | Screen scanner image processing. In development. |
+| `crates/market` (`hf-market`) | Native market scanner: drives the game's Market and Auction House and reads prices, gems and accessories into SQLite. |
 | `crates/wasm` (`hf-wasm`) | Thin `wasm_bindgen` wrappers over core and scanner. The only crate the frontend loads. |
 | `crates/arena` (`hf-arena`) | Native test harness for the core: Monte Carlo correctness, optimizer accuracy and speed, results in SQLite. |
 | `frontend/` | Vue 3 + Pinia + Tailwind app. `@` aliases to this folder. |
@@ -88,6 +89,7 @@ Each note describes the code as it is now. Where something was tried and failed 
 - `Screen scanner/Manifest.md`: the scan as materials per band and chests, merged with saved pages and other characters, the export, and the budget snapshots.
 - `Screen scanner/Income.md`: the Income page: snapshots over time, their optimizer runs, the income estimate and manual income.
 - `Screen scanner/Choices.md`: the Choices page: what taking each option of a choice (a raid's bonus chest) is worth, and adding it to the budgets.
+- `Market scanner/Overview.md`: the native market scanner: running it, input, getting around the Market, reading numbers by the game's font and items by crops, what a pass reads, storage.
 - `Forecasting/Market.md`: price and population data on file toward forecasting prices, the gap estimate, and observations so far.
 - `Forecasting/HF analytics.md`: what the site's own analytics uploads offer for forecasting so far.
 - `Forecasting/Community.md`: community income estimates per content (sites, their tables, how each values a run) for cross-checking.

@@ -76,7 +76,7 @@ impl InputRecorder {
 
 impl Input {
     // onto the frame before
-    fn apply(&self, data: &mut [u8]) {
+    pub fn apply(&self, data: &mut [u8]) {
         let Some(delta) = &self.delta else { return };
         let delta = lz4_flex::decompress_size_prepended(delta).unwrap();
         for (pixel, delta) in data.iter_mut().zip(delta) {

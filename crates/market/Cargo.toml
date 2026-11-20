@@ -1,0 +1,35 @@
+[package]
+name = "hf-market"
+edition = "2024"
+description = "Local Lost Ark market scanner"
+repository = "https://github.com/Kenivia/Honing-Forecast"
+license = "AGPL-3.0-or-later"
+version = "0.1.0"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_Security",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_Threading",
+    "Win32_UI_HiDpi",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[dependencies]
+fastrand = "2.5.0"
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+xcap = "0.9.10"
+hf-scanner = { path = "../scanner" }
+rusqlite = { version = "0.40", features = ["bundled"] }
+strsim = "0.11"
+chrono = { version = "0.4.45", default-features = false, features = ["clock"] }
+ab_glyph = "0.2.32"
+serde_json = "1.0"
+rmcp = { version = "3.9.0", features = ["server", "macros", "transport-io"] }
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "io-std"] }
+schemars = "1.2.3"
+base64 = "0.23.1"
+serde = { version = "1.0.229", features = ["derive"] }

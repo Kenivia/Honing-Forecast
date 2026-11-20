@@ -7,6 +7,10 @@
     "pw-firefox": {
       "command": "node",
       "args": ["node_modules/@playwright/mcp/cli.js", "--browser", "firefox"]
+    },
+    "lostark-market": {
+      "command": "target/release/market_mcp.exe",
+      "args": []
     }
   }
 }

@@ -1,0 +1,191 @@
+// Reading text off a screenshot with hf-scanner's recogniser.
+use hf_scanner::{
+    interface::setup::load_ocr_engine,
+    ocr::{
+        recognize::recognize_line,
+        text::{TextParams, text_strip_with},
+    },
+};
+use image::{RgbaImage, imageops::crop_imm};
+use std::sync::Once;
+
+static INIT: Once = Once::new();
+
+fn init() {
+    INIT.call_once(|| {
+        let model =
+            std::fs::read(concat!(env!("HF_ROOT"), "/public/text-recognition.rten")).unwrap();
+        load_ocr_engine(model);
+    });
+}
+
+/// One line of light text on a dark panel, in client pixels. 50 is the brightness that leaves pixels as they are.
+pub fn read(img: &RgbaImage, x: u32, y: u32, w: u32, h: u32) -> String {
+    init();
+    let crop = crop_imm(img, x, y, w, h).to_image();
+    let params = std::env::var("TEXT_STRIP").map_or(TextParams::NOW, |s| TextParams::parse(&s));
+    let strip = text_strip_with(&crop, false, 50.0, &params);
+    recognize_line(&strip, false).trim().to_string()
+}
+
+/// A number such as `1,279`, `1062.2` (`decimal`: one digit after the point) or `-` (None).
+/// Err when the text is not a number, e.g. covered by a popup.
+pub fn number(
+    img: &RgbaImage,
+    x: u32,
+    y: u32,
+    w: u32,
+    h: u32,
+    decimal: bool,
+) -> Result<Option<f64>, String> {
+    let t = read(img, x, y, w, h);
+    parse_number(&t, decimal).ok_or(t)
+}
+
+pub fn parse_number(t: &str, decimal: bool) -> Option<Option<f64>> {
+    let t = t.trim();
+    if t == "-" {
+        return Some(None);
+    }
+    let sep = |c: char| c == ',' || c == '.';
+    if t.is_empty()
+        || !t.chars().all(|c| c.is_ascii_digit() || sep(c))
+        || !t.starts_with(|c: char| c.is_ascii_digit())
+    {
+        return None;
+    }
+    let digits: String = t.chars().filter(|c| c.is_ascii_digit()).collect();
+    let v: f64 = digits.parse().ok()?;
+    let b = t.as_bytes();
+    if decimal {
+        // the point is always followed by exactly one digit
+        if b.len() < 3 || !sep(b[b.len() - 2] as char) {
+            return None;
+        }
+        return Some(Some(v / 10.0));
+    }
+    // separators group thousands
+    let groups: Vec<&str> = t.split(sep).collect();
+    if groups[1..].iter().any(|g| g.len() != 3) || groups[0].len() > 3 && groups.len() > 1 {
+        return None;
+    }
+    Some(Some(v))
+}
+
+fn ink(img: &RgbaImage, x: u32, y: u32) -> bool {
+    let p = img.get_pixel(x, y);
+    p[0].max(p[1]).max(p[2]) > 140
+}
+
+/// Rows of ink inside a rectangle, as (top, bottom) inclusive; gaps of a row or two split lines.
+pub fn lines(img: &RgbaImage, x0: u32, x1: u32, y0: u32, y1: u32) -> Vec<(u32, u32)> {
+    let mut out = vec![];
+    let mut start = None;
+    for y in y0..=y1 {
+        let on = y < y1 && (x0..x1).any(|x| ink(img, x, y));
+        match (on, start) {
+            (true, None) => start = Some(y),
+            (false, Some(s)) => {
+                if y - s >= 4 {
+                    out.push((s, y - 1));
+                }
+                start = None;
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
+/// Reads the ink inside a rectangle at a few margins until two reads agree (the recogniser doubles or drops
+/// characters at one margin and not at the next), else the last read.
+pub fn read_box(img: &RgbaImage, x0: u32, x1: u32, y0: u32, y1: u32) -> String {
+    let mut seen: Vec<String> = vec![];
+    for m in [(1.5, 0.5), (1.0, 0.4), (2.0, 0.6), (1.2, 0.7)] {
+        let t = read_box_at(img, x0, x1, y0, y1, m);
+        if seen.contains(&t) {
+            return t;
+        }
+        seen.push(t);
+    }
+    seen.pop().unwrap()
+}
+
+/// The digits of a text, which are compared apart from the rest: one wrong numeral barely changes how alike two names are.
+pub fn numerals(t: &str) -> String {
+    t.chars().filter(|c| c.is_ascii_digit()).collect()
+}
+
+/// Whether a read is this name: the same numerals and the rest at least 0.9 alike.
+pub fn is_name(read: &str, name: &str) -> bool {
+    let letters = |s: &str| {
+        s.chars()
+            .filter(|c| !c.is_ascii_digit())
+            .collect::<String>()
+    };
+    numerals(read) == numerals(name) && similar(&letters(read), &letters(name)) >= 0.9
+}
+
+fn read_box_at(
+    img: &RgbaImage,
+    x0: u32,
+    x1: u32,
+    y0: u32,
+    y1: u32,
+    (fx, fy): (f64, f64),
+) -> String {
+    let (mut lx, mut hx, mut ly, mut hy) = (u32::MAX, 0, u32::MAX, 0);
+    for y in y0..y1 {
+        for x in x0..x1 {
+            if ink(img, x, y) {
+                (lx, hx, ly, hy) = (lx.min(x), hx.max(x), ly.min(y), hy.max(y));
+            }
+        }
+    }
+    if lx == u32::MAX {
+        return String::new();
+    }
+    let h = hy - ly + 1;
+    let (mx, my) = ((h as f64 * fx) as u32 + 6, (h as f64 * fy) as u32 + 4);
+    let (x, y) = (lx.saturating_sub(mx), ly.saturating_sub(my));
+    read(
+        img,
+        x,
+        y,
+        (hx + mx + 1).min(img.width()) - x,
+        (hy + my + 1).min(img.height()) - y,
+    )
+}
+
+/// A number inside a rectangle, see `parse_number`.
+pub fn number_box(
+    img: &RgbaImage,
+    x0: u32,
+    x1: u32,
+    y0: u32,
+    y1: u32,
+    decimal: bool,
+) -> Result<Option<f64>, String> {
+    let t = read_box(img, x0, x1, y0, y1);
+    parse_number(&t, decimal).ok_or(t)
+}
+
+/// How alike two texts are, 0 to 1, ignoring case and spaces.
+pub fn similar(a: &str, b: &str) -> f64 {
+    let n = |s: &str| {
+        s.to_lowercase()
+            .chars()
+            .filter(|c| !c.is_whitespace())
+            .collect::<String>()
+    };
+    strsim::normalized_levenshtein(&n(a), &n(b))
+}
+
+/// The closest of `names` to `text`, if close enough.
+pub fn best_match<'a>(text: &str, names: &[&'a str], min: f64) -> Option<&'a str> {
+    let (best, score) = names
+        .iter()
+        .map(|n| (*n, similar(text, n)))
+        .max_by(|a, b| a.1.total_cmp(&b.1))?;
+    (score >= min).then_some(best)
+}
