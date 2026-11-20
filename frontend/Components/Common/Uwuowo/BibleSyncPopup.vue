@@ -15,10 +15,9 @@ const { roster_ids } = storeToRefs(useRosterStore());
   >
     <div class="flex flex-col gap-4">
       <span class="text-2xl">Match your characters with lostark.bible</span>
-      <span class="text-(--text-muted)"
-        >These characters were not found on lostark.bible. Pick the one each is,
-        or leave it. Unpicked lostark.bible characters are added.</span
-      >
+      <!-- <span class="text-(--text-muted)"
+        >These names were not found on lostark.bible.</span
+      > -->
       <div v-for="entry in sync_pending" :key="entry.roster_id">
         <span class="font-bold"
           >Roster {{ roster_ids.indexOf(entry.roster_id) + 1 }}</span

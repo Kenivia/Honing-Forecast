@@ -238,6 +238,36 @@ test("Skip and closing the popup add nothing", async ({ page }) => {
   expect(await bh.roster_names(page)).toEqual([["Alpha", "Typo"]]);
 });
 
+// a save broken by the old sync: the accented character was renamed to the plain name plus a suffix
+test("accented and plain names: the suffixed leftover is paired back", async ({
+  page,
+}) => {
+  await setup(
+    page,
+    [{ names: ["Inngrimschblade1", "Inngrimschblade"], fetched: true }],
+    [na("Ínngrimschblade", "Inngrimschblade")],
+    { Ínngrimschblade: bh.loadout_fixture("t4") },
+  );
+  await sync_button(page).click();
+  const dialog = page.getByRole("dialog", { name: "Match your characters" });
+  await dialog
+    .getByRole("combobox", { name: "Match Inngrimschblade1" })
+    .selectOption("Ínngrimschblade");
+  await dialog.getByRole("button", { name: "Confirm" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect
+    .poll(() => bh.roster_names(page))
+    .toEqual([["Ínngrimschblade", "Inngrimschblade"]]);
+  await expect
+    .poll(() =>
+      bible
+        .hits("/api/oauth/loadouts/")
+        .map((r) => decodeURIComponent(r.path.split("/").pop().split("?")[0]))
+        .sort(),
+    )
+    .toEqual(["Inngrimschblade", "Ínngrimschblade"]);
+});
+
 test("a second sync changes nothing, a new bible character adds one row", async ({
   page,
 }) => {
