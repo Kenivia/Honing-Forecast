@@ -26,11 +26,24 @@ NEXT UPDATE
 
 ## PRICE LOGGING AKA MY OWN LOA BUDDY
 
+- materials set up (need to check how well it works)
+- gems also
+- accesories ready but maybe cannot be bothered
+- can potentially use different breakpoints from this
+- running remotely
+- merging data for UI
+- UI
+- lifeskill mats
+- mari shop offers?
+- currency exchange
+
 ## CP increase comparison
 
 - shouldn't be that hard, hard part (for me) is the cp formula for other stuff
 
 ## honing recording ?
+
+- kinda falls in the same category as income logging
 
 ## Misc UI
 

@@ -10,7 +10,9 @@ use crate::state_bundle::StateEssence;
 use crate::timer::Timer;
 
 use crate::advanced_honing::utils::MAX_ADV_STATE;
+use crate::constants::juice_info::JuiceInfo;
 use crate::state::OneState;
+use crate::upgrade::Upgrade;
 use ahash::AHashSet;
 use ordered_float::OrderedFloat;
 use smallvec::smallvec;
@@ -677,12 +679,7 @@ pub fn solve<R: Rng>(
         if block > 1 {
             let juice_info = &other.prep_output.juice_info;
             for upgrade in other.upgrade_arr.iter_mut().filter(|u| u.is_normal_honing) {
-                upgrade.state.snap_to_block(
-                    block,
-                    upgrade.piece_type_usize,
-                    upgrade.upgrade_index,
-                    juice_info,
-                );
+                snap(upgrade, juice_info, block);
             }
         }
         other.metric = other.metric_router(probe);
@@ -1229,15 +1226,21 @@ fn shifted(
 
 /// Puts the plan on the upgrade, on the streak grid.
 fn put(best: &mut StateBundle, index: usize, plan: Vec<OneState>, block: usize) {
-    best.upgrade_arr[index].state.update_payload(plan);
+    let upgrade = &mut best.upgrade_arr[index];
+    upgrade.state.update_payload(plan);
     if block > 1 {
-        let upgrade = &mut best.upgrade_arr[index];
-        upgrade.state.snap_to_block(
-            block,
-            upgrade.piece_type_usize,
-            upgrade.upgrade_index,
-            &best.prep_output.juice_info,
-        );
+        snap(upgrade, &best.prep_output.juice_info, block);
+    }
+}
+
+/// Puts a normal upgrade's plan on the streak grid: every tap of a block takes what its first
+/// does. A plan on it already, a block cut at its pity included, is left as it is.
+fn snap(upgrade: &mut Upgrade, juice_info: &JuiceInfo, block: usize) {
+    let model = Model::of(upgrade, juice_info, block);
+    let indices = model.indices(&upgrade.state.payload);
+    let filled = model.filled(&indices);
+    if model.canonical(&filled) != model.canonical(&indices) {
+        upgrade.state.update_payload(model.plan(&filled));
     }
 }
 
