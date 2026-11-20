@@ -30,6 +30,8 @@ NEXT UPDATE
 
 - shouldn't be that hard, hard part (for me) is the cp formula for other stuff
 
+## honing recording ?
+
 ## Misc UI
 
 - need to add the UI for choices and hard code some examples

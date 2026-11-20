@@ -14,8 +14,8 @@
         // Domain move, old site's side: sends this browser's localStorage to migrate/index.html in hash chunks, then
         // redirects. Off unless VITE_MIGRATE_FROM is this origin; ?stay opts out. See AI notes "Frontend/Domain move".
         (async () => {
-            const FROM = "https://migration2.honing-forecast.pages.dev";
-            const TO = "https://test.honing-forecast.com";
+            const FROM = "https://honing-forecast.pages.dev";
+            const TO = "https://honing-forecast.com";
             if (!FROM || location.origin !== FROM) return;
             if (new URLSearchParams(location.search).has("stay")) return;
             window.hf_leaving = true; // main.ts skips mounting
@@ -62,7 +62,7 @@
             }
         })();
     </script>
-  <script type="module" crossorigin src="/assets/main-CTQwjKZ-.js"></script>
+  <script type="module" crossorigin src="/assets/main-ClwPHHVP.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/main-DtkhK7vY.css">
 </head>
 

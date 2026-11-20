@@ -4,11 +4,11 @@
 
 Honing Forecast is a Lost Ark honing calculator that takes into account owned mats and generates free tap & juice usage instructions that minimizes average gold used.
 
-Try it here! <https://honing-forecast.pages.dev/>  
+Try it here! <https://honing-forecast.com/>  
 
 ## Overview
 
-This is the markdown version of the [overview page on the site](honing-forecast.pages.dev/info/overview), which includes interactable demo.
+This is the markdown version of the [overview page on the site](honing-forecast.com/info/overview), which includes interactable demo.
 
 ### 1. What is being minimized?
 
@@ -19,7 +19,7 @@ We want to calculate and minimize **Average tradable gold spent**. More specific
 
 We chose these assumptions not necessarily because it's the most applicable to everyone, but because it's the only case we can actually compute in a reasonable amount of time. The hope is that even if your use case doesn't completely match this, it's still good advice.
 
-There's a demo of 2 upgrades that you can play around with [on the site](https://honing-forecast.pages.dev/info/overview).
+There's a demo of 2 upgrades that you can play around with [on the site](https://honing-forecast.com/info/overview).
 
 ### 2. How are the advices generated?
 
@@ -50,7 +50,7 @@ In part 1, I said the metric we optimize for is **Average tradable gold spent**,
 > **Average tradable gold spent** - Value of leftover materials
 
 By default (for "main"s) we treat char-bound and roster-bound as worthless, and tradable as the market price minus the 5% tax.
-There's a graph of "how much am I losing" when spending materials of each type [on the site](https://honing-forecast.pages.dev/info/overview) that illustrates the point better than I can in words here.
+There's a graph of "how much am I losing" when spending materials of each type [on the site](https://honing-forecast.com/info/overview) that illustrates the point better than I can in words here.
 
 I should note that raw Gold (used at the honing npc) is treated as just another material that happens to cost 1 gold each.
 
@@ -84,7 +84,7 @@ So the difference is that we do the subtraction (aka apply "f") prior to averagi
 
 ## How to use
 
-See the [guide on the site](https://honing-forecast.pages.dev/info/guide)
+See the [guide on the site](https://honing-forecast.com/info/guide)
 
 ## Contributing
 
