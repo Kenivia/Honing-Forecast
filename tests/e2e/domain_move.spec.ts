@@ -73,17 +73,20 @@ const first_char = (page: Page) =>
 const moved_notice = (page: Page) =>
   page.getByRole("status").filter({ hasText: "has moved to" });
 
-test("nothing saved: redirects, keeps the path, says it moved once", async ({
+test("nothing saved: straight to the same path, as if typed in", async ({
   page,
 }) => {
+  const hops: string[] = [];
+  page.on(
+    "framenavigated",
+    (f) => f === page.mainFrame() && hops.push(f.url()),
+  );
   await arrive(page, "/roster-setup");
-  await expect(moved_notice(page)).toBeVisible();
-  await hf.open(page, NEW + "/roster-setup");
-  await expect(moved_notice(page)).toHaveCount(0);
   await arrive(page, "/roster-setup"); // through the old link again
+  expect(hops.filter((u) => u.includes("/migrate/"))).toEqual([]);
+  expect((await storage(page, OLD)).hf_moved).toBe("1");
   await expect(moved_notice(page)).toHaveCount(0);
-  await expect.poll(outcomes).toEqual(["empty"]);
-  expect(reports[0].site).toBe(new URL(NEW).host);
+  expect(outcomes()).toEqual([]);
 });
 
 test("a save moves over, then later visits redirect straight away", async ({

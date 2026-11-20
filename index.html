@@ -44,9 +44,10 @@
                     const k = localStorage.key(i);
                     if (k !== MOVED && k !== TRIES) entries[k] = localStorage.getItem(k);
                 }
+                // nothing to send: same as typing the new address (no banner, no report)
                 if (!Object.keys(entries).length) {
                     localStorage.setItem(MOVED, "1");
-                    return go("empty");
+                    return straight();
                 }
                 const stream = new Blob([JSON.stringify(entries)]).stream().pipeThrough(new CompressionStream("deflate-raw"));
                 const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
