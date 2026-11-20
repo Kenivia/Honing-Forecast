@@ -10,6 +10,7 @@ import * as hf from "./helpers.ts";
 // playwright.staging.config.ts points these at the deployed staging pair
 const OLD = process.env.HF_MOVE_OLD ?? "http://localhost:5174";
 const NEW = process.env.HF_MOVE_NEW ?? "http://127.0.0.1:5174";
+const MODE = process.env.HF_MOVE_OLD ? "staging" : "development";
 const SAVE_KEY = "HF_CONFIG_V13_COMPRESSED";
 const BACKUP = fs.readFileSync(
   new URL("../honing-forecast-2026-10-17.json", import.meta.url),
@@ -97,7 +98,7 @@ test("a save moves over, then later visits redirect straight away", async ({
   expect(moved.hf_moved_in).toBeUndefined();
   expect((await storage(page, OLD)).hf_moved).toBe("1");
   await expect.poll(outcomes).toEqual(["moved"]);
-  expect(reports[0]).toMatchObject({ chunks: 1, version: "development" });
+  expect(reports[0]).toMatchObject({ chunks: 1, version: MODE });
 
   const hops: string[] = [];
   page.on(

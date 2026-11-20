@@ -70,7 +70,7 @@ function discard_old_save() {
     </template>
   </Banner>
   <Banner v-else-if="moved_notice === 'moved'" tone="info">
-    Honing Forecast has moved to a real domain name!.
+    Honing Forecast has moved to a real domain name!
     <template #actions>
       <button class="generic-button" @click="dismiss_moved_notice">
         Dismiss
@@ -83,7 +83,7 @@ function discard_old_save() {
       There is no room to keep a copy, so saving is paused until you download or
       discard it.
     </template>
-    Download it to restore later with "Import backup from file" on the roster
+    Download it to restore later with "Import from file" on the roster
     page.
     <template #actions>
       <button
