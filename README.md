@@ -2,13 +2,13 @@
 
 [![discord](https://img.shields.io/discord/1477278907655786611?logo=discord)](https://discord.gg/KWDpQyvgzc)
 
-Honing Forecast is a Lost Ark honing calculator that takes into account owned mats and generates free tap & juice usage instructions that minimizes average gold used.
+Honing Forecast is a Lost Ark honing calculator that takes into account owned mats and generates instructions that minimizes average gold used.
 
 Try it here! <https://honing-forecast.com/>  
 
 ## Overview
 
-This is the markdown version of the [overview page on the site](honing-forecast.com/info/overview), which includes interactable demo.
+This is the markdown version of the [overview page on the site](https://honing-forecast.com/info/overview), which includes interactable demo.
 
 ### 1. What is being minimized?
 
@@ -88,7 +88,7 @@ See the [guide on the site](https://honing-forecast.com/info/guide)
 
 ## Contributing
 
-The frontend is written in Vue3 and Typescript. The computation is in Rust which runs via wasm. You'll need the following:
+The computation is in Rust which runs via wasm, and the frontend is in Vue3 and Typescript.  You'll need the following:
 
 1. [Rust](https://rust-lang.org/tools/install/)
 2. [wasm-pack](https://wasm-bindgen.github.io/wasm-pack/)
@@ -97,7 +97,7 @@ The frontend is written in Vue3 and Typescript. The computation is in Rust which
 
 Run `pnpm install` for the dependencies, then `pnpm run dev` for the dev server.
 
-You can take a look at [good first issues](<https://github.com/Kenivia/Honing-Forecast/labels/good first issue>) or the [WIP doc](/public/WIP.md), but any help will be greatly appreciated!
+You can take a look at the [WIP doc](/public/WIP.md), but any help will be greatly appreciated!
 
 ## Bug report / feedback
 
