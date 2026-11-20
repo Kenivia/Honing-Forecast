@@ -68,21 +68,27 @@ pub fn text_like(
     similar(&read_box(img, x0, x1, y0, y1), want) >= min
 }
 
-/// The game reshows a notice near the hour that can cover the window's top: wait it out.
-pub fn wait_safe_time() {
-    use chrono::Timelike;
-    loop {
-        let m = chrono::Local::now().minute();
-        if !(56..=59).contains(&m) && m > 1 {
-            return;
-        }
-        log("waiting out the hourly notice");
-        ms(30_000);
-    }
+/// Quick test pass: a few rows and searches per path (`market_scan --quick`).
+pub static QUICK: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn quick() -> bool {
+    QUICK.load(std::sync::atomic::Ordering::Relaxed)
 }
 
 pub fn market_open(img: &RgbaImage) -> bool {
     looks(img, "market_title")
+}
+
+/// Closes the Market by its X: Alt+Y would type a "y" into a focused search box.
+pub fn close_market(g: &mut Game) {
+    for _ in 0..3 {
+        if !market_open(&g.shot(None)) {
+            return;
+        }
+        g.click(1625, 111);
+        ms(800);
+    }
+    g.key("esc");
 }
 
 /// Closes whatever is open and opens the Market fresh (Alt+Y always opens it on Search Market, filters reset).
@@ -90,12 +96,7 @@ pub fn fresh_market(g: &mut Game) {
     for attempt in 0..6 {
         let img = g.shot(None);
         if market_open(&img) {
-            g.key("alt+y");
-            ms(900);
-            if market_open(&g.shot(None)) {
-                g.key("esc");
-                ms(600);
-            }
+            close_market(g);
             continue;
         }
         g.key("alt+y");
@@ -244,4 +245,28 @@ pub fn ink_distance(img: &RgbaImage, r: &image::GrayImage, x0: i32, y0: i32) -> 
         best = best.min(sum / n.max(1) as f64);
     }
     best
+}
+
+/// Reads a value that a popup may cover, taking a new screenshot between tries.
+pub fn steady<T>(
+    g: &mut Game,
+    what: &str,
+    f: impl Fn(&RgbaImage) -> Result<T, String>,
+) -> Option<T> {
+    let mut img = g.shot(None);
+    for attempt in 0..4 {
+        match f(&img) {
+            Ok(v) => return Some(v),
+            Err(e) => {
+                if attempt == 3 {
+                    log(&format!("could not read {what}: {e:?}"));
+                    keep(&img, what);
+                    return None;
+                }
+                ms(2500);
+                img = g.shot(None);
+            }
+        }
+    }
+    None
 }

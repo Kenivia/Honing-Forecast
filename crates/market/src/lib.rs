@@ -2,10 +2,15 @@
 pub mod auction;
 pub mod ctl;
 pub mod db;
+pub mod exchange;
 pub mod game;
 pub mod glyph;
+pub mod icons;
 pub mod input;
 pub mod market;
 pub mod ocr;
+pub mod pp;
 pub mod shot;
+pub mod strips;
 pub mod ui;
+pub mod upload;

@@ -16,7 +16,7 @@ These notes are high-level. They cover what is hard to work out from reading one
 | `crates/wasm` (`hf-wasm`) | Thin `wasm_bindgen` wrappers over core and scanner. The only crate the frontend loads. |
 | `crates/arena` (`hf-arena`) | Native test harness for the core: Monte Carlo correctness, optimizer accuracy and speed, results in SQLite. |
 | `frontend/` | Vue 3 + Pinia + Tailwind app. `@` aliases to this folder. |
-| `cloudflare/` | A Worker that proxies and caches market prices and character lookups, and stores analytics uploads in D1 (`schema.sql`). |
+| `cloudflare/` | A Worker that proxies and caches market prices and character lookups, and stores analytics uploads and the market scanner's passes in D1 (`schema.sql`). |
 | `public/` | Static assets, changelogs, `WIP.md` (the author's roadmap), scanner config and OCR model. |
 | `scanner_setup/` | Everything that builds or calibrates the scanner config: source icons (`templates/`), game-file extraction, brightness calibration, anchor setup, the browser profiling scripts. |
 | `scripts/` | Changelog helper, the pre-deploy check, analytics pull and analysis (`analytics/`), a market price and population viewer (`market/`, `pnpm market`, `Forecasting/Market.md`), the Income page's mock save (`mock income/`) and game-data helpers (`game_files/`, `json_parser/`, `arena/`); everything scanner-specific lives in `scanner_setup/` instead. |
@@ -38,6 +38,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 - `pnpm deploy` only checks (`scripts/pre_deploy_check.ps1`) you are on a clean `main`, then force-pushes (`--force-with-lease`) `main` to the `Production` branch (assumed to be what the hosted site builds from). It does not run tests.
 - `pnpm cloudflare-deploy` deploys the Worker separately; `pnpm cloudflare-dev` runs it remotely.
 - `pnpm pull-analytics` downloads and deletes the analytics uploads, `pnpm analytics` pulls and then serves the plots (`Frontend/External services.md`).
+- `pnpm market-scan` runs the market scanner (materials and gems) in a loop; see `Market scanner/Overview.md`.
 - `pnpm change-log` scaffolds the next changelog file in `public/change-logs`.
 - `pnpm browsers` installs the Playwright browsers; `pnpm scanner-suite`, `scanner-profile` and `scanner-compare` are the scanner's tools (`Screen scanner/`). `pnpm remove-tmp` clears `.tmp/` (`Working in this repo.md`).
 
@@ -77,7 +78,7 @@ Each note describes the code as it is now. Where something was tried and failed 
 - `Frontend/State and persistence.md`: the store, data scopes, localStorage and migrations.
 - `Frontend/Domain move.md`: handing each browser's localStorage from pages.dev to honing-forecast.com; staging and launch steps.
 - `Frontend/Wasm contract.md`: payload building, worker protocol, what must match Rust.
-- `Frontend/External services.md`: market prices, character import, analytics uploads, changelogs.
+- `Frontend/External services.md`: market prices, character import, analytics uploads, market scanner passes, changelogs.
 - `Frontend/UI components.md`: shared components; `HoverTip`, the site's hover tooltip.
 - `Screen scanner/Pipeline.md`: capture to recognised slots, and what is still stubbed.
 - `Screen scanner/Tooltips.md`: reading the hover tooltip, chests among it, and tying it to a slot.

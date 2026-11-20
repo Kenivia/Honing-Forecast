@@ -40,3 +40,23 @@ CREATE TABLE IF NOT EXISTS moves (
   chunks INTEGER,
   bytes INTEGER
 );
+
+-- market scanner passes (crates/market), each as uploaded: {version, region, started, finished, sections, points}
+CREATE TABLE IF NOT EXISTS market_scans (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  region TEXT,
+  started TEXT,
+  finished TEXT,
+  received INTEGER,
+  body TEXT,
+  -- a pass is stored once; also serves the latest pass per region
+  UNIQUE (region, started)
+);
+
+-- the passes' points per region and month: {key: {day: value}}
+CREATE TABLE IF NOT EXISTS market_history (
+  region TEXT,
+  month TEXT,
+  body TEXT,
+  PRIMARY KEY (region, month)
+);

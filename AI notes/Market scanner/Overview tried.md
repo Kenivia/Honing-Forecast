@@ -12,3 +12,7 @@ Warnings behind `Overview.md`. Read only when trying something new here.
 - Don't detect the last page by the first row's name: the clicked row is highlighted, so the same page read differently. Read the page indicator.
 - Don't trust a dropdown pick from a fresh window: the first Tier 4 pick after Alt+Y failed twice and the T3 list was read.
 - Don't wait for the 5-day hover on an item with no average ("-"): there is none, and it cost 10 s of retries.
+- Don't read text with ocrs: purchase-window names came back as "Taorig:Hefr1921" (Tailoring: Hellfire [19-20]) and time left as "52m" (20h52m), wrong on most of 372 crops of a pass; PP-OCRv5 read all of them.
+- Don't place the 5-day hover's rows at fixed steps: a "-" day's row is shorter, and the last value of "995.0, -, -, -, 929.0" was cut ("?2?.?").
+- Don't read a Market list sorted by lowest price page by page: prices move between pages. Sort by Rank.
+- Don't give PP-OCRv5 a table cell's whole width: its divider line left the strip mostly blank and the read came back empty.

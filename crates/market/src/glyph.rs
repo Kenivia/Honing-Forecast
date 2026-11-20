@@ -126,6 +126,12 @@ fn drawing(c: char, px: f32, fx: u8, fy: u8) -> Arc<Drawing> {
 
 /// Text of a number read by the game's font: digits, '.' for a separator, '-', '?' when unsure.
 pub fn read(img: &RgbaImage, x0: u32, x1: u32, y0: u32, y1: u32) -> String {
+    let t = read_inner(img, x0, x1, y0, y1);
+    crate::strips::save(img, x0, x1, y0, y1, "glyph", &t);
+    t
+}
+
+fn read_inner(img: &RgbaImage, x0: u32, x1: u32, y0: u32, y1: u32) -> String {
     let (glyphs, _) = segment(img, x0, x1, y0, y1);
     let height = glyphs.iter().map(|g| g.y1 - g.y0).max().unwrap_or(0);
     // ink level: background is the darkest, text the brightest of the rectangle

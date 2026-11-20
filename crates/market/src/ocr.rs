@@ -97,18 +97,12 @@ pub fn lines(img: &RgbaImage, x0: u32, x1: u32, y0: u32, y1: u32) -> Vec<(u32, u
     out
 }
 
-/// Reads the ink inside a rectangle at a few margins until two reads agree (the recogniser doubles or drops
-/// characters at one margin and not at the next), else the last read.
+/// The text inside a rectangle, by PP-OCRv5 (pp.rs): it reads the window names and the time left that ocrs
+/// got wrong (2026-11-20). It writes no spaces.
 pub fn read_box(img: &RgbaImage, x0: u32, x1: u32, y0: u32, y1: u32) -> String {
-    let mut seen: Vec<String> = vec![];
-    for m in [(1.5, 0.5), (1.0, 0.4), (2.0, 0.6), (1.2, 0.7)] {
-        let t = read_box_at(img, x0, x1, y0, y1, m);
-        if seen.contains(&t) {
-            return t;
-        }
-        seen.push(t);
-    }
-    seen.pop().unwrap()
+    let t = crate::pp::read(img, x0, x1, y0, y1);
+    crate::strips::save(img, x0, x1, y0, y1, "ocr", &t);
+    t
 }
 
 /// The digits of a text, which are compared apart from the rest: one wrong numeral barely changes how alike two names are.
@@ -124,37 +118,6 @@ pub fn is_name(read: &str, name: &str) -> bool {
             .collect::<String>()
     };
     numerals(read) == numerals(name) && similar(&letters(read), &letters(name)) >= 0.9
-}
-
-fn read_box_at(
-    img: &RgbaImage,
-    x0: u32,
-    x1: u32,
-    y0: u32,
-    y1: u32,
-    (fx, fy): (f64, f64),
-) -> String {
-    let (mut lx, mut hx, mut ly, mut hy) = (u32::MAX, 0, u32::MAX, 0);
-    for y in y0..y1 {
-        for x in x0..x1 {
-            if ink(img, x, y) {
-                (lx, hx, ly, hy) = (lx.min(x), hx.max(x), ly.min(y), hy.max(y));
-            }
-        }
-    }
-    if lx == u32::MAX {
-        return String::new();
-    }
-    let h = hy - ly + 1;
-    let (mx, my) = ((h as f64 * fx) as u32 + 6, (h as f64 * fy) as u32 + 4);
-    let (x, y) = (lx.saturating_sub(mx), ly.saturating_sub(my));
-    read(
-        img,
-        x,
-        y,
-        (hx + mx + 1).min(img.width()) - x,
-        (hy + my + 1).min(img.height()) - y,
-    )
 }
 
 /// A number inside a rectangle, see `parse_number`.

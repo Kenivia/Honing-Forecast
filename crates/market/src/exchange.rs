@@ -1,0 +1,171 @@
+// The Lost Ark Shop's Currency Exchange (F9, Currency Exchange, its Information page): the Royal Crystal
+// sale offers, the Crystal purchase offers and the recent trades. Only Currency Exchange and Leave are pressed;
+// the buying panel (bottom right) is neither read nor touched.
+use crate::{
+    game::{Game, ms},
+    ui::*,
+};
+use image::RgbaImage;
+
+#[derive(Debug, Default, serde::Serialize)]
+pub struct Offer {
+    /// gold per 100 crystals
+    pub price: f64,
+    pub quantity: f64,
+}
+
+#[derive(Debug, Default, serde::Serialize)]
+pub struct Trade {
+    /// gold per 100 crystals
+    pub price: f64,
+    pub gold: f64,
+    pub crystals: f64,
+}
+
+#[derive(Debug, Default, serde::Serialize)]
+pub struct Exchange {
+    /// "Royal Crystal Sale Offers: 5 sales with lowest price", as listed (dearest first)
+    pub royal_sale: Vec<Offer>,
+    /// "Crystal Purchase Offers: 5 highest price listings", as listed (dearest first)
+    pub crystal_purchase: Vec<Offer>,
+    /// "Recent Prices", as listed
+    pub recent: Vec<Trade>,
+}
+
+fn wait_for(g: &mut Game, name: &str, seconds: u32) -> bool {
+    for _ in 0..seconds * 2 {
+        if looks(&g.shot(None), name) {
+            return true;
+        }
+        ms(500);
+    }
+    false
+}
+
+/// Rows from the top until an empty one; a row read only in part is an error.
+fn rows<T>(
+    img: &RgbaImage,
+    n: u32,
+    cells: impl Fn(u32) -> Vec<(u32, u32, u32, u32)>,
+    make: impl Fn(&[f64]) -> T,
+) -> Result<Vec<T>, String> {
+    let mut out = vec![];
+    for k in 0..n {
+        let reads: Vec<_> = cells(k)
+            .into_iter()
+            .map(|(x0, x1, y0, y1)| num(img, x0, x1, y0, y1, false))
+            .collect();
+        if reads
+            .iter()
+            .all(|r| r.as_ref().is_err_and(|e| e.is_empty()))
+        {
+            break;
+        }
+        let v: Vec<f64> = reads
+            .into_iter()
+            .map(|r| r.ok().flatten().ok_or(format!("row {k}")))
+            .collect::<Result<_, _>>()?;
+        out.push(make(&v));
+    }
+    Ok(out)
+}
+
+fn read(img: &RgbaImage) -> Result<Exchange, String> {
+    let offer = |v: &[f64]| Offer {
+        price: v[0],
+        quantity: v[1],
+    };
+    let royal_sale = rows(
+        img,
+        5,
+        |k| {
+            vec![
+                (400, 540, 310 + 54 * k, 333 + 54 * k),
+                (140, 270, 310 + 54 * k, 333 + 54 * k),
+            ]
+        },
+        offer,
+    )?;
+    if royal_sale.is_empty() {
+        return Err("not loaded".into());
+    }
+    let crystal_purchase = rows(
+        img,
+        5,
+        |k| {
+            vec![
+                (400, 540, 708 + 54 * k, 731 + 54 * k),
+                (700, 830, 708 + 54 * k, 731 + 54 * k),
+            ]
+        },
+        offer,
+    )?;
+    let recent = rows(
+        img,
+        7,
+        |k| {
+            let (y0, y1) = (303 + 39 * k, 322 + 39 * k);
+            vec![
+                (1000, 1200, y0, y1),
+                (1290, 1480, y0, y1),
+                (1600, 1760, y0, y1),
+            ]
+        },
+        |v| Trade {
+            price: v[0],
+            gold: v[1],
+            crystals: v[2],
+        },
+    )?;
+    Ok(Exchange {
+        royal_sale,
+        crystal_purchase,
+        recent,
+    })
+}
+
+/// Leave closes the shop from either page; pressed only while one of them is up.
+fn leave(g: &mut Game) {
+    for _ in 0..3 {
+        let img = g.shot(None);
+        if !looks(&img, "exchange_title") && !looks(&img, "shop_title") {
+            return;
+        }
+        g.click(1814, 1036);
+        ms(2500);
+    }
+    g.key("esc");
+}
+
+pub fn scan(g: &mut Game) -> Option<Exchange> {
+    close_market(g);
+    crate::strips::context("currency exchange");
+    g.key("f9");
+    // the shop can take a while to load the first time
+    if !wait_for(g, "shop_title", 60) {
+        log("the shop did not open");
+        keep(&g.shot(None), "no_shop");
+        leave(g);
+        return None;
+    }
+    g.click(1636, 1036);
+    ms(500);
+    // off the panels: the bottom bar's currencies have tooltips that reach the tables
+    g.move_to(1900, 600);
+    if !wait_for(g, "exchange_title", 20) {
+        log("the currency exchange did not open");
+        keep(&g.shot(None), "no_exchange");
+        leave(g);
+        return None;
+    }
+    if !looks(&g.shot(None), "exchange_info") {
+        g.click(882, 40);
+        g.move_to(1900, 600);
+        ms(2000);
+    }
+    // the tables draw in for a moment after the title (a "500" read as "-...??0")
+    ms(1500);
+    let ex = steady(g, "currency exchange", read);
+    leave(g);
+    ex
+}

@@ -1,4 +1,4 @@
-// Scans kept in ignored/market/market.sqlite.
+// Scans kept in ignored/market/market.sqlite. The currency exchange is kept only in the payload.
 use crate::{auction::Search, market::Material};
 use rusqlite::{Connection, params};
 
@@ -8,9 +8,10 @@ pub fn open(path: &str) -> Connection {
     std::fs::create_dir_all(concat!(env!("HF_ROOT"), "/ignored/market")).unwrap();
     let c = Connection::open(path).unwrap();
     c.execute_batch(
-        "CREATE TABLE IF NOT EXISTS scans(id INTEGER PRIMARY KEY, started TEXT, finished TEXT, region TEXT);
+        "CREATE TABLE IF NOT EXISTS scans(id INTEGER PRIMARY KEY, started TEXT, finished TEXT, region TEXT,
+            payload TEXT, uploaded INTEGER DEFAULT 0);
          CREATE TABLE IF NOT EXISTS materials(scan INTEGER, at TEXT, name TEXT, raw_name TEXT, bundle INTEGER,
-            avg_day REAL, recent REAL, available REAL);
+            avg_day REAL, recent REAL, available REAL, category TEXT);
          CREATE TABLE IF NOT EXISTS depth(scan INTEGER, name TEXT, tier INTEGER, price REAL, quantity REAL);
          CREATE TABLE IF NOT EXISTS history(scan INTEGER, name TEXT, days_ago INTEGER, avg REAL);
          CREATE TABLE IF NOT EXISTS searches(id INTEGER PRIMARY KEY, scan INTEGER, at TEXT, kind TEXT, item TEXT,
@@ -46,7 +47,7 @@ pub fn finish(c: &Connection, scan: i64) {
 pub fn materials(c: &Connection, scan: i64, ms: &[Material]) {
     for m in ms {
         c.execute(
-            "INSERT INTO materials VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            "INSERT INTO materials VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
             params![
                 scan,
                 now(),
@@ -55,7 +56,8 @@ pub fn materials(c: &Connection, scan: i64, ms: &[Material]) {
                 m.bundle,
                 m.avg_day,
                 m.recent,
-                m.available
+                m.available,
+                m.category
             ],
         )
         .unwrap();
@@ -101,4 +103,30 @@ pub fn searches(c: &Connection, scan: i64, ss: &[Search]) {
             .unwrap();
         }
     }
+}
+
+/// The pass as uploaded (`upload::payload`), kept until sent.
+pub fn set_payload(c: &Connection, scan: i64, payload: &serde_json::Value) {
+    c.execute(
+        "UPDATE scans SET payload = ?1 WHERE id = ?2",
+        params![payload.to_string(), scan],
+    )
+    .unwrap();
+}
+
+pub fn unsent(c: &Connection) -> Vec<(i64, String)> {
+    let mut q = c
+        .prepare(
+            "SELECT id, payload FROM scans WHERE uploaded = 0 AND payload IS NOT NULL ORDER BY id",
+        )
+        .unwrap();
+    q.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+        .unwrap()
+        .map(Result::unwrap)
+        .collect()
+}
+
+pub fn uploaded(c: &Connection, scan: i64) {
+    c.execute("UPDATE scans SET uploaded = 1 WHERE id = ?1", params![scan])
+        .unwrap();
 }

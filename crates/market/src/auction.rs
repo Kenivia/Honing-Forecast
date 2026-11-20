@@ -7,7 +7,7 @@ use crate::{
 };
 use image::RgbaImage;
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, serde::Serialize)]
 pub struct Listing {
     pub name: String,
     pub trades: String,
@@ -18,7 +18,7 @@ pub struct Listing {
 }
 
 /// One search and what it found.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, serde::Serialize)]
 pub struct Search {
     pub kind: &'static str,
     pub item: String,
@@ -246,10 +246,10 @@ pub fn gems(g: &mut Game) -> Vec<Search> {
     ah_setup(g);
     let mut out = vec![];
     let mut last: Vec<Listing> = vec![];
-    for level in (5..=10).rev() {
+    for level in (5..=10).rev().filter(|l| !quick() || *l == 10 || *l == 5) {
         for (kind, category) in [("Doomfire", "damage"), ("Blazing", "cooldown")] {
-            wait_safe_time();
             let name = format!("Lv. {level} {kind} Gem");
+            crate::strips::context(&name);
             let mut found = None;
             for _ in 0..2 {
                 g.click(1462, 240);
@@ -381,12 +381,15 @@ pub fn accessories(g: &mut Game) -> Vec<Search> {
     let mut out = vec![];
     let mut last: Vec<Listing> = vec![];
     for grp in &GROUPS {
-        for (la, lb) in COMBOS {
-            wait_safe_time();
+        for (la, lb) in COMBOS
+            .into_iter()
+            .filter(|c| !quick() || *c == (2, 2) || *c == (0, 2))
+        {
             let what = format!(
                 "{} {} {}/{}",
                 grp.item, grp.category, LEVELS[la], LEVELS[lb]
             );
+            crate::strips::context(&what);
             let mut rows = None;
             for _ in 0..3 {
                 if !open_advanced(g) {

@@ -1,0 +1,961 @@
+[
+ {
+  "name": "Abidos Fusion Material",
+  "grade": 2,
+  "icon": "use_12_86",
+  "category": 71801,
+  "tier": 4
+ },
+ {
+  "name": "Abidos Iron Ore",
+  "grade": 2,
+  "icon": "lifelevel_02_49",
+  "category": 70206,
+  "tier": 0
+ },
+ {
+  "name": "Abidos Relic",
+  "grade": 2,
+  "icon": "lifelevel_02_55",
+  "category": 70201,
+  "tier": 0
+ },
+ {
+  "name": "Abidos Solar Carp",
+  "grade": 2,
+  "icon": "lifelevel_02_53",
+  "category": 70202,
+  "tier": 0
+ },
+ {
+  "name": "Abidos Thick Raw Meat",
+  "grade": 2,
+  "icon": "lifelevel_02_51",
+  "category": 70204,
+  "tier": 0
+ },
+ {
+  "name": "Abidos Timber",
+  "grade": 2,
+  "icon": "lifelevel_02_48",
+  "category": 70205,
+  "tier": 0
+ },
+ {
+  "name": "Abidos Wild Flower",
+  "grade": 2,
+  "icon": "lifelevel_02_47",
+  "category": 70203,
+  "tier": 0
+ },
+ {
+  "name": "Adept Craft Kit",
+  "grade": 3,
+  "icon": "use_8_89",
+  "category": 73200,
+  "tier": 0
+ },
+ {
+  "name": "Ancient Relic",
+  "grade": 0,
+  "icon": "use_9_3",
+  "category": 70201,
+  "tier": 0
+ },
+ {
+  "name": "Apprentice Craft Kit",
+  "grade": 2,
+  "icon": "use_8_88",
+  "category": 73200,
+  "tier": 0
+ },
+ {
+  "name": "Artisan's Metallurgy: Level 1",
+  "grade": 3,
+  "icon": "use_12_242",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Artisan's Metallurgy: Level 2",
+  "grade": 4,
+  "icon": "use_12_244",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Artisan's Metallurgy: Level 3",
+  "grade": 5,
+  "icon": "use_13_221",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Artisan's Metallurgy: Level 4",
+  "grade": 6,
+  "icon": "use_13_223",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Artisan's Tailoring: Level 1",
+  "grade": 3,
+  "icon": "use_12_243",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Artisan's Tailoring: Level 2",
+  "grade": 4,
+  "icon": "use_12_245",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Artisan's Tailoring: Level 3",
+  "grade": 5,
+  "icon": "use_13_222",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Artisan's Tailoring: Level 4",
+  "grade": 6,
+  "icon": "use_13_224",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Basic Extractor",
+  "grade": 3,
+  "icon": "use_7_178",
+  "category": 72800,
+  "tier": 2
+ },
+ {
+  "name": "Bright Wild Flower",
+  "grade": 2,
+  "icon": "use_8_47",
+  "category": 70203,
+  "tier": 0
+ },
+ {
+  "name": "Crystallized Destruction Stone",
+  "grade": 0,
+  "icon": "use_6_105",
+  "category": 71801,
+  "tier": 3
+ },
+ {
+  "name": "Crystallized Excavating Bauble",
+  "grade": 3,
+  "icon": "all_quest_02_67",
+  "category": 70201,
+  "tier": 0
+ },
+ {
+  "name": "Crystallized Fishing Bauble",
+  "grade": 3,
+  "icon": "all_quest_04_183",
+  "category": 70202,
+  "tier": 0
+ },
+ {
+  "name": "Crystallized Guardian Stone",
+  "grade": 0,
+  "icon": "use_6_104",
+  "category": 71801,
+  "tier": 3
+ },
+ {
+  "name": "Crystallized Hunting Bauble",
+  "grade": 3,
+  "icon": "all_quest_02_65",
+  "category": 70204,
+  "tier": 0
+ },
+ {
+  "name": "Destiny Crystallized Destruction Stone",
+  "grade": 0,
+  "icon": "use_13_249",
+  "category": 71801,
+  "tier": 4
+ },
+ {
+  "name": "Destiny Crystallized Guardian Stone",
+  "grade": 0,
+  "icon": "use_13_250",
+  "category": 71801,
+  "tier": 4
+ },
+ {
+  "name": "Destiny Destruction Stone",
+  "grade": 0,
+  "icon": "use_12_88",
+  "category": 71801,
+  "tier": 4
+ },
+ {
+  "name": "Destiny Guardian Stone",
+  "grade": 0,
+  "icon": "use_12_89",
+  "category": 71801,
+  "tier": 4
+ },
+ {
+  "name": "Destiny Leapstone",
+  "grade": 2,
+  "icon": "use_12_85",
+  "category": 71801,
+  "tier": 4
+ },
+ {
+  "name": "Destiny Shard Pouch (L)",
+  "grade": 3,
+  "icon": "use_12_93",
+  "category": 31060,
+  "tier": 4
+ },
+ {
+  "name": "Destiny Shard Pouch (M)",
+  "grade": 2,
+  "icon": "use_12_92",
+  "category": 31060,
+  "tier": 4
+ },
+ {
+  "name": "Destiny Shard Pouch (S)",
+  "grade": 1,
+  "icon": "use_12_91",
+  "category": 31060,
+  "tier": 4
+ },
+ {
+  "name": "Destruction Stone",
+  "grade": 0,
+  "icon": "use_7_15",
+  "category": 71801,
+  "tier": 2
+ },
+ {
+  "name": "Destruction Stone Fragment",
+  "grade": 0,
+  "icon": "use_8_250",
+  "category": 71801,
+  "tier": 2
+ },
+ {
+  "name": "Enhanced Metallurgy: Hellfire [19-20]",
+  "grade": 5,
+  "icon": "use_12_218",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Enhanced Tailoring: Hellfire [19-20]",
+  "grade": 5,
+  "icon": "use_12_219",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Epic Ship Parts Material",
+  "grade": 3,
+  "icon": "use_8_120",
+  "category": 71200,
+  "tier": 0
+ },
+ {
+  "name": "Exotic Leather",
+  "grade": 2,
+  "icon": "lifelevel_02_50",
+  "category": 70204,
+  "tier": 0
+ },
+ {
+  "name": "Exotic Relic",
+  "grade": 2,
+  "icon": "lifelevel_02_54",
+  "category": 70201,
+  "tier": 0
+ },
+ {
+  "name": "Expert Craft Kit",
+  "grade": 4,
+  "icon": "use_8_90",
+  "category": 73200,
+  "tier": 0
+ },
+ {
+  "name": "Fish",
+  "grade": 0,
+  "icon": "use_1_142",
+  "category": 70202,
+  "tier": 0
+ },
+ {
+  "name": "Gienah's Book: Armor",
+  "grade": 2,
+  "icon": "use_6_226",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Gienah's Book: Weapon",
+  "grade": 2,
+  "icon": "use_6_222",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Glacier's Breath",
+  "grade": 3,
+  "icon": "use_12_172",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Gold",
+  "grade": 0,
+  "icon": "money_4",
+  "category": 70300,
+  "tier": 0
+ },
+ {
+  "name": "Great Destiny Leapstone",
+  "grade": 2,
+  "icon": "use_13_251",
+  "category": 71801,
+  "tier": 4
+ },
+ {
+  "name": "Great Honor Leapstone",
+  "grade": 2,
+  "icon": "use_7_156",
+  "category": 71801,
+  "tier": 3
+ },
+ {
+  "name": "Guardian Stone",
+  "grade": 0,
+  "icon": "use_7_16",
+  "category": 71801,
+  "tier": 2
+ },
+ {
+  "name": "Guardian Stone Fragment",
+  "grade": 0,
+  "icon": "use_8_251",
+  "category": 71801,
+  "tier": 2
+ },
+ {
+  "name": "Harmony Leapstone",
+  "grade": 2,
+  "icon": "use_10_25",
+  "category": 71801,
+  "tier": 2
+ },
+ {
+  "name": "Harmony Shard Pouch (L)",
+  "grade": 3,
+  "icon": "use_8_233",
+  "category": 70100,
+  "tier": 2
+ },
+ {
+  "name": "Harmony Shard Pouch (M)",
+  "grade": 2,
+  "icon": "use_8_232",
+  "category": 70100,
+  "tier": 2
+ },
+ {
+  "name": "Harmony Shard Pouch (S)",
+  "grade": 1,
+  "icon": "use_8_231",
+  "category": 70100,
+  "tier": 2
+ },
+ {
+  "name": "Heavy Iron Ore",
+  "grade": 1,
+  "icon": "use_3_239",
+  "category": 70206,
+  "tier": 0
+ },
+ {
+  "name": "Honor Leapstone",
+  "grade": 2,
+  "icon": "use_7_155",
+  "category": 71801,
+  "tier": 3
+ },
+ {
+  "name": "Honor Shard Pouch (L)",
+  "grade": 3,
+  "icon": "use_8_227",
+  "category": 31060,
+  "tier": 3
+ },
+ {
+  "name": "Honor Shard Pouch (M)",
+  "grade": 2,
+  "icon": "use_8_226",
+  "category": 31060,
+  "tier": 3
+ },
+ {
+  "name": "Honor Shard Pouch (S)",
+  "grade": 1,
+  "icon": "use_8_225",
+  "category": 31060,
+  "tier": 3
+ },
+ {
+  "name": "Iron Ore",
+  "grade": 0,
+  "icon": "use_3_243",
+  "category": 70206,
+  "tier": 0
+ },
+ {
+  "name": "Large Honor Shard Pouch",
+  "grade": 4,
+  "icon": "use_8_227",
+  "category": 31060,
+  "tier": 3
+ },
+ {
+  "name": "Lava's Breath",
+  "grade": 3,
+  "icon": "use_12_171",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Life Leapstone",
+  "grade": 2,
+  "icon": "use_10_24",
+  "category": 71801,
+  "tier": 2
+ },
+ {
+  "name": "Marvelous Honor Leapstone",
+  "grade": 2,
+  "icon": "use_7_157",
+  "category": 71801,
+  "tier": 3
+ },
+ {
+  "name": "Master Craft Kit",
+  "grade": 5,
+  "icon": "use_8_91",
+  "category": 73200,
+  "tier": 0
+ },
+ {
+  "name": "Metallurgy: Advanced Casting",
+  "grade": 5,
+  "icon": "use_6_220",
+  "category": 71802,
+  "tier": 1
+ },
+ {
+  "name": "Metallurgy: Advanced Folding",
+  "grade": 5,
+  "icon": "use_6_221",
+  "category": 71802,
+  "tier": 2
+ },
+ {
+  "name": "Metallurgy: Applied Casting",
+  "grade": 4,
+  "icon": "use_6_220",
+  "category": 71802,
+  "tier": 1
+ },
+ {
+  "name": "Metallurgy: Applied Folding",
+  "grade": 4,
+  "icon": "use_6_221",
+  "category": 71802,
+  "tier": 2
+ },
+ {
+  "name": "Metallurgy: Basic Casting",
+  "grade": 3,
+  "icon": "use_6_220",
+  "category": 71802,
+  "tier": 1
+ },
+ {
+  "name": "Metallurgy: Basic Folding",
+  "grade": 3,
+  "icon": "use_6_221",
+  "category": 71802,
+  "tier": 2
+ },
+ {
+  "name": "Metallurgy: Blood [8-10]",
+  "grade": 4,
+  "icon": "use_6_222",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Metallurgy: Decay [13-15]",
+  "grade": 6,
+  "icon": "use_7_69",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Metallurgy: Decay [16-19]",
+  "grade": 6,
+  "icon": "use_7_69",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Metallurgy: Demon Beast [11-15]",
+  "grade": 5,
+  "icon": "use_6_222",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Metallurgy: Hellfire [11-14]",
+  "grade": 5,
+  "icon": "use_12_218",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Metallurgy: Hellfire [15-18]",
+  "grade": 5,
+  "icon": "use_12_218",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Metallurgy: Hellfire [19-20]",
+  "grade": 5,
+  "icon": "use_12_218",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Metallurgy: Phantom [13-15]",
+  "grade": 5,
+  "icon": "use_7_69",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Metallurgy: Phantom [16-19]",
+  "grade": 6,
+  "icon": "use_7_69",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Metallurgy: Scale [5-7]",
+  "grade": 3,
+  "icon": "use_6_222",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Metallurgy: Tremor [12-15]",
+  "grade": 6,
+  "icon": "use_12_218",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Metallurgy: Tremor [16-19]",
+  "grade": 6,
+  "icon": "use_12_218",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Moon's Breath",
+  "grade": 3,
+  "icon": "use_7_167",
+  "category": 71802,
+  "tier": 2
+ },
+ {
+  "name": "Normal Ship Parts Material",
+  "grade": 0,
+  "icon": "use_8_117",
+  "category": 71200,
+  "tier": 0
+ },
+ {
+  "name": "Novice Craft Kit",
+  "grade": 1,
+  "icon": "use_8_87",
+  "category": 73200,
+  "tier": 0
+ },
+ {
+  "name": "Obliteration Stone",
+  "grade": 0,
+  "icon": "use_10_58",
+  "category": 71801,
+  "tier": 3
+ },
+ {
+  "name": "Oreha Fusion Material",
+  "grade": 2,
+  "icon": "use_9_71",
+  "category": 71801,
+  "tier": 3
+ },
+ {
+  "name": "Oreha Solar Carp",
+  "grade": 2,
+  "icon": "use_8_74",
+  "category": 70202,
+  "tier": 0
+ },
+ {
+  "name": "Oreha Thick Meat",
+  "grade": 2,
+  "icon": "use_8_67",
+  "category": 70204,
+  "tier": 0
+ },
+ {
+  "name": "Powerless Caldarr Fusion Material",
+  "grade": 2,
+  "icon": "lifelevel_02_10",
+  "category": 70100,
+  "tier": 0
+ },
+ {
+  "name": "Powerless Oreha Fusion Material",
+  "grade": 2,
+  "icon": "lifelevel_02_9",
+  "category": 70100,
+  "tier": 0
+ },
+ {
+  "name": "Prime Oreha Fusion Material",
+  "grade": 3,
+  "icon": "use_11_29",
+  "category": 71801,
+  "tier": 3
+ },
+ {
+  "name": "Protection Stone",
+  "grade": 0,
+  "icon": "use_10_59",
+  "category": 71801,
+  "tier": 3
+ },
+ {
+  "name": "Radiant Honor Leapstone",
+  "grade": 2,
+  "icon": "use_11_17",
+  "category": 71801,
+  "tier": 3
+ },
+ {
+  "name": "Rare Relic",
+  "grade": 1,
+  "icon": "use_9_4",
+  "category": 70201,
+  "tier": 0
+ },
+ {
+  "name": "Rare Ship Parts Material",
+  "grade": 2,
+  "icon": "use_8_119",
+  "category": 71200,
+  "tier": 0
+ },
+ {
+  "name": "Redflesh Fish",
+  "grade": 1,
+  "icon": "use_4_49",
+  "category": 70202,
+  "tier": 0
+ },
+ {
+  "name": "Refined Obliteration Stone",
+  "grade": 0,
+  "icon": "use_11_15",
+  "category": 71801,
+  "tier": 3
+ },
+ {
+  "name": "Refined Protection Stone",
+  "grade": 0,
+  "icon": "use_11_16",
+  "category": 71801,
+  "tier": 3
+ },
+ {
+  "name": "Shy Wild Flower",
+  "grade": 1,
+  "icon": "use_4_14",
+  "category": 70203,
+  "tier": 0
+ },
+ {
+  "name": "Sidereal Energy",
+  "grade": 7,
+  "icon": "use_10_81",
+  "category": 73400,
+  "tier": 0
+ },
+ {
+  "name": "Simple Extractor",
+  "grade": 3,
+  "icon": "use_7_177",
+  "category": 72800,
+  "tier": 2
+ },
+ {
+  "name": "Solar Blessing",
+  "grade": 2,
+  "icon": "use_7_162",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Solar Grace",
+  "grade": 1,
+  "icon": "use_7_161",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Solar Protection",
+  "grade": 3,
+  "icon": "use_7_163",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Star's Breath",
+  "grade": 3,
+  "icon": "use_7_169",
+  "category": 71802,
+  "tier": 2
+ },
+ {
+  "name": "Strong Iron Ore",
+  "grade": 2,
+  "icon": "use_5_76",
+  "category": 70206,
+  "tier": 0
+ },
+ {
+  "name": "Sturdy Timber",
+  "grade": 2,
+  "icon": "use_4_4",
+  "category": 70205,
+  "tier": 0
+ },
+ {
+  "name": "Superior Abidos Fusion Material",
+  "grade": 3,
+  "icon": "use_13_252",
+  "category": 71801,
+  "tier": 4
+ },
+ {
+  "name": "Superior Extractor",
+  "grade": 3,
+  "icon": "use_7_179",
+  "category": 72800,
+  "tier": 3
+ },
+ {
+  "name": "Superior Oreha Fusion Material",
+  "grade": 3,
+  "icon": "use_8_109",
+  "category": 71801,
+  "tier": 3
+ },
+ {
+  "name": "Tailoring: Advanced Design",
+  "grade": 5,
+  "icon": "use_6_224",
+  "category": 71802,
+  "tier": 1
+ },
+ {
+  "name": "Tailoring: Advanced Knots",
+  "grade": 5,
+  "icon": "use_6_225",
+  "category": 71802,
+  "tier": 2
+ },
+ {
+  "name": "Tailoring: Applied Design",
+  "grade": 4,
+  "icon": "use_6_224",
+  "category": 71802,
+  "tier": 1
+ },
+ {
+  "name": "Tailoring: Applied Knots",
+  "grade": 4,
+  "icon": "use_6_225",
+  "category": 71802,
+  "tier": 2
+ },
+ {
+  "name": "Tailoring: Basic Design",
+  "grade": 3,
+  "icon": "use_6_224",
+  "category": 71802,
+  "tier": 1
+ },
+ {
+  "name": "Tailoring: Basic Knots",
+  "grade": 3,
+  "icon": "use_6_225",
+  "category": 71802,
+  "tier": 2
+ },
+ {
+  "name": "Tailoring: Blood [8-10]",
+  "grade": 4,
+  "icon": "use_6_226",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Tailoring: Decay [13-15]",
+  "grade": 6,
+  "icon": "use_7_70",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Tailoring: Decay [16-19]",
+  "grade": 6,
+  "icon": "use_7_70",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Tailoring: Demon Beast [11-15]",
+  "grade": 5,
+  "icon": "use_6_226",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Tailoring: Hellfire [11-14]",
+  "grade": 5,
+  "icon": "use_12_219",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Tailoring: Hellfire [15-18]",
+  "grade": 5,
+  "icon": "use_12_219",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Tailoring: Hellfire [19-20]",
+  "grade": 5,
+  "icon": "use_12_219",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Tailoring: Phantom [13-15]",
+  "grade": 5,
+  "icon": "use_7_70",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Tailoring: Phantom [16-19]",
+  "grade": 6,
+  "icon": "use_7_70",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Tailoring: Scale [5-7]",
+  "grade": 3,
+  "icon": "use_6_226",
+  "category": 71802,
+  "tier": 3
+ },
+ {
+  "name": "Tailoring: Tremor [12-15]",
+  "grade": 6,
+  "icon": "use_12_219",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Tailoring: Tremor [16-19]",
+  "grade": 6,
+  "icon": "use_12_219",
+  "category": 71802,
+  "tier": 4
+ },
+ {
+  "name": "Tender Timber",
+  "grade": 1,
+  "icon": "use_3_253",
+  "category": 70205,
+  "tier": 0
+ },
+ {
+  "name": "Thick Raw Meat",
+  "grade": 0,
+  "icon": "use_2_192",
+  "category": 70204,
+  "tier": 0
+ },
+ {
+  "name": "Timber",
+  "grade": 0,
+  "icon": "use_3_252",
+  "category": 70205,
+  "tier": 0
+ },
+ {
+  "name": "Tool Crafting Part",
+  "grade": 1,
+  "icon": "all_quest_03_31",
+  "category": 70200,
+  "tier": 0
+ },
+ {
+  "name": "Treated Meat",
+  "grade": 1,
+  "icon": "use_2_196",
+  "category": 70204,
+  "tier": 0
+ },
+ {
+  "name": "Uncommon Ship Parts Material",
+  "grade": 1,
+  "icon": "use_8_118",
+  "category": 71200,
+  "tier": 0
+ },
+ {
+  "name": "Wild Flower",
+  "grade": 0,
+  "icon": "use_8_46",
+  "category": 70203,
+  "tier": 0
+ }
+]

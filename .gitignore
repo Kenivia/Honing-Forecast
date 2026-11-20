@@ -33,6 +33,8 @@ CONOUT$
 target/
 
 cloudflare/.wrangler/
+# local Worker secrets (MARKET_TOKEN)
+cloudflare/.dev.vars
 
 
 

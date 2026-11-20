@@ -1,52 +1,19 @@
-// Honing materials off the Market: every item of the Tier 4 "Honing Materials" and "Additional Honing
-// Materials" categories, each through its purchase window (price tiers) and the 5-day average hover.
+// Materials off the Market: every item of Enhancement Material > All at Tier 4 and Trade Skill > All,
+// each through its purchase window (price tiers) and the 5-day average hover.
 use crate::{
     game::{Game, ms},
-    ocr::{best_match, lines, read_box},
+    icons,
+    ocr::{best_match, lines, numerals, read_box},
     ui::*,
 };
 use image::{GrayImage, RgbaImage};
 use std::sync::OnceLock;
 
-pub const KNOWN: &[&str] = &[
-    "Destiny Leapstone",
-    "Great Destiny Leapstone",
-    "Destiny Guardian Stone",
-    "Destiny Destruction Stone",
-    "Destiny Crystallized Guardian Stone",
-    "Destiny Crystallized Destruction Stone",
-    "Destiny Shard Pouch (S)",
-    "Destiny Shard Pouch (M)",
-    "Destiny Shard Pouch (L)",
-    "Abidos Fusion Material",
-    "Superior Abidos Fusion Material",
-    "Glacier's Breath",
-    "Lava's Breath",
-    "Artisan's Metallurgy: Level 1",
-    "Artisan's Tailoring: Level 1",
-    "Artisan's Metallurgy: Level 2",
-    "Artisan's Tailoring: Level 2",
-    "Artisan's Metallurgy: Level 3",
-    "Artisan's Tailoring: Level 3",
-    "Artisan's Metallurgy: Level 4",
-    "Artisan's Tailoring: Level 4",
-    "Metallurgy: Hellfire [11-14]",
-    "Tailoring: Hellfire [11-14]",
-    "Metallurgy: Hellfire [15-18]",
-    "Tailoring: Hellfire [15-18]",
-    "Metallurgy: Hellfire [19-20]",
-    "Tailoring: Hellfire [19-20]",
-    "Enhanced Metallurgy: Hellfire [19-20]",
-    "Enhanced Tailoring: Hellfire [19-20]",
-    "Metallurgy: Tremor [12-15]",
-    "Tailoring: Tremor [12-15]",
-    "Metallurgy: Tremor [16-19]",
-    "Tailoring: Tremor [16-19]",
-];
-
-#[derive(Debug, Default)]
+#[derive(Debug, Default, serde::Serialize)]
 pub struct Material {
     pub name: String,
+    /// the Market category it was listed under
+    pub category: String,
     pub raw_name: String,
     pub bundle: Option<i64>,
     pub avg_day: Option<f64>,
@@ -58,10 +25,11 @@ pub struct Material {
     pub history: Vec<Option<f64>>,
 }
 
-const CATEGORIES: [(i32, &str); 2] = [(520, "Honing Materials"), (560, "Additional Honing Mat")];
+/// The categories read, each through its "All" list.
+pub const SECTIONS: [&str; 2] = ["Enhancement Material", "Trade Skill"];
 
-// Items are told apart by their name line in the purchase window against crops kept in names/
-// (file name: the name without ':'); the recogniser is only a fallback for items not seen before.
+// Items are told by their name block in the purchase window against crops kept in names/ (file name: the
+// name without ':'), else by their icon (icons.rs) with the name read deciding among items that share it.
 const NAMES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/names");
 // the icon and the whole name block (long names wrap and are cut, so the icon tells some apart)
 const NAME_X: u32 = 795;
@@ -76,10 +44,10 @@ fn name_refs() -> &'static Vec<(String, GrayImage)> {
         for e in std::fs::read_dir(NAMES).into_iter().flatten() {
             let p = e.unwrap().path();
             let stem = p.file_stem().unwrap().to_str().unwrap().to_string();
-            let name = KNOWN
+            let name = icons::items()
                 .iter()
-                .find(|k| k.replace(':', "") == stem)
-                .map_or(stem, |k| k.to_string());
+                .find(|i| i.name.replace(':', "") == stem)
+                .map_or(stem, |i| i.name.clone());
             v.push((name, image::open(&p).unwrap().to_luma8()));
         }
         v
@@ -87,7 +55,7 @@ fn name_refs() -> &'static Vec<(String, GrayImage)> {
 }
 
 // the nearest crop, if it is near and clearly nearer than the next
-fn identify(img: &RgbaImage) -> Option<String> {
+fn by_crop(img: &RgbaImage) -> Option<String> {
     let mut d: Vec<(&String, f64)> = name_refs()
         .iter()
         .map(|(n, r)| (n, ink_distance(img, r, NAME_X as i32, NAME_Y as i32)))
@@ -95,6 +63,49 @@ fn identify(img: &RgbaImage) -> Option<String> {
     d.sort_by(|a, b| a.1.total_cmp(&b.1));
     // the same item draws pixel for pixel alike (0.0); the closest two items are 4.6 apart
     (d[0].1 < 2.5 && d.get(1).is_none_or(|x| x.1 > d[0].1 + 2.0)).then(|| d[0].0.clone())
+}
+
+/// The item in the open purchase window: its name crop when one is on file, else its icon, with the
+/// name read deciding among the items drawn with that icon.
+fn identify(img: &RgbaImage, read: &str) -> Option<String> {
+    if let Some(n) = by_crop(img) {
+        return Some(n);
+    }
+    let mut names: Vec<&str> = icons::candidates(img)
+        .iter()
+        .map(|c| c.0.name.as_str())
+        .collect();
+    names.dedup();
+    match names.as_slice() {
+        [] => None,
+        [one] => Some(one.to_string()),
+        many => pick_by_read(read, many),
+    }
+}
+
+// The numerals have to be the name's ("Level 1" against "Level 4"); a long name the window cuts short is
+// compared with as much of it as was read.
+fn pick_by_read(read: &str, names: &[&str]) -> Option<String> {
+    // the reader writes no spaces
+    let bare = |t: &str| t.to_lowercase().replace(' ', "");
+    let r = bare(read);
+    let mut s: Vec<(f64, &str)> = names
+        .iter()
+        .filter_map(|n| {
+            let full = bare(n);
+            let cut: String = full.chars().take(r.chars().count()).collect();
+            [full, cut]
+                .iter()
+                .filter(|t| numerals(t) == numerals(&r))
+                .map(|t| strsim::normalized_levenshtein(&r, t))
+                .reduce(f64::max)
+                .map(|v| (v, *n))
+        })
+        .collect();
+    s.sort_by(|a, b| b.0.total_cmp(&a.0));
+    let second = s.get(1).map_or(0.0, |x| x.0);
+    let &(best, name) = s.first()?;
+    (best >= 0.6 && best - second >= 0.1).then(|| name.to_string())
 }
 
 fn keep_unknown_name(img: &RgbaImage, raw: &str) {
@@ -127,45 +138,44 @@ fn row_name(img: &RgbaImage, i: usize) -> Option<String> {
     Some(read_box(img, 612, 940, a.saturating_sub(2), b + 3))
 }
 
-fn bundle_of(img: &RgbaImage, x0: u32, x1: u32, l: &[(u32, u32)]) -> Option<i64> {
-    let (a, b) = *l.get(1)?;
-    let t = read_box(img, x0, x1, a.saturating_sub(2), b + 3);
-    let digits: String = t.chars().filter(|c| c.is_ascii_digit()).collect();
-    digits.parse().ok()
-}
-
-/// Opens the Market on Tier 4 with the Enhancement Material tree open.
-fn setup(g: &mut Game) {
+/// Lists a section's "All" by rank: Enhancement Material at Tier 4, Trade Skill at all tiers (a fresh Market's).
+fn open_section(g: &mut Game, section: &str) -> bool {
     fresh_market(g);
+    // the tree entry, a crop that shows it open, its "All"
+    let (tree_y, open_ref, all_y) = match section {
+        "Enhancement Material" => (440, "honing_item", 480),
+        _ => (560, "trade_open", 600),
+    };
     for _ in 0..3 {
-        if looks(&g.shot(None), "honing_item") {
+        if looks(&g.shot(None), open_ref) {
             break;
         }
-        g.click(350, 440);
+        g.click(350, tree_y);
         ms(700);
     }
-    let ok = pick(g, (610, 242), None, (560, 361), |img| looks(img, "tier4"));
-    assert!(ok, "could not set Tier 4");
-}
-
-/// Reads a value that a popup may cover, taking a new screenshot between tries.
-fn steady<T>(g: &mut Game, what: &str, f: impl Fn(&RgbaImage) -> Result<T, String>) -> Option<T> {
-    let mut img = g.shot(None);
-    for attempt in 0..4 {
-        match f(&img) {
-            Ok(v) => return Some(v),
-            Err(e) => {
-                if attempt == 3 {
-                    log(&format!("could not read {what}: {e:?}"));
-                    keep(&img, what);
-                    return None;
-                }
-                ms(2500);
-                img = g.shot(None);
-            }
-        }
+    if !looks(&g.shot(None), open_ref) {
+        return false;
     }
-    None
+    if section == "Enhancement Material"
+        && !pick(g, (610, 242), None, (560, 361), |img| looks(img, "tier4"))
+    {
+        return false;
+    }
+    g.click(350, all_y);
+    ms(500);
+    g.click(1600, 242);
+    ms(2000);
+    // a fresh Market lists by lowest price, which reorders while pages are read; the rank order is fixed
+    for _ in 0..3 {
+        if looks(&g.shot(None), "rank_sorted") {
+            return true;
+        }
+        g.click(710, 282);
+        ms(1500);
+        g.move_to(1700, 1000);
+        ms(300);
+    }
+    looks(&g.shot(None), "rank_sorted")
 }
 
 fn depth_row(img: &RgbaImage, k: u32) -> Result<Option<(f64, f64)>, String> {
@@ -226,13 +236,46 @@ fn read_window(g: &mut Game, m: &mut Material) {
         if !looks(img, "hover_title") {
             return Err("no hover".into());
         }
-        (0..5)
-            .map(|k| num(img, 1200, 1324, 296 + 28 * k, 320 + 28 * k, true))
+        let tops = coin_rows(img);
+        if tops.len() != 5 {
+            return Err(format!("{} coins", tops.len()));
+        }
+        tops.iter()
+            .map(|&t| num(img, 1200, 1324, t - 5, t + 19, true))
             .collect::<Result<Vec<_>, _>>()
     });
     m.history = hist.unwrap_or_default();
     g.move_to(1700, 1000);
     ms(200);
+}
+
+// The tops of the hover's rows, by their gold coins: a "-" row is shorter (26 px against 28), so the rows
+// below one sit higher.
+fn coin_rows(img: &RgbaImage) -> Vec<u32> {
+    let yellow = |y: u32| {
+        (1328..1348)
+            .filter(|&x| {
+                let p = img.get_pixel(x, y);
+                p[0] > 150 && p[1] > 110 && p[2] < 120
+            })
+            .count()
+            > 2
+    };
+    let mut tops = vec![];
+    let mut start = None;
+    for y in 297..=450 {
+        match (y < 450 && yellow(y), start) {
+            (true, None) => start = Some(y),
+            (false, Some(s)) => {
+                if y - s >= 10 {
+                    tops.push(s);
+                }
+                start = None;
+            }
+            _ => {}
+        }
+    }
+    tops
 }
 
 fn purchase_open(img: &RgbaImage) -> bool {
@@ -241,7 +284,6 @@ fn purchase_open(img: &RgbaImage) -> bool {
 
 /// Row `i` of the current page, through its purchase window. None if it would not open.
 fn read_row(g: &mut Game, i: usize) -> Option<Material> {
-    wait_safe_time();
     g.click(820, row_y(i));
     ms(500);
     let img = g.shot(None);
@@ -259,20 +301,29 @@ fn read_row(g: &mut Game, i: usize) -> Option<Material> {
         keep(&img, "no_window");
         return None;
     }
-    let l = lines(&img, 855, 1090, 205, 255);
-    let mut m = Material::default();
-    if let Some(&(a, b)) = l.first() {
-        m.raw_name = read_box(&img, 855, 1090, a.saturating_sub(2), b + 3);
-        m.bundle = bundle_of(&img, 855, 1090, &l);
-        m.name = match identify(&img) {
-            Some(n) => n,
-            None => {
-                keep_unknown_name(&img, &m.raw_name);
-                log(&format!("unknown name, read as {:?}", m.raw_name));
-                best_match(&m.raw_name, KNOWN, 0.9).map_or(m.raw_name.clone(), str::to_string)
-            }
-        };
-    }
+    // the name's lines, then perhaps "[Sold in bundles of N units]"
+    let texts: Vec<String> = lines(&img, 855, 1090, 205, 255)
+        .iter()
+        .map(|&(a, b)| read_box(&img, 855, 1090, a.saturating_sub(2), b + 3))
+        .collect();
+    let (bundle, name): (Vec<String>, Vec<String>) = texts
+        .into_iter()
+        .partition(|t| t.to_lowercase().contains("bundle"));
+    let mut m = Material {
+        raw_name: name.join(" "),
+        bundle: bundle.first().and_then(|t| numerals(t).parse().ok()),
+        ..Default::default()
+    };
+    m.name = match identify(&img, &m.raw_name) {
+        Some(n) => n,
+        None => {
+            keep_unknown_name(&img, &m.raw_name);
+            log(&format!("unknown item, read as {:?}", m.raw_name));
+            let all: Vec<&str> = icons::items().iter().map(|i| i.name.as_str()).collect();
+            best_match(&m.raw_name, &all, 0.9).map_or(m.raw_name.clone(), str::to_string)
+        }
+    };
+    crate::strips::context(&m.name);
     read_window(g, &mut m);
     for _ in 0..3 {
         g.click(1110, 170);
@@ -285,28 +336,40 @@ fn read_row(g: &mut Game, i: usize) -> Option<Material> {
 }
 
 pub fn scan(g: &mut Game) -> Vec<Material> {
-    setup(g);
     let mut out: Vec<Material> = vec![];
-    for (y, cat) in CATEGORIES {
-        g.click(350, y);
-        ms(500);
-        g.click(1600, 242);
-        ms(2000);
-        for page in 1..=6 {
+    for section in SECTIONS {
+        if !open_section(g, section) {
+            log(&format!("{section}: could not list it"));
+            keep(&g.shot(None), "no_section");
+            continue;
+        }
+        for page in 1..=10 {
             let img = g.shot(None);
             let names: Vec<String> = (0..10).map_while(|i| row_name(&img, i)).collect();
             let at = page_of(&img);
             if names.is_empty() || at.is_some_and(|(p, _)| p != page) {
-                log(&format!("{cat}: expected page {page}, see {at:?}"));
+                log(&format!("{section}: expected page {page}, see {at:?}"));
                 break;
             }
-            log(&format!("{cat} page {page}: {} items", names.len()));
-            for i in 0..names.len() {
-                if let Some(m) = read_row(g, i) {
+            log(&format!("{section} page {page}: {} items", names.len()));
+            let n = if quick() {
+                2.min(names.len())
+            } else {
+                names.len()
+            };
+            for i in 0..n {
+                crate::strips::context(&format!("{section} page {page} row {i}"));
+                // a click can land while the list is still loading: once more
+                let m = read_row(g, i).or_else(|| {
+                    ms(1500);
+                    read_row(g, i)
+                });
+                if let Some(mut m) = m {
                     log(&format!(
                         "  {} {:?} {:?} depth {:?} 5d {:?}",
                         m.name, m.avg_day, m.recent, m.depth, m.history
                     ));
+                    m.category = section.to_string();
                     out.push(m);
                 }
             }

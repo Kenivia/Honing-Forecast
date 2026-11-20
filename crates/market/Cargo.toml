@@ -33,3 +33,6 @@ tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "io-std"]
 schemars = "1.2.3"
 base64 = "0.23.1"
 serde = { version = "1.0.229", features = ["derive"] }
+ureq = "3.5.1"
+rten = "0.26.0"
+rten-tensor = "0.26.0"

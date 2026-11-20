@@ -8,6 +8,8 @@ const CACHE = "public, max-age=3600";
 // upstream fetches per minute, across all of Cloudflare
 const LIMITS = { market: 10, bible: 200 };
 const MAX_UPLOAD = 300_000;
+// one market scanner pass (crates/market); a full one is about 100 KB
+const MAX_SCAN = 1_000_000;
 // one upload's share of the lostark.bible limit
 const MAX_CHARS = 40;
 const BIBLE_REGIONS = { nae: "NA", euc: "CE" };
@@ -53,6 +55,20 @@ export default {
             env,
           );
         }
+        const scans = url.pathname.match(
+          /^\/scans\/(?:latest\/([a-z]+)|(\d+)|history\/([a-z]+)\/(\d{4}-\d{2}))$/,
+        );
+        if (scans) {
+          const [, latest, id, region, month] = scans;
+          if (latest)
+            return await handleScanGet(
+              "region = ? ORDER BY started DESC",
+              latest,
+              env,
+            );
+          if (id) return await handleScanGet("id = ?", Number(id), env);
+          return await handleHistory(region, month, env);
+        }
         const bible = url.pathname.match(/^\/bible\/([^/]+)\/([^/]+)$/);
         if (bible) {
           return await handleBible(bible[1], decodeURIComponent(bible[2]), env);
@@ -62,6 +78,10 @@ export default {
       if (request.method === "POST" && url.pathname === "/snapshots") {
         // awaited so a failure gets the catch's CORS headers
         return await handleSnapshots(request, env, ctx);
+      }
+
+      if (request.method === "POST" && url.pathname === "/scans") {
+        return await handleScan(request, env);
       }
 
       if (request.method === "POST" && url.pathname === "/moves") {
@@ -187,6 +207,98 @@ async function handleMove(request, env) {
     )
     .run();
   return reply("ok", 200, "text/plain", false);
+}
+
+// One market scanner pass, kept whole; its points [key, day, value] are merged into its region's
+// history, one row per month (a later value for the same key and day wins). Only the scanner's token may post.
+async function handleScan(request, env) {
+  if (!(await authorized(request, env))) return reply("Unauthorized", 401);
+  const body = await request.text();
+  if (body.length > MAX_SCAN) return reply("Too large", 413);
+  const scan = JSON.parse(body);
+  const region = scan.region;
+  if (typeof region !== "string" || typeof scan.started !== "string") {
+    return reply("Bad scan", 400);
+  }
+  // a retry of a pass already stored
+  const old = await env.DB.prepare(
+    `SELECT id FROM market_scans WHERE region = ? AND started = ?`,
+  )
+    .bind(region, scan.started)
+    .first();
+  if (old) return reply(`stored before as ${old.id}`, 200, "text/plain", false);
+
+  const months = {};
+  for (const [key, day, value] of scan.points ?? []) {
+    ((months[day.slice(0, 7)] ??= {})[key] ??= {})[day] = value;
+  }
+  const writes = [
+    env.DB.prepare(
+      `INSERT INTO market_scans (region, started, finished, received, body) VALUES (?, ?, ?, ?, ?)`,
+    ).bind(region, scan.started, scan.finished ?? null, Date.now(), body),
+  ];
+  for (const [month, series] of Object.entries(months)) {
+    const row = await env.DB.prepare(
+      `SELECT body FROM market_history WHERE region = ? AND month = ?`,
+    )
+      .bind(region, month)
+      .first();
+    const history = row ? JSON.parse(row.body) : {};
+    for (const [key, days] of Object.entries(series)) {
+      Object.assign((history[key] ??= {}), days);
+    }
+    writes.push(
+      env.DB.prepare(
+        `INSERT INTO market_history (region, month, body) VALUES (?, ?, ?)
+         ON CONFLICT (region, month) DO UPDATE SET body = excluded.body`,
+      ).bind(region, month, JSON.stringify(history)),
+    );
+  }
+  // one transaction: the pass and its history together
+  const [inserted] = await env.DB.batch(writes);
+  return reply(
+    `stored as ${inserted.meta.last_row_id}`,
+    200,
+    "text/plain",
+    false,
+  );
+}
+
+async function authorized(request, env) {
+  if (!env.MARKET_TOKEN) return false;
+  const enc = new TextEncoder();
+  const got = enc.encode(request.headers.get("Authorization") ?? "");
+  const want = enc.encode(`Bearer ${env.MARKET_TOKEN}`);
+  return (
+    got.byteLength === want.byteLength &&
+    crypto.subtle.timingSafeEqual(got, want)
+  );
+}
+
+// One stored pass: {id, received, scan}. Not cached: one indexed row per request; a pass by id never changes.
+async function handleScanGet(where, value, env) {
+  const row = await env.DB.prepare(
+    `SELECT id, received, body FROM market_scans WHERE ${where} LIMIT 1`,
+  )
+    .bind(value)
+    .first();
+  if (!row) return reply("No scan", 404);
+  return reply(
+    `{"id":${row.id},"received":${row.received},"scan":${row.body}}`,
+    200,
+    "application/json",
+    typeof value === "number",
+  );
+}
+
+// A region's month of history: {key: {day: value}}, {} when there is none.
+async function handleHistory(region, month, env) {
+  const row = await env.DB.prepare(
+    `SELECT body FROM market_history WHERE region = ? AND month = ?`,
+  )
+    .bind(region, month)
+    .first();
+  return reply(row?.body ?? "{}", 200, "application/json", false);
 }
 
 async function handleSnapshots(request, env, ctx) {
