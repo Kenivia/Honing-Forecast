@@ -105,24 +105,38 @@ async function sync_inner() {
   // a fresh install's untouched default character is replaced
   const fresh = fresh_profile_id(config);
 
+  // exact names before accentless ones (accented and plain forms may both exist), each local matched once
   const matched = new Set<string>();
+  const local_of = new Map<object, (typeof config.profiles)[number]>();
+  for (const exact of [true, false])
+    for (const b of bibles)
+      for (const c of b.characters) {
+        if (local_of.has(c)) continue;
+        const local = config.profiles.find(
+          (p) =>
+            config.all_regions[p.roster_id] === REGIONS[b.region] &&
+            p.id !== fresh &&
+            !matched.has(p.id) &&
+            (exact
+              ? p.char_name === c.name
+              : norm_name(p.char_name) === norm_name(c.name)),
+        );
+        if (!local) continue;
+        local_of.set(c, local);
+        matched.add(local.id);
+      }
+
   const per_roster = bibles.map((b) => {
     const region = REGIONS[b.region];
-    const in_region = config.profiles.filter(
-      (p) => config.all_regions[p.roster_id] === region && p.id !== fresh,
-    );
     const unmatched: string[] = [];
     const counts: Record<string, number> = {};
     for (const c of b.characters) {
-      const local = in_region.find(
-        (p) => norm_name(p.char_name) === norm_name(c.name),
-      );
+      const local = local_of.get(c);
       if (!local) {
         unmatched.push(c.name);
         continue;
       }
       local.char_name = unique_name(c.name, local.id);
-      matched.add(local.id);
       counts[local.roster_id] = (counts[local.roster_id] ?? 0) + 1;
     }
     const best = Object.keys(counts).sort((x, y) => counts[y] - counts[x])[0];

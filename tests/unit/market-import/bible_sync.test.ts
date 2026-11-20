@@ -9,6 +9,7 @@ import {
   sync_rosters,
 } from "@/Utils/BibleSync";
 import { fetch_char } from "@/Components/Common/Uwuowo/UwuowoUtils";
+import { bible_auth, bible_rosters, linked_now } from "@/Utils/BibleAuth";
 
 const ROSTERS = vi.hoisted(() => ({ value: [] as any[] }));
 vi.mock("@/Utils/BibleAuth", async (original) => ({
@@ -68,6 +69,31 @@ describe("sync", () => {
     close_sync_popup(true);
     await done;
     expect(names()).toEqual(["Ëlsa", "Bob", "Cat"]);
+  });
+
+  it("prefers exact names when a roster has both accented and plain", async () => {
+    store.active_profile.char_name = "Inngrimschblade";
+    store.active_profile.fetched_at = 1;
+    ROSTERS.value = [roster("Ínngrimschblade", "Inngrimschblade")];
+    await sync_rosters();
+    expect(names()).toEqual(["Inngrimschblade", "Ínngrimschblade"]);
+  });
+});
+
+describe("linked lookup", () => {
+  it("prefers the exact name over an accentless match", () => {
+    bible_auth.value = { expires_at: Date.now() + 1e6 } as any;
+    bible_rosters.value = [roster("Inngrimschblade", "Ínngrimschblade")] as any;
+    expect(linked_now("NA", "Ínngrimschblade")?.character.name).toBe(
+      "Ínngrimschblade",
+    );
+    expect(linked_now("NA", "Inngrimschblade")?.character.name).toBe(
+      "Inngrimschblade",
+    );
+    expect(linked_now("NA", "inngrimschblade")?.character.name).toBe(
+      "Inngrimschblade",
+    );
+    bible_auth.value = null;
   });
 });
 

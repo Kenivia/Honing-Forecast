@@ -135,6 +135,18 @@ async function bible_get(
 // names typed by hand may lack the in-game accents (Elsa for Ëlsa)
 export const norm_name = (name: string) => transliterate(name).toLowerCase();
 
+// exact name first: a roster may hold both an accented name and its plain form
+export function match_name<T>(
+  items: T[],
+  name: string,
+  key: (x: T) => string,
+) {
+  return (
+    items.find((x) => key(x) === name) ??
+    items.find((x) => norm_name(key(x)) === norm_name(name))
+  );
+}
+
 // linked rosters change on lostark.bible: refetched on sync and after a failed API fetch
 export const bible_rosters = shallowRef<BibleRoster[] | null>(null);
 let rosters_promise: Promise<BibleRoster[]> | null = null;
@@ -164,14 +176,12 @@ export function linked_now(region: string, char_name: string) {
     linked_rosters().catch(() => {});
     return null;
   }
-  for (const roster of bible_rosters.value) {
-    if (roster.region !== region) continue;
-    const character = roster.characters.find(
-      (c) => norm_name(c.name) === norm_name(char_name),
+  const pairs = bible_rosters.value
+    .filter((roster) => roster.region === region)
+    .flatMap((roster) =>
+      roster.characters.map((character) => ({ roster, character })),
     );
-    if (character) return { roster, character };
-  }
-  return null;
+  return match_name(pairs, char_name, (x) => x.character.name) ?? null;
 }
 
 // the signed-in user's roster holding this character, or null (signed out, not linked, or an error)

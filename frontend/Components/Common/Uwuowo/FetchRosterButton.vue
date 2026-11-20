@@ -51,9 +51,7 @@ async function click() {
   parsed_chars.value = {};
   fetching_chars.value = true;
   // one at a time; fetch_uwuowo's rate limit spaces them
-  for (const char of roster_result.filter(
-    (x) => !all_names.value.includes(norm_name(x)),
-  )) {
+  for (const char of roster_result.filter((x) => !present(x, roster_result))) {
     const result = await fetch_char(region, char);
     if (stale()) break;
     parsed_chars.value[char] = { result, status: "" };
@@ -64,6 +62,11 @@ async function click() {
 const all_names = computed(() =>
   all_profiles.value.map((x) => norm_name(x.char_name)),
 );
+// accentless match only if no other roster name shares its letters (an accented and a plain form)
+const present = (name: string, roster: string[]) =>
+  all_profiles.value.some((p) => p.char_name === name) ||
+  (all_names.value.includes(norm_name(name)) &&
+    roster.filter((y) => norm_name(y) === norm_name(name)).length === 1);
 
 const empty_parsed = computed(
   () =>
