@@ -240,6 +240,7 @@ fn ah_setup(g: &mut Game) -> bool {
     if !act(
         g,
         2,
+        0.0,
         10.0,
         |g| g.click(486, 154),
         |img| looks(img, "ah_header"),
@@ -387,7 +388,7 @@ fn configure(g: &mut Game, grp: &Group) {
 
 fn open_advanced(g: &mut Game) -> bool {
     let open = |img: &RgbaImage| looks(img, "adv_title");
-    open(&g.shot(None)) || act(g, 3, 4.0, |g| g.click(1580, 240), open)
+    open(&g.shot(None)) || act(g, 3, 0.0, 4.0, |g| g.click(1580, 240), open)
 }
 
 fn accessory_search(

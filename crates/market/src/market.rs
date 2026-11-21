@@ -150,7 +150,7 @@ fn open_section(g: &mut Game, section: &str) -> bool {
     };
     // the entry toggles: clicked only while shut
     let open = |img: &RgbaImage| looks(img, open_ref);
-    if !open(&g.shot(None)) && !act(g, 3, 3.0, |g| g.click(350, tree_y), open) {
+    if !open(&g.shot(None)) && !act(g, 3, 0.0, 3.0, |g| g.click(350, tree_y), open) {
         return false;
     }
     if section == "Enhancement Material"
@@ -168,6 +168,7 @@ fn open_section(g: &mut Game, section: &str) -> bool {
         || act(
             g,
             3,
+            0.0,
             5.0,
             |g| {
                 g.click(710, 282);
@@ -289,7 +290,7 @@ fn purchase_open(img: &RgbaImage) -> bool {
 fn read_row(g: &mut Game, i: usize) -> Option<Material> {
     // the Market's Buy only opens the purchase window; never press it anywhere else
     let listed = |img: &RgbaImage| looks(img, "market_header") && looks(img, "buy_button");
-    if !act(g, 2, 3.0, |g| g.click(820, row_y(i)), listed) {
+    if !act(g, 2, 0.0, 3.0, |g| g.click(820, row_y(i)), listed) {
         log("not on the Market list, or Buy is not there");
         return None;
     }
@@ -325,7 +326,14 @@ fn read_row(g: &mut Game, i: usize) -> Option<Material> {
     };
     crate::strips::context(&m.name);
     read_window(g, &mut m);
-    if !act(g, 3, 3.0, |g| g.click(1110, 170), |img| !purchase_open(img)) {
+    if !act(
+        g,
+        3,
+        0.0,
+        3.0,
+        |g| g.click(1110, 170),
+        |img| !purchase_open(img),
+    ) {
         log("purchase window did not close");
         return None;
     }

@@ -135,7 +135,9 @@ fn read_page(g: &mut Game) -> Option<Exchange> {
         // off the panels: the bottom bar's currencies have tooltips that reach the tables
         g.move_to(1900, 600);
     };
-    if !act(g, 3, 7.0, to_exchange, |img| looks(img, "exchange_title")) {
+    if !act(g, 3, 0.0, 7.0, to_exchange, |img| {
+        looks(img, "exchange_title")
+    }) {
         log("the currency exchange did not open");
         return None;
     }

@@ -10,6 +10,7 @@ pub mod input;
 pub mod market;
 pub mod ocr;
 pub mod pp;
+pub mod region;
 pub mod shot;
 pub mod strips;
 pub mod ui;

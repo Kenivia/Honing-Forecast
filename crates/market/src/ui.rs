@@ -96,16 +96,17 @@ pub fn wait(g: &mut Game, secs: f64, ok: impl Fn(&RgbaImage) -> bool) -> Option<
     }
 }
 
-/// Does `f` until the screen shows `ok`, waiting up to `secs` after each try. Only for actions that are
-/// harmless to repeat once they took.
+/// Does `f` until the screen shows `ok`: `delay` seconds before each try, then up to `secs` for the screen. Only for actions that are harmless to repeat once they took.
 pub fn act(
     g: &mut Game,
     tries: u32,
+    delay: f64,
     secs: f64,
     mut f: impl FnMut(&mut Game),
     ok: impl Fn(&RgbaImage) -> bool,
 ) -> bool {
     (0..tries).any(|_| {
+        ms((delay * 1000.0) as u64);
         f(g);
         wait(g, secs, &ok).is_some()
     })
@@ -114,7 +115,14 @@ pub fn act(
 /// Closes the Market by its X: Alt+Y would type a "y" into a focused search box.
 pub fn close_market(g: &mut Game) {
     if market_open(&g.shot(None))
-        && !act(g, 3, 3.0, |g| g.click(1625, 111), |img| !market_open(img))
+        && !act(
+            g,
+            3,
+            0.0,
+            3.0,
+            |g| g.click(1625, 111),
+            |img| !market_open(img),
+        )
     {
         g.key("esc");
         ms(800);
@@ -130,7 +138,7 @@ pub fn close_shop(g: &mut Game) {
     if !shop_up(&g.shot(None)) {
         return;
     }
-    if !act(g, 3, 5.0, |g| g.click(1814, 1036), |img| !shop_up(img)) {
+    if !act(g, 3, 0.0, 5.0, |g| g.click(1814, 1036), |img| !shop_up(img)) {
         g.key("esc");
     }
     ms(1000);
