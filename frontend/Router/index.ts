@@ -164,4 +164,28 @@ router.beforeEach((to) => {
 });
 router.beforeEach(guard_switch);
 
+// SEO: canonical always on the .com (character pages all render the same to a crawler, so they point at /)
+const head_tag = (sel: string, tag: string, attrs: Record<string, string>) => {
+  let el = document.head.querySelector(sel);
+  if (!el) {
+    el = document.createElement(tag);
+    document.head.appendChild(el);
+  }
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+};
+router.afterEach((to) => {
+  const path = to.path.startsWith("/chars/") ? "/" : to.path;
+  head_tag("link[rel=canonical]", "link", {
+    rel: "canonical",
+    href: "https://honing-forecast.com" + path,
+  });
+  if (to.name === "auth-callback")
+    head_tag("meta[name=robots]", "meta", {
+      name: "robots",
+      content: "noindex",
+    });
+  else document.head.querySelector("meta[name=robots]")?.remove();
+});
+
 export default router;

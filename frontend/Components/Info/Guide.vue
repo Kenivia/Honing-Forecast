@@ -33,7 +33,7 @@ const selected_color = computed(() => {
       Put your character's name and region in the character card on the
       Character page, then press <b>Fetch from lostark.bible</b>.
     </p>
-    <img class="mx-auto" src="/Guide/char-card.png" />
+    <img class="mx-auto" src="/Guide/char-card.png" alt="Character card" />
     <p>
       If you Sign in, your rosters are linked and all your characters are
       fetched automatically.
@@ -46,7 +46,7 @@ const selected_color = computed(() => {
       want to do.
     </p>
 
-    <img class="mx-auto" src="/Guide/ticks.png" />
+    <img class="mx-auto" src="/Guide/ticks.png" alt="Tickbox grid" />
 
     <h2>Step 2: Input your materials</h2>
     <p>Again either option works.</p>
@@ -55,7 +55,7 @@ const selected_color = computed(() => {
       Open <b>Scanner</b> in the character page's sidebar, then follow the
       instructions there
     </p>
-    <img class="mx-auto" src="/Guide/scanner.png" />
+    <img class="mx-auto" src="/Guide/scanner.png" alt="Screen scanner" />
 
     <h3>b) Input manually</h3>
     <p>
@@ -64,13 +64,13 @@ const selected_color = computed(() => {
       distribution on the Character page, and untick any mats you aren't going
       to buy.
     </p>
-    <img class="mx-auto" src="/Guide/cost-dist.png" />
+    <img class="mx-auto" src="/Guide/cost-dist.png" alt="Cost distribution" />
     <p>
       <span class="text-(--roster)">Roster-bound</span> and
       <span class="text-(--tradable)">Tradable</span> materials go on the
       <RouterLink to="/market-mats">Market & Mats</RouterLink> page.
     </p>
-    <img class="mx-auto" src="/Guide/market.png" />
+    <img class="mx-auto" src="/Guide/market.png" alt="Market &amp; Mats" />
 
     <details class="mt-4">
       <summary class="cursor-pointer text-xl">
@@ -200,7 +200,11 @@ const selected_color = computed(() => {
       on the left side:
     </p>
 
-    <img src="/Guide/instructions.png" class="mx-auto" />
+    <img
+      src="/Guide/instructions.png"
+      alt="Honing instructions"
+      class="mx-auto"
+    />
 
     <p>Go through the upgrades in order. In this example, you should:</p>
     <ol>
@@ -234,7 +238,7 @@ const selected_color = computed(() => {
       input how much special leaps you have left, then press
       <span class="text-(--achieved)">Succeed</span> like so:
     </p>
-    <img src="/Guide/freetap.png" class="mx-auto" />
+    <img src="/Guide/freetap.png" alt="Free taps" class="mx-auto" />
     <p>
       If you failed all free taps, then press
       <span class="text-(--free-tap)">All free taps failed</span>.
@@ -245,7 +249,7 @@ const selected_color = computed(() => {
       <span class="text-(--achieved)">Succeed</span>:
     </p>
 
-    <img src="/Guide/nonfreetap.png" class="mx-auto" />
+    <img src="/Guide/nonfreetap.png" alt="Non-free tap" class="mx-auto" />
     <p>
       If you want, you can also update your progress before succeeding by
       pressing Confirm. For example, if you tapped 10 times and havn't succeeded

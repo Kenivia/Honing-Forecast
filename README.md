@@ -2,7 +2,7 @@
 
 [![discord](https://img.shields.io/discord/1477278907655786611?logo=discord)](https://discord.gg/KWDpQyvgzc)
 
-Honing Forecast is a Lost Ark honing calculator that takes into account owned mats and generates instructions that minimizes average gold used.
+Honing Forecast is a Lost Ark honing calculator that takes into account owned mats and generates instructions to minimize average gold used.
 
 Try it here! <https://honing-forecast.com/>  
 
