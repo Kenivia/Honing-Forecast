@@ -140,20 +140,17 @@ fn row_name(img: &RgbaImage, i: usize) -> Option<String> {
 
 /// Lists a section's "All" by rank: Enhancement Material at Tier 4, Trade Skill at all tiers (a fresh Market's).
 fn open_section(g: &mut Game, section: &str) -> bool {
-    fresh_market(g);
+    if !fresh_market(g) {
+        return false;
+    }
     // the tree entry, a crop that shows it open, its "All"
     let (tree_y, open_ref, all_y) = match section {
         "Enhancement Material" => (440, "honing_item", 480),
         _ => (560, "trade_open", 600),
     };
-    for _ in 0..3 {
-        if looks(&g.shot(None), open_ref) {
-            break;
-        }
-        g.click(350, tree_y);
-        ms(700);
-    }
-    if !looks(&g.shot(None), open_ref) {
+    // the entry toggles: clicked only while shut
+    let open = |img: &RgbaImage| looks(img, open_ref);
+    if !open(&g.shot(None)) && !act(g, 3, 3.0, |g| g.click(350, tree_y), open) {
         return false;
     }
     if section == "Enhancement Material"
@@ -166,16 +163,22 @@ fn open_section(g: &mut Game, section: &str) -> bool {
     g.click(1600, 242);
     ms(2000);
     // a fresh Market lists by lowest price, which reorders while pages are read; the rank order is fixed
-    for _ in 0..3 {
-        if looks(&g.shot(None), "rank_sorted") {
-            return true;
-        }
-        g.click(710, 282);
-        ms(1500);
-        g.move_to(1700, 1000);
-        ms(300);
-    }
-    looks(&g.shot(None), "rank_sorted")
+    let sorted = |img: &RgbaImage| looks(img, "rank_sorted");
+    let ok = sorted(&g.shot(None))
+        || act(
+            g,
+            3,
+            5.0,
+            |g| {
+                g.click(710, 282);
+                ms(300);
+                g.move_to(1700, 1000);
+            },
+            sorted,
+        );
+    // the list comes back after the header
+    ms(1200);
+    ok
 }
 
 fn depth_row(img: &RgbaImage, k: u32) -> Result<Option<(f64, f64)>, String> {
@@ -284,23 +287,20 @@ fn purchase_open(img: &RgbaImage) -> bool {
 
 /// Row `i` of the current page, through its purchase window. None if it would not open.
 fn read_row(g: &mut Game, i: usize) -> Option<Material> {
-    g.click(820, row_y(i));
-    ms(500);
-    let img = g.shot(None);
     // the Market's Buy only opens the purchase window; never press it anywhere else
-    if !looks(&img, "market_header") || !looks(&img, "buy_button") {
+    let listed = |img: &RgbaImage| looks(img, "market_header") && looks(img, "buy_button");
+    if !act(g, 2, 3.0, |g| g.click(820, row_y(i)), listed) {
         log("not on the Market list, or Buy is not there");
-        keep(&img, "no_buy");
         return None;
     }
     g.click(1580, 926);
-    ms(1300);
-    let img = g.shot(None);
-    if !purchase_open(&img) {
+    if wait(g, 10.0, purchase_open).is_none() {
         log("purchase window did not open");
-        keep(&img, "no_window");
         return None;
     }
+    // the window's contents draw in after its title
+    ms(800);
+    let img = g.shot(None);
     // the name's lines, then perhaps "[Sold in bundles of N units]"
     let texts: Vec<String> = lines(&img, 855, 1090, 205, 255)
         .iter()
@@ -325,60 +325,64 @@ fn read_row(g: &mut Game, i: usize) -> Option<Material> {
     };
     crate::strips::context(&m.name);
     read_window(g, &mut m);
-    for _ in 0..3 {
-        g.click(1110, 170);
-        ms(500);
-        if !purchase_open(&g.shot(None)) {
-            break;
-        }
+    if !act(g, 3, 3.0, |g| g.click(1110, 170), |img| !purchase_open(img)) {
+        log("purchase window did not close");
+        return None;
     }
     Some(m)
 }
 
 pub fn scan(g: &mut Game) -> Vec<Material> {
-    let mut out: Vec<Material> = vec![];
+    let mut out = vec![];
     for section in SECTIONS {
-        if !open_section(g, section) {
-            log(&format!("{section}: could not list it"));
-            keep(&g.shot(None), "no_section");
-            continue;
-        }
-        for page in 1..=10 {
-            let img = g.shot(None);
-            let names: Vec<String> = (0..10).map_while(|i| row_name(&img, i)).collect();
-            let at = page_of(&img);
-            if names.is_empty() || at.is_some_and(|(p, _)| p != page) {
-                log(&format!("{section}: expected page {page}, see {at:?}"));
-                break;
-            }
-            log(&format!("{section} page {page}: {} items", names.len()));
-            let n = if quick() {
-                2.min(names.len())
-            } else {
-                names.len()
-            };
-            for i in 0..n {
-                crate::strips::context(&format!("{section} page {page} row {i}"));
-                // a click can land while the list is still loading: once more
-                let m = read_row(g, i).or_else(|| {
-                    ms(1500);
-                    read_row(g, i)
-                });
-                if let Some(mut m) = m {
-                    log(&format!(
-                        "  {} {:?} {:?} depth {:?} 5d {:?}",
-                        m.name, m.avg_day, m.recent, m.depth, m.history
-                    ));
-                    m.category = section.to_string();
-                    out.push(m);
-                }
-            }
-            if at.is_none_or(|(p, n)| p >= n) {
-                break;
-            }
-            g.click(1144, 899);
-            ms(1500);
-        }
+        out.extend(unit(g, section, |g| read_section(g, section)).unwrap_or_default());
     }
     out
+}
+
+// every page of a section; None when a step did not take
+fn read_section(g: &mut Game, section: &str) -> Option<Vec<Material>> {
+    if !open_section(g, section) {
+        log(&format!("{section}: could not list it"));
+        return None;
+    }
+    let mut out = vec![];
+    for page in 1..=10 {
+        let img = g.shot(None);
+        let names: Vec<String> = (0..10).map_while(|i| row_name(&img, i)).collect();
+        let at = page_of(&img);
+        if names.is_empty() || at.is_some_and(|(p, _)| p != page) {
+            log(&format!("{section}: expected page {page}, see {at:?}"));
+            return None;
+        }
+        log(&format!("{section} page {page}: {} items", names.len()));
+        let n = if quick() {
+            2.min(names.len())
+        } else {
+            names.len()
+        };
+        for i in 0..n {
+            crate::strips::context(&format!("{section} page {page} row {i}"));
+            let mut m = read_row(g, i)?;
+            log(&format!(
+                "  {} {:?} {:?} depth {:?} 5d {:?}",
+                m.name, m.avg_day, m.recent, m.depth, m.history
+            ));
+            m.category = section.to_string();
+            out.push(m);
+        }
+        if at.is_none_or(|(p, n)| p >= n) {
+            break;
+        }
+        g.click(1144, 899);
+        ms(1500);
+        let next = |img: &RgbaImage| page_of(img).is_some_and(|(p, _)| p == page + 1);
+        if wait(g, 10.0, next).is_none() {
+            log(&format!("{section}: page {} did not come", page + 1));
+            return None;
+        }
+        // the rows come with the page number
+        ms(300);
+    }
+    Some(out)
 }

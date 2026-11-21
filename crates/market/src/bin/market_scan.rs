@@ -62,7 +62,7 @@ fn main() {
             log(&format!("currency exchange: {ex:?}"));
         }
         db::finish(&conn, scan);
-        ui::close_market(&mut g);
+        ui::reset(&mut g);
         let p = upload::payload(
             &region,
             started,

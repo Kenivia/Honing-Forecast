@@ -134,6 +134,14 @@ pub fn read(img: &RgbaImage, x0: u32, x1: u32, y0: u32, y1: u32) -> String {
 fn read_inner(img: &RgbaImage, x0: u32, x1: u32, y0: u32, y1: u32) -> String {
     let (glyphs, _) = segment(img, x0, x1, y0, y1);
     let height = glyphs.iter().map(|g| g.y1 - g.y0).max().unwrap_or(0);
+    // the digits' line: a short mark above or below it is not text (a "Competitive" tag's edge read as '-')
+    let tall = glyphs.iter().filter(|g| (g.y1 - g.y0) * 2 >= height);
+    let top = tall.clone().map(|g| g.y0).min().unwrap_or(0);
+    let bottom = tall.map(|g| g.y1).max().unwrap_or(0);
+    let glyphs: Vec<&Glyph> = glyphs
+        .iter()
+        .filter(|g| height < 6 || (top..=bottom).contains(&((g.y0 + g.y1) / 2)))
+        .collect();
     // ink level: background is the darkest, text the brightest of the rectangle
     let mut sorted: Vec<u8> = (y0..y1)
         .flat_map(|y| (x0..x1).map(move |x| (x, y)))

@@ -1,7 +1,12 @@
-// Scores the number readers on ignored/market/dataset/labels.json: glyph_eval
+// Scores the number reader on ignored/market/dataset/labels.json: glyph_eval
+// With strips folders (market_scan --strips), reads their number crops again and prints each read that changed.
 use hf_market::glyph;
 
 fn main() {
+    let folders: Vec<String> = std::env::args().skip(1).collect();
+    if !folders.is_empty() {
+        return reread(&folders);
+    }
     let dir = concat!(env!("HF_ROOT"), "/ignored/market/dataset");
     let labels: Vec<serde_json::Value> =
         serde_json::from_str(&std::fs::read_to_string(format!("{dir}/labels.json")).unwrap())
@@ -44,4 +49,32 @@ fn main() {
         println!("{k}: {}/{n}", right.get(k).unwrap_or(&0));
     }
     println!("{:?}", t.elapsed());
+}
+
+fn reread(folders: &[String]) {
+    let (mut n, mut changed) = (0, 0);
+    for dir in folders {
+        for line in std::fs::read_to_string(format!("{dir}/index.jsonl"))
+            .unwrap()
+            .lines()
+        {
+            let e: serde_json::Value = serde_json::from_str(line).unwrap();
+            if e["kind"] != "glyph" {
+                continue;
+            }
+            let img = image::open(format!("{dir}/{}", e["file"].as_str().unwrap()))
+                .unwrap()
+                .to_rgba8();
+            let t = glyph::read(&img, 0, img.width(), 0, img.height());
+            n += 1;
+            if t != e["read"].as_str().unwrap() {
+                changed += 1;
+                println!(
+                    "{dir} {} {} {:?} -> {t:?}",
+                    e["file"], e["context"], e["read"]
+                );
+            }
+        }
+    }
+    println!("{n} numbers, {changed} changed");
 }

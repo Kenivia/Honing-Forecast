@@ -178,7 +178,6 @@ fn results(
             Err(e) => {
                 if attempt == 3 {
                     log(&format!("{what}: could not read: {e}"));
-                    keep(&img, what);
                 }
             }
         }
@@ -230,48 +229,69 @@ fn is_gem(img: &RgbaImage, rows: &[Listing], name: &str) -> bool {
     })
 }
 
-fn ah_setup(g: &mut Game) {
-    fresh_market(g);
-    g.click(486, 154);
-    ms(1500);
-    let img = g.shot(None);
-    assert!(looks(&img, "ah_header"), "Auction House did not open");
+// The Auction House with class All, from wherever the UI is; false when a step did not take.
+fn ah_setup(g: &mut Game) -> bool {
+    if looks(&g.shot(None), "ah_header") {
+        return true;
+    }
+    if !fresh_market(g) {
+        return false;
+    }
+    if !act(
+        g,
+        2,
+        10.0,
+        |g| g.click(486, 154),
+        |img| looks(img, "ah_header"),
+    ) {
+        log("the Auction House did not open");
+        return false;
+    }
     let ok = pick(g, (394, 240), Some((350, 330, 0)), (350, 274), |img| {
         looks(img, "class_all")
     });
-    assert!(ok, "could not set class All");
+    if !ok {
+        log("could not set class All");
+    }
+    ok
 }
 
+fn gem_search(g: &mut Game, name: &str, last: &[Listing]) -> Option<Vec<Listing>> {
+    if !ah_setup(g) {
+        return None;
+    }
+    g.click(1462, 240);
+    ms(300);
+    g.click(1250, 240);
+    ms(300);
+    g.key("ctrl+a");
+    g.type_text(name);
+    ms(400);
+    g.key("enter");
+    let (rows, img) = results(g, false, last, name)?;
+    if !is_gem(&img, &rows, name) {
+        log(&format!(
+            "{name}: rows are not this gem: {:?}",
+            rows.first().map(|r| &r.name)
+        ));
+        return None;
+    }
+    Some(rows)
+}
+
+/// Each gem search, one unit of work; a search that failed every try is left out.
 pub fn gems(g: &mut Game) -> Vec<Search> {
-    ah_setup(g);
+    // from a fresh Auction House, its filters and search box reset
+    close_market(g);
     let mut out = vec![];
     let mut last: Vec<Listing> = vec![];
     for level in (5..=10).rev().filter(|l| !quick() || *l == 10 || *l == 5) {
         for (kind, category) in [("Doomfire", "damage"), ("Blazing", "cooldown")] {
             let name = format!("Lv. {level} {kind} Gem");
             crate::strips::context(&name);
-            let mut found = None;
-            for _ in 0..2 {
-                g.click(1462, 240);
-                ms(300);
-                g.click(1250, 240);
-                ms(300);
-                g.key("ctrl+a");
-                g.type_text(&name);
-                ms(400);
-                g.key("enter");
-                if let Some((rows, img)) = results(g, false, &last, &name) {
-                    if is_gem(&img, &rows, &name) {
-                        found = Some(rows);
-                        break;
-                    }
-                    log(&format!(
-                        "{name}: rows are not this gem: {:?}",
-                        rows.first().map(|r| &r.name)
-                    ));
-                }
-            }
-            let rows = found.unwrap_or_default();
+            let Some(rows) = unit(g, &name, |g| gem_search(g, &name, &last)) else {
+                continue;
+            };
             log(&format!(
                 "{name}: {:?}",
                 rows.iter().map(|r| r.buy_now).collect::<Vec<_>>()
@@ -366,18 +386,40 @@ fn configure(g: &mut Game, grp: &Group) {
 }
 
 fn open_advanced(g: &mut Game) -> bool {
-    for _ in 0..3 {
-        g.click(1580, 240);
-        ms(1300);
-        if looks(&g.shot(None), "adv_title") {
-            return true;
-        }
-    }
-    false
+    let open = |img: &RgbaImage| looks(img, "adv_title");
+    open(&g.shot(None)) || act(g, 3, 4.0, |g| g.click(1580, 240), open)
 }
 
+fn accessory_search(
+    g: &mut Game,
+    grp: &Group,
+    levels: (usize, usize),
+    what: &str,
+    last: &[Listing],
+) -> Option<Vec<Listing>> {
+    if !ah_setup(g) {
+        return None;
+    }
+    if !open_advanced(g) {
+        log(&format!("{what}: the advanced search did not open"));
+        return None;
+    }
+    if !configured(&g.shot(None), grp, None) {
+        configure(g, grp);
+    }
+    set_levels(g, grp, levels);
+    if !configured(&g.shot(None), grp, Some(levels)) {
+        log(&format!("{what}: settings did not take"));
+        return None;
+    }
+    g.click(1366, 924);
+    results(g, true, last, what).map(|r| r.0)
+}
+
+/// Each accessory search, one unit of work; a search that failed every try is left out.
 pub fn accessories(g: &mut Game) -> Vec<Search> {
-    ah_setup(g);
+    // from a fresh Auction House, its filters and search box reset
+    close_market(g);
     let mut out = vec![];
     let mut last: Vec<Listing> = vec![];
     for grp in &GROUPS {
@@ -390,31 +432,11 @@ pub fn accessories(g: &mut Game) -> Vec<Search> {
                 grp.item, grp.category, LEVELS[la], LEVELS[lb]
             );
             crate::strips::context(&what);
-            let mut rows = None;
-            for _ in 0..3 {
-                if !open_advanced(g) {
-                    fresh_market(g);
-                    ah_setup(g);
-                    continue;
-                }
-                if !configured(&g.shot(None), grp, None) {
-                    configure(g, grp);
-                }
-                set_levels(g, grp, (la, lb));
-                if !configured(&g.shot(None), grp, Some((la, lb))) {
-                    log(&format!("{what}: settings did not take, again"));
-                    keep(&g.shot(None), &what);
-                    g.key("esc");
-                    ms(600);
-                    continue;
-                }
-                g.click(1366, 924);
-                rows = results(g, true, &last, &what).map(|r| r.0);
-                if rows.is_some() {
-                    break;
-                }
-            }
-            let rows = rows.unwrap_or_default();
+            let Some(rows) = unit(g, &what, |g| {
+                accessory_search(g, grp, (la, lb), &what, &last)
+            }) else {
+                continue;
+            };
             log(&format!(
                 "{what}: {:?}",
                 rows.iter().map(|r| r.buy_now).collect::<Vec<_>>()

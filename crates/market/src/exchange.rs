@@ -32,16 +32,6 @@ pub struct Exchange {
     pub recent: Vec<Trade>,
 }
 
-fn wait_for(g: &mut Game, name: &str, seconds: u32) -> bool {
-    for _ in 0..seconds * 2 {
-        if looks(&g.shot(None), name) {
-            return true;
-        }
-        ms(500);
-    }
-    false
-}
-
 /// Rows from the top until an empty one; a row read only in part is an error.
 fn rows<T>(
     img: &RgbaImage,
@@ -124,48 +114,43 @@ fn read(img: &RgbaImage) -> Result<Exchange, String> {
     })
 }
 
-/// Leave closes the shop from either page; pressed only while one of them is up.
-fn leave(g: &mut Game) {
-    for _ in 0..3 {
-        let img = g.shot(None);
-        if !looks(&img, "exchange_title") && !looks(&img, "shop_title") {
-            return;
-        }
-        g.click(1814, 1036);
-        ms(2500);
-    }
-    g.key("esc");
+/// The Information page, one unit of work.
+pub fn scan(g: &mut Game) -> Option<Exchange> {
+    crate::strips::context("currency exchange");
+    unit(g, "currency exchange", read_page)
 }
 
-pub fn scan(g: &mut Game) -> Option<Exchange> {
+fn read_page(g: &mut Game) -> Option<Exchange> {
     close_market(g);
-    crate::strips::context("currency exchange");
     g.key("f9");
     // the shop can take a while to load the first time
-    if !wait_for(g, "shop_title", 60) {
+    if wait(g, 60.0, |img| looks(img, "shop_title")).is_none() {
         log("the shop did not open");
-        keep(&g.shot(None), "no_shop");
-        leave(g);
         return None;
     }
-    g.click(1636, 1036);
-    ms(500);
-    // off the panels: the bottom bar's currencies have tooltips that reach the tables
-    g.move_to(1900, 600);
-    if !wait_for(g, "exchange_title", 20) {
+    // the button can ignore a click while the shop still loads
+    let to_exchange = |g: &mut Game| {
+        g.click(1636, 1036);
+        ms(500);
+        // off the panels: the bottom bar's currencies have tooltips that reach the tables
+        g.move_to(1900, 600);
+    };
+    if !act(g, 3, 7.0, to_exchange, |img| looks(img, "exchange_title")) {
         log("the currency exchange did not open");
-        keep(&g.shot(None), "no_exchange");
-        leave(g);
         return None;
     }
-    if !looks(&g.shot(None), "exchange_info") {
+    let info = |img: &RgbaImage| looks(img, "exchange_info");
+    if !info(&g.shot(None)) {
         g.click(882, 40);
         g.move_to(1900, 600);
-        ms(2000);
+        if wait(g, 10.0, info).is_none() {
+            log("the Information page did not open");
+            return None;
+        }
     }
     // the tables draw in for a moment after the title (a "500" read as "-...??0")
     ms(1500);
-    let ex = steady(g, "currency exchange", read);
-    leave(g);
-    ex
+    let ex = steady(g, "currency exchange", read)?;
+    close_shop(g);
+    Some(ex)
 }

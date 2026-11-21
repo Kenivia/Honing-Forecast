@@ -16,3 +16,4 @@ Warnings behind `Overview.md`. Read only when trying something new here.
 - Don't place the 5-day hover's rows at fixed steps: a "-" day's row is shorter, and the last value of "995.0, -, -, -, 929.0" was cut ("?2?.?").
 - Don't read a Market list sorted by lowest price page by page: prices move between pages. Sort by Rank.
 - Don't give PP-OCRv5 a table cell's whole width: its divider line left the strip mostly blank and the read came back empty.
+- Don't give a UI step a fixed wait and one check: one pass in 29 lost the honing materials to a Market list that did not open. Wait for the screen and try the unit again from a reset.
