@@ -50,7 +50,7 @@ pub fn materials(c: &Connection, scan: i64, ms: &[Material]) {
             "INSERT INTO materials VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
             params![
                 scan,
-                now(),
+                m.at,
                 m.name,
                 m.raw_name,
                 m.bundle,
@@ -82,7 +82,7 @@ pub fn searches(c: &Connection, scan: i64, ss: &[Search]) {
     for s in ss {
         c.execute(
             "INSERT INTO searches(scan, at, kind, item, category, gem_level, level_a, level_b, results) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-            params![scan, now(), s.kind, s.item, s.category, s.gem_level, s.level_a, s.level_b, s.rows.len() as i64],
+            params![scan, s.at, s.kind, s.item, s.category, s.gem_level, s.level_a, s.level_b, s.rows.len() as i64],
         )
         .unwrap();
         let id = c.last_insert_rowid();

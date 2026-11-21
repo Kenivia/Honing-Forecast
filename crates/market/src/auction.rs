@@ -21,6 +21,8 @@ pub struct Listing {
 #[derive(Debug, Default, serde::Serialize)]
 pub struct Search {
     pub kind: &'static str,
+    /// when it was read (`upload::stamp`)
+    pub at: String,
     pub item: String,
     pub category: String,
     pub gem_level: Option<i64>,
@@ -299,6 +301,7 @@ pub fn gems(g: &mut Game) -> Vec<Search> {
             ));
             last = rows.clone();
             out.push(Search {
+                at: crate::upload::stamp(),
                 kind: "gem",
                 item: kind.to_lowercase(),
                 category: category.into(),
@@ -444,6 +447,7 @@ pub fn accessories(g: &mut Game) -> Vec<Search> {
             ));
             last = rows.clone();
             out.push(Search {
+                at: crate::upload::stamp(),
                 kind: "accessory",
                 item: grp.item.into(),
                 category: grp.category.into(),

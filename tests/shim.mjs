@@ -18,3 +18,6 @@ globalThis.Worker = class {
   terminate() {}
   addEventListener() {}
 };
+
+// Vite's import.meta.glob (run.mjs defines it to this); no globbed files under node
+globalThis.__vite_glob = () => ({});

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRosterStore } from "@/Stores/RosterConfig";
+import { default_prices, useRosterStore } from "@/Stores/RosterConfig";
 import {
   bundle_key,
   convert_is_cheaper,
@@ -11,7 +11,10 @@ import {
 } from "@/Utils/Constants";
 import { storeToRefs } from "pinia";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
+import HoverTip from "@/Components/Common/HoverTip.vue";
 import { computed } from "vue";
+import { formatDate, useNow } from "@vueuse/core";
+import { parse_sources } from "@/Utils/MarketDataFetcher";
 import { input_column_to_num } from "@/Utils/InputColumn";
 import { GridConfig } from "@/Utils/GridStyling";
 
@@ -47,6 +50,74 @@ const selected_unit_prices = computed(() =>
 const effective_prices = computed(() =>
   effective_unit_prices(selected_unit_prices.value),
 );
+
+// Under each price: how old the fetched price is and where it came from, else whether it is the
+// region's default or the user's own. Decided by value alone. Gold and Silver have no market.
+const now = useNow({ interval: 30_000 });
+const price_nums = computed(() =>
+  input_column_to_num(selected_mats_prices.value, true),
+);
+const default_nums = computed(() =>
+  input_column_to_num(default_prices(selected_region.value), true),
+);
+const sources = computed(() =>
+  parse_sources(
+    roster_config.value.latest_market_data[selected_region.value]?.[1] ?? [],
+  ),
+);
+const NO_MARKET = ["Gold", "Silver"];
+const SOURCE_NAMES = {
+  "loa-buddy":
+    '<a href="https://loa-buddy.pages.dev" target="_blank" rel="noopener" class="link">loa-buddy</a>',
+  hf: "Honing Forecast's own scanner",
+};
+
+function detailed_tip(source: keyof typeof SOURCE_NAMES, ms: number): string {
+  const mins = Math.max(0, Math.floor((now.value.getTime() - ms) / 60_000));
+  const plural = (n: number, unit: string) =>
+    `${n} ${unit}${n === 1 ? "" : "s"}`;
+  const days = Math.floor(mins / (24 * 60));
+  const hours = Math.floor((mins / 60) % 24);
+  const span = days
+    ? `${plural(days, "day")} ${plural(hours, "hour")}`
+    : hours
+      ? `${plural(hours, "hour")} ${plural(mins % 60, "min")}`
+      : plural(mins, "min");
+  return `Price from ${SOURCE_NAMES[source]} scanned on ${formatDate(new Date(ms), "MMM Do HH:mm")} (${span} ago)`;
+}
+
+function ago(ms: number): string {
+  const mins = Math.floor((now.value.getTime() - ms) / 60_000);
+  const plural = (n: number, unit: string) =>
+    `${n} ${unit}${n === 1 ? "" : "s"} ago`;
+  if (mins < 1) return "just now";
+  if (mins < 60) return plural(mins, "min");
+  if (mins < 24 * 60) return plural(Math.floor(mins / 60), "hour");
+  return plural(Math.floor(mins / (24 * 60)), "day");
+}
+
+function freshness(mat: Material): { text: string; tip?: string } | null {
+  if (NO_MARKET.includes(mat.label)) return null;
+  const key = price_key(mat);
+  const value = price_nums.value[key];
+  const fetched = sources.value[key];
+  if (fetched?.price === value) {
+    return {
+      text: ago(fetched.at),
+      tip: detailed_tip(fetched.source, fetched.at),
+    };
+  }
+  if (value === default_nums.value[key]) {
+    return {
+      text: "Default",
+      tip: `This item hasn't appear on the market in any scan yet`,
+    };
+  }
+  return {
+    text: "Manual",
+    // tip: ``,
+  };
+}
 
 // the price cell edits the bundle the user has chosen for that material
 const price_key = (mat: Material) =>
@@ -139,26 +210,47 @@ const grids = computed((): GridConfig[] => [
                   selected_mats_prices.values[price_key(mat)] = val;
                 }
               "
-              :suffix="price_suffix(mat)"
               aria_name="Market price"
               :input_width="70"
               input_color="var(--text-muted)"
               :justify_left="true"
             />
-            <select
-              v-if="mat.bundle_sizes.length > 1"
-              v-model.number="selected_bundles[mat.label]"
-              class="selector annotation ml-1! h-fit px-0!"
-              :aria-label="`${mat.label} bundle size`"
-            >
-              <option
-                v-for="size in mat.bundle_sizes"
-                :key="size"
-                :value="size"
+            <div class="ml-1 flex flex-col items-start gap-1">
+              <select
+                v-if="mat.bundle_sizes.length > 1"
+                v-model.number="selected_bundles[mat.label]"
+                class="selector annotation h-fit px-0! py-0!"
+                :aria-label="`${mat.label} bundle size`"
               >
-                x{{ size.toLocaleString("en-US") }}
-              </option>
-            </select>
+                <option
+                  v-for="size in mat.bundle_sizes"
+                  :key="size"
+                  :value="size"
+                >
+                  x{{ size.toLocaleString("en-US") }}
+                </option>
+              </select>
+              <span v-else-if="price_suffix(mat)" class="annotation">{{
+                price_suffix(mat)
+              }}</span>
+              <HoverTip
+                v-if="freshness(mat)?.tip"
+                :text="null"
+                :sticky="true"
+                placement="right"
+              >
+                <span
+                  class="annotation whitespace-nowrap underline decoration-dotted underline-offset-2"
+                  >{{ freshness(mat)!.text }}</span
+                >
+                <template #tip><span v-html="freshness(mat)!.tip" /></template>
+              </HoverTip>
+              <span
+                v-else-if="freshness(mat)"
+                class="annotation whitespace-nowrap"
+                >{{ freshness(mat)!.text }}</span
+              >
+            </div>
           </div>
           <MaterialCell
             v-if="grid.tier == 1 && !SHARED_LABELS.includes(mat.label)"
@@ -172,14 +264,6 @@ const grids = computed((): GridConfig[] => [
             input_color="var(--gold)"
             class="pr-2"
           />
-        </div>
-        <!-- temporary: Serca books are not on the market yet -->
-        <div
-          v-if="grid.tier == 1"
-          class="col-span-full px-2 py-1 text-right text-sm text-(--text-muted)"
-        >
-          New serca books price fetching is not available yet, please input them
-          yourself.
         </div>
       </div>
     </div>

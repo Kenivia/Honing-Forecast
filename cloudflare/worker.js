@@ -5,6 +5,8 @@ const MARKET_URL =
 const BIBLE_URL = "https://lostark.bible";
 // Workers Cache keeps 200s for an hour; a hit never runs the Worker
 const CACHE = "public, max-age=3600";
+// the consolidated prices: kept short so new passes show quickly
+const PRICES_CACHE = "public, max-age=60";
 // upstream fetches per minute, across all of Cloudflare
 const LIMITS = { market: 10, bible: 200 };
 const MAX_UPLOAD = 300_000;
@@ -51,6 +53,14 @@ export default {
         if (market) {
           return await handleMarketProxy(
             market[1],
+            url.searchParams.get("items") ?? "",
+            env,
+          );
+        }
+        const prices = url.pathname.match(/^\/prices\/([a-z]+)$/);
+        if (prices) {
+          return await handlePrices(
+            prices[1],
             url.searchParams.get("items") ?? "",
             env,
           );
@@ -129,7 +139,13 @@ async function handleCharacterProxy(region, charName, suffix, env) {
 
 async function handleMarketProxy(region, items, env) {
   if (!(await allow(env, "market"))) return reply("Rate limited", 429);
-  const upstream = await fetch(MARKET_URL, {
+  const upstream = await fetchMarket(region, items);
+  if (!upstream.ok) return reply(`Upstream error: ${upstream.status}`, 502);
+  return reply(await upstream.text(), 200, "application/json");
+}
+
+const fetchMarket = (region, items) =>
+  fetch(MARKET_URL, {
     method: "POST",
     headers: {
       Accept: "*/*",
@@ -139,9 +155,51 @@ async function handleMarketProxy(region, items, env) {
     },
     body: JSON.stringify({ region_slug: region, item_slugs: items.split(",") }),
   });
-  if (!upstream.ok) return reply(`Upstream error: ${upstream.status}`, 502);
-  return reply(await upstream.text(), 200, "application/json");
+
+// The newest price of each item, from loa-buddy or the scanner's lowest listings (market_latest):
+// [{item_slug, price, timestamp (s), source: "loa-buddy" | "hf"}]. Either source alone is enough.
+async function handlePrices(region, items, env) {
+  const wanted = new Set(items.split(","));
+  const [loa, ours] = await Promise.allSettled([
+    (async () => {
+      if (!(await allow(env, "market"))) throw new Error("Rate limited");
+      const upstream = await fetchMarket(region, items);
+      if (!upstream.ok) throw new Error(`Upstream error: ${upstream.status}`);
+      return await upstream.json();
+    })(),
+    env.DB.prepare(`SELECT body FROM market_latest WHERE region = ?`)
+      .bind(region)
+      .first(),
+  ]);
+  if (loa.status === "rejected" && ours.status === "rejected") {
+    return reply(`No prices: ${loa.reason.message}`, 502);
+  }
+  const best = {};
+  for (const row of loa.value ?? []) {
+    best[row.item_slug] = { ...row, source: "loa-buddy" };
+  }
+  const latest = JSON.parse(ours.value?.body ?? "{}");
+  for (const [slug, [price, at]] of Object.entries(latest)) {
+    const timestamp = Date.parse(at) / 1000;
+    if (wanted.has(slug) && !(best[slug]?.timestamp >= timestamp)) {
+      best[slug] = { item_slug: slug, price, timestamp, source: "hf" };
+    }
+  }
+  return reply(
+    JSON.stringify(Object.values(best)),
+    200,
+    "application/json",
+    PRICES_CACHE,
+  );
 }
+
+// loa-buddy's slug of an in-game name: "Artisan's Metallurgy: Level 1" -> "artisans-metallurgy-level-1"
+const slug = (name) =>
+  name
+    .toLowerCase()
+    .replace(/'/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 
 // A character's raids and gear, for uploads through the cache. Passing failures are not cached.
 async function handleBible(region, name, env) {
@@ -210,7 +268,8 @@ async function handleMove(request, env) {
 }
 
 // One market scanner pass, kept whole; its points [key, day, value] are merged into its region's
-// history, one row per month (a later value for the same key and day wins). Only the scanner's token may post.
+// history, one row per month (a later value for the same key and day wins), and its materials' lowest
+// listings into market_latest (a newer read wins). Only the scanner's token may post.
 async function handleScan(request, env) {
   if (!(await authorized(request, env))) return reply("Unauthorized", 401);
   const body = await request.text();
@@ -254,7 +313,26 @@ async function handleScan(request, env) {
       ).bind(region, month, JSON.stringify(history)),
     );
   }
-  // one transaction: the pass and its history together
+  // each material's lowest listing, where newer than the one kept
+  const kept = await env.DB.prepare(
+    `SELECT body FROM market_latest WHERE region = ?`,
+  )
+    .bind(region)
+    .first();
+  const latest = JSON.parse(kept?.body ?? "{}");
+  for (const m of scan.sections?.material ?? []) {
+    const price = m.depth?.[0]?.[0];
+    const key = slug(m.name);
+    if (price === undefined || !m.at || latest[key]?.[1] >= m.at) continue;
+    latest[key] = [price, m.at];
+  }
+  writes.push(
+    env.DB.prepare(
+      `INSERT INTO market_latest (region, body) VALUES (?, ?)
+       ON CONFLICT (region) DO UPDATE SET body = excluded.body`,
+    ).bind(region, JSON.stringify(latest)),
+  );
+  // one transaction: the pass, its history and the latest prices together
   const [inserted] = await env.DB.batch(writes);
   return reply(
     `stored as ${inserted.meta.last_row_id}`,
@@ -476,7 +554,8 @@ function reply(body, status, type = "text/plain", cache = status === 200) {
       status,
       headers: {
         "Content-Type": type,
-        "Cache-Control": cache ? CACHE : "no-store",
+        "Cache-Control":
+          typeof cache === "string" ? cache : cache ? CACHE : "no-store",
       },
     }),
   );

@@ -17,7 +17,7 @@ export function watch_errors(page: Page): string[] {
 // serves saved market prices instead of hitting the Worker; call before open
 export async function stub_market(page: Page) {
   const fixture = JSON.parse(fs.readFileSync(MARKET_FIXTURE, "utf8"));
-  await page.route(/workers\.dev\/market\//, (route) => {
+  await page.route(/workers\.dev\/prices\//, (route) => {
     const region = new URL(route.request().url()).pathname.split("/").pop();
     return route.fulfill({ json: fixture[region] });
   });

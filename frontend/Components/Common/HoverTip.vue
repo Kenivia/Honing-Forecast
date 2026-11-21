@@ -151,6 +151,7 @@ onBeforeUnmount(() => {
     @mouseenter="enter"
     @mouseleave="leave"
     @pointerdown="tap"
+    class="align-middl inline-flex"
   >
     <slot />
     <Teleport to="body">

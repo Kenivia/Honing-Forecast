@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from "pinia";
 import {
   fetch_market_data,
   parse_response,
+  parse_sources,
   start_fetch,
 } from "@/Utils/MarketDataFetcher";
 import { useRosterStore } from "@/Stores/RosterConfig";
@@ -55,6 +56,23 @@ describe("parse_response", () => {
     });
   });
 
+  it("keeps each price's source and time, loa-buddy when unlabelled", () => {
+    expect(
+      parse_sources([
+        {
+          item_slug: "destiny-leapstone",
+          price: 9,
+          timestamp: 100,
+          source: "hf",
+        },
+        { item_slug: "destiny-guardian-stone", price: "68", timestamp: 200 },
+      ]),
+    ).toEqual({
+      "Leaps x1": { price: 9, at: 100_000, source: "hf" },
+      "Blue x100": { price: 68, at: 200_000, source: "loa-buddy" },
+    });
+  });
+
   it("throws on a body that is not a list", () => {
     expect(() => parse_response({ error: "x" })).toThrow();
   });
@@ -66,10 +84,10 @@ describe("fetch_market_data", () => {
     await fetch_market_data("nae");
     const [address] = fn.mock.calls[0] as any;
     const url = new URL(address, "http://worker");
-    expect(url.pathname.endsWith("/market/nae")).toBe(true);
+    expect(url.pathname.endsWith("/prices/nae")).toBe(true);
     const items = url.searchParams.get("items")!.split(",");
     expect(items).toContain("destiny-shard-pouch-l");
-    expect(items).toHaveLength(31);
+    expect(items).toHaveLength(33);
   });
 });
 
@@ -200,7 +218,7 @@ describe("start_fetch", () => {
     vi.useFakeTimers();
     const fn = mock_fetch();
     useRosterStore().roster_config.latest_market_data.nae = [
-      Date.now() - 60_000,
+      Date.now() - 30_000,
       RESPONSE,
     ];
     const p = start_fetch("nae");

@@ -4,6 +4,11 @@ use chrono::{DateTime, Days, SecondsFormat, Utc};
 use rusqlite::Connection;
 use serde_json::{Map, Value, json};
 
+/// When an item was read (UTC, to the second): each material, search and exchange read carries one.
+pub fn stamp() -> String {
+    Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true)
+}
+
 /// `{"url": "<Worker>", "token": "<MARKET_TOKEN>"}`; without it nothing is uploaded.
 pub const CONFIG: &str = concat!(env!("HF_ROOT"), "/ignored/market/upload.json");
 

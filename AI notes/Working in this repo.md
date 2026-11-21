@@ -80,7 +80,7 @@ type is intersected with `Record<string, unknown>`.
 ## tests/
 
 `pnpm test:node` bundles each `tests/*.test.ts` with esbuild and runs it under node
-with `tests/shim.mjs` (localStorage, `self`, a stub `Worker`). `tests/helpers.ts` has
+with `tests/shim.mjs` (localStorage, `self`, a stub `Worker`, and Vite's `import.meta.glob` as an empty glob, so `Utils/Changelog.ts` loads and `LATEST_VERSION` is undefined). `tests/helpers.ts` has
 `check` / `equal` / `differences` (paths where two values differ, keys in any order) / `done`; a suite exits non-zero if any check failed. `node tests/run.mjs
 <substring>` runs one suite.
 

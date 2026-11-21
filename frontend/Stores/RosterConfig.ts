@@ -106,7 +106,7 @@ export function fresh_profile_id(config: RosterConfig): string | null {
   return fresh ? p.id : null;
 }
 
-function default_prices(region: MarketRegions): InputColumn {
+export function default_prices(region: MarketRegions): InputColumn {
   return create_input_column(InputType.Int, ALL_BUNDLE_KEYS, {
     value: (key) =>
       region === "Custom"

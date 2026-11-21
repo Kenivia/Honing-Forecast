@@ -200,7 +200,7 @@ test("deleting the character you were viewing lands on a valid one", async ({
 test("each roster card has its own region", async ({ page }) => {
   const asked: string[] = [];
   page.on("request", (r) => {
-    const m = r.url().match(/\/market\/(\w+)/);
+    const m = r.url().match(/\/prices\/(\w+)/);
     if (m) asked.push(m[1]);
   });
   await open_roster(page, [{ names: ["A"] }, { names: ["B"] }]);

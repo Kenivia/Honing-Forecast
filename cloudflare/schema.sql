@@ -53,6 +53,12 @@ CREATE TABLE IF NOT EXISTS market_scans (
   UNIQUE (region, started)
 );
 
+-- the newest lowest listing of each material per region, over every pass: {slug: [price, at]}
+CREATE TABLE IF NOT EXISTS market_latest (
+  region TEXT PRIMARY KEY,
+  body TEXT
+);
+
 -- the passes' points per region and month: {key: {day: value}}
 CREATE TABLE IF NOT EXISTS market_history (
   region TEXT,

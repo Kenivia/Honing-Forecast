@@ -29,7 +29,11 @@ for (const test of tests) {
     platform: "node",
     format: "esm",
     alias: { "@": path.join(root, "frontend") },
-    define: { "import.meta.env": "{}", __BUILD_COMMIT__: '"test"' },
+    define: {
+      "import.meta.env": "{}",
+      "import.meta.glob": "__vite_glob",
+      __BUILD_COMMIT__: '"test"',
+    },
     logLevel: "error",
   });
   console.log(`\n######## ${test} ########`);

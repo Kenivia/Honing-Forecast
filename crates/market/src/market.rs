@@ -12,6 +12,8 @@ use std::sync::OnceLock;
 #[derive(Debug, Default, serde::Serialize)]
 pub struct Material {
     pub name: String,
+    /// when it was read (`upload::stamp`)
+    pub at: String,
     /// the Market category it was listed under
     pub category: String,
     pub raw_name: String,
@@ -311,6 +313,7 @@ fn read_row(g: &mut Game, i: usize) -> Option<Material> {
         .into_iter()
         .partition(|t| t.to_lowercase().contains("bundle"));
     let mut m = Material {
+        at: crate::upload::stamp(),
         raw_name: name.join(" "),
         bundle: bundle.first().and_then(|t| numerals(t).parse().ok()),
         ..Default::default()

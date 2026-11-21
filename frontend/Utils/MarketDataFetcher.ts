@@ -9,15 +9,17 @@ import { useRosterStore } from "@/Stores/RosterConfig";
 import { input_column_to_num } from "./InputColumn";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 
-const FETCH_MARKET_COOLDOWN_MS = 60 * 60 * 1000;
+// the Worker caches /prices for a minute too
+const FETCH_MARKET_COOLDOWN_MS = 60 * 1000;
 export type MarketRegions = "nae" | "euc" | "Custom";
 // Custom is user-entered and is never fetched.
 export const FETCHABLE_REGIONS: MarketRegions[] = ["nae", "euc"];
+// The newest price of each item from loa-buddy or our own scanner, one row per item:
+// {item_slug, price, timestamp (s), source}. A GET, so the Worker's cache can serve it.
 export async function fetch_market_data(region: MarketRegions): Promise<any> {
-  // a GET, so the Worker's cache can serve it
   const items = Object.keys(ITEM_SLUG_TO_LABEL).join(",");
   const response = await fetch(
-    `${WORKER_URL}/market/${region.toLowerCase()}?items=${items}`,
+    `${WORKER_URL}/prices/${region.toLowerCase()}?items=${items}`,
   );
   return await response.json();
 }
@@ -34,15 +36,30 @@ function slug_bundle_key(entry: string | [string, number]): string {
 
 // The price of every bundle the response lists. Throws on a body that is not a list.
 export function parse_response(response: any): Record<string, number> {
-  const prices: Record<string, number> = {};
-  for (const { item_slug, price } of response) {
+  return Object.fromEntries(
+    Object.entries(parse_sources(response)).map(([key, s]) => [key, s.price]),
+  );
+}
+
+export type PriceSource = "loa-buddy" | "hf";
+export type SourcedPrice = { price: number; at: number; source: PriceSource };
+
+// Where each listed bundle's price came from and when (ms). Responses saved before /prices
+// are loa-buddy's own rows, without `source`.
+export function parse_sources(response: any): Record<string, SourcedPrice> {
+  const out: Record<string, SourcedPrice> = {};
+  for (const { item_slug, price, timestamp, source } of response) {
     const entry = ITEM_SLUG_TO_LABEL[item_slug];
     const value = parseInt(price);
     if (entry !== undefined && Number.isFinite(value)) {
-      prices[slug_bundle_key(entry)] = value;
+      out[slug_bundle_key(entry)] = {
+        price: value,
+        at: timestamp * 1000,
+        source: source ?? "loa-buddy",
+      };
     }
   }
-  return prices;
+  return out;
 }
 
 const ITEM_SLUG_TO_LABEL: Record<string, string | [string, number]> = {
@@ -76,7 +93,9 @@ const ITEM_SLUG_TO_LABEL: Record<string, string | [string, number]> = {
   "tailoring-hellfire-15-18": "15-18 Armor",
   "metallurgy-hellfire-19-20": "19-20 Weapon",
   "tailoring-hellfire-19-20": "19-20 Armor",
-  // not listed by the API yet (October 2026)
+  "enhanced-metallurgy-hellfire-19-20": "Enhanced 19-20 Weapon",
+  "enhanced-tailoring-hellfire-19-20": "Enhanced 19-20 Armor",
+  // only our scanner lists these (November 2026)
   "metallurgy-tremor-12-15": "12-15 Weapon",
   "tailoring-tremor-12-15": "12-15 Armor",
   "metallurgy-tremor-16-19": "16-19 Weapon",

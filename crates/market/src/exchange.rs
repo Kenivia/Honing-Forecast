@@ -24,6 +24,8 @@ pub struct Trade {
 
 #[derive(Debug, Default, serde::Serialize)]
 pub struct Exchange {
+    /// when it was read (`upload::stamp`)
+    pub at: String,
     /// "Royal Crystal Sale Offers: 5 sales with lowest price", as listed (dearest first)
     pub royal_sale: Vec<Offer>,
     /// "Crystal Purchase Offers: 5 highest price listings", as listed (dearest first)
@@ -108,6 +110,7 @@ fn read(img: &RgbaImage) -> Result<Exchange, String> {
         },
     )?;
     Ok(Exchange {
+        at: crate::upload::stamp(),
         royal_sale,
         crystal_purchase,
         recent,

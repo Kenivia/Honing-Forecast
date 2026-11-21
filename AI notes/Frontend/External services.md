@@ -8,7 +8,7 @@ Character import can also go through lostark.bible's OAuth API when the user sig
 
 `cloudflare/worker.js`, deployed separately with `pnpm cloudflare-deploy`. Its URL reaches the frontend through `VITE_WORKER_URL`. It does two things as a caching proxy:
 
-- forwards market price requests to a third-party market data API (`GET /market/<region>?items=<slugs>`; the Worker POSTs the body upstream);
+- forwards market price requests to loa-buddy's market data API (`GET /market/<region>?items=<slugs>`; the Worker POSTs the body upstream). The site now uses `GET /prices/<region>?items=<slugs>` instead (Market prices, below); `/market` stays for older clients;
 - fetches character pages from lostark.bible, which the browser cannot call directly (`GET /character/<region>/<name>/<suffix>`).
 
 It holds no application logic for those two; parsing happens in the frontend. The one exception is the analytics route below.
@@ -38,9 +38,9 @@ The budget snapshots (`Screen scanner/Manifest.md`) are uploaded so the author c
 
 ## Market scanner passes
 
-The native market scanner (`Market scanner/Overview.md`) posts each pass to the Worker; nothing on the site reads them yet.
+The native market scanner (`Market scanner/Overview.md`) posts each pass to the Worker; the site reads only each material's lowest listing, through `/prices` (below).
 
-- `POST /scans`, only with `Authorization: Bearer <MARKET_TOKEN>` (a Worker secret; locally `cloudflare/.dev.vars`, gitignored; compared with `timingSafeEqual`). The body (up to 1 MB) is stored whole in D1 `market_scans`, one row per pass, once per region and `started` (a resend answers "stored before"). Its `points` [key, day, value] are merged into `market_history`, one row per region and month (`{key: {day: value}}`, a later value for a key and day wins), in the same batch as the pass.
+- `POST /scans`, only with `Authorization: Bearer <MARKET_TOKEN>` (a Worker secret; locally `cloudflare/.dev.vars`, gitignored; compared with `timingSafeEqual`). The body (up to 1 MB) is stored whole in D1 `market_scans`, one row per pass, once per region and `started` (a resend answers "stored before"). Its `points` [key, day, value] are merged into `market_history`, one row per region and month (`{key: {day: value}}`, a later value for a key and day wins), in the same batch as the pass. So is `market_latest`, one row per region, `{slug: [price, at]}`: each material's lowest listing (`depth[0]`) by loa-buddy's slug of its name (`slug()`: lower case, apostrophes dropped, other runs of non-alphanumerics to `-`), where its `at` is newer than the one kept, so it is the newest reading of each item over every pass.
 - `GET /scans/latest/<region>`, `GET /scans/<id>`: `{id, received, scan}`, the pass as posted. `GET /scans/history/<region>/<yyyy-mm>`: that month's `{key: {day: value}}`, `{}` when none.
 - **Not cached** except a pass by id (it never changes): each read is one indexed row, so a request costs one D1 row read whether or not it is cached, and Workers Cache hits count toward the 100k requests a day anyway. History is a row per month, not per day or point, for the same reason, and to keep each row's JSON small for the 10 ms CPU limit.
 
@@ -52,9 +52,11 @@ The native market scanner (`Market scanner/Overview.md`) posts each pass to the 
 
 `Utils/MarketDataFetcher.ts`.
 
+- **One consolidated source**: `GET /prices/<region>?items=<slugs>` on the Worker fetches loa-buddy upstream (the `market` rate limit) and reads `market_latest` together, and per item returns whichever is newer, as loa-buddy's own rows plus a source: `[{item_slug, price, timestamp (s), source: "loa-buddy" | "hf"}]`. Either source failing leaves the other; both failing is a 502. Cached 60 s (`PRICES_CACHE`) so new passes show quickly: at most about one upstream fetch and one D1 read per region and item list a minute.
+- The market page shows, under each price (below the bundle size), how old the fetched price is ("just now", "N mins ago", "N hours ago", "N days ago"), with a hover naming its source (loa-buddy, linked, or Honing Forecast). It is decided by value alone: the price equals the saved response's price for that bundle (`parse_sources`; rows saved before `/prices` have no `source` and are loa-buddy's), else "Default fallback" when it equals the region's default (`default_prices`; Custom's are 0 and Gold 1), else "Manual". Gold and Silver have none.
 - Prices are fetched per region on app load. A region set to custom is never fetched, and one global `auto_fetch` flag can turn fetching off (the fetch button still forces one).
-- The raw response is kept in the store (and therefore in localStorage) with its timestamp and reused for a cooldown period, across reloads too. A forced fetch only reuses a response under a second old. A failed fetch applies the saved response, however old.
-- Item slugs from the API are mapped onto bundle keys. A fetch writes only the bundles the response lists, so anything the market does not sell (Silver, Gold, Enhanced books, special leaps, and any book the API does not list yet) keeps whatever the user typed; fallback prices are only the column's defaults. A price typed for a listed item is a temporary override: the next fetch, or the cached response re-applied on load, replaces it, and the market page's sidebar says so. Custom is the region for prices of one's own.
+- The raw response is kept in the store (and therefore in localStorage) with its timestamp and reused for a minute (the Worker's cache time), across reloads too. A forced fetch only reuses a response under a second old. A failed fetch applies the saved response, however old.
+- Item slugs from the API are mapped onto bundle keys. A fetch writes only the bundles the response lists, so anything the market does not sell (Silver, Gold, special leaps, and any book neither source lists yet) keeps whatever the user typed; fallback prices are only the column's defaults. A price typed for a listed item is a temporary override: the next fetch, or the cached response re-applied on load, replaces it, and the market page's sidebar says so. Custom is the region for prices of one's own.
 - Shards are sold in bags of several sizes; after each fetch the cheapest per shard is selected.
 - The fetch flags (`is_fetching`, `market_fetch_failed` in the runtime store) are per region, so regions fetch in parallel and the market page shows the selected region's status.
 - Serca prices are not synced with T4: the market page only shows an effective price, the cheaper of buying and converting (`effective_unit_prices`).
