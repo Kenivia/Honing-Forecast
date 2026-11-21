@@ -38,7 +38,7 @@ The budget snapshots (`Screen scanner/Manifest.md`) are uploaded so the author c
 
 ## Market scanner passes
 
-The native market scanner (`Market scanner/Overview.md`) posts each pass to the Worker; the site reads only each material's lowest listing, through `/prices` (below).
+The native market scanner (`Market scanner/Overview.md`) posts each pass to the Worker; the site reads each material's lowest listing through `/prices` (below), and the market page's Gems tab reads `sections.gem` of `GET /scans/latest/<region>` (`GemDataFetcher.ts`, kept in memory for a minute per region, NAE and EUC only).
 
 - `POST /scans`, only with `Authorization: Bearer <MARKET_TOKEN>` (a Worker secret; locally `cloudflare/.dev.vars`, gitignored; compared with `timingSafeEqual`). The body (up to 1 MB) is stored whole in D1 `market_scans`, one row per pass, once per region and `started` (a resend answers "stored before"). Its `points` [key, day, value] are merged into `market_history`, one row per region and month (`{key: {day: value}}`, a later value for a key and day wins), in the same batch as the pass. So is `market_latest`, one row per region, `{slug: [price, at]}`: each material's lowest listing (`depth[0]`) by loa-buddy's slug of its name (`slug()`: lower case, apostrophes dropped, other runs of non-alphanumerics to `-`), where its `at` is newer than the one kept, so it is the newest reading of each item over every pass.
 - `GET /scans/latest/<region>`, `GET /scans/<id>`: `{id, received, scan}`, the pass as posted. `GET /scans/history/<region>/<yyyy-mm>`: that month's `{key: {day: value}}`, `{}` when none.

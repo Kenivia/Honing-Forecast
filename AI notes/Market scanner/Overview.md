@@ -66,7 +66,7 @@ Code: `crates/market` (`hf-market`), Windows only. Text is read by PP-OCRv5 thro
 
 ## Open
 
-- The site reading more of the uploads: a viewer, and prices other than the lowest listing (a toggle on the market page).
+- The site reading more of the uploads: prices other than the lowest listing (a toggle on the market page). Gems are shown (the market page's Gems tab, lowest buy-now only).
 - Accessory listings record the two options searched, not the third option (it is only on the hover tooltip).
 - Recovering from a lost connection: the reset between tries only closes the scanner's own windows (`ui::reset`).
 - Other resolutions are not handled.

@@ -5,6 +5,8 @@ import Calc from "@/Components/Character/Calc.vue";
 import Guide from "@/Components/Info/Guide.vue";
 import Scanner from "@/Components/Character/InventoryScanner/Scanner.vue";
 import MarketView from "@/Components/Market/MarketView.vue";
+import BudgetGrid from "@/Components/Market/BudgetGrid.vue";
+import GemsView from "@/Components/Market/GemsView.vue";
 import RosterView from "@/Components/RosterView.vue";
 import { REGION_SLUGS, useRosterStore } from "@/Stores/RosterConfig";
 import type { CharProfile } from "@/Stores/CharacterProfile";
@@ -45,6 +47,12 @@ const router = createRouter({
       path: "/market-mats",
       name: "market",
       component: MarketView,
+      redirect: { name: "market-materials" },
+      children: [
+        { path: "materials", name: "market-materials", component: BudgetGrid },
+        { path: "gems", name: "market-gems", component: GemsView },
+        { path: ":pathMatch(.*)*", redirect: { name: "market-materials" } },
+      ],
     },
     {
       path: "/roster-setup",

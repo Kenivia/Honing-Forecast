@@ -155,7 +155,7 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
         <RouterLink
           to="/market-mats"
           class="nav-tab"
-          :class="{ selected: route.path == '/market-mats' }"
+          :class="{ selected: route.path.startsWith('/market-mats') }"
         >
           Market & Mats
         </RouterLink>
