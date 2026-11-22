@@ -1105,6 +1105,7 @@ dependencies = [
  "hf-scanner",
  "image",
  "include_dir",
+ "ring",
  "rmcp",
  "rten",
  "rten-tensor",

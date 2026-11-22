@@ -46,7 +46,7 @@ struct Control {
 #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
 struct Files {
     #[schemars(
-        description = "key prefix, e.g. '<machine>/shots/' (error screenshots), '<machine>/steps/' (setup mode), '<machine>/profile/'"
+        description = "key prefix, e.g. 'files/<machine>/shots/' (error screenshots), 'files/<machine>/steps/' (setup mode), 'files/<machine>/profile/'; 'update/' holds the agent build"
     )]
     prefix: String,
     #[schemars(

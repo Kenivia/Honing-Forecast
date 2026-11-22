@@ -1,6 +1,8 @@
 // Relay between market scanner PCs (crates/market, market_agent) and their controllers (market_mcp --remote,
 // Discord). One Durable Object (Hub) holds every agent's WebSocket, forwards commands and keeps each machine's
-// status; files (screenshots, profiles) go to R2, and so does the agent's newest build (PUT /update).
+// status; files (screenshots, profiles) go to R2 under files/<machine>/ (deleted after 7 days by a lifecycle
+// rule, at most MAX_FILE each and DAY_BYTES a machine a day), and so does the agent's newest build (PUT /update,
+// signed by publish.mjs; the agent checks the signature, the relay only stores it).
 import { DurableObject } from "cloudflare:workers";
 
 // an agent that disconnected is reported once it stayed away this long
@@ -9,6 +11,8 @@ const DOWN_MS = 2 * 60 * 1000;
 const STUCK_MS = 20 * 60 * 1000;
 const ALARM_MS = 60 * 1000;
 const UPDATE = "update/market_agent.exe";
+const MAX_FILE = 20 << 20;
+const DAY_BYTES = 1 << 30;
 
 const json = (v, status = 200) =>
   new Response(JSON.stringify(v), {
@@ -46,7 +50,14 @@ export default {
       if (!admin && machineTokens(env)[m[1]] !== bearer(req)) {
         return json({ error: "unauthorized" }, 401);
       }
-      const key = `${m[1]}/${decodeURIComponent(m[2])}`;
+      const size = Number(req.headers.get("content-length"));
+      if (!(size > 0 && size <= MAX_FILE)) {
+        return json({ error: `needs a content-length up to ${MAX_FILE}` }, 413);
+      }
+      if (!(await hub(env).allow(m[1], size))) {
+        return json({ error: "daily upload budget used" }, 429);
+      }
+      const key = `files/${m[1]}/${decodeURIComponent(m[2])}`;
       await env.FILES.put(key, req.body);
       return json({ key });
     }
@@ -55,7 +66,8 @@ export default {
     const anyMachine = Object.values(machineTokens(env)).includes(bearer(req));
     if (path === "/update" && req.method === "GET" && (admin || anyMachine)) {
       const o = await env.FILES.head(UPDATE);
-      return json({ sha256: o?.customMetadata.sha256 ?? null });
+      const meta = o?.customMetadata ?? {};
+      return json({ sha256: meta.sha256 ?? null, build: meta.build ?? null, sig: meta.sig ?? null });
     }
     if (path === "/update/exe" && req.method === "GET" && (admin || anyMachine)) {
       const o = await env.FILES.get(UPDATE);
@@ -69,8 +81,10 @@ export default {
       const sha256 = [...new Uint8Array(await crypto.subtle.digest("SHA-256", body))]
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
-      await env.FILES.put(UPDATE, body, { customMetadata: { sha256 } });
-      return json({ sha256, size: body.byteLength });
+      const build = req.headers.get("x-build") ?? "";
+      const sig = req.headers.get("x-signature") ?? "";
+      await env.FILES.put(UPDATE, body, { customMetadata: { sha256, build, sig } });
+      return json({ sha256, build, size: body.byteLength });
     }
 
     if (path === "/files" && req.method === "GET") {
@@ -177,7 +191,9 @@ export class Hub extends DurableObject {
   async event(machine, msg) {
     if (msg.kind === "error" || msg.kind === "info") {
       const icon = msg.kind === "error" ? "⚠️" : "ℹ️";
-      const file = msg.file ? await this.env.FILES.get(msg.file) : null;
+      // only the sender's own files
+      const own = msg.file?.startsWith(`files/${machine}/`);
+      const file = own ? await this.env.FILES.get(msg.file) : null;
       await post(
         this.env,
         `${icon} **${machine}**: ${msg.text}`,
@@ -241,6 +257,25 @@ export class Hub extends DurableObject {
     return reply;
   }
 
+  /// Counts an upload against the machine's bytes for the day (UTC); false once over DAY_BYTES, told once.
+  async allow(machine, size) {
+    const day = new Date().toISOString().slice(0, 10);
+    const key = `q:${machine}`;
+    let q = (await this.ctx.storage.get(key)) ?? {};
+    if (q.day !== day) q = { day, bytes: 0, told: false };
+    if (q.bytes + size > DAY_BYTES) {
+      if (!q.told) {
+        await post(this.env, `🛑 **${machine}** used its upload budget for today; uploads refused until 00:00 UTC`);
+        q.told = true;
+        await this.ctx.storage.put(key, q);
+      }
+      return false;
+    }
+    q.bytes += size;
+    await this.ctx.storage.put(key, q);
+    return true;
+  }
+
   async machines() {
     const recs = await this.ctx.storage.list({ prefix: "m:" });
     return [...recs.values()];
@@ -248,6 +283,9 @@ export class Hub extends DurableObject {
 }
 
 // --- Discord: status posts through the bot, and the /start, /pause, /status commands
+
+// agent text goes to Discord as is: no pings from it
+const allowed_mentions = { parse: [] };
 
 async function post(env, content, file) {
   if (!env.DISCORD_BOT_TOKEN) return;
@@ -258,12 +296,12 @@ async function post(env, content, file) {
     body = new FormData();
     body.append(
       "payload_json",
-      JSON.stringify({ content, attachments: [{ id: 0, filename: file.name }] }),
+      JSON.stringify({ content, allowed_mentions, attachments: [{ id: 0, filename: file.name }] }),
     );
     body.append("files[0]", file.body, file.name);
   } else {
     headers["content-type"] = "application/json";
-    body = JSON.stringify({ content });
+    body = JSON.stringify({ content, allowed_mentions });
   }
   const r = await fetch(url, { method: "POST", headers, body });
   if (!r.ok) console.log("discord post failed", r.status, await r.text());
@@ -316,7 +354,7 @@ async function discordInteraction(req, env) {
   }
   const i = JSON.parse(body);
   if (i.type === 1) return json({ type: 1 });
-  const say = (content) => json({ type: 4, data: { content } });
+  const say = (content) => json({ type: 4, data: { content, allowed_mentions } });
   const user = i.member?.user?.id ?? i.user?.id;
   if (!env.DISCORD_USERS.split(",").includes(user)) {
     return say("Not allowed.");

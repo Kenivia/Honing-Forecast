@@ -5,7 +5,8 @@
 // every unit of work). Portable layout (profile/ and data/ beside the exe) unless --dev (the repo's folders).
 // A round that breaks or reads nothing (lost connection, game closed or updated) closes the game, waits for the
 // network, relaunches it and goes on; three in a row and it stops. It replaces itself with the relay's newest
-// build at the start and at every round, restarting in the same console (--resume: scanning without asking).
+// build at the start and at every round, restarting in the same console (--resume: scanning without asking);
+// only a newer build signed by the publisher's key (update_key.hex) is taken.
 // market_agent [--dev] [--setup] [--quick] [--strips] [--only materials,gems,exchange] [--regions NAE,EUC]
 use base64::Engine;
 use hf_market::{
@@ -77,7 +78,7 @@ fn status() -> Value {
         "log": log,
         "log_at": log_at,
         "setup": report::SETUP.load(Ordering::Relaxed),
-        "version": &own_sha()[..8],
+        "version": build(),
     }})
 }
 
@@ -98,7 +99,7 @@ fn put_file(path: &str, body: &[u8]) -> Option<String> {
     Some(v["key"].as_str()?.to_string())
 }
 
-/// The profile's templates, to the relay's store (<machine>/profile/...).
+/// The profile's templates, to the relay's store (files/<machine>/profile/...).
 fn sync_profile() -> String {
     let mut n = 0;
     for sub in ["refs", "names", "gems"] {
@@ -133,9 +134,26 @@ fn sha_hex(b: &[u8]) -> String {
         .collect()
 }
 
-fn own_sha() -> &'static str {
-    static S: OnceLock<String> = OnceLock::new();
-    S.get_or_init(|| sha_hex(&std::fs::read(std::env::current_exe().unwrap()).unwrap()))
+/// This build's number (unix seconds, set by cloudflare/relay/publish.mjs); 0 for a local build.
+fn build() -> u64 {
+    option_env!("MARKET_BUILD").map_or(0, |s| s.parse().unwrap())
+}
+
+fn unhex(s: &str) -> Vec<u8> {
+    (0..s.len() / 2)
+        .map(|i| u8::from_str_radix(&s[2 * i..2 * i + 2], 16).unwrap_or(0))
+        .collect()
+}
+
+/// Whether the publisher's key (private key only on the publishing PC) signed this build and hash.
+fn signed(build: u64, sha: &str, sig: &str) -> bool {
+    let key = unhex(include_str!("../../update_key.hex").trim());
+    ring::signature::UnparsedPublicKey::new(&ring::signature::ED25519, key)
+        .verify(
+            format!("hf-market-agent:{build}:{sha}").as_bytes(),
+            &unhex(sig),
+        )
+        .is_ok()
 }
 
 fn get(path: &str) -> Option<Vec<u8>> {
@@ -151,18 +169,27 @@ fn get(path: &str) -> Option<Vec<u8>> {
         .ok()
 }
 
-/// Replaces this exe with the relay's newest build when it differs, then restarts in this console, still
+/// Replaces this exe with the relay's build when it is newer and signed, then restarts in this console, still
 /// scanning when `scanning`; otherwise says why not.
 fn update(scanning: bool) -> String {
     let Some(v) = get("/update") else {
         return "could not check for an update".into();
     };
     let v: Value = serde_json::from_slice(&v).unwrap();
-    let Some(want) = v["sha256"].as_str() else {
-        return "no build published".into();
+    let (Some(want), Some(n), Some(sig)) = (
+        v["sha256"].as_str(),
+        v["build"].as_str().and_then(|s| s.parse::<u64>().ok()),
+        v["sig"].as_str(),
+    ) else {
+        return "no signed build published".into();
     };
-    if want == own_sha() {
-        return "up to date".into();
+    if n <= build() {
+        return format!("up to date ({})", build());
+    }
+    if !signed(n, want, sig) {
+        let text = format!("refused build {n}: bad signature");
+        report::event("error", &text, None);
+        return text;
     }
     let Some(exe) = get("/update/exe").filter(|b| sha_hex(b) == want) else {
         return "the download failed".into();
@@ -171,7 +198,7 @@ fn update(scanning: bool) -> String {
     std::fs::write(&tmp, exe).unwrap();
     self_replace::self_replace(&tmp).unwrap();
     std::fs::remove_file(&tmp).unwrap();
-    let text = format!("updated {} -> {}, restarting", &own_sha()[..8], &want[..8]);
+    let text = format!("updated {} -> {n}, restarting", build());
     log(&text);
     report::event("info", &text, None);
     // time for the relay thread to send it
@@ -426,6 +453,11 @@ fn scan(conn: &rusqlite::Connection, o: &run::Opts, current: &mut Option<&'stati
             ensure_game(current);
             run::round(&mut Game::find(), conn, o, current)
         }));
+        // a screenshot after every unit is a few MB each: one round of it at most
+        if report::SETUP.swap(false, Ordering::Relaxed) {
+            log("setup mode off after a round");
+            report::event("info", "setup mode off after a round", None);
+        }
         let why = match n {
             Ok(n) if n > 0 => {
                 strikes = 0;
