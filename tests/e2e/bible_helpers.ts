@@ -1,6 +1,7 @@
 // lostark.bible and Worker-scrape stubs plus store readers, for bible.spec.ts, bible_live.spec.ts, roster.spec.ts.
 import type { Page } from "@playwright/test";
 import fs from "node:fs";
+import { worker_route } from "./helpers.ts";
 
 const FIX = new URL("../unit/market-import/fixtures/", import.meta.url);
 const read = (name: string) => fs.readFileSync(new URL(name, FIX), "utf8");
@@ -170,7 +171,7 @@ export async function stub_character(
   rosters: Record<string, string[]> = {},
 ) {
   const stub: ScrapeStub = { requests: [] };
-  await page.route(/workers\.dev\/character\//, (route) => {
+  await page.route(worker_route("/character/"), (route) => {
     const [, , region, name, suffix = ""] = new URL(
       route.request().url(),
     ).pathname

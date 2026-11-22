@@ -54,7 +54,7 @@ copies of each crate before a `cargo clean` on 2026-10-27, so clean it again whe
 | `pnpm test`          | Every suite below in turn: Rust, node, Vitest, browser.                  |
 | `pnpm test:node`     | The node-side suites in `tests/`. See `tests/` below.                    |
 | `pnpm test:unit`     | Vitest unit and component tests in `tests/unit/`. See `tests/` below.    |
-| `pnpm test:e2e`      | Playwright browser tests, fully parallel (tests within a file too).      |
+| `pnpm test:e2e`      | Playwright browser tests, fully parallel on 4 workers (more use too much memory). |
 | `pnpm test:rust`     | Rust unit tests for the core and scanner, and the arena's short checks.  |
 | `pnpm arena`         | The core's test harness. See `Calculator core/Arena.md`.                 |
 | `pnpm arena stress`  | The evaluator's probabilities against an exact convolution.              |

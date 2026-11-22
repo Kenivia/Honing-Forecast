@@ -8,5 +8,6 @@ process.env.HF_MOVE_NEW = "https://test.honing-forecast.com";
 export default defineConfig({
   ...base,
   testMatch: "domain_move.spec.ts",
+  testIgnore: [],
   webServer: undefined,
 });

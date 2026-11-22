@@ -94,7 +94,7 @@ Add a spec under `tests/e2e/`. Follow `smoke.spec.ts`:
 - Assert ilevel and cell statuses exactly. Assert gold by relation (greater than zero, lower after adding materials) or a generous range.
 - To test persistence, wait a second for the debounced save before reloading.
 
-The price fixture is `tests/e2e/fixtures/market.json`, keyed by region slug (`nae`, `euc`), in the market API's response shape. `stub_market` fulfils `GET /market/<region>` with that region's list; if the route or the response shape changes, update both.
+The price fixture is `tests/e2e/fixtures/market.json`, keyed by region slug (`nae`, `euc`), in the market API's response shape. `stub_market` fulfils `GET /prices/<region>` with that region's list; if the route or the response shape changes, update both. Worker stubs route through `worker_route(path)` in `helpers.ts`, which matches both the deployed Worker (`workers.dev`) and `pnpm cloudflare-dev` (`localhost:8787`), so a local `VITE_WORKER_URL` override doesn't bypass them.
 
 ## Specs
 
@@ -104,7 +104,7 @@ Each test checks the effect (store, page, gold relation) and that it survives a 
 - `roster.spec.ts`: add / rename / reorder / copy / delete, regions (a name in two regions, an old region-less link opened cold), accented names, scrape Fetch and Fetch remaining, per-roster mats on the market page.
 - `bible.spec.ts` (mocked): sign-in flow and callback errors, sync (fresh vs touched `Newchar`, accent matching, pairing popup, second sync, NA + CE, Custom skipped, the same name in NA and CE), locks, refresh and its scrape fallback, 401 / expiry, sign-out, auto-refresh once per launch.
 - `bible_live.spec.ts`: against the real API; skipped unless `.env.local` has `BIBLE_TOKEN` (sign in on localhost, then `JSON.parse(localStorage.bible_auth).token`). Revoke is stubbed so it never kills the token.
-- `domain_move.spec.ts`: the pages.dev to .com hand-off on its own dev server (port 5174, `localhost` old, `127.0.0.1` new); see `Frontend/Domain move.md`.
+- `domain_move.spec.ts`: the pages.dev to .com hand-off. Left out of `pnpm test:e2e` (`testIgnore`) since the move is done; it runs only through `pnpm test:e2e:staging`. See `Frontend/Domain move.md`.
 
 Quirks: Firefox needs 120 s test timeouts. It errors the workers of a page left mid-run (no message); `WorkerBundle.ts` stays quiet once `beforeunload`/`pagehide` fired, and `hf.open` / `hf.reload` wait for idle runs anyway (`settle`). Click, then wait for its effect before the next click in a list that re-lays out (Allow / Forbid). Chromium logs a stubbed 4xx/5xx as a console error (`ignore_http` in bible_helpers). Typing a char name while signed out opens the scrape popup; close it on the overlay. More than ~3 workers make Firefox page loads time out.
 

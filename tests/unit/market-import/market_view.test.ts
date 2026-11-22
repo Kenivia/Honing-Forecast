@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { h } from "vue";
+import { createMemoryHistory, createRouter, RouterView } from "vue-router";
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import MarketView from "@/Components/Market/MarketView.vue";
+import BudgetGrid from "@/Components/Market/BudgetGrid.vue";
 import {
   create_default_owned_input_column,
   useRosterStore,
@@ -22,16 +24,40 @@ vi.mock("@/Components/Common/Sidebar.vue", () => ({
     setup:
       (_: any, { slots }: any) =>
       () =>
-        h("div", [slots.sidebar?.(), slots.main?.()]),
+        h("div", [slots.sidebar?.({ close: () => {} }), slots.main?.()]),
   },
 }));
 
-function mount_view() {
+// MarketView at its materials sub-page; `setup` edits the store before mounting
+async function mount_view(setup?: () => void) {
   const pinia = createPinia();
   setActivePinia(pinia);
-  return mount(MarketView, {
-    global: { plugins: [pinia] },
+  setup?.();
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      {
+        path: "/market-mats",
+        name: "market",
+        component: MarketView,
+        children: [
+          {
+            path: "materials",
+            name: "market-materials",
+            component: BudgetGrid,
+          },
+        ],
+      },
+    ],
   });
+  await router.push("/market-mats/materials");
+  await router.isReady();
+  return mount(
+    { render: () => h(RouterView) },
+    {
+      global: { plugins: [pinia, router] },
+    },
+  );
 }
 
 const row = (w: any, tier: string, label: string) =>
@@ -41,7 +67,7 @@ beforeEach(() => vi.mocked(start_fetch).mockClear());
 
 describe("market sidebar", () => {
   it("changing region stores it and fetches it", async () => {
-    const w = mount_view();
+    const w = await mount_view();
     await w.find("select.selector").setValue("euc");
     expect(
       useRosterStore().roster_config.all_regions[
@@ -52,7 +78,7 @@ describe("market sidebar", () => {
   });
 
   it("fetch button forces a fetch; custom disables it and hides auto fetch", async () => {
-    const w = mount_view();
+    const w = await mount_view();
     const btn = () =>
       w.findAll("button").find((b) => b.text().includes("Fetch Market Data"));
     await btn().trigger("click");
@@ -66,14 +92,14 @@ describe("market sidebar", () => {
   });
 
   it("auto fetch toggles the flag and fetches", async () => {
-    const w = mount_view();
+    const w = await mount_view();
     await w.find('input[type="checkbox"]').setValue(false);
     expect(useRosterStore().roster_config.auto_fetch).toBe(false);
     expect(start_fetch).toHaveBeenCalledWith("nae");
   });
 
   it("shows fetch status", async () => {
-    const w = mount_view();
+    const w = await mount_view();
     const runtime = useRuntimeStore();
     expect(w.text()).toContain("✅");
     runtime.market_fetch_failed.nae = true;
@@ -88,23 +114,20 @@ describe("market sidebar", () => {
   });
 
   it("roster picker switches the shown roster", async () => {
-    const pinia = createPinia();
-    setActivePinia(pinia);
-    const store = useRosterStore();
-    const second = {
-      ...store.roster_config.profiles[0],
-      id: "b",
-      roster_id: "3",
-    };
-    store.roster_config.profiles.push(second);
-    store.roster_config.roster_mats_owned[3] =
-      create_default_owned_input_column();
-    store.roster_config.tradable_mats_owned[3] =
-      create_default_owned_input_column();
-    store.roster_config.all_regions[3] = "euc";
-    store.roster_config.roster_mats_owned[3].values.Red = "42";
-    const w = mount(MarketView, {
-      global: { plugins: [pinia] },
+    const w = await mount_view(() => {
+      const store = useRosterStore();
+      const second = {
+        ...store.roster_config.profiles[0],
+        id: "b",
+        roster_id: "3",
+      };
+      store.roster_config.profiles.push(second);
+      store.roster_config.roster_mats_owned[3] =
+        create_default_owned_input_column();
+      store.roster_config.tradable_mats_owned[3] =
+        create_default_owned_input_column();
+      store.roster_config.all_regions[3] = "euc";
+      store.roster_config.roster_mats_owned[3].values.Red = "42";
     });
     await w.findAll("select.selector")[1].setValue("3");
     const input = row(w, "T4 materials", "Red").find(
@@ -116,7 +139,7 @@ describe("market sidebar", () => {
 
 describe("budget grid", () => {
   it("edits the store through the roster cell", async () => {
-    const w = mount_view();
+    const w = await mount_view();
     const input = row(w, "T4 materials", "Red").find(
       'input[aria-label="Roster bound owned"]',
     );
@@ -129,7 +152,7 @@ describe("budget grid", () => {
   });
 
   it("shard price follows the chosen bag", async () => {
-    const w = mount_view();
+    const w = await mount_view();
     const cfg = useRosterStore().roster_config;
     cfg.mats_prices.nae.values["Shards x1000"] = "11";
     cfg.mats_prices.nae.values["Shards x3000"] = "33";
@@ -147,7 +170,7 @@ describe("budget grid", () => {
   });
 
   it("effective Serca price takes the cheaper of buying and converting", async () => {
-    const w = mount_view();
+    const w = await mount_view();
     const cfg = useRosterStore().roster_config;
     cfg.mats_prices.nae.values["Red x100"] = "100";
     cfg.mats_prices.nae.values["Serca Red x100"] = "1,000";

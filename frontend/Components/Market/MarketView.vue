@@ -8,6 +8,7 @@ import { RouterLink, RouterView, useRoute } from "vue-router";
 import RegionSelector from "../Common/RegionSelector.vue";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 const runtime = useRuntimeStore();
+const DEV = import.meta.env.DEV;
 const route = useRoute();
 
 const roster_store = useRosterStore();
@@ -27,7 +28,7 @@ const selected_region = computed(
         <RouterLink to="materials" class="side-bar-link" @click="close">
           Materials
         </RouterLink>
-        <RouterLink to="gems" class="side-bar-link" @click="close">
+        <RouterLink v-if="DEV" to="gems" class="side-bar-link" @click="close">
           Gems
         </RouterLink>
       </div>
@@ -93,8 +94,8 @@ const selected_region = computed(
             v-if="selected_region !== 'Custom'"
             class="mt-3 text-xs text-(--text-muted)"
           >
-            Prices typed here are temporary (the next fetch replaces them).
-            Change your region to "Custom" to keep your own prices.
+            Manually inputted prices here are temporary (the next fetch replaces
+            them). Change your region to "Custom" to keep your own prices.
           </span>
         </template>
       </div>

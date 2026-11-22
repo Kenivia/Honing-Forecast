@@ -27,7 +27,7 @@ test.beforeEach(async ({ page }) => {
   errors = hf.watch_errors(page);
   reports = [];
   await hf.stub_market(page);
-  await page.route(/workers\.dev\/moves$/, (r) => {
+  await page.route(hf.worker_route("/moves$"), (r) => {
     if (r.request().method() === "POST")
       reports.push(r.request().postDataJSON());
     return r.fulfill({

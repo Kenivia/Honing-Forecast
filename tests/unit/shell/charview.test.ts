@@ -118,7 +118,7 @@ describe("CharView", () => {
     const cancel = vi.spyOn(runtime, "cancel_active");
     await router.push("/market-mats");
     await flushPromises();
-    expect(at()).toBe("/market-mats");
+    expect(at()).toBe("/market-mats/materials");
     expect(cancel).toHaveBeenCalled();
   });
 

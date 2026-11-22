@@ -4,6 +4,10 @@ export default defineConfig({
   testDir: "tests/e2e",
   outputDir: "tests/test-results",
   fullyParallel: true,
+  // more workers than this overload the dev server and tests time out; each worker is a browser, so memory-bound
+  workers: 4,
+  // the domain move is done; domain_move.spec.ts now runs only against staging (playwright.staging.config.ts)
+  testIgnore: "domain_move.spec.ts",
   use: {
     baseURL: "http://localhost:5173",
     trace: "retain-on-failure",
@@ -13,23 +17,10 @@ export default defineConfig({
     { name: "firefox", use: { ...devices["Desktop Firefox"] } },
   ],
   // pnpm dev rebuilds wasm first, hence the long timeout
-  webServer: [
-    {
-      command: "pnpm dev",
-      url: "http://localhost:5173",
-      reuseExistingServer: true,
-      timeout: 300_000,
-    },
-    // domain_move.spec.ts: localhost and 127.0.0.1 are the old and new sites; uses the wasm pnpm dev built
-    {
-      command: "npx vite --port 5174 --strictPort --host ::",
-      url: "http://127.0.0.1:5174",
-      reuseExistingServer: true,
-      timeout: 300_000,
-      env: {
-        VITE_MIGRATE_FROM: "http://localhost:5174",
-        VITE_MIGRATE_TO: "http://127.0.0.1:5174",
-      },
-    },
-  ],
+  webServer: {
+    command: "pnpm dev",
+    url: "http://localhost:5173",
+    reuseExistingServer: true,
+    timeout: 300_000,
+  },
 });

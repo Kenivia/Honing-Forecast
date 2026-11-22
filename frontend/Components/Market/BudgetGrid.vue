@@ -5,7 +5,6 @@ import {
   convert_is_cheaper,
   effective_unit_prices,
   Material,
-  SHARED_LABELS,
   TIER_MATERIALS,
   unit_prices,
 } from "@/Utils/Constants";
@@ -253,7 +252,7 @@ const grids = computed((): GridConfig[] => [
             </div>
           </div>
           <MaterialCell
-            v-if="grid.tier == 1 && !SHARED_LABELS.includes(mat.label)"
+            v-if="mat.from"
             :input_column="effective_prices"
             :label="mat.label"
             :suffix="

@@ -50,7 +50,10 @@ const router = createRouter({
       redirect: { name: "market-materials" },
       children: [
         { path: "materials", name: "market-materials", component: BudgetGrid },
-        { path: "gems", name: "market-gems", component: GemsView },
+        // Gems is dev only until released
+        ...(import.meta.env.DEV
+          ? [{ path: "gems", name: "market-gems", component: GemsView }]
+          : []),
         { path: ":pathMatch(.*)*", redirect: { name: "market-materials" } },
       ],
     },
