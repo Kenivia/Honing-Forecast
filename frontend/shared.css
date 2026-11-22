@@ -210,7 +210,7 @@
   display: block;
 }
 
-/* Image comes from get_piece_bg */
+/* Rarity image comes from rarity_bg */
 .piece-icon {
   background-position: center;
   background-size: cover;

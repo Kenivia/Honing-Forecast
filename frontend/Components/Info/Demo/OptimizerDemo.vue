@@ -11,7 +11,13 @@ import {
   max_taps,
   upgrade_name,
 } from "./demo";
-import { chance_text, cssVar, get_icon_path, mix } from "@/Utils/Helpers";
+import {
+  chance_text,
+  cssVar,
+  get_icon_bg,
+  get_icon_path,
+  mix,
+} from "@/Utils/Helpers";
 import MaterialGraph from "@/Components/Character/MaterialDist/MaterialGraph.vue";
 import ActualInstructions from "@/Components/Character/Instructions/ActualInstructions.vue";
 import OptimizerRadioButton from "@/Components/Character/OptimizerControlPanel/OptimizerRadioButton.vue";
@@ -314,7 +320,8 @@ const gold_tip = (
             >
               <img
                 :src="get_icon_path(JUICES[k].label)"
-                class="generic-icon h-6 w-6"
+                :style="get_icon_bg(JUICES[k].label)"
+                class="piece-icon generic-icon h-6 w-6"
                 :class="{ disabled: !custom[i][j][t - 1] }"
               />
             </button>

@@ -8,6 +8,7 @@ import {
   PLUS_TIER_CONVERSION,
 } from "./Constants";
 
+import ITEMS from "../../scanner_setup/templates/items.json";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { Upgrade, UpgradeStatus } from "./KeyedUpgrades";
@@ -214,7 +215,22 @@ export function get_piece_bg(piece: string, level: number) {
         : level > 10
           ? "legendary"
           : "epic";
-  return { backgroundImage: `url(/Icons/Backgrounds/${rarity}.webp)` };
+  return rarity_bg(rarity);
+}
+export function rarity_bg(rarity: string | null | undefined) {
+  return rarity
+    ? { backgroundImage: `url(/Icons/Backgrounds/${rarity}.webp)` }
+    : {};
+}
+// Material rarity as the scanner's items.json has it; gold, silver and shards have none.
+const MATERIAL_RARITY: Record<string, string> = {
+  "Enhanced 19-20 Armor": "relic",
+  "Enhanced 19-20 Weapon": "relic",
+};
+for (const item of ITEMS as any[])
+  if (item.label && item.rarity) MATERIAL_RARITY[item.label] ??= item.rarity;
+export function get_icon_bg(label: string) {
+  return rarity_bg(MATERIAL_RARITY[label]);
 }
 export function vambrace_done_level(profile: CharProfile) {
   return (

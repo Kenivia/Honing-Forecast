@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { get_icon_path } from "@/Utils/Helpers";
+import { get_icon_bg, get_icon_path } from "@/Utils/Helpers";
 import { Currency } from "./LoadStorage";
 import { BAND_NAMES, CURRENCY_LABELS } from "./Manifest";
 import { currencies, currency_edits } from "./ScanStore";
@@ -67,7 +67,8 @@ function save() {
       <div class="flex gap-3">
         <img
           :src="get_icon_path(CURRENCY_LABELS[currency])"
-          class="generic-icon h-16 w-16 shrink-0"
+          :style="get_icon_bg(CURRENCY_LABELS[currency])"
+          class="piece-icon generic-icon h-16 w-16 shrink-0"
           :alt="CURRENCY_LABELS[currency]"
         />
         <div class="flex flex-col">

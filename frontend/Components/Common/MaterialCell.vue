@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { cssVar, get_icon_path, locale_to_fixed } from "@/Utils/Helpers";
+import {
+  cssVar,
+  get_icon_bg,
+  get_icon_path,
+  locale_to_fixed,
+} from "@/Utils/Helpers";
 import { get_modified_cell, InputColumn } from "@/Utils/InputColumn";
 import { linked_labels } from "@/Utils/Constants";
 import HoverTip from "@/Components/Common/HoverTip.vue";
@@ -114,8 +119,9 @@ watch(source_value, (val) => {
       </span>
       <img
         :src="get_icon_path(label)"
-        class="generic-icon"
+        class="piece-icon generic-icon"
         :style="{
+          ...get_icon_bg(label),
           width: actual_icon_size,
           height: actual_icon_size,
         }"

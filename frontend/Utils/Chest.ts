@@ -10,7 +10,7 @@ export interface Chest {
   band: number;
   count: number;
   options: Bag[];
-  // the art each chest of the stack is drawn with; none for one added by hand
+  // the art each chest of the stack is drawn with, as icon@rarity; none for one added by hand
   icons?: string[];
 }
 

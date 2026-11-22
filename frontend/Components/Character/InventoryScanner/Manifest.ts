@@ -244,11 +244,18 @@ export function content_of(saved: SavedSlot[]): PageContent {
     options: Bag[],
     obtain_all: boolean,
   ) {
-    const { title, icon } = chest;
+    const { title, icon, rarity } = chest;
     // an obtain-all and a select-one are never one stack
     add_stack(
       stacks,
-      { title, band, count, options, obtain_all, icons: [icon] },
+      {
+        title,
+        band,
+        count,
+        options,
+        obtain_all,
+        icons: [rarity ? `${icon}@${rarity}` : icon],
+      },
       `${obtain_all}|`,
     );
   }

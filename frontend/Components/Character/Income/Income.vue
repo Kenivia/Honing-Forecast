@@ -11,7 +11,7 @@ import {
   NUM_BASE_MATS,
   SPECIAL_LEAP_LABELS,
 } from "@/Utils/Constants";
-import { get_icon_path, metric_to_text } from "@/Utils/Helpers";
+import { get_icon_bg, get_icon_path, metric_to_text } from "@/Utils/Helpers";
 import { parse_locale_float } from "@/Utils/InputColumn";
 import {
   budgets_of,
@@ -484,7 +484,8 @@ const KIND_COLORS = {
             >
               <img
                 :src="get_icon_path(label)"
-                class="generic-icon h-6 w-6"
+                :style="get_icon_bg(label)"
+                class="piece-icon generic-icon h-6 w-6"
                 :alt="label"
               />
             </button>
@@ -617,7 +618,8 @@ const KIND_COLORS = {
               <span class="flex items-center gap-1.5 text-(--text-muted)">
                 <img
                   :src="get_icon_path(row.label)"
-                  class="generic-icon h-5 w-5"
+                  :style="get_icon_bg(row.label)"
+                  class="piece-icon generic-icon h-5 w-5"
                   :alt="row.label"
                 />
                 {{ row.label }}
@@ -700,7 +702,8 @@ const KIND_COLORS = {
           >
             <img
               :src="get_icon_path(label)"
-              class="generic-icon h-6 w-6"
+              :style="get_icon_bg(label)"
+              class="piece-icon generic-icon h-6 w-6"
               :alt="name(label)"
             />
             {{ name(label) }}

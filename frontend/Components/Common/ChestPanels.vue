@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { BAND_COLORS, BAND_NAMES } from "@/Utils/Constants";
-import { get_icon_path } from "@/Utils/Helpers";
+import { get_icon_bg, get_icon_path } from "@/Utils/Helpers";
 import { amount_text, state_fits, type Chest } from "@/Utils/Chest";
 import ChestIcon from "./ChestIcon.vue";
 
@@ -171,7 +171,8 @@ const panels = computed(() => [
                 >
                   <img
                     :src="get_icon_path(label)"
-                    class="generic-icon h-6 w-6"
+                    :style="get_icon_bg(label)"
+                    class="piece-icon generic-icon h-6 w-6"
                     :alt="label"
                     :title="label"
                   />

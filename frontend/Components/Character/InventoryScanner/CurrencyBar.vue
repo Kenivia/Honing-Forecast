@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { get_icon_path } from "@/Utils/Helpers";
+import { get_icon_bg, get_icon_path } from "@/Utils/Helpers";
 import { Currency, CurrencyResult } from "./LoadStorage";
 import { BAND_NAMES, CURRENCY_LABELS, CURRENCY_ORDER } from "./Manifest";
 import { currency_edits, shown_currency } from "./ScanStore";
@@ -62,7 +62,8 @@ const shown = computed(() =>
         </span>
         <img
           :src="get_icon_path(CURRENCY_LABELS[item.currency])"
-          class="generic-icon h-5 w-5"
+          :style="get_icon_bg(CURRENCY_LABELS[item.currency])"
+          class="piece-icon generic-icon h-5 w-5"
           :alt="CURRENCY_LABELS[item.currency]"
           :title="CURRENCY_LABELS[item.currency]"
         />

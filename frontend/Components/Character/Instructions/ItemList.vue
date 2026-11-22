@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { get_icon_path } from "@/Utils/Helpers";
+import { get_icon_bg, get_icon_path } from "@/Utils/Helpers";
 
 // "A and B", "A, B and C" with inline icons, each optionally with an amount (before the
 // icon, or after it with icon_first)
@@ -20,8 +20,9 @@ defineProps<{
       }}</b
       ><img
         :src="get_icon_path(item.label)"
+        :style="get_icon_bg(item.label)"
         :alt="item.label"
         :title="item.label"
-        class="h-4.5 w-4.5" /></span
+        class="piece-icon h-4.5 w-4.5" /></span
   ></template>
 </template>

@@ -2,6 +2,7 @@
 import { useRosterStore } from "@/Stores/RosterConfig";
 import {
   get_piece_name,
+  get_icon_bg,
   get_icon_path,
   get_piece_icon,
   get_piece_bg,
@@ -99,8 +100,9 @@ const optimizer_working = computed(get_optimizer_working);
     >
       <img
         :src="get_icon_path(SPECIAL_LEAP_LABELS[active_profile.tier])"
+        :style="get_icon_bg(SPECIAL_LEAP_LABELS[active_profile.tier])"
         :alt="get_piece_name(upgrade)"
-        class="generic-icon h-12 w-12"
+        class="piece-icon generic-icon h-12 w-12"
         :class="{ disabled: !free_tap_this_upgrade }"
       />
     </div>

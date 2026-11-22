@@ -3,7 +3,7 @@ import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { BAND_COLORS, BAND_NAMES } from "@/Utils/Constants";
-import { get_icon_path } from "@/Utils/Helpers";
+import { get_icon_bg, get_icon_path } from "@/Utils/Helpers";
 import { parse_locale_float } from "@/Utils/InputColumn";
 import { PRESET_CHOICES, signed_gold, worth_color } from "@/Utils/Choices";
 import {
@@ -270,7 +270,11 @@ const SIMPLE: {
             class="flex items-center gap-1"
             :title="`${label}, ${BAND_NAMES[band]}`"
           >
-            <img :src="get_icon_path(label)" class="generic-icon h-5 w-5" />
+            <img
+              :src="get_icon_path(label)"
+              :style="get_icon_bg(label)"
+              class="piece-icon generic-icon h-5 w-5"
+            />
             <span :style="{ color: `var(${BAND_COLORS[band]})` }">
               {{ number(amount) }}
             </span>
@@ -346,7 +350,11 @@ const SIMPLE: {
             class="flex items-center gap-1"
             :title="`${label}, ${BAND_NAMES[band]}`"
           >
-            <img :src="get_icon_path(label)" class="generic-icon h-5 w-5" />
+            <img
+              :src="get_icon_path(label)"
+              :style="get_icon_bg(label)"
+              class="piece-icon generic-icon h-5 w-5"
+            />
             <span :style="{ color: `var(${BAND_COLORS[band]})` }">
               {{ number(amount) }}
             </span>
@@ -426,7 +434,11 @@ const SIMPLE: {
               class="flex items-center gap-1"
               :title="`${label}, ${BAND_NAMES[band]}`"
             >
-              <img :src="get_icon_path(label)" class="generic-icon h-5 w-5" />
+              <img
+                :src="get_icon_path(label)"
+                :style="get_icon_bg(label)"
+                class="piece-icon generic-icon h-5 w-5"
+              />
               <span :style="{ color: `var(${BAND_COLORS[band]})` }">
                 {{ number(amount) }}
               </span>
@@ -471,7 +483,11 @@ const SIMPLE: {
           class="flex items-center gap-1"
           :title="`${label}, ${BAND_NAMES[band]}`"
         >
-          <img :src="get_icon_path(label)" class="generic-icon h-5 w-5" />
+          <img
+            :src="get_icon_path(label)"
+            :style="get_icon_bg(label)"
+            class="piece-icon generic-icon h-5 w-5"
+          />
           <span :style="{ color: `var(${BAND_COLORS[band]})` }">
             {{ number(amount) }}
           </span>

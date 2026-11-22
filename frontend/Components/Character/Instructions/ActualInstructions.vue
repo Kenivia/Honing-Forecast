@@ -3,7 +3,7 @@ import { computed } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { storeToRefs } from "pinia";
 import { ALL_LABELS, NUM_BASE_MATS } from "@/Utils/Constants";
-import { get_icon_path } from "@/Utils/Helpers";
+import { get_icon_bg, get_icon_path } from "@/Utils/Helpers";
 import { Upgrade } from "@/Utils/KeyedUpgrades";
 import {
   adv_streaks,
@@ -67,6 +67,7 @@ const parsed_streaks = computed(() => {
       icons: relevant_ids.value.map((id) => ({
         active: streak.ids.includes(id),
         path: get_icon_path(label_of(id)),
+        bg: get_icon_bg(label_of(id)),
       })),
     };
   });
@@ -117,7 +118,8 @@ const optimizer_working = computed(
         >
           <img
             :src="icon.path"
-            class="generic-icon h-8 w-8"
+            :style="icon.bg"
+            class="piece-icon generic-icon h-8 w-8"
             :class="{ disabled: !icon.active, ticked: icon.active }"
           />
         </div>

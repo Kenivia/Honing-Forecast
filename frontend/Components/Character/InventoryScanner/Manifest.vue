@@ -9,7 +9,11 @@ import {
   TIER_LABELS,
   TIER_MATERIALS,
 } from "@/Utils/Constants";
-import { check_revert_ilevel_ok, get_icon_path } from "@/Utils/Helpers";
+import {
+  check_revert_ilevel_ok,
+  get_icon_bg,
+  get_icon_path,
+} from "@/Utils/Helpers";
 import ChestPanels from "@/Components/Common/ChestPanels.vue";
 import MaterialCell from "@/Components/Common/MaterialCell.vue";
 import TierConvertButton from "@/Components/Common/TierConvertButton.vue";
@@ -156,7 +160,8 @@ function export_to_calc() {
           >
             <img
               :src="get_icon_path(cur.item)"
-              class="generic-icon h-5 w-5"
+              :style="get_icon_bg(cur.item)"
+              class="piece-icon generic-icon h-5 w-5"
               :alt="cur.item"
             />
           </span>
@@ -319,7 +324,8 @@ function export_to_calc() {
           {{ label }}
           <img
             :src="get_icon_path(label)"
-            class="generic-icon h-8.5 w-8.5"
+            :style="get_icon_bg(label)"
+            class="piece-icon generic-icon h-8.5 w-8.5"
             :alt="label"
           />
         </span>

@@ -2,7 +2,7 @@
 import { computed, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { get_icon_path } from "@/Utils/Helpers";
+import { get_icon_bg, get_icon_path } from "@/Utils/Helpers";
 import {
   difficulties,
   is_empty,
@@ -248,7 +248,8 @@ watch(
               >
                 <img
                   :src="get_icon_path(label as string)"
-                  class="generic-icon h-5 w-5"
+                  :style="get_icon_bg(label as string)"
+                  class="piece-icon generic-icon h-5 w-5"
                   :alt="label as string"
                 />
                 {{ amount.toLocaleString("en-US") }}

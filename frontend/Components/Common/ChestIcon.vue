@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { Chest } from "@/Utils/Chest";
+import { rarity_bg } from "@/Utils/Helpers";
 
 // A stack's art, its title on hover; a chest without known art shows its title.
 const props = defineProps<{ chest: Chest }>();
@@ -10,8 +11,12 @@ const ART = import.meta.glob<string>(
   "../../../scanner_setup/templates/ChestIcons/*.png",
   { eager: true, query: "?url", import: "default" },
 );
+// icon@rarity; older saves have no rarity
+const parts = computed(() =>
+  props.chest.icons?.map((entry) => entry.split("@")),
+);
 const srcs = computed(() =>
-  props.chest.icons?.map((icon) => ART[`${DIR}${icon}.png`]),
+  parts.value?.map(([icon]) => ART[`${DIR}${icon}.png`]),
 );
 </script>
 
@@ -25,7 +30,8 @@ const srcs = computed(() =>
       v-for="(src, i) in srcs"
       :key="i"
       :src="src"
-      class="generic-icon h-8 w-8"
+      :style="rarity_bg(parts![i][1])"
+      class="piece-icon generic-icon h-8 w-8"
       :alt="chest.title"
     />
   </span>

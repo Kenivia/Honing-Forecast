@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { get_icon_path, metric_to_text } from "@/Utils/Helpers";
+import { get_icon_bg, get_icon_path, metric_to_text } from "@/Utils/Helpers";
 import {
   affordable,
   is_empty,
@@ -292,7 +292,8 @@ function take(key: string, choice: Choice, option: Record<string, number>) {
                   >
                     <img
                       :src="get_icon_path(label as string)"
-                      class="generic-icon h-5 w-5"
+                      :style="get_icon_bg(label as string)"
+                      class="piece-icon generic-icon h-5 w-5"
                       :alt="label as string"
                     />
                     {{ amount.toLocaleString("en-US") }}
