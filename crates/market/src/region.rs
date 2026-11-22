@@ -1,39 +1,35 @@
 // Switching region and character: game menu, Char. Select, Server, the region's tab and server, the character,
-// Launch, until the Stronghold shows. Every step is checked by a reference crop.
+// Launch, until the Stronghold shows. Every step is checked by a reference crop. The server row and the
+// character's slot are where their crops (server_<region>, char_<region>) were taken, so a machine's own
+// characters need only their crops in its profile.
 use crate::{
     game::{Game, ms},
-    ui::{act, log, looks, reset, wait},
+    ui::{act, log, looks, ref_at, reset, wait},
 };
 
 pub struct Region {
     pub name: &'static str,
     tab: (i32, i32),
     tab_ref: &'static str,
-    server_y: i32,
     server_ref: &'static str,
-    slot_x: i32,
     char_ref: &'static str,
 }
 
-// NAE: Thaemine, Kenicards (page 1, slot 2); EUC: Arcturus, Kenimommy (page 1, slot 1)
+// this PC: NAE Thaemine, Kenicards (page 1, slot 2); EUC Arcturus, Kenimommy (page 1, slot 1)
 pub const REGIONS: [Region; 2] = [
     Region {
         name: "NAE",
         tab: (874, 517),
         tab_ref: "tab_nae",
-        server_y: 597,
         server_ref: "server_nae",
-        slot_x: 590,
-        char_ref: "char_kenicards",
+        char_ref: "char_nae",
     },
     Region {
         name: "EUC",
         tab: (705, 517),
         tab_ref: "tab_euc",
-        server_y: 597,
         server_ref: "server_euc",
-        slot_x: 344,
-        char_ref: "char_kenimommy",
+        char_ref: "char_euc",
     },
 ];
 
@@ -110,7 +106,7 @@ pub fn switch(g: &mut Game, r: &Region) -> bool {
         3,
         0.0,
         3.0,
-        |g| g.click(960, r.server_y),
+        |g| g.click(960, ref_at(r.server_ref).1 + 15),
         |img| looks(img, r.server_ref),
     ) {
         log("the server was not picked");
@@ -133,7 +129,7 @@ pub fn switch(g: &mut Game, r: &Region) -> bool {
     g.click(190, 1015);
     ms(800);
     let pick = |g: &mut Game| {
-        g.click(r.slot_x, 922);
+        g.click(ref_at(r.char_ref).0 + 108, 922);
         ms(300);
         g.move_to(960, 700);
     };

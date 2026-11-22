@@ -1,4 +1,5 @@
 // Native market scanner: drives the game's Market and Auction House and reads them off the screen.
+pub mod assets;
 pub mod auction;
 pub mod ctl;
 pub mod db;
@@ -11,6 +12,8 @@ pub mod market;
 pub mod ocr;
 pub mod pp;
 pub mod region;
+pub mod report;
+pub mod run;
 pub mod shot;
 pub mod strips;
 pub mod ui;

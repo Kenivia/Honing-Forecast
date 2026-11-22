@@ -9,8 +9,21 @@ pub fn stamp() -> String {
     Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true)
 }
 
-/// `{"url": "<Worker>", "token": "<MARKET_TOKEN>"}`; without it nothing is uploaded.
-pub const CONFIG: &str = concat!(env!("HF_ROOT"), "/ignored/market/upload.json");
+/// upload.json (assets::data): `{"url": "<Worker>", "token": "<MARKET_TOKEN>"}`; without it nothing is uploaded.
+fn config() -> std::path::PathBuf {
+    crate::assets::data().join("upload.json")
+}
+
+/// Which PC scanned, kept in each pass: set by market_agent, else the computer's name.
+pub static MACHINE: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+
+fn machine() -> &'static str {
+    MACHINE.get_or_init(|| {
+        std::env::var("COMPUTERNAME")
+            .unwrap_or_default()
+            .to_lowercase()
+    })
+}
 
 /// Everything read, by section, plus `points` [key, day, value] that the Worker merges into its daily history.
 /// The 5-day averages are of complete days: the first is taken as the day before the scan (UTC), unconfirmed.
@@ -74,6 +87,7 @@ pub fn payload(
     json!({
         "version": 1,
         "region": region.to_lowercase(),
+        "machine": machine(),
         "started": iso(started),
         "finished": iso(finished),
         "sections": sections,
@@ -83,8 +97,8 @@ pub fn payload(
 
 /// Sends every pass not sent yet, oldest first; stops at the first failure, to try again next pass.
 pub fn send_pending(c: &Connection) {
-    let Ok(text) = std::fs::read_to_string(CONFIG) else {
-        log("no ignored/market/upload.json, not uploading");
+    let Ok(text) = std::fs::read_to_string(config()) else {
+        log("no upload.json, not uploading");
         return;
     };
     let cfg: Value = serde_json::from_str(&text).unwrap();

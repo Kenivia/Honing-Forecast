@@ -32,7 +32,6 @@ pub const SECTIONS: [&str; 2] = ["Enhancement Material", "Trade Skill"];
 
 // Items are told by their name block in the purchase window against crops kept in names/ (file name: the
 // name without ':'), else by their icon (icons.rs) with the name read deciding among items that share it.
-const NAMES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/names");
 // the icon and the whole name block (long names wrap and are cut, so the icon tells some apart)
 const NAME_X: u32 = 795;
 const NAME_Y: u32 = 205;
@@ -43,14 +42,13 @@ fn name_refs() -> &'static Vec<(String, GrayImage)> {
     static R: OnceLock<Vec<(String, GrayImage)>> = OnceLock::new();
     R.get_or_init(|| {
         let mut v = vec![];
-        for e in std::fs::read_dir(NAMES).into_iter().flatten() {
-            let p = e.unwrap().path();
-            let stem = p.file_stem().unwrap().to_str().unwrap().to_string();
+        for (file, bytes) in crate::assets::files("names") {
+            let stem = file.rsplit_once('.').unwrap().0.to_string();
             let name = icons::items()
                 .iter()
                 .find(|i| i.name.replace(':', "") == stem)
                 .map_or(stem, |i| i.name.clone());
-            v.push((name, image::open(&p).unwrap().to_luma8()));
+            v.push((name, image::load_from_memory(&bytes).unwrap().to_luma8()));
         }
         v
     })
@@ -111,17 +109,16 @@ fn pick_by_read(read: &str, names: &[&str]) -> Option<String> {
 }
 
 fn keep_unknown_name(img: &RgbaImage, raw: &str) {
-    let dir = concat!(env!("HF_ROOT"), "/ignored/market/unknown_names");
-    std::fs::create_dir_all(dir).unwrap();
+    let dir = crate::assets::data_dir("unknown_names");
     let safe: String = raw
         .chars()
         .filter(|c| c.is_ascii_alphanumeric() || *c == ' ')
         .collect();
     grey_crop(img, NAME_X, NAME_Y, NAME_W, NAME_H)
-        .save(format!(
-            "{dir}/{}_{safe}.png",
+        .save(dir.join(format!(
+            "{}_{safe}.png",
             chrono::Local::now().format("%H%M%S")
-        ))
+        )))
         .unwrap();
 }
 
@@ -343,21 +340,26 @@ fn read_row(g: &mut Game, i: usize) -> Option<Material> {
     Some(m)
 }
 
-pub fn scan(g: &mut Game) -> Vec<Material> {
-    let mut out = vec![];
+/// Each section into `out`, item by item, so a stopped pass keeps what was read.
+pub fn scan(g: &mut Game, out: &mut Vec<Material>) {
     for section in SECTIONS {
-        out.extend(unit(g, section, |g| read_section(g, section)).unwrap_or_default());
+        let n0 = out.len();
+        let done = unit(g, section, |g| {
+            out.truncate(n0);
+            read_section(g, section, out)
+        });
+        if done.is_none() {
+            out.truncate(n0);
+        }
     }
-    out
 }
 
 // every page of a section; None when a step did not take
-fn read_section(g: &mut Game, section: &str) -> Option<Vec<Material>> {
+fn read_section(g: &mut Game, section: &str, out: &mut Vec<Material>) -> Option<()> {
     if !open_section(g, section) {
         log(&format!("{section}: could not list it"));
         return None;
     }
-    let mut out = vec![];
     for page in 1..=10 {
         let img = g.shot(None);
         let names: Vec<String> = (0..10).map_while(|i| row_name(&img, i)).collect();
@@ -395,5 +397,5 @@ fn read_section(g: &mut Game, section: &str) -> Option<Vec<Material>> {
         // the rows come with the page number
         ms(300);
     }
-    Some(out)
+    Some(())
 }

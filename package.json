@@ -35,6 +35,10 @@
     "analytics": "pnpm run pull-analytics && python -m streamlit run scripts/analytics/app.py",
     "market": "python -m streamlit run scripts/market/app.py",
     "market-scan": "cargo run --release -q -p hf-market --bin market_scan -- --only materials,gems,exchange --gap 0",
+    "market-agent": "cargo run --release -q -p hf-market --bin market_agent -- --dev",
+    "relay-dev": "wrangler dev --port 8788 --config cloudflare/relay/wrangler.toml",
+    "relay-deploy": "wrangler deploy --config cloudflare/relay/wrangler.toml",
+    "relay-publish": "cargo build --release -p hf-market --bin market_agent && node cloudflare/relay/publish.mjs",
     "remove-tmp": "node -e \"require('fs').rmSync('.tmp', { recursive: true, force: true })\""
   },
   "dependencies": {

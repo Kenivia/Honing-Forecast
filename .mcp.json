@@ -11,6 +11,10 @@
     "lostark-market": {
       "command": "target/release/market_mcp.exe",
       "args": []
+    },
+    "lostark-home": {
+      "command": "target/release/market_mcp.exe",
+      "args": ["--remote", "home"]
     }
   }
 }

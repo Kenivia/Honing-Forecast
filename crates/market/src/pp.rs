@@ -6,17 +6,13 @@ use rten::Model;
 use rten_tensor::{NdTensor, prelude::*};
 use std::sync::OnceLock;
 
-const DIR: &str = concat!(
-    env!("HF_ROOT"),
-    "/ignored/market/models/en_PP-OCRv5_mobile_rec"
-);
 const HEIGHT: u32 = 48;
 
 fn model() -> &'static (Model, Vec<String>) {
     static M: OnceLock<(Model, Vec<String>)> = OnceLock::new();
     M.get_or_init(|| {
-        let model = Model::load_file(format!("{DIR}/rec.onnx")).unwrap();
-        let dict = std::fs::read_to_string(format!("{DIR}/dict.txt")).unwrap();
+        let model = Model::load_static_slice(crate::assets::PP_REC).unwrap();
+        let dict = crate::assets::PP_DICT;
         (model, dict.split('\n').map(str::to_string).collect())
     })
 }

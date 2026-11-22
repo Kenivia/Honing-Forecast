@@ -1,11 +1,16 @@
-// Scans kept in ignored/market/market.sqlite. The currency exchange is kept only in the payload.
+// Scans kept in market.sqlite (assets::data). The currency exchange is kept only in the payload.
 use crate::{auction::Search, market::Material};
 use rusqlite::{Connection, params};
 
-pub const PATH: &str = concat!(env!("HF_ROOT"), "/ignored/market/market.sqlite");
+pub fn path() -> String {
+    crate::assets::data()
+        .join("market.sqlite")
+        .to_str()
+        .unwrap()
+        .into()
+}
 
 pub fn open(path: &str) -> Connection {
-    std::fs::create_dir_all(concat!(env!("HF_ROOT"), "/ignored/market")).unwrap();
     let c = Connection::open(path).unwrap();
     c.execute_batch(
         "CREATE TABLE IF NOT EXISTS scans(id INTEGER PRIMARY KEY, started TEXT, finished TEXT, region TEXT,

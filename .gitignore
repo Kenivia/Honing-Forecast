@@ -61,3 +61,7 @@ playwright-report/
 *.sqlite
 
 .claude/worktrees/
+
+# relay Worker secrets and local state
+cloudflare/relay/.dev.vars
+cloudflare/relay/.wrangler/

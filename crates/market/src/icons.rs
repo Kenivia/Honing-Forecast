@@ -13,7 +13,6 @@ pub struct Item {
     pub tier: i64,
 }
 
-const DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/items");
 // the icon is drawn 46 px square from here (Great Destiny Leapstone: 0.976, the next icon 0.864)
 const X: i32 = 802;
 const Y: i32 = 205;
@@ -32,8 +31,7 @@ struct Icon {
 pub fn items() -> &'static Vec<Item> {
     static I: OnceLock<Vec<Item>> = OnceLock::new();
     I.get_or_init(|| {
-        serde_json::from_str(&std::fs::read_to_string(format!("{DIR}/items.json")).unwrap())
-            .unwrap()
+        serde_json::from_slice(&crate::assets::find("items", "items").unwrap().1).unwrap()
     })
 }
 
@@ -46,7 +44,9 @@ fn icons() -> &'static Vec<Icon> {
         names
             .into_iter()
             .map(|n| {
-                let art = image::open(format!("{DIR}/{n}.png")).unwrap().to_rgba8();
+                let art = image::load_from_memory(&crate::assets::find("items", n).unwrap().1)
+                    .unwrap()
+                    .to_rgba8();
                 let art = imageops::resize(&art, SIZE, SIZE, imageops::FilterType::Lanczos3);
                 let px = art
                     .enumerate_pixels()

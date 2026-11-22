@@ -34,7 +34,8 @@ pub struct Exchange {
     pub recent: Vec<Trade>,
 }
 
-/// Rows from the top until an empty one; a row read only in part is an error.
+/// The rows that are not empty (with under 5 Royal Crystal offers the blanks are at the top); a row read only in
+/// part is an error.
 fn rows<T>(
     img: &RgbaImage,
     n: u32,
@@ -51,7 +52,7 @@ fn rows<T>(
             .iter()
             .all(|r| r.as_ref().is_err_and(|e| e.is_empty()))
         {
-            break;
+            continue;
         }
         let v: Vec<f64> = reads
             .into_iter()

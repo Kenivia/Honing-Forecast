@@ -1,5 +1,9 @@
-// The game window: finding it, bringing it to the front, and the F10 abort.
-use std::{thread::sleep, time::Duration};
+// The game window: finding it, bringing it to the front, and stopping (F10 or STOP) by unwinding with `Stopped`.
+use std::{
+    sync::atomic::{AtomicBool, Ordering},
+    thread::sleep,
+    time::Duration,
+};
 use windows_sys::Win32::{
     Foundation::{HWND, LPARAM, POINT, RECT},
     Graphics::Gdi::ClientToScreen,
@@ -38,14 +42,46 @@ pub fn abort_held() -> bool {
     (unsafe { GetAsyncKeyState(ABORT_KEY as i32) } as u16) & 0x8000 != 0
 }
 
+/// Set from another thread to stop a pass at its next action, as F10 does.
+pub static STOP: AtomicBool = AtomicBool::new(false);
+
+/// The panic payload of a stopped pass.
+pub struct Stopped;
+
 pub fn check_abort() {
-    if abort_held() {
-        eprintln!("aborted (F10 held)");
-        std::process::exit(2);
+    if abort_held() || STOP.load(Ordering::Relaxed) {
+        std::panic::panic_any(Stopped);
     }
 }
 
-fn game_pid() -> u32 {
+/// A panic hook that is quiet about `Stopped`.
+pub fn quiet_stops() {
+    let prev = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        if !info.payload().is::<Stopped>() {
+            prev(info);
+        }
+    }));
+}
+
+/// What a caught panic was: "stopped" or its message.
+pub fn panic_text(e: &(dyn std::any::Any + Send)) -> String {
+    if e.is::<Stopped>() {
+        "stopped".into()
+    } else if let Some(s) = e.downcast_ref::<String>() {
+        s.clone()
+    } else if let Some(s) = e.downcast_ref::<&str>() {
+        s.to_string()
+    } else {
+        "panic".into()
+    }
+}
+
+pub fn running() -> bool {
+    game_pid().is_some()
+}
+
+fn game_pid() -> Option<u32> {
     let snap = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
     let mut e: PROCESSENTRY32W = unsafe { std::mem::zeroed() };
     e.dwSize = size_of::<PROCESSENTRY32W>() as u32;
@@ -59,8 +95,7 @@ fn game_pid() -> u32 {
         ok = unsafe { Process32NextW(snap, &mut e) };
     }
     unsafe { windows_sys::Win32::Foundation::CloseHandle(snap) };
-    assert!(pid != 0, "LOSTARK.exe is not running");
-    pid
+    (pid != 0).then_some(pid)
 }
 
 struct Search {
@@ -92,14 +127,21 @@ unsafe extern "system" fn enum_cb(hwnd: HWND, l: LPARAM) -> windows_sys::core::B
 
 impl Game {
     pub fn find() -> Game {
+        Self::try_find().expect("LOSTARK.exe is not running or has no visible window")
+    }
+
+    /// None while the game is not running or shows no window (loading).
+    pub fn try_find() -> Option<Game> {
         unsafe { SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) };
         let mut s = Search {
-            pid: game_pid(),
+            pid: game_pid()?,
             best: std::ptr::null_mut(),
             area: 0,
         };
         unsafe { EnumWindows(Some(enum_cb), &mut s as *mut _ as LPARAM) };
-        assert!(!s.best.is_null(), "no visible game window");
+        if s.best.is_null() {
+            return None;
+        }
         let mut g = Game {
             hwnd: s.best,
             pid: s.pid,
@@ -109,7 +151,7 @@ impl Game {
             h: 0,
         };
         g.refresh_rect();
-        g
+        Some(g)
     }
 
     pub fn refresh_rect(&mut self) {
@@ -131,7 +173,7 @@ impl Game {
         pid == self.pid
     }
 
-    /// Brings the game to the front; exits if that fails.
+    /// Brings the game to the front; panics if that fails.
     pub fn focus(&mut self) {
         check_abort();
         if self.focused() {
@@ -157,7 +199,6 @@ impl Game {
                 return;
             }
         }
-        eprintln!("could not bring the game to the front");
-        std::process::exit(3);
+        panic!("could not bring the game to the front");
     }
 }

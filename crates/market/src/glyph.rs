@@ -53,12 +53,7 @@ pub fn segment(img: &RgbaImage, x0: u32, x1: u32, y0: u32, y1: u32) -> (Vec<Glyp
 
 fn font() -> &'static FontVec {
     static F: OnceLock<FontVec> = OnceLock::new();
-    F.get_or_init(|| {
-        FontVec::try_from_vec(
-            std::fs::read(concat!(env!("HF_ROOT"), "/public/fonts/English.ttf")).unwrap(),
-        )
-        .unwrap()
-    })
+    F.get_or_init(|| FontVec::try_from_vec(crate::assets::FONT.to_vec()).unwrap())
 }
 
 // coverage of a digit drawn at `px` with its pen at (fx, baseline + fy); returned with the top-left of its ink box

@@ -1,0 +1,29 @@
+name = "hf-market-relay"
+main = "relay.js"
+compatibility_date = "2026-06-28"
+
+[observability.logs]
+enabled = true
+
+# every agent's WebSocket and each machine's status
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "Hub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Hub"]
+
+# screenshots and machine profiles; create with `wrangler r2 bucket create hf-market-relay`
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "hf-market-relay"
+
+# secrets (.dev.vars locally, `wrangler secret put` deployed): DISCORD_BOT_TOKEN, ADMIN_TOKEN,
+# MACHINE_TOKENS ({"<machine>": "<token>"})
+[vars]
+DISCORD_APPLICATION_ID = "1574142665015042318"
+DISCORD_PUBLIC_KEY = "2e537a201815e34833134beafcb0eb3c9898f4e6c0d2b66e8c78f6af6d780927"
+DISCORD_CHANNEL_ID = "1574150261155299339"
+# who may use the commands
+DISCORD_USERS = "353229574831734787,158571364062593024"

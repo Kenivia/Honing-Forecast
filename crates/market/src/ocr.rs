@@ -13,9 +13,7 @@ static INIT: Once = Once::new();
 
 fn init() {
     INIT.call_once(|| {
-        let model =
-            std::fs::read(concat!(env!("HF_ROOT"), "/public/text-recognition.rten")).unwrap();
-        load_ocr_engine(model);
+        load_ocr_engine(crate::assets::OCRS.to_vec());
     });
 }
 

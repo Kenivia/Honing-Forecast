@@ -11,11 +11,13 @@ struct Store {
 
 static STORE: Mutex<Option<Store>> = Mutex::new(None);
 
-pub const ROOT: &str = concat!(env!("HF_ROOT"), "/ignored/market/strips");
-
-/// Starts storing into a new folder under ROOT, named by the time.
+/// Starts storing into a new folder under strips/ (assets::data), named by the time.
 pub fn start() {
-    let dir = format!("{ROOT}/{}", chrono::Local::now().format("%Y%m%d-%H%M%S"));
+    let dir = crate::assets::data_dir("strips")
+        .join(chrono::Local::now().format("%Y%m%d-%H%M%S").to_string())
+        .to_str()
+        .unwrap()
+        .to_string();
     std::fs::create_dir_all(&dir).unwrap();
     *STORE.lock().unwrap() = Some(Store {
         dir,

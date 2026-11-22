@@ -15,31 +15,33 @@ pub fn row_y(i: usize) -> i32 {
     ROW0 + ROW_STEP * i as i32
 }
 
-/// Appends to ignored/market/scan.log and prints.
+/// The last line logged and when (UTC), for the agent's status.
+pub static LAST_LOG: std::sync::Mutex<(String, String)> =
+    std::sync::Mutex::new((String::new(), String::new()));
+
+/// Appends to scan.log (assets::data) and prints.
 pub fn log(s: &str) {
     use std::io::Write;
+    *LAST_LOG.lock().unwrap() = (s.to_string(), crate::upload::stamp());
     let line = format!("{} {s}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S"));
     println!("{line}");
-    let dir = concat!(env!("HF_ROOT"), "/ignored/market");
-    std::fs::create_dir_all(dir).unwrap();
     let mut f = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
-        .open(format!("{dir}/scan.log"))
+        .open(crate::assets::data().join("scan.log"))
         .unwrap();
     writeln!(f, "{line}").unwrap();
 }
 
 /// Keeps a screenshot of something that could not be read.
 pub fn keep(img: &RgbaImage, what: &str) {
-    let dir = concat!(env!("HF_ROOT"), "/ignored/market/debug");
-    std::fs::create_dir_all(dir).unwrap();
+    let dir = crate::assets::data_dir("debug");
     let name = format!(
         "{}_{}.png",
         chrono::Local::now().format("%Y%m%d-%H%M%S"),
         what.replace([' ', '/', ':'], "_")
     );
-    img.save(format!("{dir}/{name}")).unwrap();
+    img.save(dir.join(&name)).unwrap();
 }
 
 /// A number of the game's digit font; Err with the glyphs read when it is not one.
@@ -158,11 +160,23 @@ const BACKOFF: [u64; 3] = [5, 20, 60];
 /// Runs a unit of work (a Market section, a search, the currency exchange); when it fails (None), keeps a
 /// screenshot, resets the UI, waits longer each time and runs it again. None once every try failed.
 pub fn unit<T>(g: &mut Game, what: &str, mut f: impl FnMut(&mut Game) -> Option<T>) -> Option<T> {
+    let mut img = None;
     for k in 0..=BACKOFF.len() {
-        if let Some(v) = f(g) {
-            return Some(v);
+        let v = f(g);
+        crate::report::step(g, what, v.is_some());
+        if v.is_some() {
+            return v;
         }
-        keep(&g.shot(None), what);
+        // no use trying again offline or without the game: the round ends and the agent recovers
+        if !crate::game::running() {
+            panic!("{what}: the game is not running");
+        }
+        let shot = g.shot(None);
+        keep(&shot, what);
+        if crate::report::OFFLINE.load(std::sync::atomic::Ordering::Relaxed) {
+            panic!("{what}: failed while offline");
+        }
+        img = Some(shot);
         reset(g);
         let Some(&s) = BACKOFF.get(k) else { break };
         log(&format!("{what}: failed, again in {s} s"));
@@ -172,10 +186,9 @@ pub fn unit<T>(g: &mut Game, what: &str, mut f: impl FnMut(&mut Game) -> Option<
             ms(200);
         }
     }
-    log(&format!(
-        "{what}: failed {} times, skipped",
-        BACKOFF.len() + 1
-    ));
+    let text = format!("{what}: failed {} times, skipped", BACKOFF.len() + 1);
+    log(&text);
+    crate::report::event("error", &text, img.as_ref());
     None
 }
 
@@ -229,24 +242,14 @@ pub fn pick(
     false
 }
 
-const REFS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/refs");
-
-fn ref_file(name: &str) -> (image::GrayImage, i32, i32) {
-    let e = std::fs::read_dir(REFS)
-        .unwrap()
-        .map(|e| e.unwrap().path())
-        .find(|p| {
-            p.file_name()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .starts_with(&format!("{name}@"))
-        })
-        .unwrap_or_else(|| panic!("no reference {name}"));
-    let stem = e.file_stem().unwrap().to_str().unwrap().to_string();
+// grey with alpha: transparent pixels (a mask over a translucent element's changing background) are not compared
+fn ref_file(name: &str) -> (image::GrayAlphaImage, i32, i32) {
+    let (file, bytes) =
+        crate::assets::find("refs", name).unwrap_or_else(|| panic!("no reference {name}"));
+    let stem = file.rsplit_once('.').unwrap().0;
     let (x, y) = stem.split_once('@').unwrap().1.split_once('_').unwrap();
     (
-        image::open(&e).unwrap().to_luma8(),
+        image::load_from_memory(&bytes).unwrap().to_luma_alpha8(),
         x.parse().unwrap(),
         y.parse().unwrap(),
     )
@@ -257,21 +260,28 @@ fn grey(img: &RgbaImage, x: i32, y: i32) -> f64 {
     p[0].max(p[1]).max(p[2]) as f64
 }
 
+/// Where a reference crop was taken.
+pub fn ref_at(name: &str) -> (i32, i32) {
+    let (_, x, y) = ref_file(name);
+    (x, y)
+}
+
 /// How far the screen is from a reference crop (mean difference a pixel, best over a pixel's shift), moved down by `dy`.
 pub fn ref_distance(img: &RgbaImage, name: &str, dy: i32) -> f64 {
     let (r, x0, y0) = ref_file(name);
     distance(img, &r, x0, y0 + dy)
 }
 
-/// Mean difference a pixel between the screen at (x0, y0) and a grey crop, best over a pixel's shift.
-pub fn distance(img: &RgbaImage, r: &image::GrayImage, x0: i32, y0: i32) -> f64 {
+/// Mean difference a pixel between the screen at (x0, y0) and a grey crop's opaque pixels, best over a pixel's shift.
+pub fn distance(img: &RgbaImage, r: &image::GrayAlphaImage, x0: i32, y0: i32) -> f64 {
     let mut best = f64::MAX;
     for (sx, sy) in [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)] {
-        let mut sum = 0.0;
-        for (x, y, p) in r.enumerate_pixels() {
+        let (mut sum, mut n) = (0.0, 0);
+        for (x, y, p) in r.enumerate_pixels().filter(|p| p.2[1] > 0) {
             sum += (grey(img, x0 + x as i32 + sx, y0 + y as i32 + sy) - p[0] as f64).abs();
+            n += 1;
         }
-        best = best.min(sum / (r.width() * r.height()) as f64);
+        best = best.min(sum / n.max(1) as f64);
     }
     best
 }
@@ -285,10 +295,11 @@ pub fn looks_at(img: &RgbaImage, name: &str, dy: i32) -> bool {
     ref_distance(img, name, dy) < 14.0
 }
 
-/// Saves a reference crop as refs/<name>@<x>_<y>.png, as max-channel grey.
+/// Saves a reference crop as <profile>/refs/<name>@<x>_<y>.png, as max-channel grey.
 pub fn save_ref(img: &RgbaImage, name: &str, x: u32, y: u32, w: u32, h: u32) {
-    std::fs::create_dir_all(REFS).unwrap();
-    for e in std::fs::read_dir(REFS).unwrap() {
+    let dir = crate::assets::profile().join("refs");
+    std::fs::create_dir_all(&dir).unwrap();
+    for e in std::fs::read_dir(&dir).unwrap() {
         let p = e.unwrap().path();
         if p.file_name()
             .unwrap()
@@ -300,7 +311,7 @@ pub fn save_ref(img: &RgbaImage, name: &str, x: u32, y: u32, w: u32, h: u32) {
         }
     }
     grey_crop(img, x, y, w, h)
-        .save(format!("{REFS}/{name}@{x}_{y}.png"))
+        .save(dir.join(format!("{name}@{x}_{y}.png")))
         .unwrap();
 }
 

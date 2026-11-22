@@ -189,7 +189,6 @@ fn results(
 
 // A gem's rows are told by their name line against crops kept in gems/ (drawn pixel for pixel alike);
 // a gem with no crop yet is checked by reading and its crop kept in ignored/market/unknown_gems to be filed.
-const GEMS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/gems");
 const GEM_X: u32 = 612;
 const GEM_W: u32 = 150;
 
@@ -201,22 +200,18 @@ fn is_gem(img: &RgbaImage, rows: &[Listing], name: &str) -> bool {
     if rows.is_empty() {
         return true;
     }
-    let refs: Vec<(String, image::GrayImage)> = std::fs::read_dir(GEMS)
+    let refs: Vec<(String, image::GrayImage)> = crate::assets::files("gems")
         .into_iter()
-        .flatten()
-        .map(|e| e.unwrap().path())
-        .map(|p| {
+        .map(|(file, bytes)| {
             (
-                p.file_stem().unwrap().to_str().unwrap().to_string(),
-                image::open(&p).unwrap().to_luma8(),
+                file.rsplit_once('.').unwrap().0.to_string(),
+                image::load_from_memory(&bytes).unwrap().to_luma8(),
             )
         })
         .collect();
     if !refs.iter().any(|(n, _)| n == name) {
-        let dir = concat!(env!("HF_ROOT"), "/ignored/market/unknown_gems");
-        std::fs::create_dir_all(dir).unwrap();
         grey_crop(img, GEM_X, gem_crop_y(0), GEM_W, 24)
-            .save(format!("{dir}/{name}.png"))
+            .save(crate::assets::data_dir("unknown_gems").join(format!("{name}.png")))
             .unwrap();
         return rows.iter().filter(|r| is_name(&r.name, name)).count() * 2 > rows.len();
     }
@@ -283,10 +278,9 @@ fn gem_search(g: &mut Game, name: &str, last: &[Listing]) -> Option<Vec<Listing>
 }
 
 /// Each gem search, one unit of work; a search that failed every try is left out.
-pub fn gems(g: &mut Game) -> Vec<Search> {
+pub fn gems(g: &mut Game, out: &mut Vec<Search>) {
     // from a fresh Auction House, its filters and search box reset
     close_market(g);
-    let mut out = vec![];
     let mut last: Vec<Listing> = vec![];
     for level in (5..=10).rev().filter(|l| !quick() || *l == 10 || *l == 5) {
         for (kind, category) in [("Doomfire", "damage"), ("Blazing", "cooldown")] {
@@ -311,7 +305,6 @@ pub fn gems(g: &mut Game) -> Vec<Search> {
             });
         }
     }
-    out
 }
 
 fn option_y(row: i32) -> i32 {
@@ -421,10 +414,9 @@ fn accessory_search(
 }
 
 /// Each accessory search, one unit of work; a search that failed every try is left out.
-pub fn accessories(g: &mut Game) -> Vec<Search> {
+pub fn accessories(g: &mut Game, out: &mut Vec<Search>) {
     // from a fresh Auction House, its filters and search box reset
     close_market(g);
-    let mut out = vec![];
     let mut last: Vec<Listing> = vec![];
     for grp in &GROUPS {
         for (la, lb) in COMBOS
@@ -458,5 +450,4 @@ pub fn accessories(g: &mut Game) -> Vec<Search> {
             });
         }
     }
-    out
 }
