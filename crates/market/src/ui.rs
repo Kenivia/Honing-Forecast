@@ -154,6 +154,16 @@ pub fn reset(g: &mut Game) {
     close_shop(g);
 }
 
+/// The screen at the moment a step failed, for `unit` (its own shot is taken after the step's cleanup).
+static FAIL: std::sync::Mutex<Option<RgbaImage>> = std::sync::Mutex::new(None);
+
+/// Logs why a step failed and keeps the screen as it is now; false.
+pub fn fail(g: &mut Game, why: &str) -> bool {
+    log(why);
+    *FAIL.lock().unwrap() = Some(g.shot(None));
+    false
+}
+
 // seconds waited before each further try of a unit of work
 const BACKOFF: [u64; 3] = [5, 20, 60];
 
@@ -162,6 +172,7 @@ const BACKOFF: [u64; 3] = [5, 20, 60];
 pub fn unit<T>(g: &mut Game, what: &str, mut f: impl FnMut(&mut Game) -> Option<T>) -> Option<T> {
     let mut img = None;
     for k in 0..=BACKOFF.len() {
+        FAIL.lock().unwrap().take();
         let v = f(g);
         crate::report::step(g, what, v.is_some());
         if v.is_some() {
@@ -171,10 +182,16 @@ pub fn unit<T>(g: &mut Game, what: &str, mut f: impl FnMut(&mut Game) -> Option<
         if !crate::game::running() {
             panic!("{what}: the game is not running");
         }
-        let shot = g.shot(None);
+        let shot = FAIL.lock().unwrap().take().unwrap_or_else(|| g.shot(None));
         keep(&shot, what);
         if crate::report::OFFLINE.load(std::sync::atomic::Ordering::Relaxed) {
             panic!("{what}: failed while offline");
+        }
+        // every failed try goes to R2 and Discord with its reason (the last log line)
+        if k < BACKOFF.len() {
+            let why = LAST_LOG.lock().unwrap().0.clone();
+            let text = format!("{what}: try {}/{} failed ({why})", k + 1, BACKOFF.len() + 1);
+            crate::report::event("error", &text, Some(&shot));
         }
         img = Some(shot);
         reset(g);

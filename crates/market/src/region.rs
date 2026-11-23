@@ -4,7 +4,7 @@
 // characters need only their crops in its profile.
 use crate::{
     game::{Game, ms},
-    ui::{act, log, looks, ref_at, reset, wait},
+    ui::{act, fail, log, looks, ref_at, ref_distance, reset, wait},
 };
 
 pub struct Region {
@@ -62,13 +62,13 @@ pub fn switch(g: &mut Game, r: &Region) -> bool {
             |g| g.click(1204, 750),
             |img| looks(img, "charsel_confirm"),
         ) {
-            log("the game menu did not lead to Char. Select");
+            fail(g, "the game menu did not lead to Char. Select");
             g.key("esc");
             return false;
         }
         g.click(906, 584);
         if wait(g, 90.0, |img| looks(img, "char_select")).is_none() {
-            log("character select did not show");
+            fail(g, "character select did not show");
             return false;
         }
     }
@@ -82,13 +82,13 @@ pub fn switch(g: &mut Game, r: &Region) -> bool {
             |img| looks(img, "server_select"),
         )
     {
-        log("server select did not show");
+        fail(g, "server select did not show");
         return false;
     }
     if !looks(&g.shot(None), r.tab_ref) {
         g.click(r.tab.0, r.tab.1);
         if wait(g, 5.0, |img| looks(img, "region_confirm")).is_none() {
-            log("no Change Region Server prompt");
+            fail(g, "no Change Region Server prompt");
             return false;
         }
         g.click(918, 593);
@@ -97,7 +97,7 @@ pub fn switch(g: &mut Game, r: &Region) -> bool {
         })
         .is_none()
         {
-            log("the region tab did not change");
+            fail(g, "the region tab did not change");
             return false;
         }
     }
@@ -109,7 +109,7 @@ pub fn switch(g: &mut Game, r: &Region) -> bool {
         |g| g.click(960, ref_at(r.server_ref).1 + 15),
         |img| looks(img, r.server_ref),
     ) {
-        log("the server was not picked");
+        fail(g, "the server was not picked");
         return false;
     }
     // Enter ignores clicks for a few seconds after the region changed (took at 3.5 s)
@@ -122,7 +122,7 @@ pub fn switch(g: &mut Game, r: &Region) -> bool {
         |img| !looks(img, "server_select"),
     ) || wait(g, 90.0, |img| looks(img, "char_select")).is_none()
     {
-        log("character select did not show");
+        fail(g, "character select did not show");
         return false;
     }
     // roster page 1, then the character's slot (blue once picked)
@@ -134,17 +134,31 @@ pub fn switch(g: &mut Game, r: &Region) -> bool {
         g.move_to(960, 700);
     };
     if !act(g, 3, 0.0, 3.0, pick, |img| looks(img, r.char_ref)) {
-        log("the character was not picked");
+        fail(g, "the character was not picked");
         return false;
     }
     g.click(852, 1012);
     g.move_to(1200, 600);
-    if wait(g, 180.0, |img| looks(img, "in_stronghold")).is_none() {
-        log("the Stronghold did not show");
+    // the attendance window (first log-in after 06:00 server time) covers the Stronghold's icons; Esc closes it
+    let attendance = |img: &image::RgbaImage| ref_distance(img, "attendance", 0) < 5.0;
+    if wait(g, 180.0, |img| {
+        looks(img, "in_stronghold") || attendance(img)
+    })
+    .is_none()
+    {
+        fail(g, "the Stronghold did not show");
         return false;
     }
     // windows and the HUD come in after the scene
     ms(5000);
+    if attendance(&g.shot(None)) {
+        log("closing the attendance window");
+        g.key("esc");
+        if wait(g, 10.0, |img| looks(img, "in_stronghold")).is_none() {
+            fail(g, "the attendance window did not close");
+            return false;
+        }
+    }
     log(&format!("in {}", r.name));
     true
 }

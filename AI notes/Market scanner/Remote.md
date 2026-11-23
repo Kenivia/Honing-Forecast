@@ -43,6 +43,7 @@ Only R2 bills (Workers and Durable Objects on the free plan fail past their limi
 
 - Local: `pnpm relay-dev` (port 8788, secrets from `cloudflare/relay/.dev.vars`, gitignored: `DISCORD_BOT_TOKEN`, `ADMIN_TOKEN`, `MACHINE_TOKENS` = `{"home": ...}`); this PC is machine `home` with `ignored/market/relay.json` and `relay_admin.json` pointing at `http://127.0.0.1:8788`.
 - Deploy (the user does it): `wrangler r2 bucket create hf-market-relay` (R2 must be enabled on the account), `wrangler secret put` for the three secrets with `--config cloudflare/relay/wrangler.toml`, `pnpm relay-deploy`, then the Interactions Endpoint URL, then point the configs at the deployed URL.
+- Machines: `home` (this PC) and `borry-laptop` (the friend's, packaged 2026-11-23 as `ignored/market/borry-laptop.zip`). Names go into URLs unencoded: no spaces.
 - A machine of its own: `market_agent.exe` with `data/relay.json` and `data/upload.json` beside it (portable layout); its characters' crops (`char_nae`, `char_euc`, `server_*`) and anything else that differs go in `profile/refs/` beside it, taken remotely with `run "ref ..."`, which also uploads them.
 
 ## First run on a new account (2026-11-22)
@@ -51,6 +52,13 @@ Only R2 bills (Workers and Durable Objects on the free plan fail past their limi
 - The new account (characters Ialsolovemarket on NAE Thaemine, Ilovemarketprice on EUC Arcturus, both slot 1 of page 1) matched every crop of this PC (server, tabs, character select) except the characters; `char_nae` and `char_euc` were taken remotely with `ref char_<region> 236 896 216 48` into `agent_test/profile/refs/`. F9 opened the shop on both.
 - A character's first Stronghold visit opens a "Guide" window; Esc closes it.
 - `in_stronghold` (the Exit and Teleport icons, translucent) failed on the new EUC character: it stands elsewhere in its Stronghold, over bright sand, and the full crop read 39. It is now masked (below): Stronghold screens read 1.3 to 7.0 (with the Guide window too), every other kept screen 33.9 or more.
+
+## borry-laptop (2026-11-23)
+
+- A 2560x1440 monitor: the game was Borderless at 2560x1440; set to Full Screen 1920x1080 in its settings (saved on that PC), and every crop of this PC matched.
+- Unactivated Windows: the "Activate Windows" watermark (about 1495..1840 x 905..975) shows in captures and covered the Market's Buy button; `buy_button` was taken again there (`profile/refs/`, watermark included; 0.0 with a row picked, 29.1 with none). Delete it if Windows gets activated.
+- First round 2026-11-23: NAE 65 materials and EUC 66, 12 gem searches and the exchange each; the first EUC switch hit the attendance window (one retry). Self-updated to build 1795453627 at the round's end and went on scanning.
+- Its clock is UTC+8, so its passes tell whether the 5-day averages roll over at 00:00 UTC or local midnight.
 
 ## Open
 
