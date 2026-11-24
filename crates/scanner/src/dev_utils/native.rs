@@ -166,6 +166,42 @@ pub fn print_statuses(state: &ScannerState) {
     }
 }
 
+// A still, scanned enough times for every slot to be read. The state reads from the pixels returned
+// with it.
+pub fn scan_still(path: &str) -> (ScannerState, Vec<u8>) {
+    let image = image::open(path).unwrap().to_rgba8();
+    let (mut state, mut pixels) = new_state(image.width() as usize, image.height() as usize);
+    pixels.copy_from_slice(image.as_raw());
+    state.no_slot_budget = true;
+    for _ in 0..30 {
+        state.cropper();
+        state.run_ocr_inline();
+    }
+    (state, pixels)
+}
+
+// A debug capture run again as capture_replay runs it, and its end record.
+pub fn replay_capture(path: &str) -> (ScannerState, Vec<u8>, Option<String>) {
+    let file = fs::read(path).unwrap();
+    let (mut start, frames, end) = crate::dev_utils::capture::read_frames(&file);
+    drop(file);
+    let (mut state, pixels) = new_state(start.width, start.height);
+    state.set_priors(std::mem::take(&mut start.priors));
+    state.screen_info.forced_21_9 = start.forced_21_9;
+    state.screen_info.brightness = start.brightness;
+    for input in frames {
+        state.replay(input, vec![]);
+        let texts: Vec<(u32, String)> = std::mem::take(&mut state.ocr_queue)
+            .iter()
+            .map(|job| (job.id, job.line.read()))
+            .collect();
+        state.apply_ocr(texts);
+        state.clear_changed();
+    }
+    read_rest(&mut state);
+    (state, pixels, end)
+}
+
 // At the end of the input: every line still waiting is read, and what that sends off too.
 pub fn read_rest(state: &mut ScannerState) {
     while !state.ocr_queue.is_empty() {
@@ -177,12 +213,12 @@ pub fn read_rest(state: &mut ScannerState) {
 // the scanner read there. A slot is right when it is in order (Good, or only its tradability
 // missing) with the icon, amount and tradability that were set; no
 // amount set is a single item, no tradability set is not checked. A slot set with no item is right
-// when it is irrelevant. Prints each slot and returns how many were right, of how many.
-pub fn check_edits(state: &ScannerState, end: &str) -> (usize, usize) {
+// when it is irrelevant. Returns how many were right, of how many, and a line per slot.
+pub fn check_edits(state: &ScannerState, end: &str) -> (usize, usize, Vec<String>) {
     let end: serde_json::Value = serde_json::from_str(end).unwrap();
     let slots = state.result(true).slots;
     let edits = end["edits"].as_object().cloned().unwrap_or_default();
-    let mut right = 0;
+    let (mut right, mut lines) = (0, vec![]);
     for (key, edit) in &edits {
         let item = edit["item"].as_str();
         let amount = edit["amount"].as_u64().unwrap_or(1) as u32;
@@ -196,7 +232,7 @@ pub fn check_edits(state: &ScannerState, end: &str) -> (usize, usize) {
             .iter()
             .find(|x| serde_json::to_value(x.address).unwrap() == edit["address"]);
         let Some(slot) = slot else {
-            println!("  {key}: set {set}, not read");
+            lines.push(format!("  {key}: set {set}, not read"));
             continue;
         };
         let icon = slot.icon_name_score.as_ref().map(|x| x.0.as_str());
@@ -215,7 +251,7 @@ pub fn check_edits(state: &ScannerState, end: &str) -> (usize, usize) {
             }
         };
         right += ok as usize;
-        println!(
+        lines.push(format!(
             "  {key}: {} set {set}, read {} x{:?} {:?} {:?} {}",
             if ok { "right" } else { "WRONG" },
             icon.unwrap_or("nothing"),
@@ -223,9 +259,9 @@ pub fn check_edits(state: &ScannerState, end: &str) -> (usize, usize) {
             slot.tradability,
             slot.status,
             slot.reason
-        );
+        ));
     }
-    (right, edits.len())
+    (right, edits.len(), lines)
 }
 
 // The chest an export takes a slot for: the one read in it, else one read in its column with

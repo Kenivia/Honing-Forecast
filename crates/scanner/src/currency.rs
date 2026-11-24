@@ -56,8 +56,13 @@ const ICON_SLACK: f64 = 6.0;
 const MIN_CONTRAST: f64 = 0.4;
 // apart from its template's, which the matched icon's tint may be: gold's is 0.35, silver's 0.04
 const MAX_TINT_SHIFT: f64 = 0.15;
-// the bar shows whichever currencies the user picked, in any order
-const BAR: Rect = Rect::ui((0.0, 0.0), 1900.0, 40.0);
+// the bar shows whichever currencies the user picked, in any order; tall enough for the largest HUD
+const BAR: Rect = Rect::ui((0.0, 0.0), 1900.0, 56.0);
+// The bar is drawn at the HUD Size setting (80% to 110%), from the screen's top left, and its
+// templates at 90%. Which it is, is taken from the first bar icon found.
+const HUD_SCALES: [f64; 5] = [80.0 / 90.0, 1.0, 100.0 / 90.0, 105.0 / 90.0, 110.0 / 90.0];
+// matches searched past for one shown as the icon: the bar holds two coins and a shard
+const MAX_PASSED_OVER: usize = 5;
 
 static PLACES: LazyLock<Vec<PlaceSpec>> = LazyLock::new(|| {
     let at =
@@ -109,7 +114,16 @@ const TOOLTIP_TITLE: &str = "Gold tooltip title";
 // a tooltip pushed up by the bottom of the screen has its title this far down
 const PUSHED_UP_TITLE: f64 = 520.0;
 const TOOLTIP_SLACK: f64 = 10.0;
-// its lines from the title: what each is, where it starts and how wide it may run
+// Flipped left, it ends just left of the number, so it moves with the number's length; the offsets
+// are for a seven digit one, and this much further left or right covers the rest.
+const LONGER_NUMBER: f64 = 60.0;
+const SHORTER_NUMBER: f64 = 100.0;
+// A short owned amount fits beside "Gold Owned:", and every line after it, and a pushed up
+// title, are this much higher or lower. Told by how far that label's line runs.
+const ONE_LINE_SHORTER: f64 = 26.0;
+const LABEL_ONLY: f64 = 200.0;
+// its lines from the title, with the owned amount on a line of its own: what each is, where it
+// starts and how wide it may run
 const TOOLTIP_LINES: [(Field, f64, f64, f64); 6] = [
     (Field::Owned, -2.0, 582.0, 392.0),
     (Field::Roster, -2.0, 661.0, 392.0),
@@ -170,6 +184,8 @@ pub struct Currencies {
     pub fields: AHashMap<Field, FieldReads>,
     // where each icon was last found, looked at first
     pub last_at: AHashMap<(Place, Currency), Rect>,
+    // the bar's size over its templates', once found
+    pub hud: Option<f64>,
     // something unsettled was on screen this scan
     pub busy: bool,
 }
@@ -273,8 +289,13 @@ fn grouped(text: &str) -> Option<u64> {
 
 fn parse(field: Field, text: &str) -> Option<u64> {
     match field {
-        // the amount, then "/99,999,999,999"
-        Field::Owned | Field::Roster | Field::Char => grouped(text.split_once('/')?.0),
+        // the amount, then "/99,999,999,999"; "Gold Owned: " before it when on one line
+        Field::Owned | Field::Roster | Field::Char => grouped(
+            text.split_once('/')?
+                .0
+                .rsplit(|c: char| !(c.is_ascii_digit() || c == ',' || c == '.' || c == ' '))
+                .next()?,
+        ),
         // after "D+1:", or without the colon after the day's digit
         Field::Deposit(_) => match text.split_once(':') {
             Some((_, amount)) => grouped(amount),
@@ -328,28 +349,83 @@ impl ScannerState {
         self.currency.busy || self.currency.fields.values().any(|x| !x.waiting.is_empty())
     }
 
-    // looked for where it last was first, the bar being wide
+    // the size a place's icons are drawn at, over the screen's
+    fn place_scale(&self, place: Place) -> f64 {
+        match place {
+            Place::Bar => self.currency.hud.unwrap_or(1.0),
+            _ => 1.0,
+        }
+    }
+
+    // looked for where it last was first, the bar being wide; on the bar at every HUD size until
+    // one is found, the best that passes
     fn find_icon(&mut self, key: (Place, Currency), name: &str, bound: Rect) -> Option<Rect> {
         let s = self.screen_info.scale_factor;
+        let ui_height = self.screen_info.effective_height as f64;
+        let scales = match (key.0, self.currency.hud) {
+            (Place::Bar, None) => HUD_SCALES.to_vec(),
+            _ => vec![self.place_scale(key.0)],
+        };
         let near = self
             .currency
             .last_at
             .get(&key)
             .map(|at| grown(*at, 3.0 * s));
-        let found = [near, Some(bound)].into_iter().flatten().find_map(|area| {
-            let (found, ..) = self.find_template(name, area)?;
-            self.icon_shown(name, found).then_some(found)
+        let (found, scale) = [near, Some(bound)].into_iter().flatten().find_map(|area| {
+            let mut best: Option<(Rect, f64, f64)> = None;
+            for scale in &scales {
+                let resolution = (ui_height * scale).round() as u32;
+                if let Some((found, score)) = self.find_shown(name, area, resolution)
+                    && best.is_none_or(|x| score > x.2)
+                {
+                    best = Some((found, *scale, score));
+                }
+            }
+            best.map(|(found, scale, _)| (found, scale))
         })?;
+        if key.0 == Place::Bar {
+            self.currency.hud = Some(scale);
+        }
         self.currency.last_at.insert(key, found);
         Some(found)
     }
 
+    // The best match in an area that is shown as the icon. One that is not (the other coin, which
+    // can score higher where the bar is small) is searched past, left and right of it.
+    fn find_shown(&mut self, name: &str, area: Rect, resolution: u32) -> Option<(Rect, f64)> {
+        let ui_height = self.screen_info.effective_height;
+        let mut areas = vec![area];
+        for _ in 0..MAX_PASSED_OVER {
+            let area = areas.pop()?;
+            let Some((found, score, _)) = self.find_template_at(name, area, resolution) else {
+                continue;
+            };
+            if self.icon_shown(name, found, resolution) {
+                return Some((found, score));
+            }
+            let (left, right) = (area.top_left.0, area.top_left.0 + area.width);
+            let found_right = found.top_left.0 + found.width;
+            areas.push(Rect::screen(
+                area.top_left,
+                found.top_left.0 - left,
+                area.height,
+                ui_height,
+            ));
+            areas.push(Rect::screen(
+                (found_right, area.top_left.1),
+                right - found_right,
+                area.height,
+                ui_height,
+            ));
+        }
+        None
+    }
+
     // Matching does not go by contrast, so an icon showing faintly through a tooltip passes it,
     // and goes by grey, so the silver coin passes for the gold one.
-    fn icon_shown(&mut self, name: &str, found: Rect) -> bool {
+    fn icon_shown(&mut self, name: &str, found: Rect, resolution: u32) -> bool {
         let seen = self.crop_buffer(found);
-        let ui_height = self.screen_info.effective_height;
-        let own = icon_lookup(name, ui_height, get_resizer(&mut self.resizer));
+        let own = icon_lookup(name, resolution, get_resizer(&mut self.resizer));
         contrast(&seen) > MIN_CONTRAST * contrast(&own)
             && (tint(&seen) - tint(&own)).abs() < MAX_TINT_SHIFT
     }
@@ -400,16 +476,24 @@ impl ScannerState {
             .pixel_size();
         for (gold, offsets) in golds {
             for (dx, dy) in offsets {
-                let top_left = (
-                    gold.top_left.0 + dx * s,
-                    (gold.top_left.1 + dy * s).min(lowest),
-                );
-                let at = Rect::screen(top_left, width as f64, height as f64, ui_height);
-                if let Some((found, ..)) =
-                    self.find_template(TOOLTIP_TITLE, grown(at, TOOLTIP_SLACK * s))
-                    && is_yellow(&self.buffer, found.whole_pixels())
-                {
-                    return Some(found);
+                let natural = gold.top_left.1 + dy * s;
+                let mut ys = vec![natural.min(lowest)];
+                if natural > lowest {
+                    ys.push(natural.min(lowest + ONE_LINE_SHORTER * s));
+                }
+                for y in ys {
+                    let at = Rect::screen(
+                        (gold.top_left.0 + (dx - LONGER_NUMBER) * s, y),
+                        width as f64 + (LONGER_NUMBER + SHORTER_NUMBER) * s,
+                        height as f64,
+                        ui_height,
+                    );
+                    if let Some((found, ..)) =
+                        self.find_template(TOOLTIP_TITLE, grown(at, TOOLTIP_SLACK * s))
+                        && is_yellow(&self.buffer, found.whole_pixels())
+                    {
+                        return Some(found);
+                    }
                 }
             }
         }
@@ -459,7 +543,8 @@ impl ScannerState {
                     continue;
                 };
                 if self.wants(total)
-                    && let Some(span) = number_left_of(&self.buffer, icon, s)
+                    && let Some(span) =
+                        number_left_of(&self.buffer, icon, s * self.place_scale(spec.place))
                 {
                     self.send_currency_read(total, span, Kind::Digits);
                 }
@@ -471,16 +556,24 @@ impl ScannerState {
         let Some(title) = timed("currency/tooltip", || self.find_gold_tooltip(&golds)) else {
             return;
         };
-        for (field, dx, dy, width) in TOOLTIP_LINES {
-            if !self.wants(field) {
-                continue;
-            }
-            let line = Rect::screen(
+        let line_at = |dx: f64, dy: f64, width: f64| {
+            Rect::screen(
                 (title.top_left.0 + dx * s, title.top_left.1 + dy * s),
                 width * s,
                 TOOLTIP_LINE_HEIGHT * s,
                 ui_height,
-            );
+            )
+        };
+        let (_, dx, dy, width) = TOOLTIP_LINES[0];
+        let label = line_at(dx, dy - ONE_LINE_SHORTER, width);
+        let one_line = text_in(&self.buffer, self.clipped(label))
+            .is_some_and(|(_, _, right, _)| right as f64 > title.top_left.0 + LABEL_ONLY * s);
+        let shift = if one_line { ONE_LINE_SHORTER } else { 0.0 };
+        for (field, dx, dy, width) in TOOLTIP_LINES {
+            if !self.wants(field) {
+                continue;
+            }
+            let line = line_at(dx, dy - shift, width);
             if let Some(span) = text_in(&self.buffer, self.clipped(line)) {
                 self.send_currency_read(field, span, Kind::Text);
             }

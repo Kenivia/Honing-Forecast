@@ -129,21 +129,40 @@ impl ScannerState {
     // frame, the score, and the matched patch's mean. Matched as captured, so the score does not
     // go by brightness.
     pub fn find_template(&mut self, name: &str, area: Rect) -> Option<(Rect, f64, f64)> {
+        self.find_template_at(name, area, self.screen_info.effective_height)
+    }
+
+    // with the template drawn as at another UI height, for what the game scales apart (the HUD)
+    pub fn find_template_at(
+        &mut self,
+        name: &str,
+        area: Rect,
+        resolution: u32,
+    ) -> Option<(Rect, f64, f64)> {
         let area = self.clipped(area);
         let ui_height = self.screen_info.effective_height;
-        let template = icon_lookup(name, ui_height, get_resizer(&mut self.resizer));
+        let template = icon_lookup(name, resolution, get_resizer(&mut self.resizer));
         let (width, height) = template.offset.pixel_size();
         if area.width < width as f64 || area.height < height as f64 {
             return None;
         }
         drop(template);
         let searched = self.crop_buffer(area);
-        let template = icon_lookup(name, ui_height, get_resizer(&mut self.resizer));
+        let template = icon_lookup(name, resolution, get_resizer(&mut self.resizer));
         let (found, confidence, mean_intensity) = template_match(&template, &searched)?;
         let limit = template
             .required_confidence
             .unwrap_or(DEFAULT_TEMPLATE_MATCHING_CONFIDENCE);
-        (confidence > limit).then(|| (found.shifted(area.top_left), confidence, mean_intensity))
+        let found = Rect::screen(
+            (
+                found.top_left.0 + area.top_left.0,
+                found.top_left.1 + area.top_left.1,
+            ),
+            found.width,
+            found.height,
+            ui_height,
+        );
+        (confidence > limit).then_some((found, confidence, mean_intensity))
     }
 
     pub fn initialize_anchors(&mut self) {

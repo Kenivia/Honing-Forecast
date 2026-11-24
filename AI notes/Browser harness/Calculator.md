@@ -51,6 +51,7 @@ Any change to the grids or materials restarts it when `Auto start optimizer` is 
 
 - Progress reads 100% while idle, so "wait for 100%" passes instantly if checked right after a click. `hf.wait_for_optimizer` waits for it to leave 100% first.
 - Read gold only after the optimizer finishes.
+- Wait for it before the next click too: its results re-lay out the page, and under full e2e load a click can land after the target moved (lost clicks in `calc.spec.ts` after forbid / tier revert, Firefox, 2026-11-24).
 - With MCP, do not use `browser_wait_for` on the text `100.00%`: chance cells contain the same text. Wait a few seconds and snapshot again, or check with `browser_evaluate`.
 
 ## Helpers

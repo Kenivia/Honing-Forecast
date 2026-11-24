@@ -101,10 +101,13 @@ test("forbidding a merged chest stack forbids every stored chest in it", async (
     page.getByRole("button", { name: "Convert to T4.5 Serca" }),
   ).toBeVisible();
   await expect(page.getByText("Forbidden on this character")).toHaveCount(2);
+  // the revert re-runs the optimizer; its results re-lay out the page and can move the button mid-click
+  await hf.wait_for_optimizer(page);
 
   await allow("Box A").click();
   // the list re-lays out; a click before it settles can land on the moved Forbid button
   await expect.poll(() => forbidden(page)).toEqual(["t|b"]);
+  await hf.wait_for_optimizer(page);
   await allow("Box B").click();
   await expect.poll(() => forbidden(page)).toEqual([]);
   await expect(forbid).toBeVisible();
@@ -184,6 +187,8 @@ test("chest counts and deletions persist, and a re-added chest is not forbidden"
     .getByRole("button", { name: "Forbid Persist box on this character" })
     .click();
   await expect.poll(async () => (await forbidden(page)).length).toBe(1);
+  // forbidding re-runs the optimizer, whose results move the button mid-click
+  await hf.wait_for_optimizer(page);
   await page.getByRole("button", { name: "Delete Persist box" }).click();
   await expect(page.getByLabel("Persist box count")).toHaveCount(0);
   await expect.poll(() => forbidden(page)).toEqual([]);

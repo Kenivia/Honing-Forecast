@@ -1,6 +1,6 @@
 # Scanner pipeline: don't try these
 
-Warnings behind `Pipeline.md`: what failed or was ruled out, with the one number that justifies it. Only read this when trying something new on the scanner. Recordings are named by their time (`17-28-55` and `22-55-45` are 1080p of 2026-10-07; `21-42-32` and `21-31-53` are 3440x1440 of 2026-10-08); the rest are in `ignored/recordings`.
+Warnings behind `Pipeline.md`: what failed or was ruled out, with the one number that justifies it. Only read this when trying something new on the scanner. Recordings are named by their time (`17-28-55` and `22-55-45` are 1080p of 2026-10-07; `21-42-32` and `21-31-53` are 3440x1440 of 2026-10-08); the rest are in `ignored/scanner_tests/recordings`.
 
 ## Anchors
 

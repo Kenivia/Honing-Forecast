@@ -100,7 +100,14 @@ fn main() {
                 );
             }
         }
-        let (right, all) = check_edits(&bare, &end);
+        let (right, all, lines) = check_edits(&bare, &end);
+        println!(
+            "{}",
+            lines.join(
+                "
+"
+            )
+        );
         println!("no tooltips check: {right} of {all} slots set by hand read right");
 
         let flipped: Vec<Prior> = priors

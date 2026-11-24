@@ -1,6 +1,6 @@
 # Hover tooltips: don't try these
 
-Warnings behind `Tooltips.md`: what failed or was ruled out in reading the tooltip. Only read this when trying something new on tooltip reading. Recordings and captures are named by their time; they are in `ignored/recordings`.
+Warnings behind `Tooltips.md`: what failed or was ruled out in reading the tooltip. Only read this when trying something new on tooltip reading. Recordings and captures are named by their time; they are in `ignored/scanner_tests/recordings`.
 
 ## Finding the title bar
 

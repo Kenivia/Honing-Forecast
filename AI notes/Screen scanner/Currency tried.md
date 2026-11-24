@@ -22,6 +22,11 @@ Warnings for the currency reader (`Currency.md`): what failed or was ruled out. 
 ## Gold
 
 - **Don't trust the total over the tooltip's sum**: when the inventory's gold is half covered it only ever reads "428", which settled and made gold an error ("adds up to 3309428, but 428 is shown") while the tooltip read 3,309,428 in full. Gold is the tooltip's sum once its lines settled.
+- **Don't place the left-flipped inventory tooltip at one fixed offset from the coin**: it hangs off the number's left end, and a 6-digit gold put its title 20 (1440p) right of the 7-digit offset, past the slack; it was never found.
+- **Don't assume "Gold Owned"'s amount is on its own line**: a short one shares the label's line, the tooltip is a line shorter, and a pushed up title sat 26 below `PUSHED_UP_TITLE`.
+- **Don't take the bar's templates for 80% HUD**: they were cut at 90%, and taken as 80% every size was detected a step low.
+- **Don't take the first HUD size that passes**: neighbouring sizes pass too (silver 0.943 at 100% on a 105% still, 0.973 at 105%); take the best.
+- **Don't keep 0.9 for the bar coins and the gold tooltip's title**: at forced 21:9 on 1080p (a UI of 810 lines) the coins scored 0.84 to 0.89 and the title 0.84, and no bar hover read at any HUD size.
 
 ## Not tried
 

@@ -455,7 +455,10 @@ test("chests are edited on the calculator page", async ({ page }) => {
 
 // Four local debug captures: the first of one character, the other three of a second one, in
 // the order taken. Each shows other pages.
-const RECORDINGS = new URL("../../ignored/recordings/", import.meta.url);
+const RECORDINGS = new URL(
+  "../../ignored/scanner_tests/recordings/",
+  import.meta.url,
+);
 const CAPTURES = [
   "2026-10-19T10-18-21-138Z",
   "2026-10-19T10-20-24-576Z",

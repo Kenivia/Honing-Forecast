@@ -247,7 +247,14 @@ fn main() {
     }
     print_statuses(&state);
     if check {
-        let (right, all) = check_edits(&state, end.as_deref().unwrap_or("{}"));
+        let (right, all, lines) = check_edits(&state, end.as_deref().unwrap_or("{}"));
+        println!(
+            "{}",
+            lines.join(
+                "
+"
+            )
+        );
         println!("check: {right} of {all} slots set by hand read right");
     }
     // TIMINGS=1: each timed stage's total over the run, to stderr

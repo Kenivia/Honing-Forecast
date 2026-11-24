@@ -85,7 +85,7 @@ impl Input {
     }
 }
 
-fn record(tag: u8, payload: &impl Serialize) -> Vec<u8> {
+pub fn record(tag: u8, payload: &impl Serialize) -> Vec<u8> {
     let payload = rmp_serde::to_vec_named(payload).unwrap();
     let mut out = vec![tag];
     out.extend((payload.len() as u32).to_le_bytes());

@@ -1,14 +1,14 @@
 // Profiles the screen scanner end to end: builds the wasm, serves if needed, plays each
 // recording through the scanner, then prints the stage breakdown.
 // pnpm scanner-profile [--name=<run>] [--no-build] [--firefox] [--keep] [recording...]
-// With no recording, every one in ignored/recordings. Dumps go to target/scan-profiles/<run>/
+// With no recording, every one in ignored/scanner_tests/recordings. Dumps go to target/scan-profiles/<run>/
 // ("last" without a name), so a before and an after can be kept side by side for scanner-compare.
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
 const BASE_URL = "http://localhost:5173";
-const RECORDINGS = "ignored/recordings";
+const RECORDINGS = "ignored/scanner_tests/recordings";
 const VIDEO = /\.(mp4|mkv|webm|mov)$/i;
 
 const args = process.argv.slice(2);

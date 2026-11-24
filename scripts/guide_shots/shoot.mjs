@@ -9,7 +9,7 @@ const BASE_URL = process.env.BASE_URL ?? "http://localhost:5173";
 const OUT = fileURLToPath(new URL("../../public/Guide/", import.meta.url));
 const CAPTURE = fileURLToPath(
   new URL(
-    "../../ignored/recordings/honing-forecast-2026-10-20T11-43-25-861Z.hfcap",
+    "../../ignored/scanner_tests/recordings/honing-forecast-2026-10-20T11-43-25-861Z.hfcap",
     import.meta.url,
   ),
 );

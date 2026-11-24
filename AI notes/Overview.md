@@ -40,7 +40,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 - `pnpm pull-analytics` downloads and deletes the analytics uploads, `pnpm analytics` pulls and then serves the plots (`Frontend/External services.md`).
 - `pnpm market-scan` runs the market scanner (materials and gems) in a loop; see `Market scanner/Overview.md`.
 - `pnpm change-log` scaffolds the next changelog file in `public/change-logs`.
-- `pnpm browsers` installs the Playwright browsers; `pnpm scanner-suite`, `scanner-profile` and `scanner-compare` are the scanner's tools (`Screen scanner/`). `pnpm remove-tmp` clears `.tmp/` (`Working in this repo.md`).
+- `pnpm browsers` installs the Playwright browsers; `pnpm scanner-suite`, `scanner-check`, `game-capture`, `scanner-profile` and `scanner-compare` are the scanner's tools (`Screen scanner/`). `pnpm remove-tmp` clears `.tmp/` (`Working in this repo.md`).
 
 ## Cargo features
 
@@ -87,6 +87,7 @@ Each note describes the code as it is now. Where something was tried and failed 
 - `Screen scanner/Slot grid.md`: the scanner page's slot grid, slot statuses and manual edits.
 - `Screen scanner/Game files.md`: reading items, chests and icons out of the installed game.
 - `Screen scanner/Currency.md`: silver, gold and shards off the inventory, the currency window, the bar at the top of the screen and gold's tooltip.
+- `Screen scanner/Live game.md`: driving the game on this PC, stills and captures of it (`pnpm game-capture`), and the local test inputs with known answers (`pnpm scanner-check`).
 - `Screen scanner/Manifest.md`: the scan as materials per band and chests, merged with saved pages and other characters, the export, and the budget snapshots.
 - `Screen scanner/Income.md`: the Income page: snapshots over time, their optimizer runs, the income estimate and manual income.
 - `Screen scanner/Choices.md`: the Choices page: what taking each option of a choice (a raid's bonus chest) is worth, and adding it to the budgets.

@@ -1,6 +1,7 @@
 """
-The scanner's native suite: tooltip_test over every recording in ignored/recordings and over the
-stills folders, and capture_replay over every debug capture (.hfcap) there. Needs opencv. Runs
+The scanner's native suite: tooltip_test over every recording in ignored/scanner_tests/recordings, over the
+stills folders and over each folder of ignored/scanner_tests/stills, and capture_replay over every debug
+capture (.hfcap) in the recordings. Needs opencv. Runs
 are kept by name in target/scanner-suite/.
 
     python scanner_setup/scanner/suite.py run <name> [--seq]   about 5 minutes
@@ -19,8 +20,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-RECORDINGS = ROOT / "ignored/recordings"
+RECORDINGS = ROOT / "ignored/scanner_tests/recordings"
 STILLS = ROOT / "scanner_setup/brightness"
+# local stills, one run per folder
+LOCAL_STILLS = ROOT / "ignored/scanner_tests/stills"
 # 768p and 900p are small, so their numbers read worst
 STILL_FOLDERS = [
     "720p raw", "768p raw", "900p raw", "1080p raw", "1440p raw/old", "2160p raw",
@@ -75,6 +78,9 @@ def run(name, seq):
         # relative, as the harness prints each still's path
         images = sorted(x.relative_to(ROOT).as_posix() for x in (STILLS / folder).glob("*.png"))
         jobs.append(start([str(BIN), *images], f"stills-{slug(folder)}"))
+    for folder in sorted(x for x in LOCAL_STILLS.iterdir() if x.is_dir()):
+        images = sorted(x.relative_to(ROOT).as_posix() for x in folder.glob("*.png"))
+        jobs.append(start([str(BIN), *images], f"local-{slug(folder.name)}"))
     for job in jobs:
         job.wait()
     # the one figure in the output that is a timing
