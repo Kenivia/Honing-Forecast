@@ -8,7 +8,7 @@ const MARKET_FIXTURE = new URL("./fixtures/market.json", import.meta.url);
 
 // a Worker endpoint, deployed or under `pnpm cloudflare-dev`
 export const worker_route = (path: string) =>
-  new RegExp(String.raw`(workers\.dev|localhost:8787)${path}`);
+  new RegExp(String.raw`(workers\.dev|api\.honing-forecast\.com|localhost:8787)${path}`);
 
 // collects uncaught errors and console errors
 export function watch_errors(page: Page): string[] {

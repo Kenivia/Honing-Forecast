@@ -1,6 +1,6 @@
 # Remote scanning
 
-Running the scanner on other PCs (a friend's, with its own Steam account and characters) and controlling it from here and from Discord. Built 2026-11-22. Deployed relay: `https://hf-market-relay.kenivia-fan.workers.dev` (secrets set). Tested on this PC as machine `home`, portable layout in `ignored/market/agent_test/` (exe + `data/` + `profile/`), logged into the new Steam account: launch, setup crops, a quick round, pause, partial upload, reconnect.
+Running the scanner on other PCs (a friend's, with its own Steam account and characters) and controlling it from here and from Discord. Built 2026-11-22. Deployed relay: `https://relay.honing-forecast.com` (custom domain since 2026-11-24; the old `hf-market-relay.kenivia-fan.workers.dev` stays on with `workers_dev = true` until nothing uses it) (secrets set). Tested on this PC as machine `home`, portable layout in `ignored/market/agent_test/` (exe + `data/` + `profile/`), logged into the new Steam account: launch, setup crops, a quick round, pause, partial upload, reconnect.
 
 ## Pieces
 
@@ -27,6 +27,7 @@ Running the scanner on other PCs (a friend's, with its own Steam account and cha
 - `GET /update` (`{sha256, build, sig}`), `GET /update/exe`: any machine's token or the admin token; `PUT /update` (headers `x-build`, `x-signature`): admin.
 - Admin (`ADMIN_TOKEN`): `POST /cmd/<machine>` `{op, ...}` (waits up to 120 s for the reply), `GET /machines`, `GET /files?prefix=`, `GET /files/<key>`.
 - `POST /discord`: Discord interactions, checked with the app's Ed25519 public key; only the users in `DISCORD_USERS` may run them.
+- No per-IP limit in the Worker: a request without a token is refused before the Durable Object or R2, but still counts toward the account's 100k Worker requests a day (shared with the site's Worker), which only the zone's WAF rule, before the Worker, can stop (`Frontend/External services.md`, "Per-IP limits").
 
 Agent messages: `status` every 30 s and on each state change (`state` idle/scanning/stopping, `game`, `last_pass`, `log` and `log_at` = the last `ui::log` line, `setup`); `event` (`kind` info/error/step/pass, `text`, `file`); `reply` to a command id, taken only from the machine the command went to (since 2026-11-24; before, any machine token could answer another machine's commands, tested both ways on a local relay with two fake machines). Commands: `status`, `start`, `pause` (unsigned), `launch`, `log` (`lines`), `setup` (`on`), `sync`, `update`, `shot` (`x y w h scale`), `run` (`script`), `exec` (`script`) (signed).
 
@@ -46,6 +47,7 @@ Only R2 bills (Workers and Durable Objects on the free plan fail past their limi
 
 - Local: `pnpm relay-dev` (port 8788, secrets from `cloudflare/relay/.dev.vars`, gitignored: `DISCORD_BOT_TOKEN`, `ADMIN_TOKEN`, `MACHINE_TOKENS` = `{"home": ...}`); this PC is machine `home` with `ignored/market/relay.json` and `relay_admin.json` pointing at `http://127.0.0.1:8788`.
 - Deploy (the user does it): `wrangler r2 bucket create hf-market-relay` (R2 must be enabled on the account), `wrangler secret put` for the three secrets with `--config cloudflare/relay/wrangler.toml`, `pnpm relay-deploy`, then the Interactions Endpoint URL, then point the configs at the deployed URL.
+- Machines' MCP servers in `.mcp.json`: `lostark-home`, `lostark-borry`.
 - Machines: `home` (this PC) and `borry-laptop` (the friend's, packaged 2026-11-23 as `ignored/market/borry-laptop.zip`). Names go into URLs unencoded: no spaces.
 - A machine of its own: `market_agent.exe` with `data/relay.json` and `data/upload.json` beside it (portable layout); its characters' crops (`char_nae`, `char_euc`, `server_*`) and anything else that differs go in `profile/refs/` beside it, taken remotely with `run "ref ..."`, which also uploads them.
 
@@ -62,6 +64,7 @@ Only R2 bills (Workers and Durable Objects on the free plan fail past their limi
 - Unactivated Windows: the "Activate Windows" watermark (about 1495..1840 x 905..975) shows in captures and covered the Market's Buy button; `buy_button` was taken again there (`profile/refs/`, watermark included; 0.0 with a row picked, 29.1 with none). Delete it if Windows gets activated.
 - First round 2026-11-23: NAE 65 materials and EUC 66, 12 gem searches and the exchange each; the first EUC switch hit the attendance window (one retry). Self-updated to build 1795453627 at the round's end and went on scanning.
 - Runs from `C:\Users\omgwt\Downloads\borry-laptop\` (checked 2026-11-24): a subfolder, so browser downloads do not land beside the exe; only that user, SYSTEM and Administrators can write there.
+- Moved to the custom domains 2026-11-24: its `data/relay.json` and `data/upload.json` rewritten by a signed `exec`, then a `relay-publish` restarted it (the agent reads `relay.json` only at start; `upload.json` on every upload). `friend_package/` and the zip carry the new URLs.
 - Its clock is UTC+8, so its passes tell whether the 5-day averages roll over at 00:00 UTC or local midnight.
 
 ## Open

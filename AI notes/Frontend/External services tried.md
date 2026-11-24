@@ -7,6 +7,7 @@ Traps and ruled-out alternatives. The current state is in `External services.md`
 - Don't use the classic Cache API (`caches.default`): it does nothing on workers.dev, only on custom domains. Use Workers Cache with GET-only routes and `Cache-Control`.
 - Don't cache in KV: the free plan allows 1k KV writes a day.
 - Don't make the market a POST keyed by a hash of its body: Workers Cache keys GETs by path and query.
+- Don't count on the Workers Rate Limiting binding alone for per-IP limits: deployed, it let 80 of 80 requests through a 30/min limit (2026-11-24; works locally). Check it with a burst after any change.
 - Don't leave upstream fetches unlimited or the upload's raid lookups uncached: use the cached loopback route and the per-source per-minute limits in D1.
 
 ## Market fetch

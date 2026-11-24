@@ -22,6 +22,14 @@ const FOLLOWUP_MS = 24 * HOUR_MS;
 // a weekly reset, Thursday 10:00 UTC
 const RESET = Date.UTC(2026, 0, 1, 10);
 
+// per-IP limits: [method, path pattern, binding]; the numbers are the [[ratelimits]] in wrangler.toml
+const ROUTE_LIMITS = [
+  ["GET", /^\/(character|bible)\//, "LIMIT_BIBLE"],
+  ["GET", /^\/(market|prices)\//, "LIMIT_MARKET"],
+  ["POST", /^\/snapshots$/, "LIMIT_SNAPSHOTS"],
+  ["POST", /^\/moves$/, "LIMIT_MOVES"],
+];
+
 const UWUOWO_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -29,7 +37,7 @@ const UWUOWO_HEADERS = {
   "Accept-Language": "en-US,en;q=0.9",
   "Accept-Encoding": "gzip, deflate, br",
   Connection: "keep-alive",
-  Referer: "https://honing-forecast.pages.dev/",
+  Referer: "https://honing-forecast.com/",
 };
 
 export default {
@@ -39,6 +47,15 @@ export default {
 
       if (request.method === "OPTIONS") {
         return corsResponse(null, 204);
+      }
+
+      // the loopback calls (uploads, follow-ups) carry no client IP and are not limited
+      const ip = request.headers.get("CF-Connecting-IP");
+      const limit = ROUTE_LIMITS.find(
+        ([method, path]) => request.method === method && path.test(url.pathname),
+      );
+      if (ip && limit && !(await env[limit[2]].limit({ key: ip })).success) {
+        return reply("Too many requests", 429);
       }
 
       if (request.method === "GET") {

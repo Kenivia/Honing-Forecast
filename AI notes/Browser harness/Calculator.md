@@ -94,7 +94,7 @@ Add a spec under `tests/e2e/`. Follow `smoke.spec.ts`:
 - Assert ilevel and cell statuses exactly. Assert gold by relation (greater than zero, lower after adding materials) or a generous range.
 - To test persistence, wait a second for the debounced save before reloading.
 
-The price fixture is `tests/e2e/fixtures/market.json`, keyed by region slug (`nae`, `euc`), in the market API's response shape. `stub_market` fulfils `GET /prices/<region>` with that region's list; if the route or the response shape changes, update both. Worker stubs route through `worker_route(path)` in `helpers.ts`, which matches both the deployed Worker (`workers.dev`) and `pnpm cloudflare-dev` (`localhost:8787`), so a local `VITE_WORKER_URL` override doesn't bypass them.
+The price fixture is `tests/e2e/fixtures/market.json`, keyed by region slug (`nae`, `euc`), in the market API's response shape. `stub_market` fulfils `GET /prices/<region>` with that region's list; if the route or the response shape changes, update both. Worker stubs route through `worker_route(path)` in `helpers.ts`, which matches the deployed Worker (`api.honing-forecast.com`, and the old `workers.dev`) and `pnpm cloudflare-dev` (`localhost:8787`), so a local `VITE_WORKER_URL` override doesn't bypass them.
 
 ## Specs
 

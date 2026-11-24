@@ -15,6 +15,10 @@
     "lostark-home": {
       "command": "target/release/market_mcp.exe",
       "args": ["--remote", "home"]
+    },
+    "lostark-borry": {
+      "command": "target/release/market_mcp.exe",
+      "args": ["--remote", "borry-laptop"]
     }
   }
 }

@@ -1,6 +1,9 @@
 name = "hf-market-relay"
 main = "relay.js"
 compatibility_date = "2026-06-28"
+# custom domain, behind the zone's WAF; workers.dev must be kept on explicitly (routes turn it off by default)
+routes = [{ pattern = "relay.honing-forecast.com", custom_domain = true }]
+workers_dev = true
 
 [observability.logs]
 enabled = true
