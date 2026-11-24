@@ -98,6 +98,37 @@ function roster_target(roster_id: string) {
   return chars.find((p) => p.id === last_opened[roster_id]) ?? chars[0];
 }
 
+// roster tabs: double-click renames, drag reorders
+function tab_label(roster_id: string) {
+  return roster_ids.value.length === 1 &&
+    !roster_store.roster_config.roster_names[roster_id]
+    ? "Character"
+    : roster_store.roster_label(roster_id);
+}
+const renaming = ref<string | null>(null);
+const rename_text = ref("");
+function start_rename(roster_id: string) {
+  rename_text.value = roster_store.roster_config.roster_names[roster_id] ?? "";
+  renaming.value = roster_id;
+}
+function finish_rename(save: boolean) {
+  if (renaming.value === null) return;
+  if (save) roster_store.rename_roster(renaming.value, rename_text.value);
+  renaming.value = null;
+}
+const vFocus = { mounted: (el: HTMLInputElement) => (el.focus(), el.select()) };
+const drag_from = ref<number | null>(null);
+const drop_on = ref<number | null>(null);
+function on_drag_start(event: DragEvent, i: number) {
+  drag_from.value = i;
+  event.dataTransfer?.setData("text/plain", String(i));
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+}
+function on_drop(i: number) {
+  if (drag_from.value !== null) roster_store.move_roster(drag_from.value, i);
+  drag_from.value = drop_on.value = null;
+}
+
 // the sidebar sticks under the header
 const top_row = useTemplateRef<HTMLElement>("top_row");
 const { height: top_row_h } = useElementSize(top_row, undefined, {
@@ -161,18 +192,42 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
         </RouterLink>
 
         <div class="header-spacer" />
-        <RouterLink
-          v-for="(roster_id, i) in roster_ids"
-          :key="roster_id"
-          :to="{
-            name: 'char',
-            params: roster_store.char_params(roster_target(roster_id)),
-          }"
-          class="nav-tab"
-          :class="{ selected: routed_profile?.roster_id === roster_id }"
-        >
-          {{ roster_ids.length === 1 ? "Character" : `Roster ${i + 1}` }}
-        </RouterLink>
+        <template v-for="(roster_id, i) in roster_ids" :key="roster_id">
+          <div v-if="renaming === roster_id" class="nav-tab selected">
+            <input
+              v-focus
+              v-model="rename_text"
+              class="generic-input h-8 w-36 px-2"
+              aria-label="Roster name"
+              placeholder="Roster name"
+              @keydown.enter="finish_rename(true)"
+              @keydown.escape="finish_rename(false)"
+              @blur="finish_rename(true)"
+            />
+          </div>
+          <RouterLink
+            v-else
+            :to="{
+              name: 'char',
+              params: roster_store.char_params(roster_target(roster_id)),
+            }"
+            class="nav-tab"
+            :class="{
+              selected: routed_profile?.roster_id === roster_id,
+              'drop-target': drop_on === i && drag_from !== i,
+            }"
+            draggable="true"
+            title="Double-click to rename, drag to move"
+            @dblclick.prevent="start_rename(roster_id)"
+            @dragstart="on_drag_start($event, i)"
+            @dragover.prevent="drop_on = i"
+            @dragleave="drop_on = drop_on === i ? null : drop_on"
+            @drop.prevent="on_drop(i)"
+            @dragend="drag_from = drop_on = null"
+          >
+            {{ tab_label(roster_id) }}
+          </RouterLink>
+        </template>
         <div
           v-if="signed_in"
           class="ml-auto flex flex-row items-center gap-2 px-3 text-sm text-(--text-muted)"

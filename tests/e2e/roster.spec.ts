@@ -54,6 +54,89 @@ test("Add new roster adds a header tab that survives a reload", async ({
   expect(await bh.roster_names(page)).toEqual([["Newchar"], ["Newchar1"]]);
 });
 
+test("double-clicking a header tab renames the roster everywhere and persists", async ({
+  page,
+}) => {
+  await open_roster(page, [{ names: ["A"] }, { names: ["B"] }]);
+  await header_tab(page, "Roster 2").dblclick();
+  const box = page.locator("header").getByRole("textbox", {
+    name: "Roster name",
+  });
+  await box.fill("Alts");
+  await box.press("Enter");
+  await expect(header_tab(page, "Alts")).toBeVisible();
+  await page.goto("/roster-setup");
+  await expect(roster(page, 1)).toBeVisible();
+  await expect(page.getByRole("group", { name: "Alts" })).toBeVisible();
+  await page.goto("/market-mats");
+  await expect(
+    page.getByRole("combobox", { name: "Active roster" }).locator("option"),
+  ).toHaveText(["Roster 1", "Alts"]);
+  await persist(page);
+  await page.reload();
+  await expect(header_tab(page, "Alts")).toBeVisible();
+
+  // Escape keeps the name, a blank name goes back to the position
+  await header_tab(page, "Alts").dblclick();
+  await box.fill("Nope");
+  await box.press("Escape");
+  await expect(header_tab(page, "Alts")).toBeVisible();
+  await header_tab(page, "Alts").dblclick();
+  await box.fill("");
+  await box.press("Enter");
+  await expect(header_tab(page, "Roster 2")).toBeVisible();
+});
+
+test("renaming a roster on its card names its header tab", async ({ page }) => {
+  await open_roster(page, [{ names: ["A"] }, { names: ["B"] }]);
+  const box = roster(page, 1).getByRole("textbox", { name: "Roster name" });
+  await box.fill("Main");
+  await box.press("Enter");
+  await expect(header_tab(page, "Main")).toBeVisible();
+  await expect(header_tab(page, "Roster 2")).toBeVisible();
+});
+
+test("dragging a header tab moves the roster and persists", async ({
+  page,
+}) => {
+  await open_roster(page, [
+    { names: ["A"] },
+    { names: ["B", "C"] },
+    { names: ["D"] },
+  ]);
+  await header_tab(page, "Roster 3").dragTo(header_tab(page, "Roster 1"));
+  await expect
+    .poll(() => bh.roster_names(page))
+    .toEqual([["D"], ["A"], ["B", "C"]]);
+  await persist(page);
+  await page.reload();
+  expect(await bh.roster_names(page)).toEqual([["D"], ["A"], ["B", "C"]]);
+});
+
+test("the arrows on a roster card move it, and a name moves with it", async ({
+  page,
+}) => {
+  await open_roster(page, [{ names: ["A"] }, { names: ["B"] }]);
+  const box = roster(page, 1).getByRole("textbox", { name: "Roster name" });
+  await box.fill("Main");
+  await box.press("Enter");
+  await expect(roster(page, 1).getByLabel("Move roster left")).toHaveCount(0);
+  await page
+    .getByRole("group", { name: "Main" })
+    .getByRole("button", { name: "Move roster right" })
+    .click();
+  await expect.poll(() => bh.roster_names(page)).toEqual([["B"], ["A"]]);
+  await expect(page.locator("header").getByRole("link")).toContainText([
+    "Roster 1",
+    "Main",
+  ]);
+  await page
+    .getByRole("group", { name: "Main" })
+    .getByRole("button", { name: "Move roster left" })
+    .click();
+  await expect.poll(() => bh.roster_names(page)).toEqual([["A"], ["B"]]);
+});
+
 test("Add new character adds a row to that roster only", async ({ page }) => {
   await open_roster(page, [{ names: ["Alpha"] }, { names: ["Beta"] }]);
   await roster(page, 1)

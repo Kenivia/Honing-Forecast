@@ -54,6 +54,8 @@ export interface RosterConfig {
   custom_choices: Record<string, CustomChoice>;
 
   all_regions: Record<string, MarketRegions>;
+  // names given by the user; a roster without one is "Roster N"
+  roster_names: Record<string, string>;
 
   cumulative_graph: boolean;
 
@@ -136,6 +138,7 @@ export function default_roster_config(): RosterConfig {
     roster_income: {},
     custom_choices: {},
     all_regions: { [roster_id]: "nae" },
+    roster_names: {},
     cumulative_graph: false,
     selected_bundles: {
       nae: default_selected_bundles(),
@@ -244,6 +247,11 @@ export const useRosterStore = defineStore("roster", {
     roster_ids: (state): string[] => [
       ...new Set(state.roster_config.profiles.map((x) => x.roster_id)),
     ],
+    roster_label() {
+      return (roster_id: string): string =>
+        this.roster_config.roster_names[roster_id] ||
+        `Roster ${this.roster_ids.indexOf(roster_id) + 1}`;
+    },
 
     active_selected_bundles(state): Record<string, number> {
       return state.roster_config.selected_bundles[this.active_region];
@@ -350,6 +358,25 @@ export const useRosterStore = defineStore("roster", {
       [profiles[i], profiles[j]] = [profiles[j], profiles[i]];
       this.point_active_at(id);
     },
+    // a blank name goes back to "Roster N"
+    rename_roster(roster_id: string, name: string) {
+      const trimmed = name.trim();
+      if (trimmed) this.roster_config.roster_names[roster_id] = trimmed;
+      else delete this.roster_config.roster_names[roster_id];
+    },
+    // moves the roster at position `from` to position `to`, its characters in one block
+    move_roster(from: number, to: number) {
+      const ids = [...this.roster_ids];
+      if (from === to || !ids[from] || !ids[to]) return;
+      const id = this.active_profile.id;
+      const [moved] = ids.splice(from, 1);
+      ids.splice(to, 0, moved);
+      const profiles = this.roster_config.profiles;
+      this.roster_config.profiles = ids.flatMap((r) =>
+        profiles.filter((p) => p.roster_id === r),
+      );
+      this.point_active_at(id);
+    },
     // Deleting the active character moves to the one before it. A roster's last character
     // takes the roster's data with it.
     delete_profile(index: number) {
@@ -373,6 +400,7 @@ export const useRosterStore = defineStore("roster", {
       delete config.roster_mats_owned[roster_id];
       delete config.tradable_mats_owned[roster_id];
       delete config.all_regions[roster_id];
+      delete config.roster_names[roster_id];
       delete config.roster_chests[roster_id];
       delete config.roster_income[roster_id];
       delete config.custom_choices[roster_id];

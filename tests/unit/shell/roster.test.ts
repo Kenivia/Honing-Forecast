@@ -62,11 +62,45 @@ describe("RosterView", () => {
       ["Bob", 0],
     ]);
     const cards = wrapper.findAll(".card-shell");
-    expect(cards.map((c) => c.find(".card-title").text())).toEqual([
+    expect(cards.map((c) => c.attributes("aria-label"))).toEqual([
       "Roster 1",
       "Roster 2",
     ]);
+    expect(
+      cards.map((c) => c.find(".card-title").attributes("placeholder")),
+    ).toEqual(["Roster 1", "Roster 2"]);
     expect(row_names(wrapper)).toEqual(["Alice", "Bob", "Carol"]);
+  });
+
+  it("the card's name box renames the roster, blank unnames it", async () => {
+    const { wrapper, store } = await mount_roster([
+      ["Alice", 0],
+      ["Carol", 1],
+    ]);
+    const box = () => wrapper.findAll(".card-shell")[1].find(".card-title");
+    await box().setValue("Alts");
+    expect(store.roster_config.roster_names).toEqual({ 1: "Alts" });
+    expect(wrapper.findAll(".card-shell")[1].attributes("aria-label")).toBe(
+      "Alts",
+    );
+    await box().setValue(" ");
+    expect(store.roster_config.roster_names).toEqual({});
+  });
+
+  it("roster arrows move the roster, none past either end", async () => {
+    const { wrapper, store } = await mount_roster([
+      ["Alice", 0],
+      ["Carol", 1],
+      ["Bob", 0],
+    ]);
+    const cards = () => wrapper.findAll(".card-shell");
+    expect(cards()[0].find(".arrow-btn-left").exists()).toBe(false);
+    expect(cards()[1].find(".arrow-btn-right").exists()).toBe(false);
+    await cards()[0].find(".arrow-btn-right").trigger("click");
+    expect(store.roster_ids).toEqual(["1", "0"]);
+    expect(names()).toEqual(["Carol", "Alice", "Bob"]);
+    await cards()[1].find(".arrow-btn-left").trigger("click");
+    expect(store.roster_ids).toEqual(["0", "1"]);
   });
 
   it("add new character joins that roster with a fresh id and name", async () => {

@@ -251,6 +251,50 @@ describe("roster CRUD", () => {
     expect(store.active_profile.char_name).toBe("Gamma");
   });
 
+  it("a roster is labelled by its name, else its position", () => {
+    expect(store.roster_label("0")).toBe("Roster 1");
+    store.rename_roster("1", "  Alts  ");
+    expect(store.roster_config.roster_names).toEqual({ 1: "Alts" });
+    expect(store.roster_label("1")).toBe("Alts");
+    store.rename_roster("1", "   ");
+    expect(store.roster_config.roster_names).toEqual({});
+    expect(store.roster_label("1")).toBe("Roster 2");
+  });
+
+  it("moving a roster moves its characters as one block and keeps the active one", () => {
+    store.add_roster();
+    const third = store.roster_ids[2];
+    store.switch_profile(0);
+    store.move_roster(2, 0);
+    expect(store.roster_ids).toEqual([third, "0", "1"]);
+    expect(names()).toEqual(["Newchar", "Alpha", "Beta", "Gamma"]);
+    expect(store.active_profile.char_name).toBe("Alpha");
+    store.move_roster(1, 2);
+    expect(store.roster_ids).toEqual([third, "1", "0"]);
+    expect(names()).toEqual(["Newchar", "Gamma", "Alpha", "Beta"]);
+    expect(store.active_profile.char_name).toBe("Alpha");
+  });
+
+  it("moving a roster out of range or onto itself does nothing", () => {
+    store.move_roster(0, 5);
+    store.move_roster(1, 1);
+    expect(store.roster_ids).toEqual(["0", "1"]);
+    expect(names()).toEqual(["Alpha", "Beta", "Gamma"]);
+  });
+
+  it("a positional label follows the roster's new place, a name stays", () => {
+    store.rename_roster("0", "Main");
+    store.move_roster(0, 1);
+    expect(store.roster_label("1")).toBe("Roster 1");
+    expect(store.roster_label("0")).toBe("Main");
+  });
+
+  it("deleting a roster's last character drops its name", () => {
+    store.rename_roster("1", "Alts");
+    store.delete_profile(2);
+    expect(store.roster_config.roster_names).toEqual({});
+  });
+
   it("moving keeps the active character", () => {
     store.switch_profile(0);
     store.move_profile(0, 1);

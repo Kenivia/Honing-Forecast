@@ -73,7 +73,7 @@ const linked_rosters = computed(() =>
           v-for="(roster_id, roster_index) in roster_ids"
           class="card-shell flex h-fit flex-col pb-2"
           role="group"
-          :aria-label="`Roster ${roster_index + 1}`"
+          :aria-label="roster_store.roster_label(roster_id)"
           :key="roster_id"
         >
           <div
@@ -82,7 +82,32 @@ const linked_rosters = computed(() =>
             "
             class="card-header"
           >
-            <span class="card-title"> Roster {{ roster_index + 1 }}</span>
+            <button
+              v-if="roster_index > 0"
+              class="arrow-btn arrow-btn-left"
+              aria-label="Move roster left"
+              @click="roster_store.move_roster(roster_index, roster_index - 1)"
+            />
+            <input
+              class="generic-input card-title h-8 w-44 px-2"
+              aria-label="Roster name"
+              :placeholder="`Roster ${roster_index + 1}`"
+              :value="roster_config.roster_names[roster_id] ?? ''"
+              @change="
+                (event) =>
+                  roster_store.rename_roster(
+                    roster_id,
+                    (event.target as HTMLInputElement).value,
+                  )
+              "
+              @keydown.enter="(event) => (event.target as HTMLElement).blur()"
+            />
+            <button
+              v-if="roster_index < roster_ids.length - 1"
+              class="arrow-btn arrow-btn-right"
+              aria-label="Move roster right"
+              @click="roster_store.move_roster(roster_index, roster_index + 1)"
+            />
             <span
               v-if="linked_rosters[roster_index]"
               class="text-sm text-(--uwuowo)"
@@ -308,5 +333,15 @@ const linked_rosters = computed(() =>
 .arrow-btn-up::after {
   transform: rotate(-135deg);
   margin-top: 2px;
+}
+
+.arrow-btn-left::after {
+  transform: rotate(135deg);
+  margin-left: 2px;
+}
+
+.arrow-btn-right::after {
+  transform: rotate(-45deg);
+  margin-right: 2px;
 }
 </style>
