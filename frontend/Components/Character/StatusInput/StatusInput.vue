@@ -19,8 +19,7 @@ import {
 } from "./StatusInputUtil.js";
 
 const roster_store = useRosterStore();
-const { active_profile, all_profiles, active_region } =
-  storeToRefs(roster_store);
+const { active_profile, active_region } = storeToRefs(roster_store);
 
 function scroll_to_bands() {
   bands_editing.value = true;
@@ -74,14 +73,9 @@ function scroll_to_bands() {
     </div>
     <div class="card-shell w-fit max-w-full p-2">
       <Uwuowo
-        :name="active_profile.char_name"
-        :profile_index="
-          all_profiles.findIndex((profile) => profile.id === active_profile.id)
-        "
-        :name_change="(new_name) => (active_profile.char_name = new_name)"
+        :profile="active_profile"
         :region_change="roster_store.active_region_change"
         :region="active_region"
-        :profile_id="active_profile.id"
         :apply="
           (result, force_t4, _name, class_name) =>
             apply_results(active_profile, result, force_t4, false, class_name)

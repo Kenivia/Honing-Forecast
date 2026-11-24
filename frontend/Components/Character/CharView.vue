@@ -59,7 +59,10 @@ onUnmounted(() => {
 });
 </script>
 <template>
-  <Sidebar :width="is_calc ? 1255 : 1201" :header="active_profile.char_name">
+  <Sidebar
+    :width="is_calc ? 1255 : 1201"
+    :header="roster_store.char_label(active_profile)"
+  >
     <template #top>
       <nav
         aria-label="Characters"
@@ -76,7 +79,7 @@ onUnmounted(() => {
           :class="{ selected: profile.id === active_profile.id }"
         >
           <ClassIcon :class_name="profile.class_name" />
-          {{ profile.char_name }}
+          {{ roster_store.char_label(profile) }}
         </RouterLink>
         <button class="nav-tab" @click="add_char">
           <svg

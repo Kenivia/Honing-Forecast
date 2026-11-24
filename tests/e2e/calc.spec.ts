@@ -501,7 +501,7 @@ test("the chance column select picks which owned column shows, per character", a
   // a second character of the roster sees the roster-bound stock
   const name: string = await hf.store_eval(page, (s: any) => {
     const profile = s.add_char(s.active_profile.roster_id);
-    return profile.char_name;
+    return s.char_label(profile);
   });
   await hf.reload(page);
   await hf.open(page, `/chars/NA/${encodeURIComponent(name)}/calc`);

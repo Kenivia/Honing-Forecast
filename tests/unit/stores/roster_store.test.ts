@@ -170,7 +170,7 @@ describe("new_char_profile", () => {
 });
 
 describe("roster CRUD", () => {
-  const names = () => store.all_profiles.map((p) => p.char_name);
+  const names = () => store.all_profiles.map((p) => store.char_label(p));
 
   it("deleting a character keeps the active one by id", () => {
     store.delete_profile(0);
@@ -232,10 +232,14 @@ describe("roster CRUD", () => {
     expect(store.roster_ids).toEqual(["0", "1"]);
   });
 
-  it("add_char names it uniquely and returns the stored profile", () => {
+  it("add_char leaves it unnamed, labelled uniquely, and returns the stored profile", () => {
     const a = store.add_char("1");
     const b = store.add_char("1");
-    expect([a.char_name, b.char_name]).toEqual(["Newchar", "Newchar1"]);
+    expect([a.char_name, b.char_name]).toEqual(["", ""]);
+    expect([store.char_label(a), store.char_label(b)]).toEqual([
+      "Newchar",
+      "Newchar1",
+    ]);
     a.char_name = "Delta";
     expect(names().at(-2)).toBe("Delta");
   });
@@ -244,11 +248,28 @@ describe("roster CRUD", () => {
     store.duplicate_profile(0);
     const [alpha, , copy] = store.all_profiles;
     expect(copy.id).not.toBe(alpha.id);
-    expect(copy.char_name).toBe("Newchar");
+    expect(copy.char_name).toBe("");
     expect(copy.chests).toEqual(alpha.chests);
     expect(copy.chests).not.toBe(alpha.chests);
     expect(copy.bound_income).toEqual(alpha.bound_income);
     expect(store.active_profile.char_name).toBe("Gamma");
+  });
+
+  it("a character is labelled and routed by its name, else its default", () => {
+    const added = store.add_char("1");
+    expect(store.char_params(added)).toEqual({
+      region: "EU",
+      characterName: "Newchar",
+    });
+    expect(store.profile_index_by_route("EU", "Newchar")).toBe(3);
+    store.rename_char(added.id, " dElTa! ");
+    expect(added.char_name).toBe("Delta");
+    expect(store.char_label(added)).toBe("Delta");
+    store.rename_char(added.id, "Gamma");
+    expect(added.char_name).toBe("Gamma1");
+    store.rename_char(added.id, "  ");
+    expect(added.char_name).toBe("");
+    expect(store.char_default_label(added)).toBe("Newchar");
   });
 
   it("a roster is labelled by its name, else its position", () => {

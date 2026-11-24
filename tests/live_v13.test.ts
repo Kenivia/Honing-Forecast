@@ -1,6 +1,6 @@
 // Runs the V13 -> current migration on the real V13 export in tests/v13 config.json (plain JSON,
-// as the site's export writes it): it only adds roster_names (V14), imports and loads with
-// nothing from a fallback, and survives load, save, load again.
+// as the site's export writes it): it adds roster_names and unnames default Newchar names (V14),
+// imports and loads with nothing from a fallback, and survives load, save, load again.
 import fs from "node:fs";
 import { check, differences, done, section } from "./helpers";
 import LZString from "lz-string";
@@ -34,6 +34,21 @@ check(
   added.every((p) => p === ".roster_names") &&
     JSON.stringify(migrated.roster_names) === "{}",
   show(added),
+);
+
+// default names become unnamed; anything else is kept
+const planted = structuredClone(v13);
+planted.profiles[0].char_name = "Newchar";
+planted.profiles[1].char_name = "Newchar12";
+planted.profiles[2].char_name = "Newcharlie";
+const unnamed = migrate_to_current(planted, 13).profiles.map(
+  (p: any) => p.char_name,
+);
+check(
+  "Newchar names become unnamed, only those",
+  JSON.stringify(unnamed.slice(0, 4)) ===
+    JSON.stringify(["", "", "Newcharlie", v13.profiles[3].char_name]),
+  show(unnamed.slice(0, 4)),
 );
 
 // an old save's choice_seed is dropped on load

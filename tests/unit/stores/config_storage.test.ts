@@ -93,7 +93,7 @@ describe("load: keys", () => {
     const raw = localStorage.getItem(STORAGE_KEY);
     const loaded = load_roster_config();
     expect(loaded.profiles).toHaveLength(1);
-    expect(loaded.profiles[0].char_name).toBe("Newchar");
+    expect(loaded.profiles[0].char_name).toBe("");
     write_state({ roster_config: loaded });
     expect(localStorage.getItem(`${STORAGE_KEY}_BROKEN`)).toBe(raw);
   });
@@ -290,7 +290,7 @@ describe("an unreadable save", () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBe("garbage");
     discard_broken({ roster_config: loaded });
     expect(localStorage.getItem(STORAGE_KEY)).not.toBe("garbage");
-    expect(load_roster_config().profiles[0].char_name).toBe("Newchar");
+    expect(load_roster_config().profiles[0].char_name).toBe("");
   });
 
   it("the download is a backup with its version, or the raw string", () => {

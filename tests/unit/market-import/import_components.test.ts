@@ -264,39 +264,56 @@ describe("late results", () => {
 });
 
 describe("Uwuowo", () => {
-  it("a name change is formatted, passed up and triggers a fetch", async () => {
-    const fn = serve({ "/NA/Beta/": char_t4 });
-    const name_change = vi.fn();
-    const w = mount(
-      Uwuowo,
-      opts(pinia_with(["Beta"]), {
-        name: "Beta",
-        profile_index: 0,
-        name_change,
-        region: "nae",
-        hide_region: true,
-      }),
-    );
+  const mount_uwuowo = (name: string, region = "nae") => {
+    const pinia = pinia_with([name]);
+    const profile = useRosterStore().roster_config.profiles[0];
+    return {
+      profile,
+      w: mount(Uwuowo, opts(pinia, { profile, region, hide_region: true })),
+    };
+  };
+  const fetch_button = (w: any) =>
+    w.findAll("button").find((b: any) => b.text() !== "Ok");
+
+  it("a name change is snapped, stored and triggers a fetch", async () => {
+    const fn = serve({ "/NA/Newname/": char_t4 });
+    const { w, profile } = mount_uwuowo("Beta");
     await w.find("input").setValue("  new name!");
-    expect(name_change).toHaveBeenCalledWith("Newname");
+    expect(profile.char_name).toBe("Newname");
     await flushPromises();
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
   it("does not fetch on a name change in the custom region", async () => {
     const fn = serve({});
-    const w = mount(
-      Uwuowo,
-      opts(pinia_with(["Beta"]), {
-        name: "Beta",
-        profile_index: 0,
-        name_change: vi.fn(),
-        region: "Custom",
-        hide_region: true,
-      }),
-    );
+    const { w } = mount_uwuowo("Beta", "Custom");
     await w.find("input").setValue("Other");
     await flushPromises();
     expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("an invalid name is red and blocks the fetch", async () => {
+    const fn = serve({});
+    const { w } = mount_uwuowo("Beta");
+    await w.find("input").setValue("Bob2");
+    await flushPromises();
+    expect(fn).not.toHaveBeenCalled();
+    expect(w.find("input").classes()).toContain("text-(--warning)");
+    expect(fetch_button(w).text()).toBe("Invalid name");
+    expect(fetch_button(w).attributes("disabled")).toBeDefined();
+  });
+
+  it("an empty name shows its default and asks for a name, not in red", async () => {
+    const fn = serve({});
+    const { w, profile } = mount_uwuowo("Beta");
+    await w.find("input").setValue("  ");
+    await flushPromises();
+    expect(profile.char_name).toBe("");
+    expect(fn).not.toHaveBeenCalled();
+    expect((w.find("input").element as HTMLInputElement).value).toBe("");
+    expect(w.find("input").attributes("placeholder")).toBe("Newchar");
+    expect(w.find("input").classes()).not.toContain("text-(--warning)");
+    expect(fetch_button(w).text()).toBe("Enter a name");
+    expect(fetch_button(w).attributes("disabled")).toBeDefined();
   });
 });

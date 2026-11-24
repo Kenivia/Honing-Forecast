@@ -16,14 +16,7 @@ const { props_of } = vi.hoisted(() => ({
   }),
 }));
 vi.mock("@/Components/Common/Uwuowo/Uwuowo.vue", () => ({
-  default: props_of("Uwuowo", [
-    "profile_index",
-    "name",
-    "name_change",
-    "hide_region",
-    "region",
-    "apply",
-  ]),
+  default: props_of("Uwuowo", ["profile", "hide_region", "region", "apply"]),
 }));
 vi.mock("@/Components/Common/Uwuowo/FetchRosterButton.vue", () => ({
   default: props_of("FetchRosterButton", ["region", "any_char_name", "apply"]),
@@ -47,7 +40,9 @@ const button = (w, text: string) =>
   w.findAll("button").filter((b) => b.text() === text);
 const rows = (w) => w.findAll(".char-row");
 const row_names = (w) =>
-  w.findAllComponents({ name: "Uwuowo" }).map((u) => u.props("name"));
+  w
+    .findAllComponents({ name: "Uwuowo" })
+    .map((u) => u.props("profile").char_name);
 
 beforeEach(() => {
   stub_match_media(false);
@@ -85,6 +80,8 @@ describe("RosterView", () => {
     );
     await box().setValue(" ");
     expect(store.roster_config.roster_names).toEqual({});
+    await nextTick();
+    expect((box().element as HTMLInputElement).value).toBe("");
   });
 
   it("roster arrows move the roster, none past either end", async () => {
@@ -113,7 +110,8 @@ describe("RosterView", () => {
       .find("button.w-full")
       .trigger("click");
     const added = store.all_profiles.at(-1);
-    expect(added.char_name).toBe("Newchar1");
+    expect(added.char_name).toBe("");
+    expect(store.char_label(added)).toBe("Newchar1");
     expect(added.roster_id).toBe("1");
     expect(new Set(store.all_profiles.map((p) => p.id)).size).toBe(3);
   });
@@ -143,7 +141,7 @@ describe("RosterView", () => {
     store.all_profiles[1].tier = 1;
     await button(wrapper, "Make a copy")[1].trigger("click");
     const [, carol, copy] = store.all_profiles;
-    expect(copy.char_name).toBe("Newchar");
+    expect(copy.char_name).toBe("");
     expect(copy.roster_id).toBe("1");
     expect(copy.tier).toBe(1);
     expect(copy.id).not.toBe(carol.id);
@@ -229,16 +227,15 @@ describe("RosterView", () => {
     expect(store.active_profile.char_name).toBe("Alice");
   });
 
-  it("renames and imports go to the right profile", async () => {
+  it("imports go to the right profile", async () => {
     const { wrapper, store } = await mount_roster([
       ["Alice", 0],
       ["Carol", 1],
       ["Bob", 0],
     ]);
     const uwu = wrapper.findAllComponents({ name: "Uwuowo" });
-    uwu[1].props("name_change")("Robert");
-    expect(names()).toEqual(["Alice", "Carol", "Robert"]);
-    uwu[1].props("apply")(["result"], true, "Robert", "Bard");
+    expect(uwu[1].props("profile")).toStrictEqual(store.all_profiles[2]);
+    uwu[1].props("apply")(["result"], true, "Bob", "Bard");
     expect(vi.mocked(apply_results).mock.calls[0]).toEqual([
       store.all_profiles[2],
       ["result"],
@@ -268,6 +265,20 @@ describe("RosterView", () => {
       true,
       "Bard",
     );
+  });
+
+  it("a roster import looks the roster up by its first valid name", async () => {
+    const { wrapper } = await mount_roster([
+      ["", 0],
+      ["Bob1", 0],
+      ["Carol", 0],
+      ["", 1],
+    ]);
+    const fetchers = wrapper.findAllComponents({ name: "FetchRosterButton" });
+    expect(fetchers.map((f) => f.props("any_char_name"))).toEqual([
+      "Carol",
+      "",
+    ]);
   });
 
   it("a region change sets the roster's region and fetches it", async () => {

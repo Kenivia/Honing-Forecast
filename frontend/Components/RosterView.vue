@@ -14,8 +14,9 @@ import { market_to_uwuowo_region } from "./Common/Uwuowo/UwuowoUtils";
 import { computed } from "vue";
 import { linked_now, signed_in } from "@/Utils/BibleAuth";
 import { sync_rosters, syncing } from "@/Utils/BibleSync";
-import { format_char_name } from "@/Utils/Helpers";
+import { char_name_valid } from "@/Utils/Helpers";
 import BackupButtons from "./Common/BackupButtons.vue";
+import NameInput from "./Common/NameInput.vue";
 
 const roster_store = useRosterStore();
 const { roster_config, roster_ids } = storeToRefs(roster_store);
@@ -27,6 +28,15 @@ const filtered_rosters_lists = computed(() =>
         return { profile: x, profile_index: index };
       })
       .filter((y) => y.profile.roster_id === roster_id),
+  ),
+);
+
+// "Fetch remaining" looks the roster up by its first lookup-able name
+const any_char_names = computed(() =>
+  filtered_rosters_lists.value.map(
+    (list) =>
+      list.find(({ profile }) => char_name_valid(profile.char_name))?.profile
+        .char_name ?? list[0].profile.char_name,
   ),
 );
 
@@ -88,19 +98,12 @@ const linked_rosters = computed(() =>
               aria-label="Move roster left"
               @click="roster_store.move_roster(roster_index, roster_index - 1)"
             />
-            <input
-              class="generic-input card-title h-8 w-44 px-2"
-              aria-label="Roster name"
-              :placeholder="`Roster ${roster_index + 1}`"
-              :value="roster_config.roster_names[roster_id] ?? ''"
-              @change="
-                (event) =>
-                  roster_store.rename_roster(
-                    roster_id,
-                    (event.target as HTMLInputElement).value,
-                  )
-              "
-              @keydown.enter="(event) => (event.target as HTMLElement).blur()"
+            <NameInput
+              :name="roster_config.roster_names[roster_id] ?? ''"
+              :placeholder="roster_store.roster_default_label(roster_id)"
+              label="Roster name"
+              class="card-title h-8 w-44 px-2"
+              @rename="(typed) => roster_store.rename_roster(roster_id, typed)"
             />
             <button
               v-if="roster_index < roster_ids.length - 1"
@@ -136,17 +139,8 @@ const linked_rosters = computed(() =>
             >
               <div class="max-w- flex w-min flex-row flex-wrap justify-around">
                 <Uwuowo
-                  :profile_index="profile_pair.profile_index"
-                  :name="profile_pair.profile.char_name"
-                  :name_change="
-                    (new_name) => {
-                      roster_config.profiles[
-                        profile_pair.profile_index
-                      ].char_name = new_name;
-                    }
-                  "
+                  :profile="profile_pair.profile"
                   :hide_region="true"
-                  :profile_id="profile_pair.profile.id"
                   :region="
                     roster_config.all_regions[profile_pair.profile.roster_id]
                   "
@@ -165,7 +159,7 @@ const linked_rosters = computed(() =>
                 <div class="grid w-full grid-cols-[max-content_1fr]">
                   <button
                     class="arrow-btn arrow-btn-up"
-                    :aria-label="`Move ${profile_pair.profile.char_name} up`"
+                    :aria-label="`Move ${roster_store.char_label(profile_pair.profile)} up`"
                     v-if="index_in_filtered > 0"
                     @click="
                       () => {
@@ -188,7 +182,7 @@ const linked_rosters = computed(() =>
 
                   <button
                     class="arrow-btn arrow-btn-down"
-                    :aria-label="`Move ${profile_pair.profile.char_name} down`"
+                    :aria-label="`Move ${roster_store.char_label(profile_pair.profile)} down`"
                     v-if="
                       index_in_filtered <
                       filtered_rosters_lists[roster_index].length - 1
@@ -220,13 +214,13 @@ const linked_rosters = computed(() =>
                     params: roster_store.char_params(profile_pair.profile),
                   }"
                   class="generic-button"
-                  :aria-label="`Go to character ${profile_pair.profile.char_name}`"
+                  :aria-label="`Go to character ${roster_store.char_label(profile_pair.profile)}`"
                 >
                   Go to character
                 </RouterLink>
                 <button
                   class="generic-button"
-                  :aria-label="`Make a copy of ${profile_pair.profile.char_name}`"
+                  :aria-label="`Make a copy of ${roster_store.char_label(profile_pair.profile)}`"
                   @click="
                     roster_store.duplicate_profile(profile_pair.profile_index)
                   "
@@ -236,7 +230,7 @@ const linked_rosters = computed(() =>
                 <button
                   v-if="roster_config.profiles.length > 1"
                   class="generic-button btn-cancel"
-                  :aria-label="`Delete ${profile_pair.profile.char_name}`"
+                  :aria-label="`Delete ${roster_store.char_label(profile_pair.profile)}`"
                   @click="
                     roster_store.delete_profile(profile_pair.profile_index)
                   "
@@ -251,18 +245,11 @@ const linked_rosters = computed(() =>
               :region="
                 market_to_uwuowo_region(roster_config.all_regions[roster_id])
               "
-              :any_char_name="
-                filtered_rosters_lists[roster_index][0].profile.char_name
-              "
+              :any_char_name="any_char_names[roster_index]"
               :apply="
                 (result, force_t4, char_name, class_name) => {
                   const added = roster_store.add_char(roster_id);
-                  added.char_name = format_char_name(
-                    char_name,
-                    roster_store.all_profiles.findIndex(
-                      (p) => p.id === added.id,
-                    ),
-                  );
+                  roster_store.rename_char(added.id, char_name);
                   apply_results(added, result, force_t4, true, class_name);
                 }
               "

@@ -14,6 +14,7 @@ import { useTimeAgo } from "@vueuse/core";
 import { find_linked, signed_in } from "@/Utils/BibleAuth";
 import { refresh_char, refresh_errors, refreshing } from "@/Utils/BibleSync";
 import { useRosterStore } from "@/Stores/RosterConfig";
+import { name_problem } from "@/Utils/Helpers";
 
 const props = defineProps<{
   region: UwuowoRegions;
@@ -30,10 +31,13 @@ const profile = computed(() =>
   ),
 );
 const time_ago = useTimeAgo(() => profile.value?.fetched_at ?? 0);
+const problem = computed(() => name_problem(props.char_name));
+const blocked = computed(() => props.region === null || !!problem.value);
 
 watch(
   () => props.counter,
   async () => {
+    if (problem.value) return;
     if (
       props.profile_id &&
       signed_in.value &&
@@ -55,7 +59,7 @@ const show_popup = ref(false);
 
 async function click() {
   const { region, char_name } = props;
-  if (region === null) return;
+  if (blocked.value) return;
   show_popup.value = true;
   const char_result = await fetch_char(region, char_name);
   // dropped if the name or region changed meanwhile
@@ -101,13 +105,14 @@ async function click() {
     v-else
     @click="click"
     class="generic-button w-full text-wrap!"
-    :disabled="region === null"
+    :class="{ 'text-(--warning)!': problem === 'Invalid name' }"
+    :disabled="blocked"
     :style="{
-      opacity: region === null ? 0.5 : 1,
-      cursor: region === null ? 'not-allowed' : 'pointer',
+      opacity: blocked ? 0.5 : 1,
+      cursor: blocked ? 'not-allowed' : 'pointer',
     }"
   >
-    Fetch from lostark.bible
+    {{ problem ?? "Fetch from lostark.bible" }}
   </button>
   <Popup :show_popup="show_popup" @close_popup="show_popup = false">
     <span> {{ char_parsed.status }}</span>

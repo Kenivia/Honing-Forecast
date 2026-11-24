@@ -611,9 +611,11 @@ function migrate_12_to_13(data: any): any {
   return data;
 }
 
-// Rosters can be named.
+// Rosters can be named; default character names become unnamed.
 function migrate_13_to_14(data: any): any {
   data.roster_names ??= {};
+  for (const p of data.profiles ?? [])
+    if (/^Newchar\d*$/.test(p.char_name)) p.char_name = "";
   data.version = 14;
   return data;
 }

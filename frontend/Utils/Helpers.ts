@@ -70,8 +70,8 @@ export function has_upgrades_in_range(
   }
   return false;
 }
-// Names are unique per region (routes are /chars/<region>/<name>). `roster_id` is the named
-// character's roster, needed when it is not in `profiles` yet.
+// Snaps a typed name to a url-safe one, unique per region (routes are /chars/<region>/<name>).
+// "" is unnamed. `roster_id` is the named character's roster, needed when it is not in `profiles` yet.
 export function format_char_name(
   raw: string,
   char_index: number,
@@ -88,18 +88,14 @@ export function format_char_name(
     regions ??
     (roster === undefined ? {} : useRosterStore().roster_config.all_regions);
 
-  let original = raw.replace(/ /g, ""); //
-  // 2. Remove non-alphanumeric (keep underscores)
-  original = original.replace(/[^\p{L}\p{N}_]/gu, "");
-  // 3. Lowercase every letter after the first
-  original = original
-    .replace(/(?<=.)[A-Z]/g, (c) => c.toLowerCase())
-    .slice(0, 16);
-
-  const new_string =
-    String(original).charAt(0).toUpperCase() + String(original).slice(1) ||
-    "Newchar";
-  // 4. If already taken by another profile, append index
+  // letters, accents, digits and _ only; every letter after the first lowercase
+  const kept = raw
+    .normalize("NFC")
+    .replace(/[^\p{L}\p{M}\p{N}_]/gu, "")
+    .replace(/(?<=.)[A-Z]/g, (c) => c.toLowerCase());
+  const new_string = kept.charAt(0).toUpperCase() + kept.slice(1);
+  if (!new_string) return "";
+  // taken by another character of the region: append a number
   const otherNames = all_profiles
     .filter(
       (p, i) =>
@@ -114,6 +110,36 @@ export function format_char_name(
     dup_count += 1;
   }
   return result;
+}
+
+// what Lost Ark allows: 2 to 16 latin letters, accented or not
+export const char_name_valid = (name: string) =>
+  /^[\p{Script=Latin}\p{M}]{2,16}$/u.test(name.normalize("NFC"));
+// what uploads carry: "" (the Worker's "no name") unless lostark.bible could find it
+export const upload_name = (name: string) =>
+  char_name_valid(name) ? name : "";
+// why a name cannot be looked up on lostark.bible, or null
+export const name_problem = (name: string): string | null =>
+  name === "" ? "Enter a name" : char_name_valid(name) ? null : "Invalid name";
+
+// unnamed characters show as Newchar, Newchar1, ... per region, skipping names in use there
+export function default_char_labels(
+  profiles: CharProfile[],
+  regions: Record<string, string>,
+): Record<string, string> {
+  const taken: Record<string, Set<string>> = {};
+  for (const p of profiles)
+    (taken[regions[p.roster_id]] ??= new Set()).add(p.char_name);
+  const out: Record<string, string> = {};
+  for (const p of profiles) {
+    if (p.char_name) continue;
+    const used = taken[regions[p.roster_id]];
+    let label = "Newchar";
+    for (let n = 1; used.has(label); n++) label = `Newchar${n}`;
+    used.add(label);
+    out[p.id] = label;
+  }
+  return out;
 }
 
 const is_done = (value: UpgradeStatus) =>

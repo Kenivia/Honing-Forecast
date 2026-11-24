@@ -14,6 +14,7 @@ import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import ConfirmPanel from "./ConfirmPanel.vue";
 import { norm_name } from "@/Utils/BibleAuth";
+import { name_problem } from "@/Utils/Helpers";
 
 const props = defineProps<{
   region: UwuowoRegions;
@@ -21,7 +22,12 @@ const props = defineProps<{
   apply?: ApplyFetch;
 }>();
 
-const { all_profiles, roster_ids } = storeToRefs(useRosterStore());
+const roster_store = useRosterStore();
+const { all_profiles } = storeToRefs(roster_store);
+const problem = computed(() => name_problem(props.any_char_name));
+const blocked = computed(() => props.region === null || !!problem.value);
+const roster_of = (char: string) =>
+  all_profiles.value.find((p) => p.char_name === char)?.roster_id ?? "";
 
 const roster_parsed = ref(structuredClone(DEFAULT_UWUOWO_BUNDLE));
 
@@ -38,6 +44,7 @@ async function click() {
   // dropped if the name or region changed meanwhile
   const stale = () =>
     props.region !== region || props.any_char_name !== any_char_name;
+  if (blocked.value) return;
   show_popup.value = true;
   const roster_result = await fetch_roster(region, any_char_name);
   if (stale()) return;
@@ -78,16 +85,7 @@ const empty_parsed = computed(
 const spread_multiple = computed(
   () =>
     empty_parsed.value &&
-    new Set(
-      roster_parsed.value.result.map(
-        (char) =>
-          roster_ids.value.findIndex(
-            (x) =>
-              x ===
-              all_profiles.value.find((p) => p.char_name === char)?.roster_id,
-          ) + 1,
-      ),
-    ).size > 1,
+    new Set(roster_parsed.value.result.map(roster_of)).size > 1,
 );
 </script>
 
@@ -95,21 +93,22 @@ const spread_multiple = computed(
   <button
     @click="click"
     class="generic-button w-full text-wrap!"
-    :disabled="region === null"
+    :class="{ 'text-(--warning)!': problem === 'Invalid name' }"
+    :disabled="blocked"
     :style="{
-      opacity: region === null ? 0.5 : 1,
-      cursor: region === null ? 'not-allowed' : 'pointer',
+      opacity: blocked ? 0.5 : 1,
+      cursor: blocked ? 'not-allowed' : 'pointer',
     }"
   >
-    Fetch remaining characters
+    {{ problem ?? "Fetch remaining characters" }}
   </button>
   <Popup :show_popup="show_popup" @close_popup="show_popup = false">
     <span> {{ roster_parsed.status }}</span>
     <div v-if="empty_parsed" class="flex flex-col">
       <span class="pb-4"
         >All characters in
-        <span class="text-lg font-bold">{{ any_char_name }}</span
-        >'s roster are already
+        <span class="text-lg font-bold">{{ any_char_name }}</span>'s roster are
+        already
         {{ spread_multiple ? "somewhere in Honing Forecast." : "here." }}
       </span>
       <span v-if="spread_multiple"
@@ -117,15 +116,7 @@ const spread_multiple = computed(
       </span>
       <div v-if="spread_multiple" class="grid grid-cols-3 gap-2">
         <div v-for="char in roster_parsed.result" :key="char">
-          <span
-            >(Roster
-            {{
-              roster_ids.findIndex(
-                (x) =>
-                  x ===
-                  all_profiles.find((p) => p.char_name === char)?.roster_id,
-              ) + 1
-            }}) </span
+          <span>({{ roster_store.roster_label(roster_of(char)) }}) </span
           >{{ char }}
         </div>
       </div>

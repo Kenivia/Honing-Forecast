@@ -227,13 +227,13 @@ export async function with_store<T, A = undefined>(
   }
 }
 
-// character names per roster, in roster order
+// character labels (the name, or Newchar... when unnamed) per roster, in roster order
 export const roster_names = (page: Page) =>
   with_store(page, (s) =>
     s.roster_ids.map((id: string) =>
       s.roster_config.profiles
         .filter((p: any) => p.roster_id === id)
-        .map((p: any) => p.char_name),
+        .map((p: any) => s.char_label(p)),
     ),
   );
 export const roster_regions = (page: Page) =>
@@ -246,7 +246,8 @@ export const profile = (page: Page, name: string) =>
     (s, n: string) =>
       JSON.parse(
         JSON.stringify(
-          s.roster_config.profiles.find((p: any) => p.char_name === n) ?? null,
+          s.roster_config.profiles.find((p: any) => s.char_label(p) === n) ??
+            null,
         ),
       ),
     name,
@@ -264,7 +265,7 @@ export interface SeedRoster {
   names: string[];
   fetched?: boolean; // mark as imported before (auto-refresh and linked rosters)
 }
-// replaces the config's characters with these rosters (first roster reuses the default character)
+// replaces the config's characters with these rosters (first roster reuses the default character); "" is unnamed
 export const seed = (page: Page, rosters: SeedRoster[]) =>
   with_store(
     page,

@@ -147,7 +147,7 @@ test("fresh install: the untouched Newchar is replaced", async ({ page }) => {
 });
 
 test("a touched Newchar survives the first sync", async ({ page }) => {
-  await setup(page, [{ names: ["Newchar"] }], [na("Alpha", "Beta")]);
+  await setup(page, [{ names: [""] }], [na("Alpha", "Beta")]);
   await hf.open(page, "/chars/NA/Newchar/calc");
   await hf.toggle_column(page, "normal", 15);
   await hf.set_material(page, "Red", "Bound owned", 777);
@@ -172,7 +172,7 @@ test("a touched Newchar survives the first sync", async ({ page }) => {
 });
 
 test("a chest on Newchar also keeps it", async ({ page }) => {
-  await setup(page, [{ names: ["Newchar"] }], [na("Alpha")]);
+  await setup(page, [{ names: [""] }], [na("Alpha")]);
   await bh.with_store(page, (s) =>
     s.roster_config.profiles[0].chests.push({ key: "k" }),
   );
@@ -498,7 +498,7 @@ test("auto-refresh runs once per launch, not per route", async ({ page }) => {
   expect(bible.hits("/api/oauth/rosters")).toHaveLength(1);
   for (const link of ["Market & Mats", "Roster setup", "Info"])
     await page.getByRole("link", { name: link }).first().click();
-  await page.getByRole("link", { name: "Character" }).click();
+  await page.getByRole("link", { name: "Roster 1" }).click();
   await page.waitForTimeout(500);
   expect(bible.hits("/api/oauth/loadouts/")).toHaveLength(1);
   expect(bible.hits("/api/oauth/rosters")).toHaveLength(1);

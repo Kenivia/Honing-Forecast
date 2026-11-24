@@ -2,6 +2,7 @@ import { chest_gains, process_chests } from "@/Utils/Chest";
 import { char_chests, MAX_WEEKS } from "@/Utils/Income";
 import type { Snapshot, SnapshotResult } from "@/Utils/Scans";
 import type { CharProfile } from "@/Stores/CharacterProfile";
+import { upload_name } from "@/Utils/Helpers";
 import {
   snapshot_payload,
   states_payload,
@@ -64,7 +65,7 @@ export function job_for(
         return;
       }
       const entry = (snapshot.chars[profile.id] ??= {
-        name: profile.char_name,
+        name: upload_name(profile.char_name),
         bound: {},
         special: {},
         chests: [],
