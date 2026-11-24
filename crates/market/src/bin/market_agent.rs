@@ -88,8 +88,19 @@ fn status() -> Value {
         "setup": report::SETUP.load(Ordering::Relaxed),
         "version": build(),
         "gap": GAP.load(Ordering::Relaxed),
-        "next": NEXT.load(Ordering::Relaxed),
+        "next": next_round(),
     }})
+}
+
+/// The next round's start (unix s): while scanning, the next slot after now (a round running past it moves it
+/// on); 0 when idle or with no gap.
+fn next_round() -> i64 {
+    let g = GAP.load(Ordering::Relaxed) * 60;
+    match state() {
+        "waiting" => NEXT.load(Ordering::Relaxed),
+        "scanning" if g > 0 => (chrono::Utc::now().timestamp() / g + 1) * g,
+        _ => 0,
+    }
 }
 
 fn png(img: &image::RgbaImage) -> Vec<u8> {
