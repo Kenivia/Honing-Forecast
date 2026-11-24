@@ -198,11 +198,17 @@ fn update(scanning: bool) -> String {
     std::process::exit(0);
 }
 
+/// A program in Windows' System32 by full path: a bare name would be looked for beside this exe first.
+fn system32(exe: &str) -> std::process::Command {
+    let root = std::env::var("SystemRoot").unwrap_or("C:\\Windows".into());
+    std::process::Command::new(format!("{root}\\System32\\{exe}"))
+}
+
 fn launch() -> String {
     if game::running() {
         return "the game is already running".into();
     }
-    std::process::Command::new("cmd")
+    system32("cmd.exe")
         .args(["/C", "start", "", STEAM_APP])
         .spawn()
         .unwrap();
@@ -210,8 +216,12 @@ fn launch() -> String {
     "launching the game through Steam".into()
 }
 
+/// How old a signed command may be (its counter is the signer's unix ms).
+const CMD_MAX_AGE_MS: u64 = 10 * 60 * 1000;
+
 /// The command to run: status, start and pause as sent (Discord), anything else only when signed by the
-/// publisher's key for this machine with a counter above the last one taken (no replays).
+/// publisher's key for this machine with a counter above the last one taken (no replays) and under
+/// CMD_MAX_AGE_MS old (a signed command never delivered does not stay valid).
 fn authentic(msg: &Value) -> Result<Value, String> {
     if sign::UNSIGNED.contains(&msg["op"].as_str().unwrap_or("")) {
         return Ok(msg.clone());
@@ -225,6 +235,10 @@ fn authentic(msg: &Value) -> Result<Value, String> {
     }
     let cmd: Value = serde_json::from_str(body).unwrap();
     let n = cmd["n"].as_u64().unwrap();
+    let now = chrono::Utc::now().timestamp_millis() as u64;
+    if n + CMD_MAX_AGE_MS < now {
+        return Err(format!("refused: signed {} s ago", (now - n) / 1000));
+    }
     let file = assets::data().join("cmd_counter");
     let last: u64 = std::fs::read_to_string(&file)
         .ok()
@@ -243,7 +257,7 @@ fn exec(script: &str) -> String {
         "$ProgressPreference = 'SilentlyContinue'\ntry {{ & {{\n{script}\n}} *>&1 | Out-String -Stream -Width 250 }} catch {{ $_ | Out-String -Width 250; exit 1 }}\nexit $LASTEXITCODE"
     );
     let utf16: Vec<u8> = wrapped.encode_utf16().flat_map(u16::to_le_bytes).collect();
-    let out = std::process::Command::new("powershell")
+    let out = system32("WindowsPowerShell\\v1.0\\powershell.exe")
         .args(["-NoProfile", "-NonInteractive", "-EncodedCommand"])
         .arg(base64::engine::general_purpose::STANDARD.encode(utf16))
         .stdin(std::process::Stdio::null())
@@ -322,7 +336,8 @@ fn command(msg: &Value) -> Value {
         "exec" => {
             let id = msg["id"].clone();
             let script = cmd["script"].as_str().unwrap_or("").to_string();
-            log(&format!("exec: {script}"));
+            // not the script: the last log line reaches the relay and Discord (/status)
+            log("exec: a command was executed");
             // off the relay thread, which must keep pinging
             std::thread::spawn(move || {
                 let text =
@@ -476,7 +491,7 @@ fn wait_secs(s: u64) {
 fn recover(current: &mut Option<&'static str>) {
     *current = None;
     log("recovering: closing the game");
-    let _ = std::process::Command::new("taskkill")
+    let _ = system32("taskkill.exe")
         .args(["/F", "/IM", "LOSTARK.exe"])
         .output();
     while game::running() {
