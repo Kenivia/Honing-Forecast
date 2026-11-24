@@ -171,8 +171,11 @@ export class Hub extends DurableObject {
     const { machine } = ws.deserializeAttachment();
     const msg = JSON.parse(data);
     if (msg.type === "reply") {
-      this.pending.get(msg.id)?.(msg);
+      // only from the machine the command went to
+      const p = this.pending.get(msg.id);
+      if (p?.machine !== machine) return;
       this.pending.delete(msg.id);
+      p.resolve(msg);
       return;
     }
     const rec = await this.record(machine);
@@ -246,7 +249,7 @@ export class Hub extends DurableObject {
     if (!ws) return { ok: false, text: `${machine} is not connected` };
     const id = this.next++;
     const reply = new Promise((resolve) => {
-      this.pending.set(id, resolve);
+      this.pending.set(id, { machine, resolve });
       setTimeout(() => {
         if (this.pending.delete(id)) {
           resolve({ ok: false, text: `no reply from ${machine} in ${timeout / 1000} s` });

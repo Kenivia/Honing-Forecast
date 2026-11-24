@@ -1,8 +1,9 @@
 // MCP server over stdio for driving and looking at the game while developing the scanner. Coordinates are 1080p
 // client pixels. Holding F10 aborts a local script. `--remote <machine>` drives that machine's market_agent
-// through the relay instead (ignored/market/relay_admin.json: {"url", "token"}).
+// through the relay instead (ignored/market/relay_admin.json: {"url", "token"}), signing every command but
+// status/start/pause with ignored/market/update_signing_key.pem.
 use base64::Engine;
-use hf_market::{assets, ctl, game::Game};
+use hf_market::{assets, ctl, game::Game, sign};
 use rmcp::{
     ServerHandler, ServiceExt,
     handler::server::{router::tool::ToolRouter, wrapper::Parameters},
@@ -34,13 +35,19 @@ struct Script {
 #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
 struct Control {
     #[schemars(
-        description = "status | start | pause | launch (the game through Steam) | log | setup (screenshot after every unit of work; with on) | sync (upload the profile's templates)"
+        description = "status | start | pause | launch (the game through Steam) | log | setup (screenshot after every unit of work; with on) | sync (upload the profile's templates) | update (take a newer published build, when idle)"
     )]
     op: String,
     #[schemars(description = "log: how many lines (default 30)")]
     lines: Option<u32>,
     #[schemars(description = "setup: on or off")]
     on: Option<bool>,
+}
+
+#[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
+struct Exec {
+    #[schemars(description = "PowerShell script, run in the agent's folder")]
+    script: String,
 }
 
 #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
@@ -72,6 +79,7 @@ fn auth(r: &Remote) -> String {
 }
 
 fn cmd(r: &Remote, body: Value) -> Value {
+    let body = sign::command(&r.machine, body);
     let reply = ureq::post(&format!("{}/cmd/{}", r.url, r.machine))
         .header("Authorization", &auth(r))
         .content_type("application/json")
@@ -153,6 +161,17 @@ impl Market {
             return "remote only (market_mcp --remote <machine>)".into();
         };
         let reply = cmd(r, json!({"op": c.op, "lines": c.lines, "on": c.on}));
+        reply["text"].as_str().unwrap_or("").to_string()
+    }
+
+    #[tool(
+        description = "Remote only: run a PowerShell script on the machine (signed with this PC's key); exit code and every stream merged as text. Replies within 120 s or not at all (start longer work with Start-Process). A bare `exit` loses buffered output; use throw"
+    )]
+    fn exec(&self, Parameters(e): Parameters<Exec>) -> String {
+        let Some(r) = remote() else {
+            return "remote only (market_mcp --remote <machine>)".into();
+        };
+        let reply = cmd(r, json!({"op": "exec", "script": e.script}));
         reply["text"].as_str().unwrap_or("").to_string()
     }
 

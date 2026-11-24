@@ -65,3 +65,4 @@ playwright-report/
 # relay Worker secrets and local state
 cloudflare/relay/.dev.vars
 cloudflare/relay/.wrangler/
+.wrangler/

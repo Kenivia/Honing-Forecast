@@ -6,13 +6,14 @@
 // A round that breaks or reads nothing (lost connection, game closed or updated) closes the game, waits for the
 // network, relaunches it and goes on; three in a row and it stops. It replaces itself with the relay's newest
 // build at the start and at every round, restarting in the same console (--resume: scanning without asking);
-// only a newer build signed by the publisher's key (update_key.hex) is taken.
+// only a newer build signed by the publisher's key (update_key.hex) is taken. Commands other than status, start
+// and pause must be signed by that key too (sign.rs); `exec` runs a PowerShell script.
 // market_agent [--dev] [--setup] [--quick] [--strips] [--only materials,gems,exchange] [--regions NAE,EUC]
 use base64::Engine;
 use hf_market::{
     assets, ctl, db,
     game::{self, Game, Stopped, check_abort, ms, panic_text, quiet_stops},
-    region, report, run,
+    region, report, run, sign,
     ui::{self, log, looks},
     upload,
 };
@@ -128,32 +129,12 @@ fn tail_log(n: usize) -> String {
 
 fn sha_hex(b: &[u8]) -> String {
     use sha2::Digest;
-    sha2::Sha256::digest(b)
-        .iter()
-        .map(|x| format!("{x:02x}"))
-        .collect()
+    sign::hex(&sha2::Sha256::digest(b))
 }
 
 /// This build's number (unix seconds, set by cloudflare/relay/publish.mjs); 0 for a local build.
 fn build() -> u64 {
     option_env!("MARKET_BUILD").map_or(0, |s| s.parse().unwrap())
-}
-
-fn unhex(s: &str) -> Vec<u8> {
-    (0..s.len() / 2)
-        .map(|i| u8::from_str_radix(&s[2 * i..2 * i + 2], 16).unwrap_or(0))
-        .collect()
-}
-
-/// Whether the publisher's key (private key only on the publishing PC) signed this build and hash.
-fn signed(build: u64, sha: &str, sig: &str) -> bool {
-    let key = unhex(include_str!("../../update_key.hex").trim());
-    ring::signature::UnparsedPublicKey::new(&ring::signature::ED25519, key)
-        .verify(
-            format!("hf-market-agent:{build}:{sha}").as_bytes(),
-            &unhex(sig),
-        )
-        .is_ok()
 }
 
 fn get(path: &str) -> Option<Vec<u8>> {
@@ -186,7 +167,7 @@ fn update(scanning: bool) -> String {
     if n <= build() {
         return format!("up to date ({})", build());
     }
-    if !signed(n, want, sig) {
+    if !sign::verify(&format!("hf-market-agent:{n}:{want}"), sig) {
         let text = format!("refused build {n}: bad signature");
         report::event("error", &text, None);
         return text;
@@ -229,8 +210,60 @@ fn launch() -> String {
     "launching the game through Steam".into()
 }
 
-/// A command from the relay; its reply.
-fn command(cmd: &Value) -> Value {
+/// The command to run: status, start and pause as sent (Discord), anything else only when signed by the
+/// publisher's key for this machine with a counter above the last one taken (no replays).
+fn authentic(msg: &Value) -> Result<Value, String> {
+    if sign::UNSIGNED.contains(&msg["op"].as_str().unwrap_or("")) {
+        return Ok(msg.clone());
+    }
+    let (Some(body), Some(sig)) = (msg["signed"].as_str(), msg["sig"].as_str()) else {
+        return Err("refused: unsigned".into());
+    };
+    if !sign::verify(&format!("hf-market-cmd:{}:{body}", relay().machine), sig) {
+        report::event("error", "refused a command: bad signature", None);
+        return Err("refused: bad signature".into());
+    }
+    let cmd: Value = serde_json::from_str(body).unwrap();
+    let n = cmd["n"].as_u64().unwrap();
+    let file = assets::data().join("cmd_counter");
+    let last: u64 = std::fs::read_to_string(&file)
+        .ok()
+        .and_then(|s| s.trim().parse().ok())
+        .unwrap_or(0);
+    if n <= last {
+        return Err(format!("refused: counter {n} not above {last}"));
+    }
+    std::fs::write(&file, n.to_string()).unwrap();
+    Ok(cmd)
+}
+
+/// Runs a PowerShell script; its exit code and output as text, every stream merged (the last 200 KB).
+fn exec(script: &str) -> String {
+    let wrapped = format!(
+        "$ProgressPreference = 'SilentlyContinue'\ntry {{ & {{\n{script}\n}} *>&1 | Out-String -Stream -Width 250 }} catch {{ $_ | Out-String -Width 250; exit 1 }}\nexit $LASTEXITCODE"
+    );
+    let utf16: Vec<u8> = wrapped.encode_utf16().flat_map(u16::to_le_bytes).collect();
+    let out = std::process::Command::new("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-EncodedCommand"])
+        .arg(base64::engine::general_purpose::STANDARD.encode(utf16))
+        .stdin(std::process::Stdio::null())
+        .output()
+        .unwrap();
+    let text =
+        String::from_utf8_lossy(&out.stdout).to_string() + &String::from_utf8_lossy(&out.stderr);
+    let mut cut = text.len().saturating_sub(200_000);
+    while !text.is_char_boundary(cut) {
+        cut += 1;
+    }
+    format!("exit {}\n{}", out.status.code().unwrap_or(-1), &text[cut..])
+}
+
+/// A command from the relay; its reply, or Null when it replies later itself.
+fn command(msg: &Value) -> Value {
+    let cmd = match authentic(msg) {
+        Ok(c) => c,
+        Err(t) => return json!({"ok": false, "text": t}),
+    };
     let op = cmd["op"].as_str().unwrap_or("");
     let idle = state() == "idle";
     let text = |t: String| json!({"ok": true, "text": t});
@@ -285,6 +318,18 @@ fn command(cmd: &Value) -> Value {
                 sync_profile();
             }
             text(if out.is_empty() { "ok".into() } else { out })
+        }
+        "exec" => {
+            let id = msg["id"].clone();
+            let script = cmd["script"].as_str().unwrap_or("").to_string();
+            log(&format!("exec: {script}"));
+            // off the relay thread, which must keep pinging
+            std::thread::spawn(move || {
+                let text =
+                    catch_unwind(|| exec(&script)).unwrap_or_else(|e| panic_text(e.as_ref()));
+                send(json!({"type": "reply", "id": id, "ok": true, "text": text}));
+            });
+            Value::Null
         }
         _ => json!({"ok": false, "text": format!("unknown op {op}")}),
     }
@@ -355,6 +400,9 @@ fn relay_thread(out: mpsc::Receiver<String>) {
                     let cmd: Value = serde_json::from_str(&t).unwrap();
                     let mut reply = catch_unwind(|| command(&cmd))
                         .unwrap_or_else(|e| json!({"ok": false, "text": panic_text(e.as_ref())}));
+                    if reply.is_null() {
+                        continue;
+                    }
                     reply["type"] = "reply".into();
                     reply["id"] = cmd["id"].clone();
                     if ws.send(Message::text(reply.to_string())).is_err() {

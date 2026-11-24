@@ -15,6 +15,7 @@ pub mod region;
 pub mod report;
 pub mod run;
 pub mod shot;
+pub mod sign;
 pub mod strips;
 pub mod ui;
 pub mod upload;

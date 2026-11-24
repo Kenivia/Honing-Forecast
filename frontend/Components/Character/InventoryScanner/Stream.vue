@@ -578,7 +578,7 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
         </span>
       </div>
       <button
-        class="flex w-fit items-center gap-1 text-sm text-(--text-bright) enabled:hover:text-(--text-bright)"
+        class="flex w-fit items-center gap-1 text-(--text-bright) enabled:hover:text-(--text-bright)"
         :aria-expanded="details"
         :disabled="pinned_open"
         :title="
@@ -588,9 +588,7 @@ watch(scan_wipes, () => (source.stream || replay) && start_scanner());
         "
         @click="details_open = !details_open"
       >
-        <span class="text-[1.1rem] font-semibold">{{
-          details ? "▾" : "▸"
-        }}</span>
+        <span class="font-semibold">{{ details ? "▾" : "▸" }}</span>
         Troubleshooting
       </button>
       <div
