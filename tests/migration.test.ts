@@ -442,7 +442,7 @@ localStorage.clear();
 const fresh = load_roster_config();
 check(
   "one default profile",
-  fresh.profiles.length === 1 && fresh.profiles[0].char_name === "Newchar",
+  fresh.profiles.length === 1 && fresh.profiles[0].char_name === "",
 );
 check(
   "fallback prices applied",

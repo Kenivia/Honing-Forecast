@@ -122,6 +122,22 @@ describe("to_saved / from_saved: V8-only fields", () => {
   });
 });
 
+describe("roster names", () => {
+  it("round trip through the save", () => {
+    const config = rich_config();
+    config.roster_names = { 1: "Alts" };
+    expect(reload(to_saved(config)).roster_names).toEqual({ 1: "Alts" });
+  });
+
+  it("a save without them, or with a name for a gone roster, loads unnamed", () => {
+    const saved: any = to_saved(rich_config());
+    delete saved.roster_names;
+    expect(reload(saved).roster_names).toEqual({});
+    saved.roster_names = { 0: "Main", gone: "Old", 1: 5 };
+    expect(reload(saved).roster_names).toEqual({ 0: "Main" });
+  });
+});
+
 describe("from_saved: repairs", () => {
   it("a profile on a roster with no materials moves to the first roster", () => {
     const saved: any = to_saved(rich_config());

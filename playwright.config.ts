@@ -6,8 +6,6 @@ export default defineConfig({
   fullyParallel: true,
   // more workers than this overload the dev server and tests time out; each worker is a browser, so memory-bound
   workers: 4,
-  // the domain move is done; domain_move.spec.ts now runs only against staging (playwright.staging.config.ts)
-  testIgnore: "domain_move.spec.ts",
   use: {
     baseURL: "http://localhost:5173",
     trace: "retain-on-failure",

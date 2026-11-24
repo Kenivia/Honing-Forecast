@@ -66,7 +66,8 @@ function addresses(win: (typeof WINDOWS)[number]): SlotAddress[] {
   return out;
 }
 
-const { all_profiles } = storeToRefs(useRosterStore());
+const roster_store = useRosterStore();
+const { all_profiles } = storeToRefs(roster_store);
 
 // pages not open in game during this capture, taken from the last export, by `page_key`
 const saved = computed(() =>
@@ -84,9 +85,8 @@ const shown_page = (type: string) => page_key(type, page[type]);
 // who exported the page shown in a window last, and when
 function last_export(type: string) {
   const last = saved.value[shown_page(type)];
-  const name =
-    all_profiles.value.find((profile) => profile.id === last.by)?.char_name ??
-    "a deleted character";
+  const by = all_profiles.value.find((profile) => profile.id === last.by);
+  const name = by ? roster_store.char_label(by) : "a deleted character";
   return `${name}, ${new Date(last.at).toLocaleString()}`;
 }
 

@@ -45,9 +45,9 @@ onKeyStroke("Escape", () => (pending_switch.value = null));
     >
       <span class="font-semibold">Switch to {{ pending_switch.name }}?</span>
       <span class="text-sm text-(--text-muted)">
-        The scan on {{ store.active_profile.char_name }} has changes that were
-        not exported. If it was meant for {{ pending_switch.name }}, move it
-        there and carry on.
+        The scan on {{ store.char_label(store.active_profile) }} has changes
+        that were not exported. If it was meant for {{ pending_switch.name }},
+        move it there and carry on.
       </span>
       <span
         v-if="!pending_switch.same_roster"

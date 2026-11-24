@@ -1,5 +1,5 @@
-// The domain move (index.html sender, migrate/index.html receiver, RosterConfig init), with localhost:5174 as
-// the old site and 127.0.0.1:5174 as the new one (playwright.config.ts).
+// The domain move (index.html sender, migrate/index.html receiver, RosterConfig init), on the dev server:
+// [::1]:5173 is the old site and localhost:5173 the new one (.env.development).
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import fs from "node:fs";
@@ -8,10 +8,13 @@ import LZString from "lz-string";
 import * as hf from "./helpers.ts";
 
 // playwright.staging.config.ts points these at the deployed staging pair
-const OLD = process.env.HF_MOVE_OLD ?? "http://localhost:5174";
-const NEW = process.env.HF_MOVE_NEW ?? "http://127.0.0.1:5174";
-const MODE = process.env.HF_MOVE_OLD ? "staging" : "development";
-const SAVE_KEY = "HF_CONFIG_V13_COMPRESSED";
+const OLD = process.env.HF_MOVE_OLD ?? "http://[::1]:5173";
+const NEW = process.env.HF_MOVE_NEW ?? "http://localhost:5173";
+const MODE = NEW.startsWith("https:") ? "staging" : "development";
+// the current key and version, so a version bump needs no change here
+const STORAGE = fs.readFileSync("frontend/Stores/ConfigStorage.ts", "utf8");
+const SAVE_KEY = STORAGE.match(/STORAGE_KEY = "(.+)"/)[1];
+const VERSION = Number(STORAGE.match(/STORAGE_VERSION = (\d+)/)[1]);
 const BACKUP = fs.readFileSync(
   new URL("../honing-forecast-2026-10-17.json", import.meta.url),
   "utf8",
@@ -152,6 +155,35 @@ test("the new site's own save stays; the old one can be used instead", async ({
     .poll(outcomes)
     .toEqual(["conflict", "chose_download", "chose_old"]);
 });
+
+// a visitor who last used the old site long ago: their save, under its own version's key,
+// arrives on the new site and is migrated to the current version there
+for (const [fixture, version] of [
+  ["V7 config", 7],
+  ["v8 config", 8],
+  ["V10 config", 10],
+  ["V11 config", 11],
+  ["v12 config.json", 12],
+  ["v13 config.json", 13],
+] as const) {
+  test(`a real V${version} save moves and is migrated`, async ({ page }) => {
+    const raw = fs.readFileSync(`tests/${fixture}`, "utf8");
+    const json = raw.startsWith("{") ? raw : LZString.decompressFromUTF16(raw);
+    const profiles = JSON.parse(json).profiles.length;
+    const old_key = `HF_CONFIG_V${version}_COMPRESSED`;
+    await storage(page, OLD, { [old_key]: LZString.compressToUTF16(json) });
+    await arrive(page, "/roster-setup");
+    await expect(
+      page.getByRole("link", { name: "Go to character Toneema" }),
+    ).toBeVisible();
+    await expect.poll(outcomes).toEqual(["moved"]);
+    const moved = await storage(page, NEW); // leaving the app saves it
+    expect(moved[old_key]).toBeUndefined();
+    const saved = JSON.parse(LZString.decompressFromUTF16(moved[SAVE_KEY]));
+    expect(saved.version).toBe(VERSION);
+    expect(saved.profiles).toHaveLength(profiles);
+  });
+}
 
 test("a large save moves in several chunks", async ({ page }) => {
   // incompressible, so ~3 chunks of 500k

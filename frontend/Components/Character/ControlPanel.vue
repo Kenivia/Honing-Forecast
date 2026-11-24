@@ -54,7 +54,9 @@ function resetActive() {
     </div>
     <Popup :show_popup="confirming" @close_popup="confirming = false">
       <div class="flex flex-col gap-4">
-        <span class="text-2xl">Reset {{ active_profile.char_name }}?</span>
+        <span class="text-2xl"
+          >Reset {{ store.char_label(active_profile) }}?</span
+        >
         <span class="text-(--text-main)"
           >Delete all upgrades and materials of this character
         </span>

@@ -17,7 +17,7 @@ import {
 import { defineStore } from "pinia";
 import { toRaw } from "vue";
 import { CharProfile, new_char_profile } from "./CharacterProfile";
-import { format_char_name } from "@/Utils/Helpers";
+import { default_char_labels, format_char_name } from "@/Utils/Helpers";
 
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
 
@@ -54,6 +54,8 @@ export interface RosterConfig {
   custom_choices: Record<string, CustomChoice>;
 
   all_regions: Record<string, MarketRegions>;
+  // names given by the user; a roster without one is "Roster N"
+  roster_names: Record<string, string>;
 
   cumulative_graph: boolean;
 
@@ -89,7 +91,7 @@ export function fresh_profile_id(config: RosterConfig): string | null {
   const fresh =
     config.profiles.length === 1 &&
     p.fetched_at === 0 &&
-    p.char_name.startsWith("Newchar") &&
+    p.char_name === "" &&
     (
       [
         "normal_grid",
@@ -136,6 +138,7 @@ export function default_roster_config(): RosterConfig {
     roster_income: {},
     custom_choices: {},
     all_regions: { [roster_id]: "nae" },
+    roster_names: {},
     cumulative_graph: false,
     selected_bundles: {
       nae: default_selected_bundles(),
@@ -219,31 +222,57 @@ export const useRosterStore = defineStore("roster", {
     },
 
     all_profiles: (state): CharProfile[] => state.roster_config.profiles,
-    // -1 when no character has that name; the first of any region (old /chars/<name> links)
-    profile_index_by_name:
-      (state) =>
-      (name: string): number =>
-        state.roster_config.profiles.findIndex((p) => p.char_name === name),
-    // names are unique per region only, so a character's route carries both
-    char_params:
-      (state) =>
-      (p: CharProfile): { region: string; characterName: string } => ({
-        region: REGION_SLUGS[state.roster_config.all_regions[p.roster_id]],
-        characterName: p.char_name,
-      }),
-    profile_index_by_route:
-      (state) =>
-      (region: string, name: string): number =>
-        state.roster_config.profiles.findIndex(
+    // profile id -> generated label, for unnamed characters only
+    default_char_labels: (state): Record<string, string> =>
+      default_char_labels(
+        state.roster_config.profiles,
+        state.roster_config.all_regions,
+      ),
+    // a name is shown as typed, an empty one as its default (also what a char is routed by)
+    char_default_label() {
+      return (p: CharProfile): string =>
+        this.default_char_labels[p.id] ?? "Newchar";
+    },
+    char_label() {
+      return (p: CharProfile): string =>
+        p.char_name || this.char_default_label(p);
+    },
+    // -1 when no character has that label; the first of any region (old /chars/<name> links)
+    profile_index_by_name() {
+      return (name: string): number =>
+        this.roster_config.profiles.findIndex(
+          (p) => this.char_label(p) === name,
+        );
+    },
+    // labels are unique per region only, so a character's route carries both
+    char_params() {
+      return (p: CharProfile): { region: string; characterName: string } => ({
+        region: REGION_SLUGS[this.roster_config.all_regions[p.roster_id]],
+        characterName: this.char_label(p),
+      });
+    },
+    profile_index_by_route() {
+      return (region: string, name: string): number =>
+        this.roster_config.profiles.findIndex(
           (p) =>
-            p.char_name === name &&
-            REGION_SLUGS[state.roster_config.all_regions[p.roster_id]] ===
+            this.char_label(p) === name &&
+            REGION_SLUGS[this.roster_config.all_regions[p.roster_id]] ===
               region,
-        ),
+        );
+    },
     // in order of first appearance; add_profile keeps a roster's characters together
     roster_ids: (state): string[] => [
       ...new Set(state.roster_config.profiles.map((x) => x.roster_id)),
     ],
+    roster_default_label() {
+      return (roster_id: string): string =>
+        `Roster ${this.roster_ids.indexOf(roster_id) + 1}`;
+    },
+    roster_label() {
+      return (roster_id: string): string =>
+        this.roster_config.roster_names[roster_id] ||
+        this.roster_default_label(roster_id);
+    },
 
     active_selected_bundles(state): Record<string, number> {
       return state.roster_config.selected_bundles[this.active_region];
@@ -307,16 +336,7 @@ export const useRosterStore = defineStore("roster", {
     // returns the store's (reactive) copy
     add_char(roster_id: string): CharProfile {
       const profiles = this.roster_config.profiles;
-      const profile = {
-        ...new_char_profile(),
-        roster_id,
-        char_name: format_char_name(
-          "Newchar",
-          profiles.length,
-          profiles,
-          roster_id,
-        ),
-      };
+      const profile = { ...new_char_profile(), roster_id };
       this.add_profile(profile);
       return profiles.find((p) => p.id === profile.id);
     },
@@ -336,18 +356,37 @@ export const useRosterStore = defineStore("roster", {
       this.add_profile({
         ...structuredClone(toRaw(profiles[index])),
         id: crypto.randomUUID(),
-        char_name: format_char_name(
-          "Newchar",
-          profiles.length,
-          profiles,
-          profiles[index].roster_id,
-        ),
+        char_name: "",
       });
     },
     move_profile(i: number, j: number) {
       const profiles = this.roster_config.profiles;
       const id = this.active_profile.id;
       [profiles[i], profiles[j]] = [profiles[j], profiles[i]];
+      this.point_active_at(id);
+    },
+    // renames take what was typed; a blank one goes back to the default label
+    rename_char(id: string, name: string) {
+      const profiles = this.roster_config.profiles;
+      const index = profiles.findIndex((p) => p.id === id);
+      profiles[index].char_name = format_char_name(name, index, profiles);
+    },
+    rename_roster(roster_id: string, name: string) {
+      const trimmed = name.trim();
+      if (trimmed) this.roster_config.roster_names[roster_id] = trimmed;
+      else delete this.roster_config.roster_names[roster_id];
+    },
+    // moves the roster at position `from` to position `to`, its characters in one block
+    move_roster(from: number, to: number) {
+      const ids = [...this.roster_ids];
+      if (from === to || !ids[from] || !ids[to]) return;
+      const id = this.active_profile.id;
+      const [moved] = ids.splice(from, 1);
+      ids.splice(to, 0, moved);
+      const profiles = this.roster_config.profiles;
+      this.roster_config.profiles = ids.flatMap((r) =>
+        profiles.filter((p) => p.roster_id === r),
+      );
       this.point_active_at(id);
     },
     // Deleting the active character moves to the one before it. A roster's last character
@@ -373,6 +412,7 @@ export const useRosterStore = defineStore("roster", {
       delete config.roster_mats_owned[roster_id];
       delete config.tradable_mats_owned[roster_id];
       delete config.all_regions[roster_id];
+      delete config.roster_names[roster_id];
       delete config.roster_chests[roster_id];
       delete config.roster_income[roster_id];
       delete config.custom_choices[roster_id];

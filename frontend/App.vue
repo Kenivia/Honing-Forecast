@@ -162,7 +162,7 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
 
         <div class="header-spacer" />
         <RouterLink
-          v-for="(roster_id, i) in roster_ids"
+          v-for="roster_id in roster_ids"
           :key="roster_id"
           :to="{
             name: 'char',
@@ -171,7 +171,7 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
           class="nav-tab"
           :class="{ selected: routed_profile?.roster_id === roster_id }"
         >
-          {{ roster_ids.length === 1 ? "Character" : `Roster ${i + 1}` }}
+          {{ roster_store.roster_label(roster_id) }}
         </RouterLink>
         <div
           v-if="signed_in"

@@ -89,7 +89,7 @@ export const DEFAULT_CHAR_PROFILE: CharProfile = {
   bands_manual: false,
   chance_band: 0,
   express_event: false,
-  char_name: "Newchar",
+  char_name: "", // unnamed: shown as Newchar... (default_char_labels)
 
   auto_start_optimizer: true,
 

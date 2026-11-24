@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { close_sync_popup, sync_pending } from "@/Utils/BibleSync";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { storeToRefs } from "pinia";
 import Popup from "../Popup.vue";
 
-const { roster_ids } = storeToRefs(useRosterStore());
+const roster_store = useRosterStore();
 </script>
 
 <template>
@@ -19,9 +18,9 @@ const { roster_ids } = storeToRefs(useRosterStore());
         >These names were not found on lostark.bible.</span
       > -->
       <div v-for="entry in sync_pending" :key="entry.roster_id">
-        <span class="font-bold"
-          >Roster {{ roster_ids.indexOf(entry.roster_id) + 1 }}</span
-        >
+        <span class="font-bold">{{
+          roster_store.roster_label(entry.roster_id)
+        }}</span>
         <div class="grid grid-cols-[max-content_1fr] items-center gap-2">
           <template v-for="local in entry.locals" :key="local.id">
             <span>{{ local.name }}</span>

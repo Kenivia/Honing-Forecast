@@ -11,7 +11,7 @@ Read `Overview.md` first. This covers the character calc page plus the market an
 | `/roster-setup` | Characters and rosters. |
 | `/info/guide`, `/info/change-logs` | Static content. |
 
-A fresh profile has one character, `Newchar`, at ilevel 1640 with nothing selected and zero gold.
+A fresh profile has one unnamed character, shown and routed as `Newchar`, at ilevel 1640 with nothing selected and zero gold.
 
 ## How things are named
 
@@ -103,9 +103,9 @@ Each test checks the effect (store, page, gold relation) and that it survives a 
 
 - `calc.spec.ts`: forbid on a merged chest stack (injected chests with equal options merge, titles joined `A / B`; forbidden ones list under their own titles), chest editor, advice split, tier conversion and revert, Succeed / slider deduction with auto-deduct on and off, manual artisan / chance, free taps, advanced details, owned tickbox, chance column across two characters, leftover bands, show all mats, Reset this char, optimizer panel (auto start checked by `runtime.optimizer.run_counter`, not the progress text, which flickers while the histogram redraws), long lists, Advanced and vambrace headers.
 - `roster.spec.ts`: add / rename / reorder / copy / delete, regions (a name in two regions, an old region-less link opened cold), accented names, scrape Fetch and Fetch remaining, per-roster mats on the market page.
-- `bible.spec.ts` (mocked): sign-in flow and callback errors, sync (fresh vs touched `Newchar`, accent matching, pairing popup, second sync, NA + CE, Custom skipped, the same name in NA and CE), locks, refresh and its scrape fallback, 401 / expiry, sign-out, auto-refresh once per launch.
+- `bible.spec.ts` (mocked): sign-in flow and callback errors, sync (fresh vs touched unnamed character, accent matching, pairing popup, second sync, NA + CE, Custom skipped, the same name in NA and CE), locks, refresh and its scrape fallback, 401 / expiry, sign-out, auto-refresh once per launch.
 - `bible_live.spec.ts`: against the real API; skipped unless `.env.local` has `BIBLE_TOKEN` (sign in on localhost, then `JSON.parse(localStorage.bible_auth).token`). Revoke is stubbed so it never kills the token.
-- `domain_move.spec.ts`: the pages.dev to .com hand-off. Left out of `pnpm test:e2e` (`testIgnore`) since the move is done; it runs only through `pnpm test:e2e:staging`. See `Frontend/Domain move.md`.
+- `domain_move.spec.ts`: the pages.dev to .com hand-off, including real saves of every version arriving migrated; runs in `pnpm test:e2e` and against staging. See `Frontend/Domain move.md`.
 
 Quirks: Firefox needs 120 s test timeouts. It errors the workers of a page left mid-run (no message); `WorkerBundle.ts` stays quiet once `beforeunload`/`pagehide` fired, and `hf.open` / `hf.reload` wait for idle runs anyway (`settle`). Click, then wait for its effect before the next click in a list that re-lays out (Allow / Forbid). Chromium logs a stubbed 4xx/5xx as a console error (`ignore_http` in bible_helpers). Typing a char name while signed out opens the scrape popup; close it on the overlay. More than ~3 workers make Firefox page loads time out.
 

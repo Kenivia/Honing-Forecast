@@ -111,11 +111,11 @@ const selected_region = computed(
           aria-label="Active roster"
         >
           <option
-            v-for="(roster_id, roster_index) in roster_ids"
+            v-for="roster_id in roster_ids"
             :value="roster_id"
             :key="roster_id"
           >
-            Roster {{ roster_index + 1 }}
+            {{ roster_store.roster_label(roster_id) }}
           </option>
         </select>
       </div>

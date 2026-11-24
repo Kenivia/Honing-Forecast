@@ -3,6 +3,7 @@ import { InputColumn, input_column_to_num } from "./InputColumn";
 import { add_stack, type ManifestChest } from "./Chest";
 import type { StatusGrid } from "./KeyedUpgrades";
 import type { RosterConfig } from "@/Stores/RosterConfig";
+import { upload_name } from "./Helpers";
 
 // Scanned pages as last exported, and snapshots of the budgets.
 
@@ -237,7 +238,7 @@ export function snapshot_of(
       (label) => profile.bound_budgets.enabled[label] === false,
     );
     chars[profile.id] = {
-      name: profile.char_name,
+      name: upload_name(profile.char_name),
       bound: nonzero(profile.bound_budgets),
       special: nonzero(profile.special_budget),
       chests: copy(profile.chests),

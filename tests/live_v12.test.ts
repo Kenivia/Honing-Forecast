@@ -1,5 +1,5 @@
 // Runs the V12 -> current migrations on the real V12 export in tests/v12 config.json (plain JSON,
-// as the site's export writes it): it only adds hide_free_tap_hint (V13), imports and loads with
+// as the site's export writes it): it only adds hide_free_tap_hint (V13) and roster_names (V14), imports and loads with
 // nothing from a fallback, and survives load, save, load again.
 import fs from "node:fs";
 import { check, differences, done, section } from "./helpers";
@@ -30,9 +30,10 @@ check("is a V12 save", v12.version === 12);
 const migrated = migrate_to_current(structuredClone(v12), 12);
 const added = differences(migrated, v12).filter((p) => p !== ".version");
 check(
-  "adds only hide_free_tap_hint",
-  added.every((p) => p === ".hide_free_tap_hint") &&
-    migrated.hide_free_tap_hint === false,
+  "adds only hide_free_tap_hint and roster_names",
+  added.every((p) => p === ".hide_free_tap_hint" || p === ".roster_names") &&
+    migrated.hide_free_tap_hint === false &&
+    JSON.stringify(migrated.roster_names) === "{}",
   show(added),
 );
 

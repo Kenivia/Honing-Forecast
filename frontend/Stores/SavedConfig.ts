@@ -100,6 +100,7 @@ export interface SavedConfig {
   roster_income: Record<string, Record<string, number>[]>;
   custom_choices: Record<string, CustomChoice>;
   all_regions: Record<string, MarketRegions>;
+  roster_names: Record<string, string>;
   // material label -> chosen bundle size, only for materials sold in several sizes
   selected_bundles: Partial<Record<MarketRegions, Record<string, number>>>;
   latest_market_data: Partial<Record<MarketRegions, [number, any]>>;
@@ -377,6 +378,7 @@ export function to_saved(config: RosterConfig): Omit<SavedConfig, "version"> {
     roster_income: config.roster_income,
     custom_choices: config.custom_choices,
     all_regions: { ...config.all_regions },
+    roster_names: { ...config.roster_names },
     selected_bundles,
     latest_market_data: config.latest_market_data,
     cumulative_graph: config.cumulative_graph,
@@ -462,6 +464,12 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
   out.snapshots = Array.isArray(saved.snapshots) ? saved.snapshots : [];
   out.roster_income = saved.roster_income ?? {};
   out.custom_choices = saved.custom_choices ?? {};
+  // names of rosters that no longer exist are dropped
+  out.roster_names = Object.fromEntries(
+    Object.entries(saved.roster_names ?? {}).filter(
+      ([id, name]) => id in out.all_regions && typeof name === "string",
+    ),
+  );
   out.analytics = saved.analytics ?? out.analytics;
   out.show_suggestions = saved.show_suggestions ?? out.show_suggestions;
   out.hide_free_tap_hint = saved.hide_free_tap_hint ?? out.hide_free_tap_hint;

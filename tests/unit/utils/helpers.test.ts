@@ -9,8 +9,12 @@ import {
   clamp_percentage,
   clean_percentage_input,
   cssVar,
+  char_name_valid,
   debounce,
+  default_char_labels,
   format_char_name,
+  name_problem,
+  upload_name,
   get_icon_path,
   has_upgrades_in_range,
   locale_to_fixed,
@@ -105,15 +109,19 @@ describe("format_char_name", () => {
   it("strips, lowercases the rest, capitalises the first", () => {
     expect(format_char_name("my Char-NAME!", 0, profiles())).toBe("Mycharname");
     expect(format_char_name("éCLAIR", 0, profiles())).toBe("Éclair");
-    expect(format_char_name("a".repeat(20), 0, profiles())).toHaveLength(16);
+    // decomposed accents compose; digits and _ are url-safe so they stay (and are invalid)
+    expect(format_char_name("éclair", 0, profiles())).toBe("Éclair");
+    expect(format_char_name("bob_2", 0, profiles())).toBe("Bob_2");
+    // not cut: a long name is shown as invalid instead
+    expect(format_char_name("a".repeat(20), 0, profiles())).toHaveLength(20);
   });
 
-  it("dedups against the other profiles only", () => {
+  it("dedups against the other named profiles only; blank stays unnamed", () => {
     const all = profiles("Bob", "Bob1", "Alice");
     expect(format_char_name("bob", 2, all)).toBe("Bob2");
     expect(format_char_name("bob", 0, all)).toBe("Bob");
-    expect(format_char_name("!!", 0, profiles())).toBe("Newchar");
-    expect(format_char_name("", 1, profiles("Newchar", "X"))).toBe("Newchar1");
+    expect(format_char_name("!!", 0, profiles())).toBe("");
+    expect(format_char_name(" ", 1, profiles("", ""))).toBe("");
   });
 
   it("dedups within the character's region only", () => {
@@ -125,6 +133,41 @@ describe("format_char_name", () => {
     expect(format_char_name("bob", 1, all, undefined, regions)).toBe("Bob");
     expect(format_char_name("eve", 2, all, "eu2", regions)).toBe("Eve1");
     expect(format_char_name("eve", 2, all, "na", regions)).toBe("Eve");
+  });
+});
+
+describe("char names in the game and on the site", () => {
+  it("valid: 2 to 16 latin letters, accented or not", () => {
+    for (const ok of ["Ab", "Éclair", "Ñandú", "a".repeat(16), "éclair"])
+      expect(char_name_valid(ok), ok).toBe(true);
+    for (const bad of ["", "A", "a".repeat(17), "Bob1", "Bo_b", "Bo b", "Бob"])
+      expect(char_name_valid(bad), bad).toBe(false);
+  });
+
+  it("empty asks for a name, invalid says so, uploads only carry valid names", () => {
+    expect(name_problem("")).toBe("Enter a name");
+    expect(name_problem("Bob1")).toBe("Invalid name");
+    expect(name_problem("Bob")).toBeNull();
+    expect([upload_name("Bob"), upload_name("Bob1"), upload_name("")]).toEqual([
+      "Bob",
+      "",
+      "",
+    ]);
+  });
+
+  it("unnamed characters are Newchar, Newchar1, ... per region, skipping names in use", () => {
+    const all = [
+      { id: "a", char_name: "", roster_id: "na" },
+      { id: "b", char_name: "Newchar", roster_id: "na" },
+      { id: "c", char_name: "", roster_id: "na" },
+      { id: "d", char_name: "", roster_id: "eu" },
+      { id: "e", char_name: "Bob", roster_id: "eu" },
+    ] as any;
+    expect(default_char_labels(all, { na: "nae", eu: "euc" })).toEqual({
+      a: "Newchar1",
+      c: "Newchar2",
+      d: "Newchar",
+    });
   });
 });
 

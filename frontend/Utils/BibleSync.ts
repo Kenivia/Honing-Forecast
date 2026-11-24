@@ -3,7 +3,7 @@ import { reactive, ref } from "vue";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { CharProfile } from "@/Stores/CharacterProfile";
 import { fresh_profile_id } from "@/Stores/RosterConfig";
-import { format_char_name } from "./Helpers";
+import { char_name_valid } from "./Helpers";
 import { find_linked, linked_rosters, norm_name, signed_in } from "./BibleAuth";
 import {
   fetch_char,
@@ -28,7 +28,7 @@ export async function refresh_char(id: string) {
   if (!profile || refreshing.has(id)) return;
   const region = region_of(profile);
   const name = profile.char_name;
-  if (region === null) return;
+  if (region === null || !char_name_valid(name)) return;
   refreshing.add(id);
   delete refresh_errors[id];
   const result = await fetch_char(region, name);
@@ -58,7 +58,12 @@ export async function auto_refresh() {
     const region = region_of(p);
     // class_name: imported before fetched_at existed
     const fetched = p.fetched_at > 0 || p.class_name !== "";
-    if (fetched && region && (await find_linked(region, p.char_name)))
+    if (
+      fetched &&
+      region &&
+      char_name_valid(p.char_name) &&
+      (await find_linked(region, p.char_name))
+    )
       await refresh_char(p.id);
   }
 }
@@ -74,16 +79,6 @@ let resolve_popup: (ok: boolean) => void = () => {};
 export function close_sync_popup(ok: boolean) {
   sync_pending.value = [];
   resolve_popup(ok);
-}
-
-// a name typed locally may already hold the bible name in that region
-function unique_name(name: string, id: string) {
-  const profiles = useRosterStore().roster_config.profiles;
-  return format_char_name(
-    name,
-    profiles.findIndex((p) => p.id === id),
-    profiles,
-  );
 }
 
 const REGIONS: Record<string, MarketRegions> = { NA: "nae", CE: "euc" };
@@ -136,7 +131,7 @@ async function sync_inner() {
         unmatched.push(c.name);
         continue;
       }
-      local.char_name = unique_name(c.name, local.id);
+      store.rename_char(local.id, c.name);
       counts[local.roster_id] = (counts[local.roster_id] ?? 0) + 1;
     }
     const best = Object.keys(counts).sort((x, y) => counts[y] - counts[x])[0];
@@ -162,7 +157,7 @@ async function sync_inner() {
         roster_id: best,
         locals: locals.map((p) => ({
           id: p.id,
-          name: p.char_name,
+          name: store.char_label(p),
           choice: "",
         })),
         bibles: unmatched,
@@ -178,7 +173,7 @@ async function sync_inner() {
         for (const local of entry.locals) {
           const p = find_profile(local.id);
           if (!local.choice || !p) continue;
-          p.char_name = unique_name(local.choice, p.id);
+          store.rename_char(p.id, local.choice);
           matched.add(p.id);
         }
         const chosen = entry.locals.map((l) => l.choice);
@@ -197,7 +192,7 @@ async function sync_inner() {
         ? store.add_char(add.roster_id)
         : store.add_roster(add.region);
       add.roster_id = p.roster_id;
-      p.char_name = unique_name(name, p.id);
+      store.rename_char(p.id, name);
       to_refresh.push(p.id);
     }
   }

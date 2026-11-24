@@ -16,13 +16,14 @@ import { ilevel } from "@/Utils/HoningUtil";
 import { RosterConfig } from "./RosterConfig";
 import { from_saved, SavedColumn, SavedConfig, to_saved } from "./SavedConfig";
 
-export const STORAGE_VERSION = 13;
-export const STORAGE_KEY = "HF_CONFIG_V13_COMPRESSED";
+export const STORAGE_VERSION = 14;
+export const STORAGE_KEY = "HF_CONFIG_V14_COMPRESSED";
 
 // Older keys, newest first. On a version bump, move the current key to the top of
 // this list. `version` is only a fallback for pre-V8 saves, which carry no version
 // inside the payload.
 const LEGACY_KEYS: { key: string; version: number }[] = [
+  { key: "HF_CONFIG_V13_COMPRESSED", version: 13 },
   { key: "HF_CONFIG_V12_COMPRESSED", version: 12 },
   { key: "HF_CONFIG_V11_COMPRESSED", version: 11 },
   { key: "HF_CONFIG_V10_COMPRESSED", version: 10 },
@@ -49,6 +50,7 @@ const MIGRATIONS: Record<number, (data: any) => any> = {
   10: migrate_10_to_11,
   11: migrate_11_to_12,
   12: migrate_12_to_13,
+  13: migrate_13_to_14,
 };
 
 // ============================================================================
@@ -606,5 +608,14 @@ function migrate_11_to_12(data: any): any {
 function migrate_12_to_13(data: any): any {
   data.hide_free_tap_hint ??= false;
   data.version = 13;
+  return data;
+}
+
+// Rosters can be named; default character names become unnamed.
+function migrate_13_to_14(data: any): any {
+  data.roster_names ??= {};
+  for (const p of data.profiles ?? [])
+    if (/^Newchar\d*$/.test(p.char_name)) p.char_name = "";
+  data.version = 14;
   return data;
 }
