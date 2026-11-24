@@ -85,7 +85,7 @@ pub fn pass(g: &mut Game, conn: &Connection, region: &str, o: &Opts) -> usize {
 }
 
 /// Every region in turn, switching character when another one is logged in (`current`; None when unknown).
-/// How many things it read.
+/// How many things it read; panics when a switch fails every try.
 pub fn round(
     g: &mut Game,
     conn: &Connection,
@@ -99,9 +99,9 @@ pub fn round(
             *current = ui::unit(g, &format!("switch to {}", r.name), |g| {
                 region::switch(g, r).then_some(r.name)
             });
+            // the client is somewhere the switch does not know: the agent restarts the game
             if current.is_none() {
-                log(&format!("{} skipped this round", r.name));
-                continue;
+                panic!("switch to {} failed", r.name);
             }
         }
         n += pass(g, conn, r.name, o);

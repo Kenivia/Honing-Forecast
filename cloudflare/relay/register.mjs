@@ -1,4 +1,4 @@
-// Registers /start, /pause and /status on the server of the relay's channel (instant, unlike global commands).
+// Registers /start, /pause, /gap and /status on the server of the relay's channel (instant, unlike global commands).
 // node cloudflare/relay/register.mjs   (reads the bot token from .dev.vars, the ids from wrangler.toml)
 import { readFileSync } from "node:fs";
 
@@ -32,6 +32,14 @@ const commands = [
   ["pause", "Stop the pass; what it read so far is uploaded"],
   ["status", "What each machine is doing"],
 ].map(([name, description]) => ({ name, description, options: [machine] }));
+commands.push({
+  name: "gap",
+  description: "Minutes between round starts (at multiples of it, UTC; 0: back to back)",
+  options: [
+    { name: "minutes", description: "0 to 1440", type: 4, required: true, min_value: 0, max_value: 1440 },
+    machine,
+  ],
+});
 const r = await fetch(`${api}/applications/${app}/guilds/${channel.guild_id}/commands`, {
   method: "PUT",
   headers,

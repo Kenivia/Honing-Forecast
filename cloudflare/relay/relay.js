@@ -285,7 +285,7 @@ export class Hub extends DurableObject {
   }
 }
 
-// --- Discord: status posts through the bot, and the /start, /pause, /status commands
+// --- Discord: status posts through the bot, and the /start, /pause, /gap, /status commands
 
 // agent text goes to Discord as is: no pings from it
 const allowed_mentions = { parse: [] };
@@ -343,6 +343,8 @@ function describe(rec) {
   }
   return [
     `**${rec.machine}**: ${s.state ?? "?"}${s.game ? "" : " (game not running)"}`,
+    s.gap !== undefined &&
+      `gap: ${s.gap ? `${s.gap} min` : "none"}${s.next ? `, next round <t:${s.next}:R>` : ""}`,
     s.last_pass && `last pass: ${s.last_pass}`,
     s.log && `log (${ago(Date.parse(s.log_at))}): ${s.log}`,
   ]
@@ -377,7 +379,17 @@ async function discordInteraction(req, env) {
       `Which machine? Connected: ${live.map((r) => r.machine).join(", ") || "none"}`,
     );
   }
-  // Discord wants an answer within 3 s; start and pause only set a flag on the agent
-  const r = await h.cmd(machine, { op: name }, 2500);
+  // only these reach an agent from Discord (it takes nothing else unsigned anyway)
+  const cmd = { op: name };
+  if (name === "gap") {
+    cmd.minutes = i.data.options?.find((o) => o.name === "minutes")?.value;
+    if (!Number.isInteger(cmd.minutes) || cmd.minutes < 0 || cmd.minutes > 1440) {
+      return say("Minutes must be a whole number from 0 to 1440.");
+    }
+  } else if (name !== "start" && name !== "pause") {
+    return say("Unknown command.");
+  }
+  // Discord wants an answer within 3 s; these only set a value on the agent
+  const r = await h.cmd(machine, cmd, 2500);
   return say(`**${machine}**: ${r.text}`);
 }

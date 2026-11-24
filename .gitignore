@@ -12,6 +12,7 @@ profile.kernel.etl
 
 *.local
 *.tmp
+*.pem
 
 .tmp/
 crates/wasm/pkg/*

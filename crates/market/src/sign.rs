@@ -3,7 +3,7 @@
 use ring::signature::{ED25519, Ed25519KeyPair, KeyPair, UnparsedPublicKey};
 
 /// Ops the agent takes unsigned (all Discord can send); everything else must be signed.
-pub const UNSIGNED: [&str; 3] = ["status", "start", "pause"];
+pub const UNSIGNED: [&str; 4] = ["status", "start", "pause", "gap"];
 
 pub fn hex(b: &[u8]) -> String {
     b.iter().map(|x| format!("{x:02x}")).collect()

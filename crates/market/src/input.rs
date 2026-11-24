@@ -43,6 +43,18 @@ fn key(vk: u16, scan: u16, flags: u32) -> INPUT {
     i
 }
 
+/// Keeps the PC and its screen on (this thread's request, until changed), or hands both back to the power
+/// settings. A screen once off wakes only to the sign-in page, so it stays on between rounds too.
+pub fn awake(on: bool) {
+    use windows_sys::Win32::System::Power::*;
+    let flags = if on {
+        ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED
+    } else {
+        ES_CONTINUOUS
+    };
+    unsafe { SetThreadExecutionState(flags) };
+}
+
 fn jitter(base: u64) -> u64 {
     base + fastrand::u64(0..=base / 2)
 }

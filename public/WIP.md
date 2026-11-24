@@ -3,9 +3,13 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
-NEXT UPDATE
+- sort out the roster setup ui
+- bible syncing take in serca
+  - per-piece serca icon
 
-- migrate to an actual domain name
+- let the market scanner sleep
+
+- MEME REVIEW
 
 ## Forecast mode
 
@@ -77,6 +81,8 @@ NEXT UPDATE
   - put all possible states on one axis (must be small support like 5? 10? ) and sort by number of juice used, then color/ 3d height?
 
 ## Done / cancelled
+
+- ~~migrate to an actual domain name~~
 
 - ~~shift sidebar?~~
 

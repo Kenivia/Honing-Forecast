@@ -1,7 +1,7 @@
 // MCP server over stdio for driving and looking at the game while developing the scanner. Coordinates are 1080p
 // client pixels. Holding F10 aborts a local script. `--remote <machine>` drives that machine's market_agent
 // through the relay instead (ignored/market/relay_admin.json: {"url", "token"}), signing every command but
-// status/start/pause with ignored/market/update_signing_key.pem.
+// status/start/pause/gap with ignored/market/update_signing_key.pem.
 use base64::Engine;
 use hf_market::{assets, ctl, game::Game, sign};
 use rmcp::{
@@ -35,9 +35,11 @@ struct Script {
 #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
 struct Control {
     #[schemars(
-        description = "status | start | pause | launch (the game through Steam) | log | setup (screenshot after every unit of work; with on) | sync (upload the profile's templates) | update (take a newer published build, when idle)"
+        description = "status | start | pause | gap (minutes between round starts, 0-1440; with minutes) | launch (the game through Steam) | log | setup (screenshot after every unit of work; with on) | sync (upload the profile's templates) | update (take a newer published build, when idle)"
     )]
     op: String,
+    #[schemars(description = "gap: minutes")]
+    minutes: Option<u32>,
     #[schemars(description = "log: how many lines (default 30)")]
     lines: Option<u32>,
     #[schemars(description = "setup: on or off")]
@@ -160,7 +162,10 @@ impl Market {
         let Some(r) = remote() else {
             return "remote only (market_mcp --remote <machine>)".into();
         };
-        let reply = cmd(r, json!({"op": c.op, "lines": c.lines, "on": c.on}));
+        let reply = cmd(
+            r,
+            json!({"op": c.op, "lines": c.lines, "on": c.on, "minutes": c.minutes}),
+        );
         reply["text"].as_str().unwrap_or("").to_string()
     }
 

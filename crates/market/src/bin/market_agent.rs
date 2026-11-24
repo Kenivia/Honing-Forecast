@@ -1,18 +1,22 @@
 // The scanner for a PC of its own, controlled through the relay (cloudflare/relay): connects with data/relay.json
 // ({"url", "machine", "token"}), then once started (Enter here, /start on Discord, or a remote command) scans
-// round after round with no gap until paused (F10 here, /pause). Remote commands also take screenshots, run
-// market_ctl scripts while paused, launch the game through Steam, and switch setup mode (a screenshot after
-// every unit of work). Portable layout (profile/ and data/ beside the exe) unless --dev (the repo's folders).
+// a round at once, then one at every multiple of --gap minutes UTC (default 120; 0 = no gap), the game closed
+// in between (the screen kept on: once off it wakes to sign-in), until paused (F10 here, /pause). Remote
+// commands also take screenshots, run market_ctl scripts while paused, launch the game through Steam, and
+// switch setup mode (a screenshot after every unit of work). Portable layout (profile/ and data/ beside the
+// exe) unless --dev (the repo's folders).
 // A round that breaks or reads nothing (lost connection, game closed or updated) closes the game, waits for the
 // network, relaunches it and goes on; three in a row and it stops. It replaces itself with the relay's newest
 // build at the start and at every round, restarting in the same console (--resume: scanning without asking);
-// only a newer build signed by the publisher's key (update_key.hex) is taken. Commands other than status, start
-// and pause must be signed by that key too (sign.rs); `exec` runs a PowerShell script.
+// only a newer build signed by the publisher's key (update_key.hex) is taken. Commands other than status, start,
+// pause and gap must be signed by that key too (sign.rs); `exec` runs a PowerShell script.
 // market_agent [--dev] [--setup] [--quick] [--strips] [--only materials,gems,exchange] [--regions NAE,EUC]
+//     [--gap MINUTES]
 use base64::Engine;
 use hf_market::{
     assets, ctl, db,
     game::{self, Game, Stopped, check_abort, ms, panic_text, quiet_stops},
+    input::awake,
     region, report, run, sign,
     ui::{self, log, looks},
     upload,
@@ -23,7 +27,7 @@ use std::{
     panic::{AssertUnwindSafe, catch_unwind},
     sync::{
         Mutex, OnceLock,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicI64, Ordering},
         mpsc,
     },
     time::{Duration, Instant},
@@ -43,6 +47,9 @@ static RELAY: OnceLock<Relay> = OnceLock::new();
 static STATE: Mutex<&str> = Mutex::new("idle");
 static LAST_PASS: Mutex<String> = Mutex::new(String::new());
 static CONNECTED: AtomicBool = AtomicBool::new(false);
+// minutes between round starts (0: none), and the next start while waiting (unix s, 0 otherwise)
+static GAP: AtomicI64 = AtomicI64::new(120);
+static NEXT: AtomicI64 = AtomicI64::new(0);
 // messages for the relay, sent by its thread
 static OUT: OnceLock<Mutex<mpsc::Sender<String>>> = OnceLock::new();
 // "start" from the console or the relay, taken by the main loop while idle
@@ -80,6 +87,8 @@ fn status() -> Value {
         "log_at": log_at,
         "setup": report::SETUP.load(Ordering::Relaxed),
         "version": build(),
+        "gap": GAP.load(Ordering::Relaxed),
+        "next": NEXT.load(Ordering::Relaxed),
     }})
 }
 
@@ -219,7 +228,7 @@ fn launch() -> String {
 /// How old a signed command may be (its counter is the signer's unix ms).
 const CMD_MAX_AGE_MS: u64 = 10 * 60 * 1000;
 
-/// The command to run: status, start and pause as sent (Discord), anything else only when signed by the
+/// The command to run: status, start, pause and gap as sent (Discord), anything else only when signed by the
 /// publisher's key for this machine with a counter above the last one taken (no replays) and under
 /// CMD_MAX_AGE_MS old (a signed command never delivered does not stay valid).
 fn authentic(msg: &Value) -> Result<Value, String> {
@@ -288,12 +297,24 @@ fn command(msg: &Value) -> Value {
             text("starting".into())
         }
         "start" => text(format!("already {}", state())),
-        "pause" if state() == "scanning" => {
+        "pause" if state() == "scanning" || state() == "waiting" => {
             game::STOP.store(true, Ordering::Relaxed);
             set_state("stopping");
             text("stopping; what this pass read so far is uploaded".into())
         }
         "pause" => text(format!("not scanning ({})", state())),
+        "gap" => match set_gap(&cmd["minutes"]) {
+            Ok(m) => {
+                log(&format!("gap set to {m} min"));
+                send(status());
+                text(if m == 0 {
+                    "no gap: rounds back to back, the game kept open".into()
+                } else {
+                    format!("gap set to {m} min (rounds start at multiples of it, UTC)")
+                })
+            }
+            Err(t) => json!({"ok": false, "text": t}),
+        },
         "launch" => text(launch()),
         "log" => text(tail_log(cmd["lines"].as_u64().unwrap_or(30) as usize)),
         "setup" => {
@@ -487,16 +508,53 @@ fn wait_secs(s: u64) {
     }
 }
 
-/// Closes the game and waits for the network; the next round launches it again.
-fn recover(current: &mut Option<&'static str>) {
+fn close_game(current: &mut Option<&'static str>) {
     *current = None;
-    log("recovering: closing the game");
     let _ = system32("taskkill.exe")
         .args(["/F", "/IM", "LOSTARK.exe"])
         .output();
     while game::running() {
         wait_secs(1);
     }
+}
+
+/// Closes the game and waits for the next multiple of the gap after now, UTC; a gap changed meanwhile counts.
+fn rest(current: &mut Option<&'static str>) {
+    close_game(current);
+    let end = chrono::Utc::now().timestamp();
+    set_state("waiting");
+    loop {
+        let g = GAP.load(Ordering::Relaxed) * 60;
+        let next = if g == 0 { end } else { (end / g + 1) * g };
+        if NEXT.swap(next, Ordering::Relaxed) != next {
+            let at = chrono::DateTime::from_timestamp(next, 0).unwrap();
+            log(&format!("next round at {} UTC", at.format("%H:%M")));
+            send(status());
+        }
+        if chrono::Utc::now().timestamp() >= next {
+            break;
+        }
+        wait_secs(1);
+    }
+    NEXT.store(0, Ordering::Relaxed);
+    set_state("scanning");
+}
+
+/// Minutes between round starts: whole, 0 to a day (Discord may set it: nothing else is taken unsigned).
+fn set_gap(v: &Value) -> Result<i64, String> {
+    let m = v
+        .as_u64()
+        .filter(|m| *m <= 1440)
+        .ok_or("refused: minutes must be a whole number from 0 to 1440")?;
+    GAP.store(m as i64, Ordering::Relaxed);
+    std::fs::write(assets::data().join("gap"), m.to_string()).unwrap();
+    Ok(m as i64)
+}
+
+/// Closes the game and waits for the network; the next round launches it again.
+fn recover(current: &mut Option<&'static str>) {
+    log("recovering: closing the game");
+    close_game(current);
     if !CONNECTED.load(Ordering::Relaxed) {
         log("recovering: waiting for the network");
         while !CONNECTED.load(Ordering::Relaxed) {
@@ -507,9 +565,11 @@ fn recover(current: &mut Option<&'static str>) {
     wait_secs(30);
 }
 
-/// Rounds until paused, recovering from a round that breaks or reads nothing; panics after three in a row.
+/// Rounds until paused, GAP minutes apart, recovering from a round that breaks or reads nothing (at once);
+/// panics after three in a row.
 fn scan(conn: &rusqlite::Connection, o: &run::Opts, current: &mut Option<&'static str>) {
     let mut strikes = 0;
+    awake(true);
     loop {
         update(true);
         let n = catch_unwind(AssertUnwindSafe(|| {
@@ -524,6 +584,9 @@ fn scan(conn: &rusqlite::Connection, o: &run::Opts, current: &mut Option<&'stati
         let why = match n {
             Ok(n) if n > 0 => {
                 strikes = 0;
+                if GAP.load(Ordering::Relaxed) > 0 {
+                    rest(current);
+                }
                 continue;
             }
             Ok(_) => "a round read nothing".to_string(),
@@ -567,6 +630,12 @@ fn main() {
             .map(region::get)
             .collect(),
     };
+    // --gap, else the last one set remotely (data/gap), else 2 hours
+    let saved = std::fs::read_to_string(assets::data().join("gap")).ok();
+    let gap = arg("--gap")
+        .or(saved)
+        .map_or(120, |v| v.trim().parse().unwrap());
+    GAP.store(gap, Ordering::Relaxed);
     let cfg_path = assets::data().join("relay.json");
     let Ok(cfg) = std::fs::read_to_string(&cfg_path) else {
         println!("{} is missing", cfg_path.display());
@@ -628,6 +697,7 @@ fn main() {
     let mut first = true;
     loop {
         game::STOP.store(false, Ordering::Relaxed);
+        awake(false);
         set_state("idle");
         if !(first && resume) {
             while start_rx.try_recv().is_ok() {}

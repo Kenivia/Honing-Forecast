@@ -154,15 +154,15 @@ fn results(
     what: &str,
 ) -> Option<(Vec<Listing>, RgbaImage)> {
     let mut empty = 0;
-    for attempt in 0..4 {
+    for attempt in 0..6 {
         ms(2500);
         let img = g.shot(None);
         match read_rows(&img, accessory) {
             Ok(rows) => {
-                // nothing may only mean the search has not come back yet
+                // nothing may only mean the search has not come back yet (seen after 5 s on a slow PC)
                 if rows.is_empty() {
                     empty += 1;
-                    if empty < 2 {
+                    if empty < 4 {
                         continue;
                     }
                 }
@@ -178,7 +178,7 @@ fn results(
                 return Some((rows, img));
             }
             Err(e) => {
-                if attempt == 3 {
+                if attempt == 5 {
                     log(&format!("{what}: could not read: {e}"));
                 }
             }
