@@ -60,17 +60,15 @@ const selected_color = computed(() => {
     <h3>b) Input manually</h3>
     <p>
       Put your
-      <span class="text-(--bound)">Char-bound</span> materials in the costs
-      distribution on the Character page, and untick any mats you aren't going
-      to buy.
+      <span class="text-(--bound)">Char-bound</span>,
+      <span class="text-(--roster)">Roster-bound</span>
+      and
+
+      <span class="text-(--tradable)">Tradable</span>
+      materials in the costs distribution panel on the Character page, and
+      untick any mats you aren't going to buy.
     </p>
     <img class="mx-auto" src="/Guide/cost-dist.png" alt="Cost distribution" />
-    <p>
-      <span class="text-(--roster)">Roster-bound</span> and
-      <span class="text-(--tradable)">Tradable</span> materials go on the
-      <RouterLink to="/market-mats">Market & Mats</RouterLink> page.
-    </p>
-    <img class="mx-auto" src="/Guide/market.png" alt="Market &amp; Mats" />
 
     <details class="mt-4">
       <summary class="cursor-pointer text-xl">

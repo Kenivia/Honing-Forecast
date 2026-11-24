@@ -14,7 +14,7 @@ import { useTimeAgo } from "@vueuse/core";
 import { find_linked, signed_in } from "@/Utils/BibleAuth";
 import { refresh_char, refresh_errors, refreshing } from "@/Utils/BibleSync";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { name_problem } from "@/Utils/Helpers";
+import { name_invalid, name_problem } from "@/Utils/Helpers";
 
 const props = defineProps<{
   region: UwuowoRegions;
@@ -105,7 +105,7 @@ async function click() {
     v-else
     @click="click"
     class="generic-button w-full text-wrap!"
-    :class="{ 'text-(--warning)!': problem === 'Invalid name' }"
+    :class="{ 'text-(--warning)!': name_invalid(char_name) }"
     :disabled="blocked"
     :style="{
       opacity: blocked ? 0.5 : 1,

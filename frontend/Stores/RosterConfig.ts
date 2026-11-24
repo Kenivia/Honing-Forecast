@@ -17,7 +17,11 @@ import {
 import { defineStore } from "pinia";
 import { toRaw } from "vue";
 import { CharProfile, new_char_profile } from "./CharacterProfile";
-import { default_char_labels, format_char_name } from "@/Utils/Helpers";
+import {
+  clean_char_name,
+  default_char_labels,
+  route_labels,
+} from "@/Utils/Helpers";
 
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
 
@@ -237,25 +241,38 @@ export const useRosterStore = defineStore("roster", {
       return (p: CharProfile): string =>
         p.char_name || this.char_default_label(p);
     },
-    // -1 when no character has that label; the first of any region (old /chars/<name> links)
+    // profile id -> url key: the label, with -2, -3, ... for a repeat in its region
+    route_labels(): Record<string, string> {
+      return route_labels(
+        this.roster_config.profiles,
+        this.roster_config.all_regions,
+        this.char_label,
+      );
+    },
+    // whether another character of the region has the same name
+    name_taken() {
+      return (p: CharProfile): boolean =>
+        p.char_name !== "" && this.route_labels[p.id] !== p.char_name;
+    },
+    // -1 when no character has that key; the first of any region (old /chars/<name> links)
     profile_index_by_name() {
       return (name: string): number =>
         this.roster_config.profiles.findIndex(
-          (p) => this.char_label(p) === name,
+          (p) => this.route_labels[p.id] === name,
         );
     },
-    // labels are unique per region only, so a character's route carries both
+    // keys are unique per region only, so a character's route carries both
     char_params() {
       return (p: CharProfile): { region: string; characterName: string } => ({
         region: REGION_SLUGS[this.roster_config.all_regions[p.roster_id]],
-        characterName: this.char_label(p),
+        characterName: this.route_labels[p.id],
       });
     },
     profile_index_by_route() {
       return (region: string, name: string): number =>
         this.roster_config.profiles.findIndex(
           (p) =>
-            this.char_label(p) === name &&
+            this.route_labels[p.id] === name &&
             REGION_SLUGS[this.roster_config.all_regions[p.roster_id]] ===
               region,
         );
@@ -367,9 +384,8 @@ export const useRosterStore = defineStore("roster", {
     },
     // renames take what was typed; a blank one goes back to the default label
     rename_char(id: string, name: string) {
-      const profiles = this.roster_config.profiles;
-      const index = profiles.findIndex((p) => p.id === id);
-      profiles[index].char_name = format_char_name(name, index, profiles);
+      this.roster_config.profiles.find((p) => p.id === id).char_name =
+        clean_char_name(name);
     },
     rename_roster(roster_id: string, name: string) {
       const trimmed = name.trim();
@@ -434,14 +450,8 @@ export const useRosterStore = defineStore("roster", {
       };
     },
 
-    // names taken in the new region get the usual suffix
     set_region(roster_id: string, region: MarketRegions) {
-      const config = this.roster_config;
-      config.all_regions[roster_id] = region;
-      config.profiles.forEach((p, i) => {
-        if (p.roster_id === roster_id)
-          p.char_name = format_char_name(p.char_name, i, config.profiles);
-      });
+      this.roster_config.all_regions[roster_id] = region;
     },
     active_region_change(event: Event) {
       const new_region = (event.target as HTMLSelectElement)

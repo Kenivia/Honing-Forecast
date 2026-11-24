@@ -8,7 +8,6 @@ import { computed, ref } from "vue";
 import { linked_now } from "@/Utils/BibleAuth";
 import { CharProfile } from "@/Stores/CharacterProfile";
 import { useRosterStore } from "@/Stores/RosterConfig";
-import { name_problem } from "@/Utils/Helpers";
 
 const props = defineProps<{
   profile: CharProfile;
@@ -20,6 +19,12 @@ const props = defineProps<{
 
 const roster_store = useRosterStore();
 const counter = ref(0);
+const taken = computed(() => roster_store.name_taken(props.profile));
+
+function rename(typed: string) {
+  roster_store.rename_char(props.profile.id, typed);
+  counter.value += 1;
+}
 
 // signed in and the character is in a linked roster: name and region locked, refresh instead of the popup
 const linked = computed(() => {
@@ -30,6 +35,9 @@ const linked = computed(() => {
 });
 </script>
 <template>
+  <div v-if="taken" class="basis-full pl-1 text-sm text-(--warning)">
+    {{ profile.char_name }} already exists
+  </div>
   <div
     class="flex h-fit w-min basis-full flex-row justify-around gap-1 py-0.5 pl-1"
   >
@@ -38,15 +46,9 @@ const linked = computed(() => {
       :name="profile.char_name"
       :placeholder="roster_store.char_default_label(profile)"
       label="Char name"
-      :invalid="name_problem(profile.char_name) === 'Invalid name'"
       :locked="linked"
       class="min-w-full"
-      @rename="
-        (typed) => {
-          roster_store.rename_char(profile.id, typed);
-          counter += 1;
-        }
-      "
+      @rename="rename"
     />
   </div>
   <div class="flex basis-full flex-row items-center gap-2">

@@ -125,7 +125,7 @@ export async function fetch_uwuowo(
 ): Promise<string> {
   await acquire_rate_limit_slot();
 
-  const address = `${WORKER_URL}/character/${fetch_request.region}/${fetch_request.char_name}/${fetch_request.suffix}`;
+  const address = `${WORKER_URL}/character/${fetch_request.region}/${encodeURIComponent(fetch_request.char_name)}/${fetch_request.suffix}`;
   const response = await fetch(address, { method: "GET" });
   if (!response.ok) {
     throw new Error(`Fetch failed, "${await response.text()}"`);

@@ -50,3 +50,4 @@ Traps and ruled-out alternatives. The current state is in `State and persistence
 - Don't rebuild the manual chance without the express bonus, nor read the free-tap "remaining" once at mount.
 - Don't leave slider deductions outstanding after leaving the calculator: two characters of a roster overwrite each other's roster-bound cells and market-page or Choices edits are reverted. Settle on unmount.
 - Don't reuse the calculator page across characters with instruction rows keyed only by piece and level: a row keeps the previous character's local slider value. Key by profile id.
+- Don't make names url-safe by stripping or suffixing what the user typed: two standards (saved vs game-legal) confused users. Route by a derived key (`route_labels`) and encode it.

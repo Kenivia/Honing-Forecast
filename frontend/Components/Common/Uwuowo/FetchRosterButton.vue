@@ -14,7 +14,7 @@ import { storeToRefs } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import ConfirmPanel from "./ConfirmPanel.vue";
 import { norm_name } from "@/Utils/BibleAuth";
-import { name_problem } from "@/Utils/Helpers";
+import { name_invalid, name_problem } from "@/Utils/Helpers";
 
 const props = defineProps<{
   region: UwuowoRegions;
@@ -93,7 +93,7 @@ const spread_multiple = computed(
   <button
     @click="click"
     class="generic-button w-full text-wrap!"
-    :class="{ 'text-(--warning)!': problem === 'Invalid name' }"
+    :class="{ 'text-(--warning)!': name_invalid(any_char_name) }"
     :disabled="blocked"
     :style="{
       opacity: blocked ? 0.5 : 1,

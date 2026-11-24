@@ -14,7 +14,7 @@ import { market_to_uwuowo_region } from "./Common/Uwuowo/UwuowoUtils";
 import { computed } from "vue";
 import { linked_now, signed_in } from "@/Utils/BibleAuth";
 import { sync_rosters, syncing } from "@/Utils/BibleSync";
-import { char_name_valid } from "@/Utils/Helpers";
+import { char_name_valid, get_icon_path } from "@/Utils/Helpers";
 import BackupButtons from "./Common/BackupButtons.vue";
 import NameInput from "./Common/NameInput.vue";
 
@@ -67,11 +67,16 @@ const linked_rosters = computed(() =>
       </button>
       <button
         v-if="signed_in"
-        class="side-bar-item header-button h-max w-max self-center"
+        class="side-bar-item header-button relative h-max w-max self-center overflow-hidden text-(--uwuowo)!"
         :disabled="syncing"
         @click="sync_rosters()"
       >
-        {{ syncing ? "Syncing..." : "Sync with lostark.bible" }}
+        {{ syncing ? "Syncing..." : "Sync linked roster" }}
+        <img
+          :src="get_icon_path('Artist Cry')"
+          alt=""
+          class="pointer-events-none absolute inset-0 h-full w-full object-contain opacity-10"
+        />
       </button>
       <BackupButtons
     /></template>

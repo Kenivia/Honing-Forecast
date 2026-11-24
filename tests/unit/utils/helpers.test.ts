@@ -12,8 +12,9 @@ import {
   char_name_valid,
   debounce,
   default_char_labels,
-  format_char_name,
+  clean_char_name,
   name_problem,
+  route_labels,
   upload_name,
   get_icon_path,
   has_upgrades_in_range,
@@ -105,34 +106,50 @@ describe("number formatting", () => {
   });
 });
 
-describe("format_char_name", () => {
-  it("strips, lowercases the rest, capitalises the first", () => {
-    expect(format_char_name("my Char-NAME!", 0, profiles())).toBe("Mycharname");
-    expect(format_char_name("éCLAIR", 0, profiles())).toBe("Éclair");
-    // decomposed accents compose; digits and _ are url-safe so they stay (and are invalid)
-    expect(format_char_name("éclair", 0, profiles())).toBe("Éclair");
-    expect(format_char_name("bob_2", 0, profiles())).toBe("Bob_2");
-    // not cut: a long name is shown as invalid instead
-    expect(format_char_name("a".repeat(20), 0, profiles())).toHaveLength(20);
+describe("clean_char_name", () => {
+  it("keeps what was typed, trimmed, lowercases A-Z after the first, capitalises the first", () => {
+    expect(clean_char_name("  my Char-NAME!  ")).toBe("My char-name!");
+    expect(clean_char_name("éCLAIR")).toBe("Éclair");
+    // decomposed accents compose
+    expect(clean_char_name("éclair")).toBe("Éclair");
+    expect(clean_char_name("bob_2")).toBe("Bob_2");
+    expect(clean_char_name("a/b?c%d#e")).toBe("A/b?c%d#e");
+    expect(clean_char_name("a".repeat(20))).toHaveLength(20);
+    expect(clean_char_name("   ")).toBe("");
+  });
+});
+
+describe("route_labels", () => {
+  const regions = { na: "nae", na2: "nae", eu: "euc" };
+  const label = (p: any) => p.char_name || "Newchar";
+  const route = (...ps: [string, string, string][]) =>
+    route_labels(
+      ps.map(([id, char_name, roster_id]) => ({
+        id,
+        char_name,
+        roster_id,
+      })) as any,
+      regions,
+      label,
+    );
+
+  it("a repeat in a region takes -2, -3, ...; the first keeps the plain name", () => {
+    expect(
+      route(["a", "Bob", "na"], ["b", "Bob", "na2"], ["c", "Bob", "na"]),
+    ).toEqual({ a: "Bob", b: "Bob-2", c: "Bob-3" });
   });
 
-  it("dedups against the other named profiles only; blank stays unnamed", () => {
-    const all = profiles("Bob", "Bob1", "Alice");
-    expect(format_char_name("bob", 2, all)).toBe("Bob2");
-    expect(format_char_name("bob", 0, all)).toBe("Bob");
-    expect(format_char_name("!!", 0, profiles())).toBe("");
-    expect(format_char_name(" ", 1, profiles("", ""))).toBe("");
+  it("the same name in two regions is plain in both", () => {
+    expect(route(["a", "Bob", "na"], ["b", "Bob", "eu"])).toEqual({
+      a: "Bob",
+      b: "Bob",
+    });
   });
 
-  it("dedups within the character's region only", () => {
-    const all = [
-      { char_name: "Bob", roster_id: "na" },
-      { char_name: "Eve", roster_id: "eu" },
-    ] as any;
-    const regions = { na: "nae", eu: "euc", eu2: "euc" };
-    expect(format_char_name("bob", 1, all, undefined, regions)).toBe("Bob");
-    expect(format_char_name("eve", 2, all, "eu2", regions)).toBe("Eve1");
-    expect(format_char_name("eve", 2, all, "na", regions)).toBe("Eve");
+  it("a typed name that looks like a suffix keeps its own key; the repeat skips it", () => {
+    expect(
+      route(["a", "Bob", "na"], ["b", "Bob", "na"], ["c", "Bob-2", "na"]),
+    ).toEqual({ a: "Bob", b: "Bob-3", c: "Bob-2" });
   });
 });
 
@@ -146,7 +163,16 @@ describe("char names in the game and on the site", () => {
 
   it("empty asks for a name, invalid says so, uploads only carry valid names", () => {
     expect(name_problem("")).toBe("Enter a name");
-    expect(name_problem("Bob1")).toBe("Invalid name");
+    expect(name_problem("Bob1")).toBe("Cannot contain numbers");
+    expect(name_problem("Bob_1")).toBe("Cannot contain numbers");
+    expect(name_problem("Bob_")).toBe('Cannot contain "_"');
+    expect(name_problem("Bob 2!")).toBe("Cannot contain numbers");
+    expect(name_problem("Bo b!")).toBe("Cannot contain space");
+    expect(name_problem("Bo-b/")).toBe('Cannot contain "-"');
+    expect(name_problem("Bo/b")).toBe('Cannot contain "/"');
+    expect(name_problem("Bobα")).toBe("Latin letters only");
+    expect(name_problem("B")).toBe("Too short (min 2)");
+    expect(name_problem("B".repeat(17))).toBe("Too long (max 16)");
     expect(name_problem("Bob")).toBeNull();
     expect([upload_name("Bob"), upload_name("Bob1"), upload_name("")]).toEqual([
       "Bob",

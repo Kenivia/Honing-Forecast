@@ -26,7 +26,7 @@ const sign_in_button = (page: Page) =>
 const sign_out_button = (page: Page) =>
   page.locator("header").getByRole("button", { name: "Sign out" });
 const sync_button = (page: Page) =>
-  page.getByRole("button", { name: "Sync with lostark.bible" });
+  page.getByRole("button", { name: "Sync linked roster" });
 
 // signed in on the roster page with these local rosters
 async function setup(

@@ -26,7 +26,7 @@ import {
   UpgradeStatus,
 } from "@/Utils/KeyedUpgrades";
 import { get_valid_status_grid } from "@/Utils/StatusGrid";
-import { format_char_name } from "@/Utils/Helpers";
+import { clean_char_name } from "@/Utils/Helpers";
 import type { ManifestChest } from "@/Utils/Chest";
 import type { ScanCurrencies, ScanPage, Snapshot } from "@/Utils/Scans";
 import type { CustomChoice } from "@/Utils/Choices";
@@ -199,10 +199,8 @@ function profile_to_saved(profile: CharProfile): SavedProfile {
 
 function profile_from_saved(
   saved: Partial<SavedProfile>,
-  index: number,
   earlier: CharProfile[],
   roster_ids: string[],
-  regions: Record<string, MarketRegions>,
 ): CharProfile {
   const defaults = structuredClone(DEFAULT_CHAR_PROFILE);
   const tier =
@@ -238,13 +236,7 @@ function profile_from_saved(
       saved.id && !earlier.some((p) => p.id === saved.id)
         ? saved.id
         : crypto.randomUUID(),
-    char_name: format_char_name(
-      saved.char_name ?? defaults.char_name,
-      index,
-      earlier,
-      roster_id,
-      regions,
-    ),
+    char_name: clean_char_name(saved.char_name ?? defaults.char_name),
     roster_id,
     tier,
     express_event: saved.express_event ?? defaults.express_event,
@@ -426,17 +418,11 @@ export function from_saved(saved: Partial<SavedConfig>): RosterConfig {
   const profiles: CharProfile[] = [];
   const saved_profiles =
     saved.profiles && saved.profiles.length > 0 ? saved.profiles : [{}];
-  saved_profiles.forEach((profile, index) => {
+  saved_profiles.forEach((profile) =>
     profiles.push(
-      profile_from_saved(
-        profile,
-        index,
-        profiles,
-        Object.keys(out.roster_mats_owned),
-        out.all_regions,
-      ),
-    );
-  });
+      profile_from_saved(profile, profiles, Object.keys(out.roster_mats_owned)),
+    ),
+  );
   // a roster's characters together, as add_profile keeps them
   const active =
     profiles[

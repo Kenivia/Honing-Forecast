@@ -263,13 +263,73 @@ describe("roster CRUD", () => {
     });
     expect(store.profile_index_by_route("EU", "Newchar")).toBe(3);
     store.rename_char(added.id, " dElTa! ");
-    expect(added.char_name).toBe("Delta");
-    expect(store.char_label(added)).toBe("Delta");
+    expect(added.char_name).toBe("Delta!");
+    expect(store.char_label(added)).toBe("Delta!");
+    // a repeat keeps its name; only its url key differs
     store.rename_char(added.id, "Gamma");
-    expect(added.char_name).toBe("Gamma1");
+    expect(added.char_name).toBe("Gamma");
+    expect(store.name_taken(added)).toBe(true);
+    expect(store.char_params(added).characterName).toBe("Gamma-2");
+    expect(store.profile_index_by_route("EU", "Gamma-2")).toBe(3);
     store.rename_char(added.id, "  ");
     expect(added.char_name).toBe("");
     expect(store.char_default_label(added)).toBe("Newchar");
+  });
+
+  it("two characters of one name on both servers: each region keeps its own pair apart", () => {
+    // roster 0 is NA (Alpha, Beta), roster 1 is EU (Gamma)
+    store.rename_char(store.all_profiles[1].id, "Alpha");
+    const eu1 = store.all_profiles[2];
+    store.rename_char(eu1.id, "Alpha");
+    const eu2 = store.add_char("1");
+    store.rename_char(eu2.id, "Alpha");
+    const keys = store.all_profiles.map((p) => store.char_params(p));
+    expect(keys).toEqual([
+      { region: "NA", characterName: "Alpha" },
+      { region: "NA", characterName: "Alpha-2" },
+      { region: "EU", characterName: "Alpha" },
+      { region: "EU", characterName: "Alpha-2" },
+    ]);
+    for (const [i, { region, characterName }] of keys.entries())
+      expect(store.profile_index_by_route(region, characterName)).toBe(i);
+    expect(store.all_profiles.map((p) => store.name_taken(p))).toEqual([
+      false,
+      true,
+      false,
+      true,
+    ]);
+    // the first goes: the second takes the plain key
+    store.delete_profile(0);
+    expect(store.char_params(store.all_profiles[0]).characterName).toBe(
+      "Alpha",
+    );
+    expect(store.name_taken(store.all_profiles[0])).toBe(false);
+  });
+
+  it("a region change keeps names; a clash in the new region only moves the url key", () => {
+    store.rename_char(store.all_profiles[2].id, "Alpha");
+    expect(store.char_params(store.all_profiles[2]).characterName).toBe(
+      "Alpha",
+    );
+    store.set_region("1", "nae");
+    expect(store.all_profiles.map((p) => p.char_name)).toEqual([
+      "Alpha",
+      "Beta",
+      "Alpha",
+    ]);
+    expect(store.char_params(store.all_profiles[2])).toEqual({
+      region: "NA",
+      characterName: "Alpha-2",
+    });
+  });
+
+  it("names with / ? % # route by themselves and look back up", () => {
+    const p = store.all_profiles[0];
+    for (const name of ["A/b", "A?b", "A%b", "A#b", "A%2fb", "A b"]) {
+      store.rename_char(p.id, name);
+      expect(store.char_params(p).characterName).toBe(name);
+      expect(store.profile_index_by_route("NA", name)).toBe(0);
+    }
   });
 
   it("a roster is labelled by its name, else its position", () => {

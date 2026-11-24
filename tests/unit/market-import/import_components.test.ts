@@ -275,10 +275,10 @@ describe("Uwuowo", () => {
   const fetch_button = (w: any) =>
     w.findAll("button").find((b: any) => b.text() !== "Ok");
 
-  it("a name change is snapped, stored and triggers a fetch", async () => {
+  it("a name change is cleaned, stored and triggers a fetch", async () => {
     const fn = serve({ "/NA/Newname/": char_t4 });
     const { w, profile } = mount_uwuowo("Beta");
-    await w.find("input").setValue("  new name!");
+    await w.find("input").setValue("  neWNAME ");
     expect(profile.char_name).toBe("Newname");
     await flushPromises();
     expect(fn).toHaveBeenCalledTimes(1);
@@ -292,14 +292,15 @@ describe("Uwuowo", () => {
     expect(fn).not.toHaveBeenCalled();
   });
 
-  it("an invalid name is red and blocks the fetch", async () => {
+  it("an invalid name reddens the fetch button, not the box, and blocks the fetch", async () => {
     const fn = serve({});
     const { w } = mount_uwuowo("Beta");
     await w.find("input").setValue("Bob2");
     await flushPromises();
     expect(fn).not.toHaveBeenCalled();
-    expect(w.find("input").classes()).toContain("text-(--warning)");
-    expect(fetch_button(w).text()).toBe("Invalid name");
+    expect(w.find("input").classes()).not.toContain("text-(--warning)");
+    expect(fetch_button(w).classes()).toContain("text-(--warning)!");
+    expect(fetch_button(w).text()).toBe("Cannot contain numbers");
     expect(fetch_button(w).attributes("disabled")).toBeDefined();
   });
 

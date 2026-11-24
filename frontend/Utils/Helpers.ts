@@ -9,8 +9,6 @@ import {
 } from "./Constants";
 
 import ITEMS from "../../scanner_setup/templates/items.json";
-import { storeToRefs } from "pinia";
-import { useRosterStore } from "@/Stores/RosterConfig";
 import { Upgrade, UpgradeStatus } from "./KeyedUpgrades";
 import { LOCALE_DECIMAL, parse_locale_float } from "./InputColumn";
 
@@ -70,46 +68,13 @@ export function has_upgrades_in_range(
   }
   return false;
 }
-// Snaps a typed name to a url-safe one, unique per region (routes are /chars/<region>/<name>).
-// "" is unnamed. `roster_id` is the named character's roster, needed when it is not in `profiles` yet.
-export function format_char_name(
-  raw: string,
-  char_index: number,
-  profiles?: CharProfile[],
-  roster_id?: string,
-  regions?: Record<string, string>,
-): string {
-  const all_profiles =
-    profiles === null || profiles === undefined
-      ? storeToRefs(useRosterStore()).all_profiles.value
-      : profiles;
-  const roster = roster_id ?? all_profiles[char_index]?.roster_id;
-  const region_of =
-    regions ??
-    (roster === undefined ? {} : useRosterStore().roster_config.all_regions);
-
-  // letters, accents, digits and _ only; every letter after the first lowercase
+// A typed name as stored: trimmed, first letter capital, A-Z after it lowercase. "" is unnamed.
+export function clean_char_name(raw: string): string {
   const kept = raw
     .normalize("NFC")
-    .replace(/[^\p{L}\p{M}\p{N}_]/gu, "")
+    .trim()
     .replace(/(?<=.)[A-Z]/g, (c) => c.toLowerCase());
-  const new_string = kept.charAt(0).toUpperCase() + kept.slice(1);
-  if (!new_string) return "";
-  // taken by another character of the region: append a number
-  const otherNames = all_profiles
-    .filter(
-      (p, i) =>
-        i !== char_index &&
-        (roster === undefined || region_of[p.roster_id] === region_of[roster]),
-    )
-    .map((x) => x.char_name);
-  let dup_count = 1;
-  let result = new_string;
-  while (otherNames.includes(result)) {
-    result = new_string + String(dup_count);
-    dup_count += 1;
-  }
-  return result;
+  return kept.charAt(0).toUpperCase() + kept.slice(1);
 }
 
 // what Lost Ark allows: 2 to 16 latin letters, accented or not
@@ -118,10 +83,22 @@ export const char_name_valid = (name: string) =>
 // what uploads carry: "" (the Worker's "no name") unless lostark.bible could find it
 export const upload_name = (name: string) =>
   char_name_valid(name) ? name : "";
-// why a name cannot be looked up on lostark.bible, or null
-export const name_problem = (name: string): string | null =>
-  name === "" ? "Enter a name" : char_name_valid(name) ? null : "Invalid name";
-
+// the first reason a stored name isn't one Lost Ark allows, null if it is
+export const name_problem = (name: string): string | null => {
+  const n = name.normalize("NFC");
+  if (n === "") return "Enter a name";
+  if (/\p{N}/u.test(n)) return "Cannot contain numbers";
+  if (/\s/u.test(n)) return "Cannot contain space";
+  const symbol = n.match(/[^\p{L}\p{M}]/u)?.[0];
+  if (symbol !== undefined) return `Cannot contain "${symbol}"`;
+  if (/[^\p{Script=Latin}\p{M}]/u.test(n)) return "Latin letters only";
+  if ([...n].length < 2) return "Too short (min 2)";
+  if ([...n].length > 16) return "Too long (max 16)";
+  return null;
+};
+// a name problem shown as a warning, not just a prompt
+export const name_invalid = (name: string) =>
+  name !== "" && name_problem(name) !== null;
 // unnamed characters show as Newchar, Newchar1, ... per region, skipping names in use there
 export function default_char_labels(
   profiles: CharProfile[],
@@ -138,6 +115,28 @@ export function default_char_labels(
     for (let n = 1; used.has(label); n++) label = `Newchar${n}`;
     used.add(label);
     out[p.id] = label;
+  }
+  return out;
+}
+
+// a character's url key: the first of a label in a region keeps it, later ones take label-2, label-3, ... unused
+export function route_labels(
+  profiles: CharProfile[],
+  regions: Record<string, string>,
+  label: (p: CharProfile) => string,
+): Record<string, string> {
+  const used: Record<string, Set<string>> = {};
+  const out: Record<string, string> = {};
+  for (const p of profiles) {
+    const set = (used[regions[p.roster_id]] ??= new Set());
+    if (!set.has(label(p))) set.add((out[p.id] = label(p)));
+  }
+  for (const p of profiles) {
+    if (out[p.id] !== undefined) continue;
+    const set = used[regions[p.roster_id]];
+    let n = 2;
+    while (set.has(`${label(p)}-${n}`)) n++;
+    set.add((out[p.id] = `${label(p)}-${n}`));
   }
   return out;
 }

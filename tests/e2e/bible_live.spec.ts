@@ -50,7 +50,9 @@ test("sync and refresh against the real API", async ({ page }) => {
   });
   await hf.open(page, "/roster-setup");
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
-  const sync = page.getByRole("button", { name: "Sync with lostark.bible" });
+  const sync = page.getByRole("button", {
+    name: "Sync linked roster",
+  });
   await sync.click();
   await expect(sync).toBeEnabled({ timeout: 120_000 });
   // a 401 would have signed us out

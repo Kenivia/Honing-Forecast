@@ -84,7 +84,7 @@ test("a roster card's name box renames it everywhere, blank goes back to its pos
   ).toHaveValue("");
 });
 
-test("an unnamed character asks for a name, an invalid one is red; neither fetches", async ({
+test("an unnamed character asks for a name, an invalid one reddens its button; neither fetches", async ({
   page,
 }) => {
   const scrape = await bh.stub_character(page, {});
@@ -92,7 +92,7 @@ test("an unnamed character asks for a name, an invalid one is red; neither fetch
   const boxes = page.getByRole("textbox", { name: "Char name" });
   const fetch_buttons = page
     .locator(".char-row")
-    .getByRole("button", { name: /Enter a name|Invalid name|Fetch from/ });
+    .getByRole("button", { name: /Enter a name|Cannot contain|Fetch from/ });
   await expect(boxes.first()).toHaveValue("");
   await expect(boxes.first()).toHaveAttribute("placeholder", "Newchar");
   await expect(fetch_buttons.first()).toHaveText("Enter a name");
@@ -101,14 +101,14 @@ test("an unnamed character asks for a name, an invalid one is red; neither fetch
 
   await boxes.nth(1).fill("Bob 2!");
   await boxes.nth(1).blur();
-  await expect(boxes.nth(1)).toHaveValue("Bob2");
-  await expect(boxes.nth(1)).toHaveClass(/warning/);
-  await expect(fetch_buttons.nth(1)).toHaveText("Invalid name");
+  await expect(boxes.nth(1)).toHaveValue("Bob 2!");
+  await expect(boxes.nth(1)).not.toHaveClass(/warning/);
+  await expect(fetch_buttons.nth(1)).toHaveText("Cannot contain numbers");
   await expect(fetch_buttons.nth(1)).toBeDisabled();
   await expect(fetch_buttons.nth(1)).toHaveClass(/warning/);
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(scrape.requests).toEqual([]);
-  expect(await bh.roster_names(page)).toEqual([["Newchar", "Bob2"]]);
+  expect(await bh.roster_names(page)).toEqual([["Newchar", "Bob 2!"]]);
 });
 test("the arrows on a roster card move it, and a name moves with it", async ({
   page,
@@ -147,54 +147,114 @@ test("Add new character adds a row to that roster only", async ({ page }) => {
   expect(await bh.roster_names(page)).toEqual([["Alpha", "Newchar"], ["Beta"]]);
 });
 
-test("renaming formats the name; the link, the URL and a reload follow", async ({
+test("renaming keeps the name; the link, the URL and a reload follow", async ({
   page,
 }) => {
   await open_roster(page, [{ names: ["Alpha"] }]);
-  await rename(page, "Alpha", "bob smith");
+  // invalid in game, so no fetch popup
+  const box = page.getByRole("textbox", { name: "Char name" });
+  await box.fill(" bob SMITH ");
+  await box.blur();
   await expect(page.locator(`input[aria-label="Char name"]`)).toHaveValue(
-    "Bobsmith",
+    "Bob smith",
   );
-  await expect.poll(() => bh.roster_names(page)).toEqual([["Bobsmith"]]);
-  await page.getByRole("link", { name: "Go to character Bobsmith" }).click();
-  await expect(page).toHaveURL(/\/chars\/NA\/Bobsmith\/calc$/);
+  await expect.poll(() => bh.roster_names(page)).toEqual([["Bob smith"]]);
+  await expect(
+    page.getByRole("button", { name: "Cannot contain space" }),
+  ).toHaveCount(2);
+  await page.getByRole("link", { name: "Go to character Bob smith" }).click();
+  await expect(page).toHaveURL(/\/chars\/NA\/Bob%20smith\/calc$/);
   await persist(page);
   await page.reload();
-  await expect(page).toHaveURL(/\/chars\/NA\/Bobsmith\/calc$/);
+  await expect(page).toHaveURL(/\/chars\/NA\/Bob%20smith\/calc$/);
   await expect(page.getByRole("textbox", { name: "Char name" })).toHaveValue(
-    "Bobsmith",
+    "Bob smith",
   );
 });
 
-test("renaming onto a name used in another roster gets a suffix", async ({
+// / ? % # would split or cut a raw url; they are encoded in the path, and a cold load finds them
+test("names with url characters route, reload and open cold", async ({
+  page,
+}) => {
+  await open_roster(page, [{ names: ["Alpha", "Beta"] }]);
+  const name = "A/b?c%d#e%2f";
+  const box = page.getByRole("textbox", { name: "Char name" }).nth(1);
+  await box.fill(name);
+  await box.blur();
+  await expect.poll(() => bh.roster_names(page)).toEqual([["Alpha", name]]);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("link", { name: `Go to character ${name}` }).click();
+  const url = /\/chars\/NA\/A%2Fb%3Fc%25d%23e%252f\/calc$/;
+  await expect(page).toHaveURL(url);
+  const active = () => bh.with_store(page, (s) => s.active_profile.char_name);
+  expect(await active()).toBe(name);
+  await persist(page);
+  await page.reload();
+  await expect(page).toHaveURL(url);
+  expect(await active()).toBe(name);
+  // a sub-page, opened from a fresh load
+  await hf.open(page, "/chars/NA/A%2Fb%3Fc%25d%23e%252f/scanner");
+  await expect(page).toHaveURL(/\/chars\/NA\/A%2Fb%3Fc%25d%23e%252f\/scanner$/);
+  expect(await active()).toBe(name);
+  // the Alpha tab still goes to Alpha
+  await hf.open(page, "/chars/NA/Alpha/calc");
+  expect(await active()).toBe("Alpha");
+});
+
+test("a repeat name in a region is kept, warned about, and routed as name-2", async ({
   page,
 }) => {
   await open_roster(page, [{ names: ["Alpha"] }, { names: ["Beta"] }]);
-  // the suffix makes it invalid in game, so it is not fetched
-  const box = roster(page, 2).getByRole("textbox", { name: "Char name" });
-  await box.fill("alpha");
-  await box.blur();
+  await rename(page, "Beta", "alpha");
   await expect
     .poll(() => bh.roster_names(page))
-    .toEqual([["Alpha"], ["Alpha1"]]);
-  // its row's fetch and the roster's "Fetch remaining" (no valid name left)
-  await expect(
-    roster(page, 2).getByRole("button", { name: "Invalid name" }),
-  ).toHaveCount(2);
-  for (const button of await roster(page, 2)
-    .getByRole("button", { name: "Invalid name" })
-    .all())
-    await expect(button).toBeDisabled();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+    .toEqual([["Alpha"], ["Alpha"]]);
+  await expect(roster(page, 2).getByText("Alpha already exists")).toBeVisible();
+  await expect(roster(page, 1).getByText("already exists")).toHaveCount(0);
   await roster(page, 2)
-    .getByRole("link", { name: "Go to character Alpha1" })
+    .getByRole("link", { name: "Go to character Alpha" })
     .click();
-  await expect(page).toHaveURL(/\/chars\/NA\/Alpha1\/calc$/);
-  expect(
-    await bh.with_store(page, (s) =>
+  await expect(page).toHaveURL(/\/chars\/NA\/Alpha-2\/calc$/);
+  const roster_index = () =>
+    bh.with_store(page, (s) =>
       s.roster_ids.indexOf(s.active_profile.roster_id),
-    ),
-  ).toBe(1);
+    );
+  expect(await roster_index()).toBe(1);
+  await persist(page);
+  await page.reload();
+  await expect(page).toHaveURL(/\/chars\/NA\/Alpha-2\/calc$/);
+  expect(await roster_index()).toBe(1);
+  await hf.open(page, "/chars/NA/Alpha/calc");
+  expect(await roster_index()).toBe(0);
+});
+
+// one name twice on each server: four distinct urls, each loading its own character
+test("two identical names on both servers each get their own url", async ({
+  page,
+}) => {
+  await open_roster(page, [
+    { names: ["Bob", "Bob"] },
+    { names: ["Bob", "Bob"], region: "euc" },
+  ]);
+  const ids = await bh.with_store(page, (s) =>
+    s.all_profiles.map((p: any) => p.id),
+  );
+  await persist(page);
+  const urls = ["NA/Bob", "NA/Bob-2", "EU/Bob", "EU/Bob-2"];
+  for (const [i, url] of urls.entries()) {
+    await hf.open(page, `/chars/${url}/calc`);
+    await expect(page).toHaveURL(new RegExp(`/chars/${url}/calc$`));
+    expect(await bh.with_store(page, (s) => s.active_profile.id)).toBe(ids[i]);
+  }
+  await hf.open(page, "/roster-setup");
+  for (const n of [1, 2]) {
+    await expect(roster(page, n).getByText("Bob already exists")).toHaveCount(
+      1,
+    );
+    const boxes = roster(page, n).getByRole("textbox", { name: "Char name" });
+    await expect(boxes).toHaveCount(2);
+    for (const box of await boxes.all()) await expect(box).toHaveValue("Bob");
+  }
 });
 
 test("Move up and down reorder one roster and persist", async ({ page }) => {
@@ -496,13 +556,16 @@ test("a name in two regions has two urls, and an old link finds its region", asy
     "Yan",
   );
 
-  // moving a roster into a region where a name is taken renames it
+  // moving a roster into a region where a name is taken keeps the name, the url moves to Zed-2
   await hf.open(page, "/roster-setup");
   await roster(page, 2).getByLabel("Region").selectOption("nae");
-  await expect
-    .poll(() => bh.roster_names(page))
-    .toEqual([
-      ["Alpha", "Zed"],
-      ["Zed1", "Yan"],
-    ]);
+  await expect(roster(page, 2).getByText("Zed already exists")).toBeVisible();
+  expect(await bh.roster_names(page)).toEqual([
+    ["Alpha", "Zed"],
+    ["Zed", "Yan"],
+  ]);
+  await roster(page, 2)
+    .getByRole("link", { name: "Go to character Zed" })
+    .click();
+  await expect(page).toHaveURL(/\/chars\/NA\/Zed-2\/calc$/);
 });

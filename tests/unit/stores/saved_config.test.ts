@@ -145,13 +145,13 @@ describe("from_saved: repairs", () => {
     expect(reload(saved).profiles[2].roster_id).toBe("0");
   });
 
-  it("duplicate names get a suffix, ids stay", () => {
+  it("duplicate names stay as they are, ids stay", () => {
     const saved: any = to_saved(rich_config());
     saved.profiles[1].char_name = "Alpha";
     const back = reload(saved);
     expect(back.profiles.map((p) => p.char_name)).toEqual([
       "Alpha",
-      "Alpha1",
+      "Alpha",
       "Gamma",
     ]);
     expect(back.profiles[1].id).toBe(saved.profiles[1].id);

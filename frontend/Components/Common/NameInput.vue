@@ -6,7 +6,6 @@ const props = defineProps<{
   name: string;
   placeholder: string;
   label: string;
-  invalid?: boolean;
   locked?: boolean; // shown as text
 }>();
 const emit = defineEmits<{ rename: [typed: string] }>();
@@ -34,7 +33,6 @@ async function commit() {
     class="generic-input"
     :class="{
       'pointer-events-none border-transparent! bg-transparent!': locked,
-      'border-(--warning)! text-(--warning)': invalid,
     }"
     @change="commit"
     @keydown.enter="($event.target as HTMLElement).blur()"
