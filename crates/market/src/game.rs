@@ -54,11 +54,14 @@ pub fn check_abort() {
     }
 }
 
-/// A panic hook that is quiet about `Stopped`.
+/// The panic payload of a round that found the region closed (maintenance), with the screen.
+pub struct Closed(pub image::RgbaImage);
+
+/// A panic hook that is quiet about `Stopped` and `Closed`.
 pub fn quiet_stops() {
     let prev = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
-        if !info.payload().is::<Stopped>() {
+        if !info.payload().is::<Stopped>() && !info.payload().is::<Closed>() {
             prev(info);
         }
     }));
@@ -68,6 +71,8 @@ pub fn quiet_stops() {
 pub fn panic_text(e: &(dyn std::any::Any + Send)) -> String {
     if e.is::<Stopped>() {
         "stopped".into()
+    } else if e.is::<Closed>() {
+        "the region is closed".into()
     } else if let Some(s) = e.downcast_ref::<String>() {
         s.clone()
     } else if let Some(s) = e.downcast_ref::<&str>() {

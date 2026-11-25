@@ -22,6 +22,7 @@ pub struct Opts {
 /// How many things it read (materials, searches, the exchange).
 pub fn pass(g: &mut Game, conn: &Connection, region: &str, o: &Opts) -> usize {
     let scan = db::start(conn, region);
+    *market::REGION.lock().unwrap() = region.to_string();
     let started = chrono::Utc::now();
     let (mut mats, mut found, mut ex) = (vec![], vec![], None);
     if o.strips {

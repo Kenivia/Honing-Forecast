@@ -154,6 +154,14 @@ pub fn reset(g: &mut Game) {
     close_shop(g);
 }
 
+/// Ends the round (`Closed`) when the game says the region is closed (maintenance).
+pub fn check_closed(img: &RgbaImage) {
+    if looks(img, "region_closed") {
+        log("the region is closed");
+        std::panic::panic_any(crate::game::Closed(img.clone()));
+    }
+}
+
 /// The screen at the moment a step failed, for `unit` (its own shot is taken after the step's cleanup).
 static FAIL: std::sync::Mutex<Option<RgbaImage>> = std::sync::Mutex::new(None);
 
@@ -184,6 +192,8 @@ pub fn unit<T>(g: &mut Game, what: &str, mut f: impl FnMut(&mut Game) -> Option<
         }
         let shot = FAIL.lock().unwrap().take().unwrap_or_else(|| g.shot(None));
         keep(&shot, what);
+        check_closed(&shot);
+        check_closed(&g.shot(None));
         if crate::report::OFFLINE.load(std::sync::atomic::Ordering::Relaxed) {
             panic!("{what}: failed while offline");
         }

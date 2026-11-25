@@ -7,7 +7,7 @@ use crate::{
     ui::*,
 };
 use image::{GrayImage, RgbaImage};
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 
 #[derive(Debug, Default, serde::Serialize)]
 pub struct Material {
@@ -120,6 +120,37 @@ fn keep_unknown_name(img: &RgbaImage, raw: &str) {
             chrono::Local::now().format("%H%M%S")
         )))
         .unwrap();
+}
+
+/// The region being scanned, for reports (set by `run::pass`).
+pub static REGION: Mutex<String> = Mutex::new(String::new());
+
+// An error event with the whole screen, once per read name while the program runs.
+fn report_unknown(img: &RgbaImage, raw: &str, place: &str, stored: &str, fit: bool) {
+    static SENT: Mutex<Vec<String>> = Mutex::new(vec![]);
+    let mut sent = SENT.lock().unwrap();
+    if sent.iter().any(|s| s == raw) {
+        return;
+    }
+    sent.push(raw.to_string());
+    let how = if fit { "90% text match" } else { "as read" };
+    let cands = icons::candidates(img);
+    let why = if cands.is_empty() {
+        let (item, s) = icons::best(img);
+        format!("best icon: {item} {s:.2} (needs {:.2})", icons::PASS)
+    } else {
+        let tied: Vec<String> = cands
+            .iter()
+            .take(4)
+            .map(|(i, s)| format!("{} {s:.2}", i.name))
+            .collect();
+        format!("icons tied: {}", tied.join(", "))
+    };
+    let region = REGION.lock().unwrap();
+    let text = format!(
+        "unknown item: read {raw:?}\n  at {place} ({region})\n  stored as {stored:?} ({how})\n  {why}"
+    );
+    crate::report::event("error", &text, Some(img));
 }
 
 /// (page, pages) from the "1/2" under the list.
@@ -286,7 +317,7 @@ fn purchase_open(img: &RgbaImage) -> bool {
 }
 
 /// Row `i` of the current page, through its purchase window. None if it would not open.
-fn read_row(g: &mut Game, i: usize) -> Option<Material> {
+fn read_row(g: &mut Game, i: usize, place: &str) -> Option<Material> {
     // the Market's Buy only opens the purchase window; never press it anywhere else
     let listed = |img: &RgbaImage| looks(img, "market_header") && looks(img, "buy_button");
     if !act(g, 2, 0.0, 3.0, |g| g.click(820, row_y(i)), listed) {
@@ -321,7 +352,10 @@ fn read_row(g: &mut Game, i: usize) -> Option<Material> {
             keep_unknown_name(&img, &m.raw_name);
             log(&format!("unknown item, read as {:?}", m.raw_name));
             let all: Vec<&str> = icons::items().iter().map(|i| i.name.as_str()).collect();
-            best_match(&m.raw_name, &all, 0.9).map_or(m.raw_name.clone(), str::to_string)
+            let fit = best_match(&m.raw_name, &all, 0.9);
+            let name = fit.map_or(m.raw_name.clone(), str::to_string);
+            report_unknown(&img, &m.raw_name, place, &name, fit.is_some());
+            name
         }
     };
     crate::strips::context(&m.name);
@@ -376,7 +410,8 @@ fn read_section(g: &mut Game, section: &str, out: &mut Vec<Material>) -> Option<
         };
         for i in 0..n {
             crate::strips::context(&format!("{section} page {page} row {i}"));
-            let mut m = read_row(g, i)?;
+            let place = format!("{section} page {page} row {}", i + 1);
+            let mut m = read_row(g, i, &place)?;
             log(&format!(
                 "  {} {:?} {:?} depth {:?} 5d {:?}",
                 m.name, m.avg_day, m.recent, m.depth, m.history

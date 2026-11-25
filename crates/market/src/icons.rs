@@ -18,7 +18,7 @@ const X: i32 = 802;
 const Y: i32 = 205;
 const SIZE: u32 = 46;
 /// an icon below this is not the item's
-const PASS: f64 = 0.9;
+pub const PASS: f64 = 0.9;
 /// icons this close to the best are kept for the name to decide
 const NEAR: f64 = 0.03;
 
@@ -88,20 +88,17 @@ fn ncc(img: &RgbaImage, icon: &Icon, x: i32, y: i32) -> f64 {
     num / (aa * ss).sqrt().max(1e-9)
 }
 
+/// The best icon's first item and its score, for reports.
+pub fn best(img: &RgbaImage) -> (&'static str, f64) {
+    let (icon, s) = scores(img)[0];
+    let item = items().iter().find(|i| i.icon == icon).unwrap();
+    (&item.name, s)
+}
+
 /// The items whose icon is drawn in the open purchase window, best first: every item of each icon
 /// that passes and is within NEAR of the best. Empty when no icon passes.
 pub fn candidates(img: &RgbaImage) -> Vec<(&'static Item, f64)> {
-    let mut scores: Vec<(&str, f64)> = icons()
-        .iter()
-        .map(|ic| {
-            let best = (-1..=1)
-                .flat_map(|dx| (-1..=1).map(move |dy| (dx, dy)))
-                .map(|(dx, dy)| ncc(img, ic, X + dx, Y + dy))
-                .fold(f64::MIN, f64::max);
-            (ic.name.as_str(), best)
-        })
-        .collect();
-    scores.sort_by(|a, b| b.1.total_cmp(&a.1));
+    let scores = scores(img);
     let Some(&(_, top)) = scores.first() else {
         return vec![];
     };
@@ -115,4 +112,20 @@ pub fn candidates(img: &RgbaImage) -> Vec<(&'static Item, f64)> {
                 .map(move |i| (i, s))
         })
         .collect()
+}
+
+// every icon's score, best first
+fn scores(img: &RgbaImage) -> Vec<(&'static str, f64)> {
+    let mut scores: Vec<(&'static str, f64)> = icons()
+        .iter()
+        .map(|ic| {
+            let best = (-1..=1)
+                .flat_map(|dx| (-1..=1).map(move |dy| (dx, dy)))
+                .map(|(dx, dy)| ncc(img, ic, X + dx, Y + dy))
+                .fold(f64::MIN, f64::max);
+            (ic.name.as_str(), best)
+        })
+        .collect();
+    scores.sort_by(|a, b| b.1.total_cmp(&a.1));
+    scores
 }

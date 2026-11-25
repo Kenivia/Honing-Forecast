@@ -15,7 +15,7 @@
 use base64::Engine;
 use hf_market::{
     assets, ctl, db,
-    game::{self, Game, Stopped, check_abort, ms, panic_text, quiet_stops},
+    game::{self, Closed, Game, Stopped, check_abort, ms, panic_text, quiet_stops},
     input::awake,
     region, report, run, sign,
     ui::{self, log, looks},
@@ -499,12 +499,14 @@ fn ensure_game(current: &mut Option<&'static str>) {
             continue;
         };
         // the splash window comes first, smaller than the game
-        let up = catch_unwind(AssertUnwindSafe(|| {
-            let img = g.shot(None);
-            img.dimensions() == (1920, 1080)
-                && (looks(&img, "char_select") || looks(&img, "server_select"))
-        }));
-        if up.unwrap_or(false) {
+        let img = catch_unwind(AssertUnwindSafe(|| g.shot(None)))
+            .ok()
+            .filter(|img| img.dimensions() == (1920, 1080));
+        let Some(img) = img else {
+            continue;
+        };
+        ui::check_closed(&img);
+        if looks(&img, "char_select") || looks(&img, "server_select") {
             log("the game is up");
             return;
         }
@@ -529,14 +531,19 @@ fn close_game(current: &mut Option<&'static str>) {
     }
 }
 
-/// Closes the game and waits for the next multiple of the gap after now, UTC; a gap changed meanwhile counts.
-fn rest(current: &mut Option<&'static str>) {
+/// Closes the game and waits for the next multiple of the gap after now, UTC (with no gap, `secs` from now);
+/// a gap changed meanwhile counts.
+fn rest(current: &mut Option<&'static str>, secs: i64) {
     close_game(current);
     let end = chrono::Utc::now().timestamp();
     set_state("waiting");
     loop {
         let g = GAP.load(Ordering::Relaxed) * 60;
-        let next = if g == 0 { end } else { (end / g + 1) * g };
+        let next = if g == 0 {
+            end + secs
+        } else {
+            (end / g + 1) * g
+        };
         if NEXT.swap(next, Ordering::Relaxed) != next {
             let at = chrono::DateTime::from_timestamp(next, 0).unwrap();
             log(&format!("next round at {} UTC", at.format("%H:%M")));
@@ -577,9 +584,11 @@ fn recover(current: &mut Option<&'static str>) {
 }
 
 /// Rounds until paused, GAP minutes apart, recovering from a round that breaks or reads nothing (at once);
-/// panics after three in a row.
+/// panics after three in a row. A closed region (maintenance) skips to the next slot, with no gap 4 hours
+/// and then every 2.
 fn scan(conn: &rusqlite::Connection, o: &run::Opts, current: &mut Option<&'static str>) {
     let mut strikes = 0;
+    let mut closed = false;
     awake(true);
     loop {
         update(true);
@@ -595,15 +604,29 @@ fn scan(conn: &rusqlite::Connection, o: &run::Opts, current: &mut Option<&'stati
         let why = match n {
             Ok(n) if n > 0 => {
                 strikes = 0;
+                closed = false;
                 if GAP.load(Ordering::Relaxed) > 0 {
-                    rest(current);
+                    rest(current, 0);
                 }
                 continue;
             }
             Ok(_) => "a round read nothing".to_string(),
             Err(e) if e.is::<Stopped>() => std::panic::resume_unwind(e),
+            Err(e) if e.is::<Closed>() => {
+                let img = &e.downcast_ref::<Closed>().unwrap().0;
+                report::event(
+                    "info",
+                    "the region is closed (maintenance?): skipping this round",
+                    Some(img),
+                );
+                strikes = 0;
+                rest(current, if closed { 7200 } else { 14400 });
+                closed = true;
+                continue;
+            }
             Err(e) => panic_text(e.as_ref()),
         };
+        closed = false;
         strikes += 1;
         if strikes > 3 {
             panic!("gave up after 3 recoveries in a row: {why}");
