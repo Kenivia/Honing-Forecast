@@ -28,8 +28,7 @@ const emit = defineEmits<{
 }>();
 const is_forbidden = (chest: Chest) => !!props.forbidden?.includes(chest.key);
 const can_forbid = (chest: Chest) => is_forbidden(chest) || chest.band > 0;
-const BUTTON =
-  "flex h-7 w-7 items-center justify-center rounded border border-(--border-main) text-(--text-muted) hover:text-(--text-bright)";
+const BUTTON = "icon-button";
 // a public svg drawn in the text color
 const mask = (name: string) => ({
   mask: `url(/Icons/${name}.svg) center / contain no-repeat`,

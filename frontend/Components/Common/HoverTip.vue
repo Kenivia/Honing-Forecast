@@ -134,11 +134,12 @@ function outside(event: PointerEvent) {
   clearTimeout(timer);
   open.value = false;
 }
-watch(open, (is_open) =>
-  is_open
-    ? document.addEventListener("pointerdown", outside)
-    : document.removeEventListener("pointerdown", outside),
-);
+const emit = defineEmits<{ closed: [] }>();
+watch(open, (is_open) => {
+  if (is_open) return document.addEventListener("pointerdown", outside);
+  document.removeEventListener("pointerdown", outside);
+  emit("closed");
+});
 onBeforeUnmount(() => {
   stay();
   document.removeEventListener("pointerdown", outside);

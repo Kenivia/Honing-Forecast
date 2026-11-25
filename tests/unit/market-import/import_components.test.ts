@@ -304,7 +304,7 @@ describe("Uwuowo", () => {
     expect(fetch_button(w).attributes("disabled")).toBeDefined();
   });
 
-  it("an empty name shows its default and asks for a name, not in red", async () => {
+  it("an empty name shows the hint and asks for a name, not in red", async () => {
     const fn = serve({});
     const { w, profile } = mount_uwuowo("Beta");
     await w.find("input").setValue("  ");
@@ -312,9 +312,9 @@ describe("Uwuowo", () => {
     expect(profile.char_name).toBe("");
     expect(fn).not.toHaveBeenCalled();
     expect((w.find("input").element as HTMLInputElement).value).toBe("");
-    expect(w.find("input").attributes("placeholder")).toBe("Newchar");
+    expect(w.find("input").attributes("placeholder")).toBe("Type in-game name");
     expect(w.find("input").classes()).not.toContain("text-(--warning)");
-    expect(fetch_button(w).text()).toBe("Enter a name");
+    expect(fetch_button(w).text()).toBe("Type a name to fetch");
     expect(fetch_button(w).attributes("disabled")).toBeDefined();
   });
 });

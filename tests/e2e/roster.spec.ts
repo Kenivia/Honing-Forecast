@@ -92,10 +92,15 @@ test("an unnamed character asks for a name, an invalid one reddens its button; n
   const boxes = page.getByRole("textbox", { name: "Char name" });
   const fetch_buttons = page
     .locator(".char-row")
-    .getByRole("button", { name: /Enter a name|Cannot contain|Fetch from/ });
+    .getByRole("button", {
+      name: /Type a name to fetch|Cannot contain|Fetch from/,
+    });
   await expect(boxes.first()).toHaveValue("");
-  await expect(boxes.first()).toHaveAttribute("placeholder", "Newchar");
-  await expect(fetch_buttons.first()).toHaveText("Enter a name");
+  await expect(boxes.first()).toHaveAttribute(
+    "placeholder",
+    "Type in-game name",
+  );
+  await expect(fetch_buttons.first()).toHaveText("Type a name to fetch");
   await expect(fetch_buttons.first()).toBeDisabled();
   await expect(fetch_buttons.first()).not.toHaveClass(/warning/);
 

@@ -24,7 +24,11 @@ const props = defineProps<{
 
 const roster_store = useRosterStore();
 const { all_profiles } = storeToRefs(roster_store);
-const problem = computed(() => name_problem(props.any_char_name));
+const problem = computed(() =>
+  props.any_char_name === ""
+    ? "Name a character to fetch the roster"
+    : name_problem(props.any_char_name),
+);
 const blocked = computed(() => props.region === null || !!problem.value);
 const roster_of = (char: string) =>
   all_profiles.value.find((p) => p.char_name === char)?.roster_id ?? "";

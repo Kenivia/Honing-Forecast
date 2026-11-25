@@ -3,6 +3,7 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
+- unify hover tooltip and aria
 - sort out the roster setup ui
 - bible syncing take in serca
   - per-piece serca icon

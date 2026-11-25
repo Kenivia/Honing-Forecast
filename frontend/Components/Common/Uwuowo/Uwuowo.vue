@@ -15,6 +15,7 @@ const props = defineProps<{
   hide_region?: boolean;
   region_change?: (_event: any) => void;
   apply?: ApplyFetch;
+  card?: boolean; // roster card: bigger name, no label once linked, refresh shown by the card
 }>();
 
 const roster_store = useRosterStore();
@@ -39,15 +40,17 @@ const linked = computed(() => {
     {{ profile.char_name }} already exists
   </div>
   <div
-    class="flex h-fit w-min basis-full flex-row justify-around gap-1 py-0.5 pl-1"
+    class="flex h-fit basis-full flex-row items-center gap-1 py-0.5 pl-1"
+    :class="card ? 'w-full' : 'w-min justify-around'"
   >
-    <span class="w-fit text-nowrap"> Char name:</span>
+    <span v-if="!(card && linked)" class="w-fit text-nowrap"> Char name:</span>
     <NameInput
       :name="profile.char_name"
-      :placeholder="roster_store.char_default_label(profile)"
+      placeholder="Type in-game name"
       label="Char name"
       :locked="linked"
-      class="min-w-full"
+      :class="card ? 'min-w-0 flex-1' : 'min-w-full'"
+      :style="card && linked ? { fontSize: '1.4rem', paddingLeft: 0 } : {}"
       @rename="rename"
     />
   </div>
@@ -65,6 +68,7 @@ const linked = computed(() => {
       :counter="counter"
       :profile_id="profile.id"
       :linked="linked"
+      :hide_refresh="card"
     />
   </div>
 </template>

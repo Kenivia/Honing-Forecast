@@ -38,7 +38,18 @@ async function mount_roster(entries: [string, number][]) {
 
 const button = (w, text: string) =>
   w.findAll("button").filter((b) => b.text() === text);
-const rows = (w) => w.findAll(".char-row");
+const labelled = (w, prefix: string) =>
+  w
+    .findAll("button")
+    .filter((b) => b.attributes("aria-label")?.startsWith(prefix));
+const drag_to = (w, roster: number, order: number[]) => {
+  const grid = w.findAllComponents({ name: "VueDraggable" })[roster];
+  const list = grid.props("modelValue");
+  grid.vm.$emit(
+    "update:modelValue",
+    order.map((i) => list[i]),
+  );
+};
 const row_names = (w) =>
   w
     .findAllComponents({ name: "Uwuowo" })
@@ -84,19 +95,23 @@ describe("RosterView", () => {
     expect((box().element as HTMLInputElement).value).toBe("");
   });
 
-  it("roster arrows move the roster, none past either end", async () => {
+  it("roster arrows move the roster up and down, disabled at either end", async () => {
     const { wrapper, store } = await mount_roster([
       ["Alice", 0],
       ["Carol", 1],
       ["Bob", 0],
     ]);
     const cards = () => wrapper.findAll(".card-shell");
-    expect(cards()[0].find(".arrow-btn-left").exists()).toBe(false);
-    expect(cards()[1].find(".arrow-btn-right").exists()).toBe(false);
-    await cards()[0].find(".arrow-btn-right").trigger("click");
+    expect(cards()[0].find(".arrow-btn-up").attributes()).toHaveProperty(
+      "disabled",
+    );
+    expect(cards()[1].find(".arrow-btn-down").attributes()).toHaveProperty(
+      "disabled",
+    );
+    await cards()[0].find(".arrow-btn-down").trigger("click");
     expect(store.roster_ids).toEqual(["1", "0"]);
     expect(names()).toEqual(["Carol", "Alice", "Bob"]);
-    await cards()[1].find(".arrow-btn-left").trigger("click");
+    await cards()[1].find(".arrow-btn-up").trigger("click");
     expect(store.roster_ids).toEqual(["0", "1"]);
   });
 
@@ -105,10 +120,10 @@ describe("RosterView", () => {
       ["Newchar", 0],
       ["Carol", 1],
     ]);
-    await wrapper
-      .findAll(".card-shell")[1]
-      .find("button.w-full")
-      .trigger("click");
+    await button(
+      wrapper.findAll(".card-shell")[1],
+      "Add new character",
+    )[0].trigger("click");
     const added = store.all_profiles.at(-1);
     expect(added.char_name).toBe("");
     expect(store.char_label(added)).toBe("Newchar1");
@@ -139,7 +154,7 @@ describe("RosterView", () => {
       ["Carol", 1],
     ]);
     store.all_profiles[1].tier = 1;
-    await button(wrapper, "Make a copy")[1].trigger("click");
+    await labelled(wrapper, "Make a copy")[1].trigger("click");
     const [, carol, copy] = store.all_profiles;
     expect(copy.char_name).toBe("");
     expect(copy.roster_id).toBe("1");
@@ -152,7 +167,7 @@ describe("RosterView", () => {
 
   it("delete is hidden with a single character", async () => {
     const { wrapper } = await mount_roster([["Alice", 0]]);
-    expect(button(wrapper, "Delete")).toHaveLength(0);
+    expect(labelled(wrapper, "Delete")).toHaveLength(0);
   });
 
   it("deleting the last character of a roster drops its columns and region", async () => {
@@ -160,7 +175,7 @@ describe("RosterView", () => {
       ["Alice", 0],
       ["Carol", 1],
     ]);
-    await button(wrapper, "Delete")[1].trigger("click");
+    await labelled(wrapper, "Delete")[1].trigger("click");
     expect(names()).toEqual(["Alice"]);
     const config = store.roster_config;
     expect(config.roster_mats_owned[1]).toBeUndefined();
@@ -175,7 +190,7 @@ describe("RosterView", () => {
       ["Carol", 0],
     ]);
     store.switch_profile(1);
-    await button(wrapper, "Delete")[1].trigger("click");
+    await labelled(wrapper, "Delete")[1].trigger("click");
     expect(store.active_profile.char_name).toBe("Alice");
   });
 
@@ -186,7 +201,7 @@ describe("RosterView", () => {
       ["Carol", 0],
     ]);
     store.switch_profile(2);
-    await button(wrapper, "Delete")[0].trigger("click");
+    await labelled(wrapper, "Delete")[0].trigger("click");
     expect(store.active_profile.char_name).toBe("Carol");
   });
 
@@ -198,24 +213,20 @@ describe("RosterView", () => {
     const config = store.roster_config;
     config.roster_chests[1] = [];
     config.roster_income[1] = [];
-    await button(wrapper, "Delete")[1].trigger("click");
+    await labelled(wrapper, "Delete")[1].trigger("click");
     expect(config.roster_chests[1]).toBeUndefined();
     expect(config.roster_income[1]).toBeUndefined();
   });
 
-  it("arrows swap within a roster across interleaved profiles", async () => {
+  it("a drop reorders within a roster across interleaved profiles", async () => {
     const { wrapper } = await mount_roster([
       ["Alice", 0],
       ["Carol", 1],
       ["Bob", 0],
+      ["Dave", 0],
     ]);
-    const first = rows(wrapper)[0];
-    expect(first.find(".arrow-btn-up").exists()).toBe(false);
-    expect(rows(wrapper)[1].find(".arrow-btn-down").exists()).toBe(false);
-    await first.find(".arrow-btn-down").trigger("click");
-    expect(names()).toEqual(["Bob", "Carol", "Alice"]);
-    await rows(wrapper)[1].find(".arrow-btn-up").trigger("click");
-    expect(names()).toEqual(["Alice", "Carol", "Bob"]);
+    drag_to(wrapper, 0, [2, 0, 1]);
+    expect(names()).toEqual(["Dave", "Carol", "Alice", "Bob"]);
   });
 
   it("reordering keeps the active character", async () => {
@@ -223,8 +234,29 @@ describe("RosterView", () => {
       ["Alice", 0],
       ["Bob", 0],
     ]);
-    await rows(wrapper)[0].find(".arrow-btn-down").trigger("click");
+    drag_to(wrapper, 0, [1, 0]);
+    expect(names()).toEqual(["Bob", "Alice"]);
     expect(store.active_profile.char_name).toBe("Alice");
+  });
+
+  it("delete asks first only when materials were typed", async () => {
+    const { wrapper, store } = await mount_roster([
+      ["Alice", 0],
+      ["Bob", 0],
+      ["Carol", 0],
+    ]);
+    store.all_profiles[0].tier = 1;
+    await labelled(wrapper, "Delete")[0].trigger("click");
+    expect(names()).toEqual(["Bob", "Carol"]);
+    store.all_profiles[0].chests.push({} as any);
+    await labelled(wrapper, "Delete")[0].trigger("click");
+    expect(names()).toEqual(["Bob", "Carol"]);
+    const confirm = [...document.body.querySelectorAll("button")].find(
+      (b) => b.textContent.trim() === "Delete",
+    );
+    confirm.click();
+    await nextTick();
+    expect(names()).toEqual(["Carol"]);
   });
 
   it("imports go to the right profile", async () => {

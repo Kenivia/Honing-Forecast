@@ -7,12 +7,12 @@ import {
   reset_uwuowo_bundle,
 } from "./UwuowoUtils";
 import Popup from "../Popup.vue";
-import Spinner from "../Spinner.vue";
+import RefreshButton from "./RefreshButton.vue";
 import ConfirmPanel from "./ConfirmPanel.vue";
 import { computed, ref, watch } from "vue";
 import { useTimeAgo } from "@vueuse/core";
 import { find_linked, signed_in } from "@/Utils/BibleAuth";
-import { refresh_char, refresh_errors, refreshing } from "@/Utils/BibleSync";
+import { refresh_char, refresh_errors } from "@/Utils/BibleSync";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { name_invalid, name_problem } from "@/Utils/Helpers";
 
@@ -23,6 +23,7 @@ const props = defineProps<{
   counter?: number; // for triggering when char name input changes
   profile_id?: string;
   linked?: boolean; // last fetched + refresh instead of the popup
+  hide_refresh?: boolean; // the roster card shows its own, with a smaller last fetched line
 }>();
 
 const profile = computed(() =>
@@ -31,7 +32,11 @@ const profile = computed(() =>
   ),
 );
 const time_ago = useTimeAgo(() => profile.value?.fetched_at ?? 0);
-const problem = computed(() => name_problem(props.char_name));
+const problem = computed(() =>
+  props.char_name === ""
+    ? "Type a name to fetch"
+    : name_problem(props.char_name),
+);
 const blocked = computed(() => props.region === null || !!problem.value);
 
 watch(
@@ -77,25 +82,12 @@ async function click() {
 <template>
   <div v-if="linked" class="flex w-full flex-col">
     <div class="flex flex-row items-center gap-2">
-      <span class="text-nowrap text-(--text-muted)"
+      <span
+        class="text-nowrap text-(--text-muted)"
+        :class="{ 'text-sm': hide_refresh }"
         >Last fetched {{ profile?.fetched_at ? time_ago : "never" }}</span
       >
-      <button
-        class="generic-button flex h-7 w-7 shrink-0 items-center justify-center p-0!"
-        aria-label="Refresh from lostark.bible"
-        :disabled="refreshing.has(profile_id)"
-        @click="refresh_char(profile_id)"
-      >
-        <Spinner v-if="refreshing.has(profile_id)" class="h-4 w-4" />
-        <span
-          v-else
-          class="block h-4 w-4 bg-current"
-          style="
-            mask: url(/Icons/rotate-right-solid-full.svg) center / contain
-              no-repeat;
-          "
-        />
-      </button>
+      <RefreshButton v-if="!hide_refresh" :profile_id="profile_id" />
     </div>
     <span v-if="refresh_errors[profile_id]" class="text-xs text-(--warning)">{{
       refresh_errors[profile_id]

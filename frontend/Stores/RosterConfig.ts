@@ -112,6 +112,25 @@ export function fresh_profile_id(config: RosterConfig): string | null {
   return fresh ? p.id : null;
 }
 
+// typed materials or chests (not what a fetch sets); a roster's last character counts its roster's too
+export function has_edited_mats(config: RosterConfig, p: CharProfile): boolean {
+  const base = new_char_profile();
+  const empty = create_default_owned_input_column();
+  const own = (
+    ["bound_budgets", "special_budget", "chests", "forbidden_chests"] as const
+  ).some((k) => !equal(p[k], base[k]));
+  const last = !config.profiles.some(
+    (x) => x.roster_id === p.roster_id && x.id !== p.id,
+  );
+  return (
+    own ||
+    (last &&
+      (!equal(config.roster_mats_owned[p.roster_id], empty) ||
+        !equal(config.tradable_mats_owned[p.roster_id], empty) ||
+        !!config.roster_chests[p.roster_id]?.length))
+  );
+}
+
 export function default_prices(region: MarketRegions): InputColumn {
   return create_input_column(InputType.Int, ALL_BUNDLE_KEYS, {
     value: (key) =>
@@ -368,18 +387,31 @@ export const useRosterStore = defineStore("roster", {
       return this.add_char(roster_id);
     },
     // a separate, identical character: chests and income settings are copied too
-    duplicate_profile(index: number) {
+    duplicate_profile(index: number): CharProfile {
       const profiles = this.roster_config.profiles;
+      const id = crypto.randomUUID();
       this.add_profile({
         ...structuredClone(toRaw(profiles[index])),
-        id: crypto.randomUUID(),
+        id,
         char_name: "",
       });
+      return this.roster_config.profiles.find((p) => p.id === id);
     },
     move_profile(i: number, j: number) {
       const profiles = this.roster_config.profiles;
       const id = this.active_profile.id;
       [profiles[i], profiles[j]] = [profiles[j], profiles[i]];
+      this.point_active_at(id);
+    },
+    // puts a roster's characters in the order of `ids`, in the slots they already take
+    reorder_roster(roster_id: string, ids: string[]) {
+      const profiles = this.roster_config.profiles;
+      const id = this.active_profile.id;
+      const by_id = new Map(profiles.map((p) => [p.id, p]));
+      let k = 0;
+      this.roster_config.profiles = profiles.map((p) =>
+        p.roster_id === roster_id ? by_id.get(ids[k++]) : p,
+      );
       this.point_active_at(id);
     },
     // renames take what was typed; a blank one goes back to the default label
