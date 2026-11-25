@@ -2,8 +2,7 @@
 Writes public/Icons/Equipments/<T4|Serca>/<class>/<Piece>.webp: each class's honed gear art, the ancient "Destined
 Hellfire" set for T4 and "Destined Tremor" for Serca; the vambrace (Serca only) is the class's ancient Tremor one.
 Serca pieces are drawn with the blue honed-gear border (icon_border_inherit.png, from lostark.bible); T4 has none.
-Also Sidereal/<class>/<level>.webp, the sidereal weapon's art per level (ItemEvolutionAppearance), bordered from +10
-(counted as Serca).
+Also Sidereal/<class>/<level>.webp, the sidereal weapon's art per level (ItemEvolutionAppearance), never bordered.
 Run after scanner_setup/game_files/extract.py.
 
     python scripts/game_files/equipment_icons.py
@@ -78,7 +77,7 @@ written = 0
 for row in table("ItemEvolutionAppearance").execute("select * from ItemEvolutionAppearance"):
     level = int(row["PrimaryKey"]) - 1100000
     label = classes[int(row["SecondaryKey"])]
-    save(icon_art(f"{row['Icon']}_{row['IconIndex']}".lower()), OUT / "Sidereal" / label.lower() / f"{level}.webp", level >= 10)
+    save(icon_art(f"{row['Icon']}_{row['IconIndex']}".lower()), OUT / "Sidereal" / label.lower() / f"{level}.webp", False)
     written += 1
 assert written == len(CLASSES) * 11, written
 print("Sidereal", written)

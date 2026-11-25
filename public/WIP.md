@@ -7,8 +7,11 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - sort out the roster setup ui
 - bible syncing take in serca
   - per-piece serca icon
+  - improve auto tier assignment instead of asking for a tier
 
-- let the market scanner sleep
+- ~~let the market scanner sleep~~
+- snap hover point on graph
+  - maybe switch to using  chart js
 
 - MEME REVIEW
 

@@ -59,9 +59,9 @@ async function load_backup(event: Event) {
         aria-label="Import backup file"
         @change="load_backup"
       />
-      <span class="annotation basis-full"
+      <!-- <span class="annotation basis-full"
         >Covers every character and roster.</span
-      >
+      > -->
       <span v-if="import_error" class="basis-full text-xs text-(--warning)">
         Import failed: {{ import_error }}
       </span>
