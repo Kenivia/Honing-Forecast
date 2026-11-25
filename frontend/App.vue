@@ -114,13 +114,19 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
 
 <template>
   <div class="flex min-h-lvh max-w-full flex-col">
-    <header ref="top_row" class="sticky top-0 z-50">
+    <header
+      ref="top_row"
+      class="group sticky top-0 z-50 flex flex-row border-b border-(--border-muted) bg-(--bg-muted)"
+    >
+      <!-- Sidebar.vue's burger, shown while its page is narrow -->
+      <div id="header-burger" class="flex shrink-0" />
       <nav
-        class="flex min-h-12 scrollbar-thin flex-row items-center justify-start overflow-x-auto border-b border-(--border-muted) bg-(--bg-muted) whitespace-nowrap"
+        class="scroll-x flex min-h-12 min-w-0 flex-1 flex-row items-center justify-start whitespace-nowrap"
       >
+        <!-- hidden with the burger too, under 900px at least -->
         <div
           v-if="!is900Narrow"
-          class="flex w-50 min-w-50 flex-row items-center text-lg"
+          class="flex w-50 min-w-50 flex-row items-center text-lg group-has-[.burger]:hidden"
         >
           <router-link to="/">
             <div class="grid h-12 w-12 place-items-center">

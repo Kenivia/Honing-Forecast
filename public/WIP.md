@@ -15,6 +15,8 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 
 - MEME REVIEW
 
+- set up some kind of secret manager before I do anything funny
+
 ## Forecast mode
 
 - ~~forecast mode UI~~ this is gonna hvae to be very pervasive

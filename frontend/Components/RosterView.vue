@@ -17,6 +17,7 @@ import { VueDraggable } from "vue-draggable-plus";
 import { signed_in } from "@/Utils/BibleAuth";
 import { sync_rosters, syncing } from "@/Utils/BibleSync";
 import { char_name_valid, class_key, get_icon_path } from "@/Utils/Helpers";
+import IconButton from "./Common/IconButton.vue";
 import { CLASS_KEYS } from "@/Utils/Constants";
 import BackupButtons from "./Common/BackupButtons.vue";
 import NameInput from "./Common/NameInput.vue";
@@ -40,7 +41,8 @@ const filtered_rosters_lists = computed(() =>
   ),
 );
 
-const COL_W = 444;
+// a character row: 200px name / ilevel column, 8px gap, 4 icon buttons (140px), 14px padding and border
+const COL_W = 362;
 const GAP = 16;
 // card fits min(chars + the add cell, 3) columns plus padding
 const card_width = (n: number) => {
@@ -57,9 +59,6 @@ const any_char_names = computed(() =>
   ),
 );
 
-const mask = (path: string) => ({
-  mask: `url(/Icons/${path}) center / contain no-repeat`,
-});
 const has_class = (p: CharProfile) => CLASS_KEYS.has(class_key(p.class_name));
 
 // the card opens the character, except from its inputs and buttons
@@ -162,7 +161,7 @@ function pick_class(name: string) {
                 :name="roster_config.roster_names[roster_id] ?? ''"
                 :placeholder="roster_store.roster_default_label(roster_id)"
                 label="Roster name"
-                class="card-title roster-name h-9 w-56 px-1"
+                class="card-title roster-name h-9 w-56 px-1 text-xl!"
                 @rename="
                   (typed) => roster_store.rename_roster(roster_id, typed)
                 "
@@ -207,6 +206,7 @@ function pick_class(name: string) {
           <div class="w-full max-w-full px-2">
             <VueDraggable
               class="char-grid"
+              :style="{ '--col-w': `${COL_W}px`, '--gap': `${GAP}px` }"
               :model-value="filtered_rosters_lists[roster_index]"
               @update:model-value="
                 (list) =>
@@ -222,16 +222,12 @@ function pick_class(name: string) {
             >
               <div
                 v-for="profile_pair in filtered_rosters_lists[roster_index]"
-                class="char-row @container cursor-pointer rounded border border-(--border-muted) bg-(--bg-main) p-1.5 hover:border-(--border-main)"
+                class="char-row scroll-x @container cursor-pointer rounded border border-(--border-muted) bg-(--bg-main) p-1.5 hover:border-(--border-main)"
                 :key="profile_pair.profile.id"
                 @click="open_char($event, profile_pair.profile)"
               >
-                <div
-                  class="grid grid-cols-1 gap-y-1 @min-[400px]:grid-cols-[16rem_1fr]"
-                >
-                  <div
-                    class="col-start-1 row-start-1 flex min-h-17 flex-col justify-between"
-                  >
+                <div class="grid grid-cols-[200px_auto] gap-x-2 gap-y-1">
+                  <div class="flex min-h-17 flex-col justify-between">
                     <Uwuowo
                       :profile="profile_pair.profile"
                       :hide_region="true"
@@ -254,99 +250,74 @@ function pick_class(name: string) {
                       "
                     />
                   </div>
-                  <div
-                    class="col-start-2 row-span-2 row-start-1 hidden items-center justify-center pb-8 @min-[400px]:flex"
-                  >
-                    <span
-                      v-if="has_class(profile_pair.profile)"
-                      class="size-22 bg-(--text-main) opacity-30"
-                      :style="
-                        mask(
-                          `Classes/${class_key(profile_pair.profile.class_name)}.svg`,
-                        )
-                      "
-                      :title="profile_pair.profile.class_name"
-                    />
-                    <button
-                      v-else
-                      class="relative grid size-22 cursor-pointer place-items-center text-(--text-main) opacity-30 hover:opacity-60"
-                      :aria-label="`Pick the class of ${roster_store.char_label(profile_pair.profile)}`"
-                      title="Pick the class"
-                      @click="open_picker(profile_pair.profile)"
-                    >
-                      <span
-                        class="absolute inset-0 bg-current opacity-50"
-                        :style="mask('Classes/unknown.png')"
+                  <div class="row-span-2 flex flex-col gap-1">
+                    <div class="grid min-h-0 flex-1 place-items-center">
+                      <ClassIcon
+                        v-if="has_class(profile_pair.profile)"
+                        large
+                        class="aspect-square h-full max-h-22 opacity-30"
+                        :class_name="profile_pair.profile.class_name"
                       />
-                      <span class="relative text-5xl leading-none font-bold"
-                        >?</span
+                      <button
+                        v-else
+                        class="aspect-square h-full max-h-22 cursor-pointer opacity-30 hover:opacity-60"
+                        :aria-label="`Pick the class of ${roster_store.char_label(profile_pair.profile)}`"
+                        title="Pick the class"
+                        @click="open_picker(profile_pair.profile)"
                       >
-                    </button>
-                  </div>
-                  <div
-                    class="pointer-events-none z-1 col-span-full row-start-2 flex flex-row items-end gap-2 pl-1"
-                  >
-                    <div class="flex flex-col text-nowrap">
-                      <span class="text-(--achieved)"
-                        >Achieved ilevel:
-                        {{ ilevel(profile_pair.profile, "achieved") }}</span
-                      >
-                      <span class="text-(--pending)"
-                        >Pending ilevel:
-                        {{ ilevel(profile_pair.profile, "pending") }}</span
-                      >
+                        <ClassIcon
+                          large
+                          class="size-full"
+                          :class_name="profile_pair.profile.class_name"
+                        />
+                      </button>
                     </div>
                     <div
-                      class="no-open pointer-events-auto -m-2 ml-auto grid cursor-default grid-cols-2 gap-1 p-2 @min-[400px]:flex"
+                      class="no-open grid w-fit cursor-default grid-cols-[auto_auto] gap-1 self-center @min-[348px]:flex"
                     >
                       <RefreshButton
                         v-if="roster_store.char_linked(profile_pair.profile)"
                         :profile_id="profile_pair.profile.id"
                       />
-                      <button
-                        class="icon-button drag-handle cursor-grab!"
+                      <IconButton
+                        icon="arrows-up-down-left-right-solid-full.svg"
+                        class="drag-handle cursor-grab!"
                         :aria-label="`Drag ${roster_store.char_label(profile_pair.profile)} to reorder`"
                         title="Drag to reorder"
-                      >
-                        <span
-                          class="h-full w-full bg-current"
-                          :style="
-                            mask('arrows-up-down-left-right-solid-full.svg')
-                          "
-                        />
-                      </button>
+                      />
                       <HoverTip
                         :text="
                           copied[profile_pair.profile.id] ??
                           'Duplicate this character'
                         "
                         :sticky="false"
+                        class="flex"
                         @closed="delete copied[profile_pair.profile.id]"
                       >
-                        <button
-                          class="icon-button"
+                        <IconButton
+                          icon="copy-solid-full.svg"
                           :aria-label="`Make a copy of ${roster_store.char_label(profile_pair.profile)}`"
                           @click="duplicate(profile_pair.profile)"
-                        >
-                          <span
-                            class="h-full w-full bg-current"
-                            :style="mask('copy-solid-full.svg')"
-                          />
-                        </button>
+                        />
                       </HoverTip>
-                      <button
+                      <IconButton
                         v-if="roster_config.profiles.length > 1"
-                        class="icon-button"
+                        icon="trash-solid-full.svg"
                         :aria-label="`Delete ${roster_store.char_label(profile_pair.profile)}`"
                         title="Delete"
                         @click="remove(profile_pair.profile)"
-                      >
-                        <span
-                          class="h-full w-full bg-current"
-                          :style="mask('trash-solid-full.svg')"
-                        />
-                      </button>
+                      />
                     </div>
+                  </div>
+                  <div class="flex flex-col justify-end pl-1 text-nowrap">
+                    <span class="text-(--achieved)"
+                      >Achieved ilevel:
+                      {{ ilevel(profile_pair.profile, "achieved") }}</span
+                    >
+                    <span class="text-(--pending)"
+                      >Pending ilevel:
+                      {{ ilevel(profile_pair.profile, "pending") }}</span
+                    >
                   </div>
                 </div>
               </div>
@@ -465,11 +436,10 @@ function pick_class(name: string) {
 
 /* columns of COL_W, at most 3, fewer as the card narrows */
 .char-grid {
-  --col-w: 444px;
   display: grid;
   grid-template-columns: repeat(auto-fill, min(var(--col-w), 100%));
   justify-content: center;
-  column-gap: 1rem;
+  column-gap: var(--gap);
   row-gap: 0.5rem;
 }
 
@@ -483,7 +453,6 @@ function pick_class(name: string) {
   border-color: transparent !important;
   border-bottom-color: var(--border-muted) !important;
   background: transparent !important;
-  font-size: 1.4rem;
 }
 
 .arrow-btn::after {

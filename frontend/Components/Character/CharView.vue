@@ -62,7 +62,7 @@ onUnmounted(() => {
     <template #top>
       <nav
         aria-label="Characters"
-        class="flex min-h-11 scrollbar-thin flex-row items-center overflow-x-auto border-b border-(--border-muted) bg-(--bg-muted) whitespace-nowrap"
+        class="scroll-x flex min-h-11 flex-row items-center border-b border-(--border-muted) bg-(--bg-muted) whitespace-nowrap"
       >
         <RouterLink
           v-for="profile in roster_chars"

@@ -4,6 +4,7 @@ import { BAND_COLORS, BAND_NAMES } from "@/Utils/Constants";
 import { get_icon_bg, get_icon_path } from "@/Utils/Helpers";
 import { amount_text, state_fits, type Chest } from "@/Utils/Chest";
 import ChestIcon from "./ChestIcon.vue";
+import IconButton from "./IconButton.vue";
 
 // The chests still to be opened, as two lists side by side in one card; each list, and each
 // column in a list, is half the card, one under another below 480px. Which chest goes where is
@@ -28,11 +29,6 @@ const emit = defineEmits<{
 }>();
 const is_forbidden = (chest: Chest) => !!props.forbidden?.includes(chest.key);
 const can_forbid = (chest: Chest) => is_forbidden(chest) || chest.band > 0;
-const BUTTON = "icon-button";
-// a public svg drawn in the text color
-const mask = (name: string) => ({
-  mask: `url(/Icons/${name}.svg) center / contain no-repeat`,
-});
 // half the width, one column below 480px
 const HALF = "min(100%, max(480px, calc(50% - 1rem)))";
 const open = defineModel<boolean>("open", { default: true });
@@ -182,9 +178,9 @@ const panels = computed(() => [
               </template>
             </span>
             <span class="flex gap-1">
-              <button
+              <IconButton
                 v-if="can_forbid(chest)"
-                :class="BUTTON"
+                icon="ban-solid-full.svg"
                 :aria-label="
                   is_forbidden(chest)
                     ? `Allow ${chest.title} on this character`
@@ -194,26 +190,16 @@ const panels = computed(() => [
                 @click="emit('forbid', chest.key)"
               >
                 <template v-if="is_forbidden(chest)">✓</template>
-                <span
-                  v-else
-                  class="h-full w-full bg-current"
-                  :style="mask('ban-solid-full')"
-                />
-              </button>
+              </IconButton>
               <!-- keeps the delete buttons in line -->
               <span v-else-if="editing" class="w-8" />
-              <button
+              <IconButton
                 v-if="editing"
-                :class="BUTTON"
+                icon="trash-solid-full.svg"
                 :aria-label="`Delete ${chest.title}`"
                 title="Delete"
                 @click="emit('remove', chest.key)"
-              >
-                <span
-                  class="h-full w-full bg-current"
-                  :style="mask('trash-solid-full')"
-                />
-              </button>
+              />
             </span>
           </div>
         </div>

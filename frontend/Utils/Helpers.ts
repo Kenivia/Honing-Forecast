@@ -215,6 +215,10 @@ export function chance_text(chance: number) {
 export function get_icon_path(name: string) {
   return IconMap[name] ?? "";
 }
+// a public icon drawn in the text colour, on a bg-current element
+export const icon_mask = (path: string) => ({
+  mask: `url(/Icons/${path}) center / contain no-repeat`,
+});
 export function class_key(class_name: string) {
   return (class_name ?? "").toLowerCase().replace(/[^a-z]/g, "");
 }

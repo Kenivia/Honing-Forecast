@@ -54,7 +54,7 @@ function mount_sidebar(narrow: boolean) {
         h("button", { class: "slot-close", onClick: p.close }, "x"),
       main: () => h("div", { class: "slot-main" }, "main"),
     },
-    global: { stubs: { ...stubs, Footer: true } },
+    global: { stubs: { ...stubs, Footer: true, teleport: true } },
   });
 }
 

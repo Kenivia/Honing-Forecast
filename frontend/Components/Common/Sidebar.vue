@@ -42,12 +42,18 @@ const close = () => (sidebarOpen.value = false);
 
       <div class="flex min-w-0 grow flex-col">
         <slot name="top" />
-        <div v-if="isNarrow" class="burger-anchor">
-          <button class="burger" @click="open" aria-label="Open navigation">
+        <!-- App.vue's header holds it, left of the tabs -->
+        <Teleport defer to="#header-burger">
+          <button
+            v-if="isNarrow"
+            class="burger"
+            @click="open"
+            aria-label="Open navigation"
+          >
             <span /><span /><span />
           </button>
-        </div>
-        <div class="main-stage w-full overflow-x-auto overflow-y-hidden">
+        </Teleport>
+        <div class="main-stage scroll-x w-full">
           <TopBanners />
           <slot name="main" />
         </div>
@@ -110,32 +116,16 @@ const close = () => (sidebarOpen.value = false);
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
 }
 
-/* below the top slot, under the header once scrolled */
-.burger-anchor {
-  position: sticky;
-  top: var(--top-row-h);
-  align-self: flex-start;
-  width: 0;
-  height: 0;
-  z-index: 100;
-}
-
 .burger {
-  position: absolute;
-  top: 10px;
-  left: 14px;
-  z-index: 100;
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 5px;
-  padding: 6px;
   background: var(--bg-muted);
   border: 2px solid var(--text-bright);
-  border-radius: 12px;
   cursor: pointer;
 }
 

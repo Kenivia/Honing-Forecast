@@ -1,4 +1,10 @@
 @import "tailwindcss" source(".");
+
+/* scrolls sideways when too narrow; never vertically */
+@utility scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
 @font-face {
   font-family: "Nunito";
   src: url("/Nunito-VariableFont_wght.ttf") format("truetype");
