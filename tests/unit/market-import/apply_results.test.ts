@@ -37,6 +37,17 @@ beforeEach(() => {
 });
 
 describe("apply_results", () => {
+  it("a sidereal weapon is set on the profile and fully ticked", () => {
+    const pieces = Array(6).fill(t4(20, 20));
+    pieces[5] = { ...t4(25, 40), sidereal_level: 9 };
+    apply_results(profile, pieces, false, true);
+    expect(profile.sidereal_level).toBe(9);
+    expect(profile.normal_grid[5]).toEqual(row(25));
+    expect(profile.adv_grid[5]).toEqual(Array(4).fill(FetchedDone));
+    apply_results(profile, Array(6).fill(t4(20, 20)), false, true);
+    expect(profile.sidereal_level).toBe(null);
+  });
+
   it("keeps the fetched class, and a fetch without one leaves it", () => {
     apply_results(profile, [t4(20, 0)], false, true, "Bard");
     expect(profile.class_name).toBe("Bard");

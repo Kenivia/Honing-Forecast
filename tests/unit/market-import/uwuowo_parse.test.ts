@@ -49,6 +49,28 @@ describe("lostark.bible scraping", () => {
     });
   });
 
+  it("reads a sidereal weapon (T0) as +25, T4 up to +9 and Serca from +10", async () => {
+    // weapon cell as lostark.bible showed Kowiz's on 2026-11-25
+    const sidereal = (n: number) =>
+      char_serca.replace(
+        /<span>Weapon<\/span><span>\+12<\/span><span>T4\.5<\/span>([\s\S]*?)1,750/,
+        `<span>Weapon</span><span>+${n}</span><span>T0</span>$11,830`,
+      );
+    serve(sidereal(10));
+    const out: any = await fetch_and_parse(req(), parse_char);
+    expect(out.pieces[5]).toEqual({
+      plus_n: 25,
+      ilevel: 1830,
+      tier: 1,
+      adv: NaN,
+      sidereal_level: 10,
+    });
+    serve(sidereal(9));
+    expect(
+      ((await fetch_and_parse(req(), parse_char)) as any).pieces[5],
+    ).toMatchObject({ plus_n: 25, tier: 0, adv: 40, sidereal_level: 9 });
+  });
+
   it("reads the vambrace as a 7th Serca piece, +0 when not equipped", async () => {
     // cell markup as lostark.bible served it on 2026-10-23
     serve(
@@ -99,15 +121,11 @@ describe("lostark.bible scraping", () => {
     expect(serca.pieces.every((p) => p.tier === 1)).toBe(true);
   });
 
-  it("a low-ilevel piece with no advanced cell is T4 at adv 0, and T0 reads as +25", async () => {
-    serve(
-      char_t4
-        .replace("<span>+25</span>", "")
-        .replace("<span>T4</span>", "<span>T0</span>"),
-    );
+  it("a low-ilevel piece with no advanced cell is T4 at adv 0", async () => {
+    serve(char_t4.replace("<span>+25</span>", ""));
     const out: any = await fetch_and_parse(req(), parse_char);
     expect(out.pieces[0]).toEqual({
-      plus_n: 25,
+      plus_n: 20,
       ilevel: 1710,
       tier: 0,
       adv: 0,

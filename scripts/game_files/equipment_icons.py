@@ -2,6 +2,8 @@
 Writes public/Icons/Equipments/<T4|Serca>/<class>/<Piece>.webp: each class's honed gear art, the ancient "Destined
 Hellfire" set for T4 and "Destined Tremor" for Serca; the vambrace (Serca only) is the class's ancient Tremor one.
 Serca pieces are drawn with the blue honed-gear border (icon_border_inherit.png, from lostark.bible); T4 has none.
+Also Sidereal/<class>/<level>.webp, the sidereal weapon's art per level (ItemEvolutionAppearance), bordered from +10
+(counted as Serca).
 Run after scanner_setup/game_files/extract.py.
 
     python scripts/game_files/equipment_icons.py
@@ -47,6 +49,7 @@ def save(art, path, border):
 
 shutil.rmtree(OUT / "T4", ignore_errors=True)
 shutil.rmtree(OUT / "Serca", ignore_errors=True)
+shutil.rmtree(OUT / "Sidereal", ignore_errors=True)
 items = table("Item")
 for tier, (low, high) in SETS.items():
     rows = items.execute(
@@ -66,3 +69,16 @@ for tier, (low, high) in SETS.items():
     expected = len(CLASSES) * (7 if tier == "Serca" else 6)
     assert len(written) == expected, (tier, len(written), expected)
     print(tier, len(written))
+
+# sidereal weapons (ids 11351xxxx): Category -> class, then the art per level 0-10 (PrimaryKey 1100000 + level)
+classes = {}
+for row in items.execute("select * from Item where PrimaryKey between 113510000 and 113519999"):
+    classes[int(row["Category"])] = next(label for column, label in CLASSES.items() if row[f"For{column}"])
+written = 0
+for row in table("ItemEvolutionAppearance").execute("select * from ItemEvolutionAppearance"):
+    level = int(row["PrimaryKey"]) - 1100000
+    label = classes[int(row["SecondaryKey"])]
+    save(icon_art(f"{row['Icon']}_{row['IconIndex']}".lower()), OUT / "Sidereal" / label.lower() / f"{level}.webp", level >= 10)
+    written += 1
+assert written == len(CLASSES) * 11, written
+print("Sidereal", written)

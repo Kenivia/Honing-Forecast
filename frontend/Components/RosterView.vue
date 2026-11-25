@@ -78,7 +78,8 @@ const has_class = (p: CharProfile) => CLASS_KEYS.has(class_key(p.class_name));
 
 // the card opens the character, except from its inputs and buttons
 function open_char(event: MouseEvent, profile: CharProfile) {
-  if ((event.target as Element).closest("input, button, select, a")) return;
+  if ((event.target as Element).closest("input, button, select, a, .no-open"))
+    return;
   if (window.getSelection()?.toString()) return;
   router.push({ name: "char", params: roster_store.char_params(profile) });
 }
@@ -157,7 +158,7 @@ function pick_class(name: string) {
           v-for="(roster_id, roster_index) in roster_ids"
           class="card-shell flex h-fit max-w-full flex-col pb-2"
           :style="{
-            width: `min(100%, ${card_width(filtered_rosters_lists[roster_index].length)})`,
+            width: `max(${card_width(3)}, min(100%, ${card_width(filtered_rosters_lists[roster_index].length)}))`,
           }"
           role="group"
           :aria-label="roster_store.roster_label(roster_id)"
@@ -309,7 +310,7 @@ function pick_class(name: string) {
                       >
                     </div>
                     <div
-                      class="pointer-events-auto ml-auto grid grid-cols-2 gap-1 @min-[400px]:flex"
+                      class="no-open pointer-events-auto -m-2 ml-auto grid cursor-default grid-cols-2 gap-1 p-2 @min-[400px]:flex"
                     >
                       <RefreshButton
                         v-if="char_linked(profile_pair.profile)"
@@ -394,9 +395,13 @@ function pick_class(name: string) {
             </VueDraggable>
           </div>
         </div>
-        <div class="w-111">
+        <div
+          :style="{
+            width: `${card_width(3)}`,
+          }"
+        >
           <button
-            class="side-bar-item header-button h-max w-full"
+            class="header-button mx-auto! block h-max w-fit px-10!"
             @click="roster_store.add_roster()"
           >
             Add new roster

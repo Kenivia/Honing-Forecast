@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import { useRosterStore } from "@/Stores/RosterConfig";
 import {
+  auto_refresh,
   close_sync_popup,
   refresh_char,
   sync_pending,
@@ -16,6 +17,12 @@ vi.mock("@/Utils/BibleAuth", async (original) => ({
   ...(await original<any>()),
   signed_in: computed(() => true),
   linked_rosters: () => Promise.resolve(ROSTERS.value),
+  find_linked: (_region: string, name: string) =>
+    Promise.resolve(
+      ROSTERS.value.some((r) => r.characters.some((c: any) => c.name === name))
+        ? {}
+        : null,
+    ),
 }));
 vi.mock("@/Components/Common/Uwuowo/UwuowoUtils", async (original) => ({
   ...(await original<any>()),
@@ -107,5 +114,25 @@ describe("refresh tier", () => {
     vi.mocked(fetch_char).mockResolvedValue(result([1, 1, 1, 1, 1, 1]));
     await refresh_char(id);
     expect(store.active_profile.tier).toBe(1);
+  });
+});
+
+describe("auto-refresh", () => {
+  it("skips characters whose fetched upgrades are unlocked", async () => {
+    ROSTERS.value = [roster("Alpha", "Beta")];
+    const [a] = store.roster_config.profiles;
+    store.roster_config.all_regions[a.roster_id] = "nae";
+    a.char_name = "Alpha";
+    a.fetched_at = 1;
+    store.add_char(a.roster_id);
+    const b = store.roster_config.profiles[1];
+    b.char_name = "Beta";
+    b.fetched_at = 1;
+    b.lock_fetched_done = false;
+    vi.mocked(fetch_char).mockClear();
+    await auto_refresh();
+    expect(vi.mocked(fetch_char).mock.calls.map((c) => c[1])).toEqual([
+      "Alpha",
+    ]);
   });
 });

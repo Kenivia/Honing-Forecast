@@ -3,12 +3,25 @@ import { useRosterStore } from "@/Stores/RosterConfig";
 import { storeToRefs } from "pinia";
 import { useRuntimeStore } from "@/Stores/RuntimeState";
 import { grid_change_callback } from "./CharWorkerUtils";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import Popup from "../Common/Popup.vue";
+import HoverTip from "../Common/HoverTip.vue";
+import { linked_now } from "@/Utils/BibleAuth";
+import { market_to_uwuowo_region } from "../Common/Uwuowo/UwuowoUtils";
 
 const store = useRosterStore();
 const { active_profile, roster_config } = storeToRefs(store);
 const confirming = ref(false);
+
+const lock_tip = computed(() => {
+  const p = active_profile.value;
+  const region = market_to_uwuowo_region(
+    roster_config.value.all_regions[p.roster_id],
+  );
+  return region !== null && linked_now(region, p.char_name) !== null
+    ? "Unlocking also pauses this character's automatic refresh from lostark.bible"
+    : null;
+});
 
 // the old results are of the old tier's labels, so they go first, as in change_tier
 function resetActive() {
@@ -34,10 +47,13 @@ function resetActive() {
         <input v-model="roster_config.auto_deduct_costs" type="checkbox" />
         <span>Slider auto-deducts costs</span>
       </label>
-      <label class="control-panel-checkbox-row">
-        <input v-model="active_profile.lock_fetched_done" type="checkbox" />
-        <span>Lock upgrades fetched from lostark.bible</span>
-      </label>
+      <HoverTip :text="lock_tip" placement="right">
+        <label class="control-panel-checkbox-row">
+          <input v-model="active_profile.lock_fetched_done" type="checkbox" />
+          <span>Lock upgrades fetched from lostark.bible</span>
+        </label>
+      </HoverTip>
+
       <label class="control-panel-checkbox-row">
         <input v-model="roster_config.show_suggestions" type="checkbox" />
         <span>Show suggestions</span>

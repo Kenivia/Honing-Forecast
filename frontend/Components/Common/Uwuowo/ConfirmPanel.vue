@@ -73,15 +73,23 @@ const link = computed(
             :class_name="char_parsed.result.class_name"
             :tier="char_parsed.result.pieces[index]?.tier ?? 0"
             :level="char_parsed.result.pieces[index]?.plus_n ?? 0"
+            :sidereal_level="char_parsed.result.pieces[index]?.sidereal_level"
           />
           <div v-if="index < char_parsed.result.pieces.length" class="contents">
             <span class="px-1">
               {{
-                char_parsed.result.pieces[index].tier === 0 ? "T4" : "Serca"
+                char_parsed.result.pieces[index].sidereal_level !== undefined
+                  ? "Sidereal"
+                  : char_parsed.result.pieces[index].tier === 0
+                    ? "T4"
+                    : "Serca"
               }}</span
             >
             <span class="px-1">
-              +{{ char_parsed.result.pieces[index].plus_n }}</span
+              +{{
+                char_parsed.result.pieces[index].sidereal_level ??
+                char_parsed.result.pieces[index].plus_n
+              }}</span
             >
             <span class="px-1">{{
               isNaN(char_parsed.result.pieces[index].ilevel)

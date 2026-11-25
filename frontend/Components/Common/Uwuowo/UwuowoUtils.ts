@@ -1,4 +1,4 @@
-import { WORKER_URL } from "@/Utils/Constants";
+import { SIDEREAL_ILEVELS, WORKER_URL } from "@/Utils/Constants";
 import { parse_locale_int } from "@/Utils/InputColumn";
 import { MarketRegions } from "@/Utils/MarketDataFetcher";
 import { Ref } from "vue";
@@ -36,6 +36,19 @@ export interface UwuowoPiece {
   ilevel: number;
   tier: number;
   adv: number;
+  sidereal_level?: number;
+}
+
+// sidereal weapon: +9 or below counts as +25 T4, +10 and up as +25 Serca
+function sidereal_piece(level: number): UwuowoPiece {
+  const tier = level >= 10 ? 1 : 0;
+  return {
+    plus_n: 25,
+    ilevel: SIDEREAL_ILEVELS[level],
+    tier,
+    adv: tier === 0 ? 40 : NaN,
+    sidereal_level: level,
+  };
 }
 // what an import hands its caller to apply
 export type ApplyFetch = (
@@ -199,7 +212,7 @@ const API_SLOTS = [
   "weapon",
 ];
 
-// newest loadout; Serca ids start 13462, the vambrace ("bracer") is Serca only
+// newest loadout; Serca ids start 13462, sidereal weapons 11351, the vambrace ("bracer") is Serca only
 export function loadouts_to_result(
   loadouts: any[],
   character: BibleCharacter,
@@ -211,6 +224,8 @@ export function loadouts_to_result(
     newest.items.find((item: any) => item.slot === slot);
   const pieces: UwuowoPiece[] = API_SLOTS.map((slot) => {
     const item = by_slot(slot);
+    if (Math.floor(item.id / 10000) === 11351)
+      return sidereal_piece(item.data.honing);
     const tier = Math.floor(item.id / 10000) === 13462 ? 1 : 0;
     return {
       plus_n: item.data.honing,
@@ -281,11 +296,14 @@ export function parse_char(
 
         const [top_row, bottom_row] = target.children;
 
-        let plus_n = parse_locale_int(
+        const plus_n = parse_locale_int(
           // shouldn't really matter what locale but whatever
           top_row.children[1].textContent.replace("+", ""),
         );
         const ilevel = parse_locale_int(bottom_row.children[1].textContent);
+        // sidereal weapon
+        if (top_row.children[2].textContent === "T0")
+          return sidereal_piece(plus_n);
         let tier: number;
         let adv: number;
         // console.log(top_row.children);
@@ -300,10 +318,6 @@ export function parse_char(
           tier = 1;
           adv = NaN;
         }
-        if (top_row.children[2].textContent === "T0") {
-          plus_n = 25;
-        }
-
         return { plus_n, ilevel, tier, adv };
       });
 

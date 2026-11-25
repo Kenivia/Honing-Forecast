@@ -74,6 +74,8 @@ export interface SavedProfile {
   forbidden_chests: string[];
   class_name: string;
   fetched_at: number;
+  sidereal_level: number | null;
+  show_weapon_honing: boolean;
   income_manual: boolean;
   income_auto: boolean;
   income_sources: CharProfile["income_sources"];
@@ -185,6 +187,7 @@ function profile_to_saved(profile: CharProfile): SavedProfile {
     forbidden_chests: profile.forbidden_chests,
     class_name: profile.class_name,
     fetched_at: profile.fetched_at,
+    sidereal_level: profile.sidereal_level,
     income_manual: profile.income_manual,
     income_auto: profile.income_auto,
     income_sources: profile.income_sources,
@@ -268,6 +271,7 @@ function profile_from_saved(
     forbidden_chests: saved.forbidden_chests ?? [],
     class_name: saved.class_name ?? "",
     fetched_at: saved.fetched_at ?? 0,
+    sidereal_level: saved.sidereal_level ?? defaults.sidereal_level,
     income_manual: saved.income_manual ?? defaults.income_manual,
     income_auto: saved.income_auto ?? defaults.income_auto,
     income_sources: saved.income_sources ?? defaults.income_sources,

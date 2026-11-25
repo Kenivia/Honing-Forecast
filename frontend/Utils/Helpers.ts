@@ -223,17 +223,21 @@ export function get_piece_icon(
   piece: string,
   class_name: string,
   tier: number,
+  sidereal_level: number | null = null,
 ) {
   const key = CLASS_KEYS.has(class_key(class_name))
     ? class_key(class_name)
     : "berserker";
+  if (piece === "Weapon" && sidereal_level !== null)
+    return `/Icons/Equipments/Sidereal/${key}/${sidereal_level}.webp`;
   const set = tier === 1 || piece === "Vambrace" ? "Serca" : "T4";
   return `/Icons/Equipments/${set}/${key}/${piece}.webp`;
 }
-// Rarity background: honed gear is ancient, the vambrace goes by its level.
-export function get_piece_bg(piece: string, level: number) {
-  const rarity =
-    piece !== "Vambrace" || level > 20
+// Rarity background: honed gear is ancient, the vambrace goes by its level, a sidereal weapon is sidereal.
+export function get_piece_bg(piece: string, level: number, sidereal = false) {
+  const rarity = sidereal
+    ? "sidereal"
+    : piece !== "Vambrace" || level > 20
       ? "ancient"
       : level > 15
         ? "relic"

@@ -1,5 +1,5 @@
 import { CharProfile } from "@/Stores/CharacterProfile";
-import { NUM_ADV_PIECES } from "./Constants";
+import { NUM_ADV_PIECES, SIDEREAL_ILEVELS, WEAPON_ROW } from "./Constants";
 import { clamp, locale_to_fixed } from "./Helpers";
 import { Upgrade, UpgradeStatus } from "./KeyedUpgrades";
 
@@ -13,16 +13,23 @@ export function ilevel(
     value === UpgradeStatus.FetchedDone ||
     (mode === "pending" && value === UpgradeStatus.Want);
 
-  let out = profile.tier === 0 ? 1590 : 1635;
+  const base = profile.tier === 0 ? 1590 : 1675;
+  let out = base;
+  // a sidereal weapon has its own item level
+  const sidereal = (row: number) =>
+    row === WEAPON_ROW && profile.sidereal_level !== null;
   if (profile.tier === 0) {
     for (let row = 0; row < NUM_ADV_PIECES; row++) {
+      if (sidereal(row)) continue;
       const highest_plus = profile.adv_grid[row].findLastIndex(done) + 1;
       out += (highest_plus * 10) / 6;
     }
-  } else {
-    out += 40;
   }
   for (let row = 0; row < NUM_ADV_PIECES; row++) {
+    if (sidereal(row)) {
+      out += (SIDEREAL_ILEVELS[profile.sidereal_level!] - base) / 6;
+      continue;
+    }
     const highest_plus = profile.normal_grid[row].findLastIndex(done) + 1;
     // console.log(profile.normal_grid[row], highest_plus, row);
     if (highest_plus === 0) {
@@ -40,7 +47,11 @@ export function artisan_number(upgrade: Upgrade, taps: number): number {
   return trail[clamp(0, taps, trail.length - 1)];
 }
 export function artisan_string(upgrade: Upgrade, taps: number): string {
-  return locale_to_fixed(Math.min(artisan_number(upgrade, taps), 1) * 100, 2, true);
+  return locale_to_fixed(
+    Math.min(artisan_number(upgrade, taps), 1) * 100,
+    2,
+    true,
+  );
 }
 
 // Chance in percent after `failed` failed taps with nothing used.

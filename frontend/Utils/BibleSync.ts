@@ -49,7 +49,7 @@ export async function refresh_char(id: string) {
   );
 }
 
-// once per launch: characters fetched before and in a linked roster
+// once per launch: characters fetched before, in a linked roster and still locked (unlocking pauses it)
 let auto_done = false;
 export async function auto_refresh() {
   if (auto_done || !signed_in.value) return;
@@ -60,6 +60,7 @@ export async function auto_refresh() {
     const fetched = p.fetched_at > 0 || p.class_name !== "";
     if (
       fetched &&
+      p.lock_fetched_done &&
       region &&
       char_name_valid(p.char_name) &&
       (await find_linked(region, p.char_name))

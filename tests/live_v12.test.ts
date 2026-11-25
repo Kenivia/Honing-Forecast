@@ -30,8 +30,13 @@ check("is a V12 save", v12.version === 12);
 const migrated = migrate_to_current(structuredClone(v12), 12);
 const added = differences(migrated, v12).filter((p) => p !== ".version");
 check(
-  "adds only hide_free_tap_hint and roster_names",
-  added.every((p) => p === ".hide_free_tap_hint" || p === ".roster_names") &&
+  "adds only hide_free_tap_hint, roster_names and the sidereal weapon fields",
+  added.every(
+    (p) =>
+      p === ".hide_free_tap_hint" ||
+      p === ".roster_names" ||
+      /^\.profiles\.\d+\.(sidereal_level|show_weapon_honing)$/.test(p),
+  ) &&
     migrated.hide_free_tap_hint === false &&
     JSON.stringify(migrated.roster_names) === "{}",
   show(added),

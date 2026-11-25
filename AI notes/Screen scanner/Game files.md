@@ -26,7 +26,7 @@ Claude Code will not run a downloaded exe on its own: `umodel_lostark_v7.exe` is
 
 ## What extract.py writes
 
-- **`scanner_setup/game_files/tables/`**: 24 of the SQLite tables in `EFGame/data2.lpk`, decrypted, and `IconInfo.loa` from `data3.lpk`. The list is in `extract/Program.cs`; a script that needs another table has to add it there. The scripts open the `.db` files as they are (`game.table`).
+- **`scanner_setup/game_files/tables/`**: 25 of the SQLite tables in `EFGame/data2.lpk`, decrypted, and `IconInfo.loa` from `data3.lpk`. The list is in `extract/Program.cs`; a script that needs another table has to add it there. The scripts open the `.db` files as they are (`game.table`).
 - **`scanner_setup/game_files/fonts/`**: everything under `Binaries/Fonts` in `font.lpk`, by its path there (languages share file names): the fonts and a `FontMap.xml` per language folder, which maps the UI's text styles to files (the root's is Korean). `fonts.py` cuts each language's main style (`$YG760`) down to "0123456789+" into `public/fonts/<Language>.ttf` for the slot-number shape reader (`Pipeline.md`), which the native bins and the shape test read too. These are shipped and tracked.
 - **`scanner_setup/game_files/atlas/`**: the textures of the `EFUI_IconAtlas_*` packages as PNG, in `<package>/Texture2D/<sheet>.png`. umodel takes a package by its real name only with `-nameresolve`; on disk the files have scrambled names.
 
@@ -141,11 +141,12 @@ Found 2026-10-26 in the full tables of the snapshot (queries and outputs in `ign
 
 ## Equipment icons
 
-`python scripts/game_files/equipment_icons.py` writes `public/Icons/Equipments/<T4|Serca>/<class>/<Piece>.webp` (lossy WebP, 64 px), the site's piece icons per class (`State and persistence.md`, "Styling").
+`python scripts/game_files/equipment_icons.py` writes `public/Icons/Equipments/<T4|Serca>/<class>/<Piece>.webp` and `Sidereal/<class>/<level>.webp` (lossy WebP, 64 px), the site's piece icons per class (`State and persistence.md`, "Styling").
 
 - **The honed sets** are the ancient (`Grade` 6) "Destined Hellfire" for T4 (ids `13461xxxx`) and "Destined Tremor" for Serca (`13462xxxx`). `Category` is the piece: `101xx` weapons, 10201 helm, 10202 chest, 10203 pants, 10204 gloves, 10205 pauldrons, 10206 vambraces. The Hellfire variants (`134611`, `134612`, `134613`...) and the Mayhem ones share a piece's art.
 - **The class is a column**: `Item.For<Class>` is 1 for the classes that can wear it. The client's names are not the site's (`BerserkerFemale` Slayer, `Alchemist` Wildsoul, `DimensionMaster` Dimensionalist, `Yinyangshi` Artist...); the script maps the 30 advanced classes by hand, checked against their weapons. Base-class columns (`Warrior`, `Specialist`...) have no gear.
 - **Vambraces are Serca only** ("Destined Tremor Vambraces", `Bracer_34` to `44` at ancient), one per base class, so related classes share one. T4 has no vambrace.
+- **Sidereal weapons** (`Grade` 7, ids `11351xxxx`, four variants per class sharing one `Icon`/`IconIndex`) change art with their level: `ItemEvolutionAppearance` (PrimaryKey `1100000 + level`, 0-10; SecondaryKey the weapon's `Category`) gives `Icon`/`IconIndex` per level, which is what lostark.bible draws (the Item row's own art is level 0). Written to `Sidereal/<class>/<level>.webp`, bordered from +10 (counted as Serca). The class comes from the Item rows' `For<Class>` by `Category`.
 - **The blue border** the game draws on honed gear is baked into the Serca icons only (T4 gear has none): `scripts/game_files/icon_border_inherit.png`, downloaded from lostark.bible (`/i/icon_border_inherit.png`). The client's UI textures are Scaleform movies in the `EFUI_*` packages with numbered texture names (`umodel -list -nameresolve "EFUI_*"`; `shareiconimage` and `components` look likely), so it was not found there. lostark.bible also draws a gold frame with diamonds (`icon_frame_ap_evolution.png`) that sticks out past the icon; the user left it out.
 
 ## find_icon.py

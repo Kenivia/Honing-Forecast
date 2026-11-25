@@ -31,7 +31,7 @@ defineEmits<{ close_popup: [] }>();
   border: 1px solid var(--border-muted);
   border-radius: 8px;
   padding: 1.5rem;
-  max-width: 930px;
+  max-width: 935px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;

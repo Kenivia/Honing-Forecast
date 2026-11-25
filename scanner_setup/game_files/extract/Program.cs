@@ -5,7 +5,7 @@ using LostArk.Archive.Core.Archives;
 var game = args[0];
 var output = args[1];
 var fonts = args[2];
-string[] tables = ["Item", "GameMsg", "RandomBoxBase", "RandomBoxEntity", "DropBase", "DropEntity", "Money", "StagePerReward", "PaidActionCost", "ZoneEpicGate", "ContentsRequirement", "ItemEnhanceCommon", "ItemQualityOption", "ItemEnhanceMaterial", "TrinityInferno", "TrinityInfernoReward", "TrinityDivine", "TrinityDivineEnergyPhase", "PCRoomDailyReward", "GuideWeeklyMissionReward", "DirectShop", "DirectShopMeta", "AcquireLimit", "ContentsSeason"];
+string[] tables = ["Item", "GameMsg", "RandomBoxBase", "RandomBoxEntity", "DropBase", "DropEntity", "Money", "StagePerReward", "PaidActionCost", "ZoneEpicGate", "ContentsRequirement", "ItemEnhanceCommon", "ItemQualityOption", "ItemEnhanceMaterial", "TrinityInferno", "TrinityInfernoReward", "TrinityDivine", "TrinityDivineEnergyPhase", "PCRoomDailyReward", "GuideWeeklyMissionReward", "DirectShop", "DirectShopMeta", "AcquireLimit", "ContentsSeason", "ItemEvolutionAppearance"];
 var wanted = tables.Select(table => $"TableData/EFTable_{table}.db").Append("XmlData/IconInfo.loa").ToArray();
 
 Directory.CreateDirectory(output);

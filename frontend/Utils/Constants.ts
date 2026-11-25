@@ -457,6 +457,11 @@ export const PIECE_NAMES = [
   "Weapon",
   "Vambrace",
 ];
+export const WEAPON_ROW = 5;
+// sidereal weapon item level by level (0 unused)
+export const SIDEREAL_ILEVELS = [
+  1100, 1200, 1300, 1400, 1500, 1600, 1625, 1635, 1645, 1745, 1830,
+];
 
 // Classes with an emblem and gear icons, by display name lower case, letters only.
 export const CLASS_KEYS = new Set([

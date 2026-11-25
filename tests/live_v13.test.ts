@@ -30,9 +30,12 @@ check("is a V13 save", v13.version === 13);
 const migrated = migrate_to_current(structuredClone(v13), 13);
 const added = differences(migrated, v13).filter((p) => p !== ".version");
 check(
-  "adds only roster_names",
-  added.every((p) => p === ".roster_names") &&
-    JSON.stringify(migrated.roster_names) === "{}",
+  "adds only roster_names and the sidereal weapon fields",
+  added.every(
+    (p) =>
+      p === ".roster_names" ||
+      /^\.profiles\.\d+\.(sidereal_level|show_weapon_honing)$/.test(p),
+  ) && JSON.stringify(migrated.roster_names) === "{}",
   show(added),
 );
 

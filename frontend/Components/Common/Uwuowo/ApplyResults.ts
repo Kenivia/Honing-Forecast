@@ -5,7 +5,7 @@ import {
   change_tier,
   convert_apply_done_want,
 } from "@/Components/Character/StatusInput/StatusInputUtil";
-import { ADV_COLS, NUM_ADV_PIECES } from "@/Utils/Constants";
+import { ADV_COLS, NUM_ADV_PIECES, WEAPON_ROW } from "@/Utils/Constants";
 import {
   grids_to_keyed,
   to_upgrade_key,
@@ -23,6 +23,7 @@ export function apply_results(
 ) {
   if (class_name) target_profile.class_name = class_name;
   target_profile.fetched_at = Date.now();
+  target_profile.sidereal_level = results[WEAPON_ROW]?.sidereal_level ?? null;
   const old_tier: number = target_profile.tier;
   const serca = results.slice(0, NUM_ADV_PIECES).map((x) => x.tier === 1);
   const new_tier: number = force_t4

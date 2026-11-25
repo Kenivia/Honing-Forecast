@@ -93,6 +93,32 @@ describe("loadouts to import result", () => {
   });
 });
 
+describe("sidereal weapon", () => {
+  // ids and levels as lostark.bible had Kowiz, Legendarymember, Confusedpoyo on 2026-11-25
+  const with_weapon = (honing: number) => {
+    const copy = structuredClone(serca);
+    for (const l of copy.loadouts)
+      for (const item of l.items)
+        if (item.slot === "weapon") {
+          item.id = 113514230;
+          item.data.honing = honing;
+          (item.data as any).advancedHoning = 40;
+        }
+    return loadouts_to_result(copy.loadouts, ROSTERS.rosters[0].characters[0])
+      .pieces[5];
+  };
+  it("counts +10 and up as +25 Serca, +9 and below as +25 T4", () => {
+    expect(with_weapon(10)).toEqual({
+      plus_n: 25,
+      ilevel: 1830,
+      tier: 1,
+      adv: NaN,
+      sidereal_level: 10,
+    });
+    expect(with_weapon(9)).toMatchObject({ plus_n: 25, tier: 0, adv: 40 });
+  });
+});
+
 describe("API or scraping", () => {
   it("scrapes when signed out", async () => {
     const fn = serve({});

@@ -6,6 +6,7 @@ defineProps<{
   class_name: string;
   tier: number;
   level: number;
+  sidereal_level?: number | null;
 }>();
 </script>
 <template>
@@ -14,9 +15,9 @@ defineProps<{
   >
     <span class="text-(--text-muted)">{{ piece }}</span>
     <img
-      :src="get_piece_icon(piece, class_name, tier)"
+      :src="get_piece_icon(piece, class_name, tier, sidereal_level)"
       :alt="piece"
-      :style="get_piece_bg(piece, level)"
+      :style="get_piece_bg(piece, level, sidereal_level != null)"
       class="generic-icon piece-icon h-6.75 w-6.75"
     />
   </div>
