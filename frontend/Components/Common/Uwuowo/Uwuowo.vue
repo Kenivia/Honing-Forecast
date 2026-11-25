@@ -5,7 +5,6 @@ import FetchCharButton from "./FetchCharButton.vue";
 import { MarketRegions } from "@/Utils/MarketDataFetcher.js";
 import { ApplyFetch, market_to_uwuowo_region } from "./UwuowoUtils.js";
 import { computed, ref } from "vue";
-import { linked_now } from "@/Utils/BibleAuth";
 import { CharProfile } from "@/Stores/CharacterProfile";
 import { useRosterStore } from "@/Stores/RosterConfig";
 
@@ -28,12 +27,7 @@ function rename(typed: string) {
 }
 
 // signed in and the character is in a linked roster: name and region locked, refresh instead of the popup
-const linked = computed(() => {
-  const region = market_to_uwuowo_region(props.region);
-  return (
-    region !== null && linked_now(region, props.profile.char_name) !== null
-  );
-});
+const linked = computed(() => roster_store.char_linked(props.profile));
 </script>
 <template>
   <div v-if="taken" class="basis-full pl-1 text-sm text-(--warning)">
@@ -46,7 +40,7 @@ const linked = computed(() => {
     <span v-if="!(card && linked)" class="w-fit text-nowrap"> Char name:</span>
     <NameInput
       :name="profile.char_name"
-      placeholder="Type in-game name"
+      :placeholder="roster_store.char_default_label(profile)"
       label="Char name"
       :locked="linked"
       :class="card ? 'min-w-0 flex-1' : 'min-w-full'"

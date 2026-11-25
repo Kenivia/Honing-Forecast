@@ -63,7 +63,7 @@ test("sync and refresh against the real API", async ({ page }) => {
   expect(names.length).toBeGreaterThan(0);
   expect(names.some((n) => n.startsWith("Newchar"))).toBe(false);
   await expect(
-    page.getByText("Your roster on lostark.bible").first(),
+    page.getByText("Linked roster on lostark.bible").first(),
   ).toBeVisible();
 
   // a linked character is locked and refreshes through the API

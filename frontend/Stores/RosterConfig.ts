@@ -24,6 +24,8 @@ import {
 } from "@/Utils/Helpers";
 
 import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher";
+import { linked_now } from "@/Utils/BibleAuth";
+import { market_to_uwuowo_region } from "@/Components/Common/Uwuowo/UwuowoUtils";
 
 import {
   load_roster_config,
@@ -267,6 +269,22 @@ export const useRosterStore = defineStore("roster", {
         this.roster_config.all_regions,
         this.char_label,
       );
+    },
+    // signed in and the character is in one of the user's lostark.bible rosters (reactive)
+    char_linked() {
+      return (p: CharProfile): boolean => {
+        const region = market_to_uwuowo_region(
+          this.roster_config.all_regions[p.roster_id],
+        );
+        return region !== null && linked_now(region, p.char_name) !== null;
+      };
+    },
+    // any of the roster's characters is linked
+    roster_linked() {
+      return (roster_id: string): boolean =>
+        this.roster_config.profiles.some(
+          (p) => p.roster_id === roster_id && this.char_linked(p),
+        );
     },
     // whether another character of the region has the same name
     name_taken() {

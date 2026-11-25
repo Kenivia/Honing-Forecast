@@ -66,7 +66,7 @@ describe("FetchRosterButton", () => {
         apply,
       }),
     );
-    await button(w, "Fetch remaining characters").trigger("click");
+    await button(w, "Fetch other characters in the roster").trigger("click");
     await flushPromises();
     expect(
       fn.mock.calls.map((c) => String(c[0]).split("/character")[1]),
@@ -98,7 +98,7 @@ describe("FetchRosterButton", () => {
         apply,
       }),
     );
-    await button(w, "Fetch remaining characters").trigger("click");
+    await button(w, "Fetch other characters in the roster").trigger("click");
     await flushPromises();
     expect(w.text()).toContain("Gamma failed: Fetching failed");
     // Gamma failed, so Beta is not the last panel and the popup stays open
@@ -123,7 +123,7 @@ describe("FetchRosterButton", () => {
         apply: vi.fn(),
       }),
     );
-    await button(w, "Fetch remaining characters").trigger("click");
+    await button(w, "Fetch other characters in the roster").trigger("click");
     await flushPromises();
     expect(w.text()).toContain("are already here.");
 
@@ -135,7 +135,7 @@ describe("FetchRosterButton", () => {
         apply: vi.fn(),
       }),
     );
-    await button(w2, "Fetch remaining characters").trigger("click");
+    await button(w2, "Fetch other characters in the roster").trigger("click");
     await flushPromises();
     expect(w2.text()).toContain("somewhere in Honing Forecast.");
     expect(w2.text()).toContain("(Roster 2) Gamma");
@@ -253,7 +253,7 @@ describe("late results", () => {
         apply: vi.fn(),
       }),
     );
-    await button(w, "Fetch remaining characters").trigger("click");
+    await button(w, "Fetch other characters in the roster").trigger("click");
     await flushPromises();
     await w.setProps({ any_char_name: "Zed" });
     release();
@@ -312,9 +312,9 @@ describe("Uwuowo", () => {
     expect(profile.char_name).toBe("");
     expect(fn).not.toHaveBeenCalled();
     expect((w.find("input").element as HTMLInputElement).value).toBe("");
-    expect(w.find("input").attributes("placeholder")).toBe("Type in-game name");
+    expect(w.find("input").attributes("placeholder")).toBe("Newchar");
     expect(w.find("input").classes()).not.toContain("text-(--warning)");
-    expect(fetch_button(w).text()).toBe("Type a name to fetch");
+    expect(fetch_button(w).text()).toBe("Enter a name to fetch");
     expect(fetch_button(w).attributes("disabled")).toBeDefined();
   });
 });

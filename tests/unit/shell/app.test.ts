@@ -87,14 +87,16 @@ describe("App", () => {
     expect(rosters[1].classes()).not.toContain("selected");
   });
 
-  it("one roster is a Roster 1 button", async () => {
+  it("one roster is a Characters button", async () => {
     const { wrapper } = await mount_app(App, {}, "/chars/NA/Alice/calc");
     set_profiles([
       ["Alice", 0],
       ["Bob", 0],
     ]);
     await nextTick();
-    expect(wrapper.findAll("header a.nav-tab").at(-1).text()).toBe("Roster 1");
+    expect(wrapper.findAll("header a.nav-tab").at(-1).text()).toBe(
+      "Characters",
+    );
   });
 
   it("a roster button goes back to the roster's last opened character", async () => {

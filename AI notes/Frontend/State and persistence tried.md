@@ -25,6 +25,7 @@ Traps and ruled-out alternatives. The current state is in `State and persistence
 
 - Don't check the character or change-log version in `beforeEnter`: it runs only when a route is entered, so param-only changes (`/Alice/calc` to `/Nobody/calc`) skip it. Use the global `beforeEach`.
 - Don't correct an unknown character name inside `CharView` by sending it to the first character's calc: it drops the sub-page. Don't leave the URL on the old name after a rename: a reload lands on the first character.
+- Don't switch the active character on `profile_index_by_route` as a computed: renaming Newchar1 made the next unnamed character Newchar1, and the page jumped to it before the url followed.
 
 ## Tier switch and inputs
 

@@ -171,7 +171,11 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
           class="nav-tab"
           :class="{ selected: routed_profile?.roster_id === roster_id }"
         >
-          {{ roster_store.roster_label(roster_id) }}
+          {{
+            roster_ids.length === 1
+              ? "Characters"
+              : roster_store.roster_label(roster_id)
+          }}
         </RouterLink>
         <div
           v-if="signed_in"

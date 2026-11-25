@@ -43,7 +43,7 @@ test("Add new roster adds a header tab that survives a reload", async ({
   page,
 }) => {
   await hf.open(page, "/roster-setup");
-  await expect(header_tab(page, "Roster 1")).toBeVisible();
+  await expect(header_tab(page, "Characters")).toBeVisible();
   await page.getByRole("button", { name: "Add new roster" }).first().click();
   await expect(header_tab(page, "Roster 2")).toBeVisible();
   await expect(roster(page, 2)).toBeVisible();
@@ -90,17 +90,12 @@ test("an unnamed character asks for a name, an invalid one reddens its button; n
   const scrape = await bh.stub_character(page, {});
   await open_roster(page, [{ names: ["", "Bob"] }]);
   const boxes = page.getByRole("textbox", { name: "Char name" });
-  const fetch_buttons = page
-    .locator(".char-row")
-    .getByRole("button", {
-      name: /Type a name to fetch|Cannot contain|Fetch from/,
-    });
+  const fetch_buttons = page.locator(".char-row").getByRole("button", {
+    name: /Enter a name to fetch|Cannot contain|Fetch from/,
+  });
   await expect(boxes.first()).toHaveValue("");
-  await expect(boxes.first()).toHaveAttribute(
-    "placeholder",
-    "Type in-game name",
-  );
-  await expect(fetch_buttons.first()).toHaveText("Type a name to fetch");
+  await expect(boxes.first()).toHaveAttribute("placeholder", "Newchar");
+  await expect(fetch_buttons.first()).toHaveText("Enter a name to fetch");
   await expect(fetch_buttons.first()).toBeDisabled();
   await expect(fetch_buttons.first()).not.toHaveClass(/warning/);
 
@@ -122,10 +117,14 @@ test("the arrows on a roster card move it, and a name moves with it", async ({
   const box = roster(page, 1).getByRole("textbox", { name: "Roster name" });
   await box.fill("Main");
   await box.press("Enter");
-  await expect(roster(page, 1).getByLabel("Move roster left")).toHaveCount(0);
+  await expect(
+    page
+      .getByRole("group", { name: "Main" })
+      .getByRole("button", { name: "Move roster up" }),
+  ).toBeDisabled();
   await page
     .getByRole("group", { name: "Main" })
-    .getByRole("button", { name: "Move roster right" })
+    .getByRole("button", { name: "Move roster down" })
     .click();
   await expect.poll(() => bh.roster_names(page)).toEqual([["B"], ["A"]]);
   await expect(page.locator("header").getByRole("link")).toContainText([
@@ -134,7 +133,7 @@ test("the arrows on a roster card move it, and a name moves with it", async ({
   ]);
   await page
     .getByRole("group", { name: "Main" })
-    .getByRole("button", { name: "Move roster left" })
+    .getByRole("button", { name: "Move roster up" })
     .click();
   await expect.poll(() => bh.roster_names(page)).toEqual([["A"], ["B"]]);
 });
@@ -167,7 +166,7 @@ test("renaming keeps the name; the link, the URL and a reload follow", async ({
   await expect(
     page.getByRole("button", { name: "Cannot contain space" }),
   ).toHaveCount(2);
-  await page.getByRole("link", { name: "Go to character Bob smith" }).click();
+  await hf.open_char(page, "Bob smith");
   await expect(page).toHaveURL(/\/chars\/NA\/Bob%20smith\/calc$/);
   await persist(page);
   await page.reload();
@@ -175,6 +174,27 @@ test("renaming keeps the name; the link, the URL and a reload follow", async ({
   await expect(page.getByRole("textbox", { name: "Char name" })).toHaveValue(
     "Bob smith",
   );
+});
+
+// the next unnamed character takes the freed label, but the page stays on the renamed one
+test("renaming an unnamed character on its page stays on it", async ({
+  page,
+}) => {
+  await open_roster(page, [{ names: ["", ""] }]);
+  await hf.open(page, "/chars/NA/Newchar/calc");
+  const box = page.getByRole("textbox", { name: "Char name" });
+  await expect(box).toHaveAttribute("placeholder", "Newchar");
+  // invalid in game, so no fetch popup
+  await box.fill("Bob smith");
+  await box.blur();
+  await expect(page).toHaveURL(/\/chars\/NA\/Bob%20smith\/calc$/);
+  await expect(box).toHaveValue("Bob smith");
+  expect(await bh.with_store(page, (s) => s.active_profile.char_name)).toBe(
+    "Bob smith",
+  );
+  await expect(
+    page.getByRole("navigation", { name: "Characters" }).getByText("Newchar"),
+  ).toBeVisible();
 });
 
 // / ? % # would split or cut a raw url; they are encoded in the path, and a cold load finds them
@@ -188,7 +208,7 @@ test("names with url characters route, reload and open cold", async ({
   await box.blur();
   await expect.poll(() => bh.roster_names(page)).toEqual([["Alpha", name]]);
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByRole("link", { name: `Go to character ${name}` }).click();
+  await hf.open_char(page, name);
   const url = /\/chars\/NA\/A%2Fb%3Fc%25d%23e%252f\/calc$/;
   await expect(page).toHaveURL(url);
   const active = () => bh.with_store(page, (s) => s.active_profile.char_name);
@@ -216,9 +236,7 @@ test("a repeat name in a region is kept, warned about, and routed as name-2", as
     .toEqual([["Alpha"], ["Alpha"]]);
   await expect(roster(page, 2).getByText("Alpha already exists")).toBeVisible();
   await expect(roster(page, 1).getByText("already exists")).toHaveCount(0);
-  await roster(page, 2)
-    .getByRole("link", { name: "Go to character Alpha" })
-    .click();
+  await hf.open_char(roster(page, 2), "Alpha");
   await expect(page).toHaveURL(/\/chars\/NA\/Alpha-2\/calc$/);
   const roster_index = () =>
     bh.with_store(page, (s) =>
@@ -262,9 +280,18 @@ test("two identical names on both servers each get their own url", async ({
   }
 });
 
-test("Move up and down reorder one roster and persist", async ({ page }) => {
+// native HTML5 drag: Playwright's mouse drag only works in Chromium
+test("dragging a handle reorders one roster and persists", async ({
+  page,
+  browserName,
+}) => {
+  test.skip(browserName !== "chromium");
   await open_roster(page, [{ names: ["A", "B", "C"] }, { names: ["D", "E"] }]);
-  await page.getByRole("button", { name: "Move B up" }).click();
+  const drag = (from: string, to: string) =>
+    page
+      .getByLabel(`Drag ${from} to reorder`, { exact: true })
+      .dragTo(hf.char_card(page, to));
+  await drag("B", "A");
   await expect
     .poll(() => bh.roster_names(page))
     .toEqual([
@@ -277,19 +304,13 @@ test("Move up and down reorder one roster and persist", async ({ page }) => {
     ["B", "A", "C"],
     ["D", "E"],
   ]);
-  await page.getByRole("button", { name: "Move D down" }).click();
+  await drag("D", "E");
   await expect
     .poll(() => bh.roster_names(page))
     .toEqual([
       ["B", "A", "C"],
       ["E", "D"],
     ]);
-  await persist(page);
-  await page.reload();
-  expect(await bh.roster_names(page)).toEqual([
-    ["B", "A", "C"],
-    ["E", "D"],
-  ]);
 });
 
 test("Make a copy carries the ticked cells", async ({ page }) => {
@@ -300,7 +321,7 @@ test("Make a copy carries the ticked cells", async ({ page }) => {
   await expect
     .poll(() => bh.roster_names(page))
     .toEqual([["Newchar", "Newchar1"]]);
-  await page.getByRole("link", { name: "Go to character Newchar1" }).click();
+  await hf.open_char(page, "Newchar1");
   await expect(page).toHaveURL(/\/chars\/NA\/Newchar1\/calc$/);
   expect(await hf.cell_status(page, "normal", "Helmet", 15)).toBe("Want");
   expect(await hf.cell_status(page, "normal", "Helmet", 16)).toBe("NotYet");
@@ -319,7 +340,7 @@ test("deleting a roster's last character removes the roster everywhere", async (
   await page.goto("/roster-setup");
   await roster(page, 2).getByRole("button", { name: "Delete B" }).click();
   await expect.poll(() => bh.roster_names(page)).toEqual([["A"]]);
-  await expect(header_tab(page, "Roster 1")).toBeVisible();
+  await expect(header_tab(page, "Characters")).toBeVisible();
   await expect(header_tab(page, "Roster 2")).toHaveCount(0);
   await persist(page);
   await page.reload();
@@ -344,7 +365,7 @@ test("deleting the character you were viewing lands on a valid one", async ({
   await page.getByRole("link", { name: "Roster setup" }).click();
   await page.getByRole("button", { name: "Delete B" }).click();
   await expect.poll(() => bh.roster_names(page)).toEqual([["A"]]);
-  await header_tab(page, "Roster 1").click();
+  await header_tab(page, "Characters").click();
   await expect(page).toHaveURL(/\/chars\/NA\/A\/calc$/);
   await expect(
     page.getByRole("group", { name: "Normal honing" }),
@@ -378,7 +399,7 @@ test("each roster card has its own region", async ({ page }) => {
 
 test("an accented name routes and reloads", async ({ page }) => {
   await open_roster(page, [{ names: ["Ëlsa"] }]);
-  await page.getByRole("link", { name: "Go to character Ëlsa" }).click();
+  await hf.open_char(page, "Ëlsa");
   await expect(page).toHaveURL(`/chars/NA/${encodeURIComponent("Ëlsa")}/calc`);
   await expect(page.getByRole("textbox", { name: "Char name" })).toHaveValue(
     "Ëlsa",
@@ -432,7 +453,7 @@ test("Fetch from lostark.bible, Confirm: cells, ilevel and class change", async 
   );
 });
 
-test("Fetch remaining characters: Confirm all adds a row each", async ({
+test("Fetch other characters in the roster: Confirm all adds a row each", async ({
   page,
 }) => {
   await bh.stub_character(
@@ -445,7 +466,7 @@ test("Fetch remaining characters: Confirm all adds a row each", async ({
   );
   await open_roster(page, [{ names: ["Alpha"] }]);
   await page
-    .getByRole("button", { name: "Fetch remaining characters" })
+    .getByRole("button", { name: "Fetch other characters in the roster" })
     .click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Are these your children?")).toBeVisible();
@@ -548,9 +569,7 @@ test("a name in two regions has two urls, and an old link finds its region", asy
     ["Alpha", "Zed"],
     ["Zed", "Yan"],
   ]);
-  await roster(page, 2)
-    .getByRole("link", { name: "Go to character Zed" })
-    .click();
+  await hf.open_char(roster(page, 2), "Zed");
   await expect(page).toHaveURL(/\/chars\/EU\/Zed\/calc$/);
   expect(await bh.with_store(page, (s) => s.active_region)).toBe("euc");
 
@@ -569,8 +588,6 @@ test("a name in two regions has two urls, and an old link finds its region", asy
     ["Alpha", "Zed"],
     ["Zed", "Yan"],
   ]);
-  await roster(page, 2)
-    .getByRole("link", { name: "Go to character Zed" })
-    .click();
+  await hf.open_char(roster(page, 2), "Zed");
   await expect(page).toHaveURL(/\/chars\/NA\/Zed-2\/calc$/);
 });

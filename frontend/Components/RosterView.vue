@@ -14,7 +14,7 @@ import SignInHint from "./Common/Uwuowo/SignInHint.vue";
 import { market_to_uwuowo_region } from "./Common/Uwuowo/UwuowoUtils";
 import { computed, nextTick, ref } from "vue";
 import { VueDraggable } from "vue-draggable-plus";
-import { linked_now, signed_in } from "@/Utils/BibleAuth";
+import { signed_in } from "@/Utils/BibleAuth";
 import { sync_rosters, syncing } from "@/Utils/BibleSync";
 import { char_name_valid, class_key, get_icon_path } from "@/Utils/Helpers";
 import { CLASS_KEYS } from "@/Utils/Constants";
@@ -54,20 +54,6 @@ const any_char_names = computed(() =>
     (list) =>
       list.find(({ profile }) => char_name_valid(profile.char_name))?.profile
         .char_name ?? list[0].profile.char_name,
-  ),
-);
-
-const char_linked = (p: CharProfile) => {
-  const region = market_to_uwuowo_region(
-    roster_config.value.all_regions[p.roster_id],
-  );
-  return region !== null && linked_now(region, p.char_name) !== null;
-};
-
-// signed in and any character is in a linked roster: region locked, "fetched" shown in the header
-const linked_rosters = computed(() =>
-  filtered_rosters_lists.value.map((list) =>
-    list.some(({ profile }) => char_linked(profile)),
   ),
 );
 
@@ -166,7 +152,8 @@ function pick_class(name: string) {
         >
           <div
             v-if="
-              roster_config.profiles.length > 1 || linked_rosters[roster_index]
+              roster_config.profiles.length > 1 ||
+              roster_store.roster_linked(roster_id)
             "
             class="card-header flex-wrap gap-2"
           >
@@ -200,13 +187,13 @@ function pick_class(name: string) {
               </template>
             </div>
             <span
-              v-if="linked_rosters[roster_index]"
+              v-if="roster_store.roster_linked(roster_id)"
               class="text-sm text-(--uwuowo)"
-              >Your roster on lostark.bible</span
+              >Linked roster on lostark.bible</span
             >
             <RegionSelector
               :region="roster_config.all_regions[roster_id]"
-              :locked="linked_rosters[roster_index]"
+              :locked="roster_store.roster_linked(roster_id)"
               :region_change="
                 (event) => {
                   const new_region = (event.target as HTMLSelectElement)
@@ -313,7 +300,7 @@ function pick_class(name: string) {
                       class="no-open pointer-events-auto -m-2 ml-auto grid cursor-default grid-cols-2 gap-1 p-2 @min-[400px]:flex"
                     >
                       <RefreshButton
-                        v-if="char_linked(profile_pair.profile)"
+                        v-if="roster_store.char_linked(profile_pair.profile)"
                         :profile_id="profile_pair.profile.id"
                       />
                       <button
@@ -322,7 +309,7 @@ function pick_class(name: string) {
                         title="Drag to reorder"
                       >
                         <span
-                          class="h-4 w-4 bg-current"
+                          class="h-full w-full bg-current"
                           :style="
                             mask('arrows-up-down-left-right-solid-full.svg')
                           "
@@ -342,7 +329,7 @@ function pick_class(name: string) {
                           @click="duplicate(profile_pair.profile)"
                         >
                           <span
-                            class="h-4 w-4 bg-current"
+                            class="h-full w-full bg-current"
                             :style="mask('copy-solid-full.svg')"
                           />
                         </button>
@@ -355,7 +342,7 @@ function pick_class(name: string) {
                         @click="remove(profile_pair.profile)"
                       >
                         <span
-                          class="h-4 w-4 bg-current"
+                          class="h-full w-full bg-current"
                           :style="mask('trash-solid-full.svg')"
                         />
                       </button>
@@ -417,7 +404,7 @@ function pick_class(name: string) {
           >Delete
           <span class="font-bold">{{
             to_delete && roster_store.char_label(to_delete)
-          }}</span>? Its typed materials and chests will be lost.</span
+          }}</span>? Its materials and chests will be lost.</span
         >
         <div class="flex flex-row gap-2">
           <button

@@ -92,7 +92,6 @@ const want = rest.profiles.map((p) => ({
   class_name: "",
   fetched_at: 0,
   sidereal_level: null,
-  show_weapon_honing: false,
 }));
 // leftover values and bands_manual are V12's main / alt split, checked on their own
 const changed = [

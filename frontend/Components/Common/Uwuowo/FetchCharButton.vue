@@ -34,7 +34,7 @@ const profile = computed(() =>
 const time_ago = useTimeAgo(() => profile.value?.fetched_at ?? 0);
 const problem = computed(() =>
   props.char_name === ""
-    ? "Type a name to fetch"
+    ? "Enter a name to fetch"
     : name_problem(props.char_name),
 );
 const blocked = computed(() => props.region === null || !!problem.value);

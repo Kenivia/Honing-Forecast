@@ -75,7 +75,6 @@ export interface SavedProfile {
   class_name: string;
   fetched_at: number;
   sidereal_level: number | null;
-  show_weapon_honing: boolean;
   income_manual: boolean;
   income_auto: boolean;
   income_sources: CharProfile["income_sources"];

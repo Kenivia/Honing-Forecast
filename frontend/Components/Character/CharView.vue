@@ -19,15 +19,11 @@ const roster_store = useRosterStore();
 const { active_profile } = storeToRefs(roster_store);
 
 // The router guard has already checked the name; this only maps it to the active index.
-const index = computed(() =>
-  roster_store.profile_index_by_route(
-    route.params.region as string,
-    route.params.characterName as string,
-  ),
-);
+// Watches the route only: a rename can shift other labels before the url follows.
 watch(
-  index,
-  (i) => {
+  () => [route.params.region, route.params.characterName] as string[],
+  ([region, name]) => {
+    const i = roster_store.profile_index_by_route(region, name);
     if (i < 0 || i === roster_store.roster_config.active_profile_index) return;
     runtime.cancel_active();
     roster_store.switch_profile(i);

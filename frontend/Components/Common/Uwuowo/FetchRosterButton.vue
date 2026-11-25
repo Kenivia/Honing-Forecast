@@ -104,7 +104,7 @@ const spread_multiple = computed(
       cursor: blocked ? 'not-allowed' : 'pointer',
     }"
   >
-    {{ problem ?? "Fetch remaining characters" }}
+    {{ problem ?? "Fetch other characters in the roster" }}
   </button>
   <Popup :show_popup="show_popup" @close_popup="show_popup = false">
     <span> {{ roster_parsed.status }}</span>

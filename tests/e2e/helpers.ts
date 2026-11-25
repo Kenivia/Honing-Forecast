@@ -6,9 +6,22 @@ import fs from "node:fs";
 type GridKind = "normal" | "adv";
 const MARKET_FIXTURE = new URL("./fixtures/market.json", import.meta.url);
 
+// a character's card on Roster setup, found by its label; clicking its padding opens the character
+export const char_card = (scope: Page | Locator, name: string) =>
+  scope.locator(".char-row").filter({
+    has: ("page" in scope ? scope.page() : scope).getByLabel(
+      `Drag ${name} to reorder`,
+      { exact: true },
+    ),
+  });
+export const open_char = (scope: Page | Locator, name: string) =>
+  char_card(scope, name).click({ position: { x: 3, y: 3 } });
+
 // a Worker endpoint, deployed or under `pnpm cloudflare-dev`
 export const worker_route = (path: string) =>
-  new RegExp(String.raw`(workers\.dev|api\.honing-forecast\.com|localhost:8787)${path}`);
+  new RegExp(
+    String.raw`(workers\.dev|api\.honing-forecast\.com|localhost:8787)${path}`,
+  );
 
 // collects uncaught errors and console errors
 export function watch_errors(page: Page): string[] {

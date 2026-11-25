@@ -31,9 +31,9 @@ check("is a V11 save", v11.version === 11);
 const migrated = migrate_to_current(structuredClone(v11), 11);
 const added = differences(migrated, v11).filter((p) => p !== ".version");
 check(
-  "adds only forbidden_chests, class_name, fetched_at, sidereal_level, show_weapon_honing, bands_manual, alt leftover values, new scan pages, show_suggestions, hide_free_tap_hint and roster_names",
+  "adds only forbidden_chests, class_name, fetched_at, sidereal_level, bands_manual, alt leftover values, new scan pages, show_suggestions, hide_free_tap_hint and roster_names",
   added.every((p) =>
-    /^\.profiles\.\d+\.(forbidden_chests|class_name|fetched_at|sidereal_level|show_weapon_honing|bands_manual|band_values\.\d)$|^\.scan_(pages|currencies)(\.|$)|^\.(show_suggestions|hide_free_tap_hint|roster_names)$/.test(
+    /^\.profiles\.\d+\.(forbidden_chests|class_name|fetched_at|sidereal_level|bands_manual|band_values\.\d)$|^\.scan_(pages|currencies)(\.|$)|^\.(show_suggestions|hide_free_tap_hint|roster_names)$/.test(
       p,
     ),
   ),

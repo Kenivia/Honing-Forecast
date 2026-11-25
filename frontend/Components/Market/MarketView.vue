@@ -43,6 +43,7 @@ const selected_region = computed(
               start_fetch(new_region);
             }
           "
+          :locked="roster_store.roster_linked(selected_roster_id)"
         />
 
         <template v-if="route.name === 'market-materials'">

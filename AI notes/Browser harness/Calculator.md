@@ -73,6 +73,7 @@ Any change to the grids or materials restarts it when `Auto start optimizer` is 
 | `store_eval(page, fn, arg)` | Runs `fn(store, arg)` on the roster store in the page; `fn` is serialised, so self-contained. |
 | `upgrade_row(page, name)` | An instruction row by its group name. |
 | `reload(page)` | Waits out the debounced save, reloads, waits for the shell. |
+| `char_card(scope, name)`, `open_char(scope, name)` | A Roster setup card by its label (found by its drag handle); open clicks its padding, which opens the character. |
 
 `tests/e2e/bible_helpers.ts` has the lostark.bible side: `stub_bible` (answers every lostark.bible request, records them; status knobs for 401/500), `sign_in_as` (injects `bible_auth` once per tab, so a reload after sign-out stays out), `stub_character` (the Worker scrape from `tests/unit/market-import/fixtures`), `with_store`, `seed`, `roster_names`. **Route lostark.bible in every signed-in test**: an unstubbed call with a fake token 401s on the real site and wipes the sign-in.
 
@@ -102,7 +103,7 @@ The price fixture is `tests/e2e/fixtures/market.json`, keyed by region slug (`na
 Each test checks the effect (store, page, gold relation) and that it survives a reload, not just that a control fired: unit tests with hand-built data missed a broken Forbid button (stored vs merged chest keys).
 
 - `calc.spec.ts`: forbid on a merged chest stack (injected chests with equal options merge, titles joined `A / B`; forbidden ones list under their own titles), chest editor, advice split, tier conversion and revert, Succeed / slider deduction with auto-deduct on and off, manual artisan / chance, free taps, advanced details, owned tickbox, chance column across two characters, leftover bands, show all mats, Reset this char, optimizer panel (auto start checked by `runtime.optimizer.run_counter`, not the progress text, which flickers while the histogram redraws), long lists, Advanced and vambrace headers.
-- `roster.spec.ts`: add / rename / reorder / copy / delete, regions (a name in two regions, an old region-less link opened cold), accented names, scrape Fetch and Fetch remaining, per-roster mats on the market page.
+- `roster.spec.ts`: add / rename (incl. renaming an unnamed one on its page) / drag reorder (Chromium only) / copy / delete, regions (a name in two regions, an old region-less link opened cold), accented names, scrape Fetch and Fetch other characters, per-roster mats on the market page.
 - `bible.spec.ts` (mocked): sign-in flow and callback errors, sync (fresh vs touched unnamed character, accent matching, pairing popup, second sync, NA + CE, Custom skipped, the same name in NA and CE), locks, refresh and its scrape fallback, 401 / expiry, sign-out, auto-refresh once per launch.
 - `bible_live.spec.ts`: against the real API; skipped unless `.env.local` has `BIBLE_TOKEN` (sign in on localhost, then `JSON.parse(localStorage.bible_auth).token`). Revoke is stubbed so it never kills the token.
 - `domain_move.spec.ts`: the pages.dev to .com hand-off, including real saves of every version arriving migrated; runs in `pnpm test:e2e` and against staging. See `Frontend/Domain move.md`.

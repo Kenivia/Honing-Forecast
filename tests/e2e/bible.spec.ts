@@ -319,7 +319,9 @@ test("linked characters are locked and signing out unlocks them", async ({
   await setup(page, [{ names: ["Alpha"] }], [na("Alpha")]);
   await sync(page);
   const roster = page.getByRole("group", { name: "Roster 1" });
-  await expect(roster.getByText("Your roster on lostark.bible")).toBeVisible();
+  await expect(
+    roster.getByText("Linked roster on lostark.bible"),
+  ).toBeVisible();
   await expect(
     roster.getByRole("textbox", { name: "Char name" }),
   ).toHaveAttribute("readonly", "");
@@ -337,7 +339,7 @@ test("linked characters are locked and signing out unlocks them", async ({
   ).not.toHaveAttribute("readonly", "");
   await expect(page.getByRole("combobox", { name: "Region" })).toBeEnabled();
   await page.goto("/roster-setup");
-  await expect(page.getByText("Your roster on lostark.bible")).toHaveCount(0);
+  await expect(page.getByText("Linked roster on lostark.bible")).toHaveCount(0);
 });
 
 test("refresh button fetches the loadout and fills the grids", async ({
@@ -436,7 +438,7 @@ test("class ids map to the names and icons the site shows", async ({
     await expect
       .poll(async () => (await bh.profile(page, name))?.class_name)
       .toBe(class_name);
-    await page.getByRole("link", { name: `Go to character ${name}` }).click();
+    await hf.open_char(page, name);
     await expect(page.getByTitle(class_name).first()).toBeVisible();
     await page.getByRole("link", { name: "Roster setup" }).click();
   }
@@ -498,7 +500,7 @@ test("auto-refresh runs once per launch, not per route", async ({ page }) => {
   expect(bible.hits("/api/oauth/rosters")).toHaveLength(1);
   for (const link of ["Market & Mats", "Roster setup", "Info"])
     await page.getByRole("link", { name: link }).first().click();
-  await page.getByRole("link", { name: "Roster 1" }).click();
+  await page.getByRole("link", { name: "Characters", exact: true }).click();
   await page.waitForTimeout(500);
   expect(bible.hits("/api/oauth/loadouts/")).toHaveLength(1);
   expect(bible.hits("/api/oauth/rosters")).toHaveLength(1);
@@ -548,7 +550,7 @@ test("Fetch remaining uses the linked roster, not the scrape", async ({
   const scrape = await bh.stub_character(page, {});
   await setup(page, [{ names: ["Alpha"] }], [na("Alpha", "Beta", "Gamma")]);
   await page
-    .getByRole("button", { name: "Fetch remaining characters" })
+    .getByRole("button", { name: "Fetch other characters in the roster" })
     .click();
   await page.getByRole("button", { name: "Confirm all" }).click();
   await expect
@@ -575,10 +577,7 @@ test("the same name in NA and CE keeps its name and opens at its own url", async
   await page.waitForTimeout(1500);
 
   await page.getByRole("link", { name: "Roster setup" }).click();
-  await page
-    .getByRole("group", { name: "Roster 2" })
-    .getByRole("link", { name: "Go to character Bob" })
-    .click();
+  await hf.open_char(page.getByRole("group", { name: "Roster 2" }), "Bob");
   await expect(page).toHaveURL(/\/chars\/EU\/Bob\/calc$/);
   expect(await bh.with_store(page, (s) => s.active_region)).toBe("euc");
   // both are linked, so both are locked
@@ -589,10 +588,7 @@ test("the same name in NA and CE keeps its name and opens at its own url", async
   await hf.reload(page);
   expect(await bh.with_store(page, (s) => s.active_region)).toBe("euc");
   await page.getByRole("link", { name: "Roster setup" }).click();
-  await page
-    .getByRole("group", { name: "Roster 1" })
-    .getByRole("link", { name: "Go to character Bob" })
-    .click();
+  await hf.open_char(page.getByRole("group", { name: "Roster 1" }), "Bob");
   await expect(page).toHaveURL(/\/chars\/NA\/Bob\/calc$/);
   expect(await bh.with_store(page, (s) => s.active_region)).toBe("nae");
 });

@@ -33,9 +33,9 @@ for (const fixture of fixtures) {
   const migrated = migrate_to_current(structuredClone(v10), 10);
   const added = differences(migrated, v10).filter((p) => p !== ".version");
   check(
-    "adds only income_auto, income_sources, forbidden_chests, class_name, fetched_at, sidereal_level, show_weapon_honing, bands_manual, alt leftover values, new scan pages, show_suggestions, hide_free_tap_hint and roster_names",
+    "adds only income_auto, income_sources, forbidden_chests, class_name, fetched_at, sidereal_level, bands_manual, alt leftover values, new scan pages, show_suggestions, hide_free_tap_hint and roster_names",
     added.every((p) =>
-      /^\.profiles\.\d+\.(income_auto|income_sources|forbidden_chests|class_name|fetched_at|sidereal_level|show_weapon_honing|bands_manual|band_values\.\d)$|^\.scan_(pages|currencies)(\.|$)|^\.(show_suggestions|hide_free_tap_hint|roster_names)$/.test(
+      /^\.profiles\.\d+\.(income_auto|income_sources|forbidden_chests|class_name|fetched_at|sidereal_level|bands_manual|band_values\.\d)$|^\.scan_(pages|currencies)(\.|$)|^\.(show_suggestions|hide_free_tap_hint|roster_names)$/.test(
         p,
       ),
     ),

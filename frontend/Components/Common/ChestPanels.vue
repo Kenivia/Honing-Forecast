@@ -196,12 +196,12 @@ const panels = computed(() => [
                 <template v-if="is_forbidden(chest)">✓</template>
                 <span
                   v-else
-                  class="h-4 w-4 bg-current"
+                  class="h-full w-full bg-current"
                   :style="mask('ban-solid-full')"
                 />
               </button>
               <!-- keeps the delete buttons in line -->
-              <span v-else-if="editing" class="w-7" />
+              <span v-else-if="editing" class="w-8" />
               <button
                 v-if="editing"
                 :class="BUTTON"
@@ -210,7 +210,7 @@ const panels = computed(() => [
                 @click="emit('remove', chest.key)"
               >
                 <span
-                  class="h-4 w-4 bg-current"
+                  class="h-full w-full bg-current"
                   :style="mask('trash-solid-full')"
                 />
               </button>

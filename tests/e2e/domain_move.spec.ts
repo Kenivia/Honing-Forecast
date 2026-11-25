@@ -71,8 +71,7 @@ async function arrive(page: Page, path: string) {
   await expect(page.getByRole("link", { name: "Roster setup" })).toBeVisible();
 }
 
-const first_char = (page: Page) =>
-  page.getByRole("link", { name: `Go to character ${FIRST_CHAR}` });
+const first_char = (page: Page) => hf.char_card(page, FIRST_CHAR);
 const moved_notice = (page: Page) =>
   page.getByRole("status").filter({ hasText: "has moved to" });
 
@@ -173,9 +172,7 @@ for (const [fixture, version] of [
     const old_key = `HF_CONFIG_V${version}_COMPRESSED`;
     await storage(page, OLD, { [old_key]: LZString.compressToUTF16(json) });
     await arrive(page, "/roster-setup");
-    await expect(
-      page.getByRole("link", { name: "Go to character Toneema" }),
-    ).toBeVisible();
+    await expect(hf.char_card(page, "Toneema")).toBeVisible();
     await expect.poll(outcomes).toEqual(["moved"]);
     const moved = await storage(page, NEW); // leaving the app saves it
     expect(moved[old_key]).toBeUndefined();

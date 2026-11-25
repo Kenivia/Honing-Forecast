@@ -52,21 +52,14 @@ function change_one_and_update_keyed(row: number, col: number) {
   grid_change_callback();
 }
 
-function cell_class(status: UpgradeStatus, _row = -1): string {
-  const p = active_profile.value;
-  const locked = p.lock_fetched_done;
-  // sidereal weapon ticks in --average
-  const sidereal = "";
-  // status === UpgradeStatus.FetchedDone &&
-  // row === WEAPON_ROW &&
-  // p.sidereal_level !== null &&
-  // active_profile.value.lock_fetched_done
-  //   ? " Sidereal"
-  //   : "";
-  if (status === UpgradeStatus.FetchedDone && locked)
-    return "FetchedDone" + sidereal;
+function cell_class(status: UpgradeStatus): string {
+  if (
+    status === UpgradeStatus.FetchedDone &&
+    active_profile.value.lock_fetched_done
+  )
+    return "FetchedDone";
   if (status === UpgradeStatus.Done || status === UpgradeStatus.FetchedDone)
-    return "Done" + sidereal;
+    return "Done";
   if (status === UpgradeStatus.Want) return "Want";
   return "";
 }
@@ -165,7 +158,7 @@ function cell_cursor(status: UpgradeStatus): string {
           v-for="col in col_indices"
           :key="`${grid_type}-${row}-${col}`"
           class="cell"
-          :class="cell_class(relevant_grid[row - 1][col - 1], row - 1)"
+          :class="cell_class(relevant_grid[row - 1][col - 1])"
           :aria-label="cell_label(row - 1, col - 1)"
           :style="{ cursor: cell_cursor(relevant_grid[row - 1][col - 1]) }"
           @click="change_one_and_update_keyed(row - 1, col - 1)"
@@ -220,12 +213,6 @@ function cell_cursor(status: UpgradeStatus): string {
   background: var(--achieved);
   color: var(--text-void);
   border-color: transparent;
-}
-.cell.FetchedDone.Sidereal {
-  color: var(--average);
-}
-.cell.Done.Sidereal {
-  background: var(--average);
 }
 .cell.Want {
   background: var(--pending);
