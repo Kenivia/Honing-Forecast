@@ -1,12 +1,13 @@
 use hf_core::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
-use hf_core::histogram::HistogramOutputs;
-use hf_core::histogram::histogram;
-use hf_core::marginal::use_more_prices;
+use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::optimizer::maxroll::apply_maxroll;
+use hf_core::optimizer::progress::set_progress;
 use hf_core::optimizer::solve;
 use hf_core::payload::Payload;
 use hf_core::probe::Probe;
-use hf_core::state_bundle::StateBundle;
+use hf_core::ui::histogram::HistogramOutputs;
+use hf_core::ui::histogram::histogram;
+use hf_core::ui::marginal::use_more_prices;
 use hf_scanner::buffer::Buffer;
 use hf_scanner::dev_utils::capture::{InputRecorder, parse};
 use hf_scanner::dev_utils::timing::{take, timed};
@@ -17,7 +18,7 @@ use hf_scanner::ocr::{
 };
 use hf_scanner::scanner_state::{Detected, Prior, ScannerState, SlotEdit};
 use rand::rngs::ThreadRng;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::{from_value, to_value};
 use std::cell::RefCell;
 use wasm_bindgen::JsValue;
@@ -42,13 +43,37 @@ fn add_fresh_adv(payload: &mut Payload) {
 }
 
 #[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_name = postMessage)]
+    fn post_message(val: JsValue);
+}
+
+#[derive(Serialize)]
+struct WasmProgress {
+    state_bundle: Option<StateBundle>,
+    est_progress_percentage: f64,
+    r#type: &'static str,
+}
+
+// an intermediate result goes without the advanced cache
+fn send_progress(state_bundle: Option<&StateBundle>, est_progress_percentage: f64) {
+    post_message(
+        to_value(&WasmProgress {
+            state_bundle: state_bundle.map(StateBundle::without_adv_cache),
+            est_progress_percentage,
+            r#type: "intermediate_result",
+        })
+        .unwrap(),
+    );
+}
+
+#[wasm_bindgen]
 pub fn optimize_average_wrapper(input_payload: JsValue) -> JsValue {
     console_error_panic_hook::set_once();
+    set_progress(send_progress);
     let mut payload: Payload = from_value(input_payload).unwrap();
     add_fresh_adv(&mut payload);
-    let quick = payload.quick;
-    let mut state_bundle: StateBundle = StateBundle::init_from_payload(payload);
-    state_bundle.tuning.quick = quick;
+    let state_bundle: StateBundle = StateBundle::from_payload(payload);
 
     let mut rng: ThreadRng = rand::rng();
     let mut dummy_probe = Probe::default();
@@ -67,7 +92,7 @@ pub fn histogram_wrapper(input_payload: JsValue) -> JsValue {
     let payload: Payload = from_value(input_payload).unwrap();
     let dist_plan = payload.dist_plan;
     let maxroll = payload.maxroll;
-    let mut state_bundle: StateBundle = StateBundle::init_from_payload(payload);
+    let mut state_bundle: StateBundle = StateBundle::from_payload(payload);
     apply_maxroll(&mut state_bundle, maxroll);
     let out: HistogramOutputs = histogram(&mut state_bundle, dist_plan);
     to_value(&out).unwrap()
@@ -87,7 +112,7 @@ pub fn marginal_value_wrapper(input: JsValue) -> JsValue {
         labels,
     } = from_value(input).unwrap();
     add_fresh_adv(&mut payload);
-    let mut state_bundle: StateBundle = StateBundle::init_from_payload(payload);
+    let mut state_bundle: StateBundle = StateBundle::from_payload(payload);
     let mut rng: ThreadRng = rand::rng();
     to_value(&use_more_prices(&mut rng, &mut state_bundle, &labels)).unwrap()
 }

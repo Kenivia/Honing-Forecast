@@ -2,10 +2,10 @@
 //! Searched downwards from market: steps doubling away from it until the plan, polished at the
 //! lower price, uses more, then bisected back towards it, over a fixed number of polishes.
 
-use crate::materials::NUM_BASE_MATS;
+use crate::honing_utils::materials::NUM_BASE_MATS;
+use crate::honing_utils::state_bundle::StateBundle;
 use crate::optimizer::polish_only;
 use crate::probe::Probe;
-use crate::state_bundle::StateBundle;
 use ahash::AHashMap;
 use rand::Rng;
 

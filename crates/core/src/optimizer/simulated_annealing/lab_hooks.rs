@@ -2,9 +2,9 @@
 //! rebuild as a kick (`kick_types` `rebuild`), which only the kick loop calls.
 
 use super::{polish, refine, respond_one, start_solver};
+use crate::honing_utils::state_bundle::StateBundle;
 use crate::optimizer::response::Response;
 use crate::probe::Probe;
-use crate::state_bundle::StateBundle;
 use rand::Rng;
 use rand::seq::SliceRandom;
 use smallvec::smallvec;

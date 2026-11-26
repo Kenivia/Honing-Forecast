@@ -1,10 +1,10 @@
 //! What the evaluator's parts share: the gold memo's hash and a sum's mean
 
-use crate::state_bundle::StateBundle;
+use crate::honing_utils::state_bundle::StateBundle;
 
 const MIX: ahash::RandomState = ahash::RandomState::with_seeds(1, 2, 3, 4);
 
-pub fn mix(a: u64, b: u64) -> u64 {
+pub fn mix_hash(a: u64, b: u64) -> u64 {
     MIX.hash_one((a, b))
 }
 

@@ -2,10 +2,10 @@
 //! `Tuning::coarse_cells` points a standard deviation
 
 use crate::constants::float_tol;
-use crate::core::common::mix;
-use crate::core::shape::Shape;
+use crate::eval::common::mix_hash;
+use crate::eval::shape::Shape;
+use crate::honing_utils::state_bundle::StateBundle;
 use crate::probe::{Counter, Probe};
-use crate::state_bundle::StateBundle;
 use ahash::AHashMap;
 use smallvec::SmallVec;
 
@@ -43,14 +43,14 @@ impl Grid {
     /// grid points around it in proportion, which keeps every mean and adds a known variance.
     /// Grid points from `keep` on are dropped, and mass under 1e-16 at either end. The
     /// multiplications it took, or None where nothing is left.
-    fn add(
+    fn convolve_one_upgrade(
         &mut self,
         pairs: &[(f64, f64)],
         step: f64,
         keep: usize,
         cells: &mut Vec<f64>,
     ) -> Option<usize> {
-        bin(pairs, step, cells, &mut self.added);
+        split_mass(pairs, step, cells, &mut self.added);
         self.convolve(cells, keep)
     }
 
@@ -96,7 +96,7 @@ impl Grid {
 
 /// One upgrade's outcomes on the grid, counted from its lowest: each outcome's mass split between
 /// the two grid points around it in proportion, the variance that adds summed into `added`
-fn bin(pairs: &[(f64, f64)], step: f64, cells: &mut Vec<f64>, added: &mut f64) {
+fn split_mass(pairs: &[(f64, f64)], step: f64, cells: &mut Vec<f64>, added: &mut f64) {
     let low = pairs[0].0;
     cells.clear();
     for &(value, p) in pairs.iter() {
@@ -132,7 +132,7 @@ fn grid<'a>(
         if pairs.len() < 2 {
             continue;
         }
-        work += out.add(pairs, step, keep, &mut cells)?;
+        work += out.convolve_one_upgrade(pairs, step, keep, &mut cells)?;
         if work > max_work {
             probe.count(Counter::CoarseTooBig);
             return None;
@@ -275,37 +275,38 @@ impl StateBundle {
                 .support_from_index(u_index, support_index)
                 .access_collapsed(false);
             if pairs.len() >= 2 {
-                let more =
-                    if cache {
-                        // each upgrade's cells and variance apart, kept by what they are made of
-                        let made_of = mix(u_index as u64, self.upgrade_arr[u_index].state.hash);
-                        let key = mix(mix(made_of, support_index as u64), step.to_bits());
-                        let hit = coarse.as_deref().and_then(|memo| memo.0.get(&key)).map(
-                            |(kept, part)| {
+                let more = if cache {
+                    // each upgrade's cells and variance apart, kept by what they are made of
+                    let made_of = mix_hash(u_index as u64, self.upgrade_arr[u_index].state.hash);
+                    let key = mix_hash(mix_hash(made_of, support_index as u64), step.to_bits());
+                    let hit =
+                        coarse
+                            .as_deref()
+                            .and_then(|memo| memo.0.get(&key))
+                            .map(|(kept, part)| {
                                 cells.clear();
                                 cells.extend_from_slice(kept);
                                 *part
-                            },
-                        );
-                        let part = match hit {
-                            Some(part) => part,
-                            None => {
-                                let mut part = 0.0;
-                                bin(pairs, step, &mut cells, &mut part);
-                                if let Some(memo) = coarse.as_deref_mut() {
-                                    if memo.0.len() >= COARSE_MEMO_SIZE {
-                                        memo.0.clear();
-                                    }
-                                    memo.0.insert(key, (cells.clone(), part));
+                            });
+                    let part = match hit {
+                        Some(part) => part,
+                        None => {
+                            let mut part = 0.0;
+                            split_mass(pairs, step, &mut cells, &mut part);
+                            if let Some(memo) = coarse.as_deref_mut() {
+                                if memo.0.len() >= COARSE_MEMO_SIZE {
+                                    memo.0.clear();
                                 }
-                                part
+                                memo.0.insert(key, (cells.clone(), part));
                             }
-                        };
-                        sum.added += part;
-                        sum.convolve(&cells, keeps[index])
-                    } else {
-                        sum.add(pairs, step, keeps[index], &mut cells)
+                            part
+                        }
                     };
+                    sum.added += part;
+                    sum.convolve(&cells, keeps[index])
+                } else {
+                    sum.convolve_one_upgrade(pairs, step, keeps[index], &mut cells)
+                };
                 let Some(more) = more else {
                     break;
                 };

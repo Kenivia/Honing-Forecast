@@ -1,15 +1,15 @@
 //! Payload is how js and rust communicates, we also use payload as our test cases in arena
-use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
-use crate::chest::{ChestStates, Chests};
-use crate::materials::{OneMaterial, ValuationPlan};
+use crate::constants::BASE_JUICE_INFOS;
+use crate::constants::juice_info::get_event_adjusted_juice_info;
+use crate::honing_utils::chest::{ChestStates, Chests};
+use crate::honing_utils::materials::{MaterialTable, OneMaterial, ValuationPlan};
+use crate::honing_utils::state_bundle::StateBundle;
 use crate::optimizer::maxroll::Maxroll;
-use crate::parser::{OneUpgradeInput, PreparationOutput};
-use crate::state_bundle::StateBundle;
+use crate::parser::{AdvCache, OneUpgradeInput, PreparationOutput, UpgradeCtx, kept_adv_cache};
+use crate::tuning::Tuning;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::Path;
 
 #[derive(Deserialize, Clone, Serialize)]
 pub struct Payload {
@@ -40,7 +40,7 @@ pub struct Payload {
     #[serde(default = "default_one")]
     pub metric_type: i64,
 
-    pub adv_cache: Option<AHashMap<AdvConfig, AdvDistTriplet>>,
+    pub adv_cache: Option<AdvCache>,
     /// the plan the histogram draws the gold distribution of, none for no distribution
     #[serde(default)]
     pub dist_plan: Option<usize>,
@@ -55,47 +55,59 @@ pub struct Payload {
 fn default_one() -> i64 {
     1
 }
+
+impl Payload {
+    /// One step of a scenario file (`arena_data/scenarios`), for tests and experiments.
+    pub fn load_step(path: &str, step: usize) -> Payload {
+        let file: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        serde_json::from_value(file["steps"][step].clone()).unwrap()
+    }
+}
+
 impl StateBundle {
-    pub fn init_from_inputs(
-        material_labels: Vec<String>,
-        materials: AHashMap<String, OneMaterial>,
-        plans: Vec<ValuationPlan>,
-        optimizer_plan: usize,
-        upgrade_info: Vec<OneUpgradeInput>,
-        special_budget: i64,
-        express_event: bool,
-        tier: usize,
-        special_state: Option<Vec<usize>>,
-        chests: Chests,
-        chest_states: Option<ChestStates>,
-        special_label: String,
-        min_resolution: usize,
-        num_threads: usize,
-        metric_type: i64,
-        adv_cache: Option<AHashMap<AdvConfig, AdvDistTriplet>>,
-    ) -> StateBundle {
-        let (prep_output, upgrade_arr, adv_cache): (
-            PreparationOutput,
-            Vec<Upgrade>,
-            AHashMap<AdvConfig, AdvDistTriplet>,
-        ) = PreparationOutput::initialize(
+    /// `dist_plan` and `maxroll` are left for the caller.
+    pub fn from_payload(payload: Payload) -> StateBundle {
+        let Payload {
             material_labels,
             materials,
             plans,
             optimizer_plan,
             upgrade_info,
             special_budget,
+            special_state,
             chests,
+            chest_states,
             special_label,
-            express_event,
             tier,
+            express_event,
+            min_resolution,
+            num_threads,
+            metric_type,
             adv_cache,
-        );
+            quick,
+            ..
+        } = payload;
+        assert!(optimizer_plan < plans.len());
+
+        let juice_info = get_event_adjusted_juice_info(&BASE_JUICE_INFOS[tier], express_event);
+        let table = MaterialTable::new(material_labels, juice_info.num_juice_avail);
+        let materials: Vec<OneMaterial> = table.in_row_order(&materials);
+
+        let mut adv_cache = kept_adv_cache(adv_cache, &upgrade_info);
+        let ctx = UpgradeCtx::new(express_event, tier, &juice_info);
+        let upgrade_arr: Vec<Upgrade> = upgrade_info
+            .into_iter()
+            .map(|input| Upgrade::from_input(input, &ctx, &mut adv_cache))
+            .collect();
+
         let u_len = upgrade_arr.len();
-        // web_sys::console::log_1(&"2".into());
+        let special_state = special_state
+            .filter(|order| order.len() == u_len)
+            .unwrap_or_else(|| (0..u_len).collect());
+        // a given state that does not fit its chest falls back to the default
         let given = chest_states.unwrap_or_default();
-        let chest_states: ChestStates = prep_output
-            .chests
+        let chest_states: ChestStates = chests
             .iter()
             .map(|(key, chest)| {
                 let state = given
@@ -109,95 +121,39 @@ impl StateBundle {
 
         let mut out = StateBundle {
             upgrade_arr,
-            special_state: if special_state.is_none()
-                || special_state.as_ref().unwrap().len() != u_len
-            {
-                (0..u_len).collect()
-            } else {
-                special_state.unwrap()
-            },
+            special_state,
             chest_states,
             special_invalid_index: None,
             metric_type,
             metric: -1.0,
-            prep_output,
+            prep_output: PreparationOutput {
+                table,
+                base_materials: materials.clone(),
+                materials,
+                chests,
+                special_label,
+                plans,
+                optimizer_plan,
+                bands: Vec::new(), // apply_chest_state
+                special_budget,
+                base_special_budget: special_budget,
+                test_case: -1,
+                juice_info,
+            },
             special_cache: AHashMap::new(),
             latest_special_probs: None,
             min_resolution,
             num_threads,
-
             adv_cache,
             gold_memo: AHashMap::new(),
             coarse_memo: Default::default(),
             special_done: None,
-            tuning: Default::default(),
+            tuning: Tuning {
+                quick,
+                ..Default::default()
+            },
         };
         out.apply_chest_state(false);
         out
     }
-    pub fn init_from_payload(payload: Payload) -> Self {
-        StateBundle::init_from_inputs(
-            payload.material_labels,
-            payload.materials,
-            payload.plans,
-            payload.optimizer_plan,
-            payload.upgrade_info,
-            payload.special_budget,
-            payload.express_event,
-            payload.tier,
-            payload.special_state,
-            payload.chests,
-            payload.chest_states,
-            payload.special_label,
-            payload.min_resolution,
-            payload.num_threads,
-            payload.metric_type,
-            payload.adv_cache,
-        )
-    }
-}
-
-pub fn parse_to_payloads(path: &Path) -> Vec<(String, Payload)> {
-    if !path.exists() {
-        return Vec::new();
-    }
-    let mut entries: Vec<_> = fs::read_dir(path)
-        .unwrap()
-        .filter_map(|entry| entry.ok())
-        .collect();
-    entries.sort_by_key(|entry| entry.path());
-
-    let mut out: Vec<(String, Payload)> = Vec::new();
-    for entry in entries {
-        let file_path = entry.path();
-        if !file_path.is_file() {
-            continue;
-        }
-        if file_path
-            .extension()
-            .and_then(|ext| ext.to_str())
-            .map(|ext| ext.eq_ignore_ascii_case("json"))
-            != Some(true)
-        {
-            continue;
-        }
-        let test_case_name = file_path
-            .file_stem()
-            .map(|stem| stem.to_string_lossy().to_string())
-            .unwrap_or_else(|| "N/A".to_string());
-        let contents = fs::read_to_string(&file_path).unwrap();
-        let payload: Payload = serde_json::from_str(&contents).unwrap();
-        out.push((test_case_name, payload));
-    }
-    out
-}
-
-pub fn parse_to_state_bundles(path: &Path) -> Vec<(String, StateBundle)> {
-    let mut out: Vec<(String, StateBundle)> = Vec::new();
-    for (test_case_name, payload) in parse_to_payloads(path) {
-        let state_bundle = StateBundle::init_from_payload(payload);
-
-        out.push((test_case_name, state_bundle));
-    }
-    out
 }

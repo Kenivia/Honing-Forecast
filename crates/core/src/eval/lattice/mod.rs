@@ -13,8 +13,8 @@ pub mod step;
 pub use coarse::CoarseMemo;
 pub use exact::Lattice;
 
+use crate::honing_utils::state_bundle::StateBundle;
 use crate::probe::Probe;
-use crate::state_bundle::StateBundle;
 
 impl StateBundle {
     /// The lattice's answers at every threshold, plain and biased, for each of these free
@@ -28,7 +28,7 @@ impl StateBundle {
         thresholds: &[f64],
         probe: &mut Probe,
     ) -> Vec<Option<Vec<(f64, f64)>>> {
-        let mut wanted = vec![false; self.upgrade_arr[0].cost_dist.len()];
+        let mut wanted = vec![false; self.prep_output.table.len()];
         wanted[support_index as usize] = true;
         let step = self.shared_steps(skips, &wanted)[support_index as usize];
         self.lattice_table_with(support_index, skips, thresholds, None, step, probe)

@@ -5,11 +5,11 @@
 //! distribution, not the distribution itself.
 
 use hf_core::advanced_honing::sim::one_sim;
-use hf_core::gold_dist::tap_map_generator;
-use hf_core::materials::{NUM_BASE_MATS, gold};
+use hf_core::honing_utils::materials::{NUM_BASE_MATS, gold};
+use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::probe::Probe;
-use hf_core::state_bundle::StateBundle;
 use hf_core::tuning::Tuning;
+use hf_core::ui::gold_dist::tap_map_generator;
 use hf_core::upgrade::Upgrade;
 use itertools::izip;
 use rand::Rng;
@@ -243,8 +243,8 @@ pub fn check<R: Rng>(state_bundle: &mut StateBundle, spec: &McSpec, rng: &mut R)
 mod tests {
     use super::*;
     use crate::scenario::dummy;
-    use hf_core::gold_dist::{gold_distribution, gold_samples};
     use hf_core::optimizer::scramble;
+    use hf_core::ui::gold_dist::{gold_distribution, gold_samples};
     use rand::SeedableRng;
     use rand::rngs::StdRng;
 
@@ -254,7 +254,7 @@ mod tests {
         const N: usize = 100_000;
         for payload in dummy().steps {
             let mut rng = StdRng::seed_from_u64(1);
-            let mut sb = scramble(&mut rng, StateBundle::init_from_payload(payload), 20);
+            let mut sb = scramble(&mut rng, StateBundle::from_payload(payload), 20);
             sb.tuning = Tuning::reference();
             let (metric_per_plan, _, _) = sb.ui_average_gold_metric(&mut Probe::default());
             let bands = &sb.prep_output.bands[0];

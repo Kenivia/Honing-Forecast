@@ -193,7 +193,7 @@ describe("alignment with the wired Rust constants", () => {
     expect(core("constants/constants.rs")).toContain(
       `RATE_SCALE: i64 = ${RATE_SCALE.toLocaleString("en").replace(/,/g, "_")};`,
     );
-    expect(core("materials.rs")).toContain(
+    expect(core("honing_utils/materials.rs")).toContain(
       `NUM_BASE_MATS: usize = ${NUM_BASE_MATS};`,
     );
     expect(PIECE_NAMES[5]).toBe("Weapon");

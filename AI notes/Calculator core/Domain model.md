@@ -1,20 +1,20 @@
 # Domain model
 
-How `crates/core` represents the problem. Field names on these structs are effectively API: the frontend reads the serialised structs directly.
+How `crates/core` represents the problem. Layout of `crates/core/src`: `payload.rs` and `parser.rs` (the input), `upgrade.rs`, `tuning.rs`, `probe.rs`, `helpers.rs` (`my_dbg!`); `honing_utils/` (materials, chests, supports, `StateBundle`, an upgrade's distributions), `advanced_honing/`, `constants/`, `eval/` (the evaluator), `optimizer/` (with `state.rs`, the lab in `lab/`), `ui/` (what only the page asks for: histogram, gold distribution, marginal prices). Field names on these structs are effectively API: the frontend reads the serialised structs directly.
 
 ## Structs
 
 - **`Payload`** (`payload.rs`): what JS sends. Hand-mirrored in `frontend/WasmInterface/PayloadBuilder.ts`; there is no generated binding.
 - **`PreparationOutput`** (`parser.rs`): everything derived once from the payload: the `MaterialTable`, the materials in row order, the valuation plans and their precomputed bands, the chests, the free-tap budget and the event-adjusted `JuiceInfo`.
-- **`materials.rs`**: the material vocabulary. `MaterialTable` holds the labels and the label to row map; `OneMaterial` is one material's owned amounts and prices; `ValuationPlan` is what a leftover unit of each band is worth.
+- **`honing_utils/materials.rs`**: the material vocabulary. `MaterialTable` holds the labels and the label to row map; `OneMaterial` is one material's owned amounts and prices; `ValuationPlan` is what a leftover unit of each band is worth.
 - **`Upgrade`** (`upgrade.rs`): one +N to +N+1 step on one piece. Holds its probability distribution, its per-material cost supports (`cost_dist`) and its `State`, plus a `Spare` of the previous state's distributions (`Evaluation pipeline.md`).
-- **`State`** (`state.rs`): the decision for one upgrade, and the thing the optimizer mutates.
+- **`State`** (`optimizer/state.rs`): the decision for one upgrade, and the thing the optimizer mutates.
   - Normal honing: for each tap, the set of juice/book ids used on that tap.
   - Advanced honing: two strategy indices (juice, scroll), each meaning "use it on the first N grace or non-grace taps".
-- **`Support`** (`support.rs`): for one upgrade and one material, the amount consumed at each outcome, paired with the outcome probabilities.
+- **`Support`** (`honing_utils/support.rs`): for one upgrade and one material, the amount consumed at each outcome, paired with the outcome probabilities.
 - **`Tuning`** (`tuning.rs`): every evaluator and optimizer knob, overridable by name from the arena. The default is production; `Tuning::reference()` is the accurate evaluator used for reported numbers.
-- **`StateBundle`** (`state_bundle.rs`): one complete candidate solution: all upgrades, the free-tap order (`special_state`), how the chests are opened (`chest_states`), the prepared inputs, caches (`special_cache`, `adv_cache`, `gold_memo`) and the last metric. `StateEssence` is the hashable subset (states, free-tap order, chest states).
-- **`Chest`** (`chest.rs`): one stack of identical chests still to be opened. See "Chests" below.
+- **`StateBundle`** (`honing_utils/state_bundle.rs`): one complete candidate solution: all upgrades, the free-tap order (`special_state`), how the chests are opened (`chest_states`), the prepared inputs, caches (`special_cache`, `adv_cache`, `gold_memo`) and the last metric. `StateEssence` is the hashable subset (states, free-tap order, chest states).
+- **`Chest`** (`honing_utils/chest.rs`): one stack of identical chests still to be opened. See "Chests" below.
 
 ## Index conventions
 

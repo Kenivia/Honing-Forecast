@@ -2,9 +2,9 @@
 
 use crate::scenario::Scenario;
 use crate::worker::Essence;
+use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::optimizer::scramble;
 use hf_core::probe::{COUNTER_NAMES, Probe};
-use hf_core::state_bundle::StateBundle;
 use hf_core::tuning::Tuning;
 use rand::prelude::*;
 use rayon::prelude::*;
@@ -62,7 +62,7 @@ pub fn run(scenarios: &[Scenario], args: &Args, tuning: &Tuning) {
             .flat_map(|(name, payload)| {
                 let mut filled = (*payload).clone();
                 crate::adv_table::fill(&mut filled);
-                let mut base = StateBundle::init_from_payload(filled);
+                let mut base = StateBundle::from_payload(filled);
                 base.tuning = tuning.clone();
                 if base.upgrade_arr.is_empty() {
                     return Vec::new();

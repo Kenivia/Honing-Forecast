@@ -2,9 +2,9 @@
 //! Computes K(s), the cumulant generating function, and its derivatives(up to the 4th)
 //!
 //! There was an attempt at parallelism here, but it's way too fine-grained for rayon. I'm not sure if this kstuple & fold business is any good for serial code but it cant be that bad so i cbb changing it back
+use crate::honing_utils::state_bundle::StateBundle;
+use crate::honing_utils::support::Support;
 use crate::probe::{Counter, Probe};
-use crate::state_bundle::StateBundle;
-use crate::support::Support;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

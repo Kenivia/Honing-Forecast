@@ -1,7 +1,7 @@
 //! What every threshold of one material shares under one free tap outcome: its range, lattice and cumulants
 
-use crate::core::saddlepoint::cumulants::KsTuple;
-use crate::state_bundle::StateBundle;
+use crate::eval::saddlepoint::cumulants::KsTuple;
+use crate::honing_utils::state_bundle::StateBundle;
 use num::Integer;
 
 pub const MIN_LATTICE_SPAN: f64 = 1.0;

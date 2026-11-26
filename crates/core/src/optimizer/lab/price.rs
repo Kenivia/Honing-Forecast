@@ -5,10 +5,10 @@
 
 use super::{check, evaluate};
 use crate::advanced_honing::utils::MAX_ADV_STATE;
+use crate::honing_utils::state_bundle::{StateBundle, StateEssence};
 use crate::optimizer::response::{Model, Response};
 use crate::optimizer::{Previous, Solved};
 use crate::probe::Probe;
-use crate::state_bundle::{StateBundle, StateEssence};
 use ordered_float::OrderedFloat;
 use rand::rngs::SmallRng;
 use rand::seq::SliceRandom;
@@ -585,7 +585,7 @@ impl Run {
         }
         let upgrade = &self.sb.upgrade_arr[index];
         let table = &self.sb.prep_output.table;
-        let mut out: Vec<usize> = (0..crate::materials::NUM_BASE_MATS)
+        let mut out: Vec<usize> = (0..crate::honing_utils::materials::NUM_BASE_MATS)
             .filter(|&row| upgrade.costs[row] > 0.0 || upgrade.unlock_costs[row] > 0.0)
             .collect();
         let model = self.models[index].as_ref().unwrap();

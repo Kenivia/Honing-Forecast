@@ -1,7 +1,7 @@
 //! Chests still to be opened, and how each stack of them is opened.
 
-use crate::materials::{MaterialTable, OneMaterial, all_bands};
-use crate::state_bundle::StateBundle;
+use crate::honing_utils::materials::{MaterialTable, OneMaterial, all_bands};
+use crate::honing_utils::state_bundle::StateBundle;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

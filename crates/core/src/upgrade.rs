@@ -1,10 +1,10 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 
 use crate::constants::juice_info::JuiceInfo;
+use crate::honing_utils::materials::NUM_BASE_MATS;
+use crate::honing_utils::support::{ProbDist, Support};
 use crate::honing_utils::update_normal::{Tap, chance};
-use crate::materials::NUM_BASE_MATS;
-use crate::state::{OneState, State};
-use crate::support::{ProbDist, Support};
+use crate::optimizer::state::{OneState, State};
 use crate::upgrade::PieceType::{Armor, Vambrace, Weapon};
 use ahash::AHashMap;
 use serde::{Deserialize, Serialize};
@@ -28,7 +28,6 @@ pub struct Upgrade {
     pub upgrade_index: usize,
 
     pub clean_prob_dist_len: usize,
-    // pub juice_arr: Vec<f64>,
     pub state: State,
     pub cost_dist: Vec<Support>,
 
@@ -123,8 +122,6 @@ impl Upgrade {
             upgrade_index,
             state, // initialize state with default values
             cost_dist: vec![Support::default(); juice_info.total_num_avail],
-            // weap_juice_costs: vec![Support::default(); juice_info.num_juice_avail],
-            // armor_juice_costs: vec![Support::default(); juice_info.num_juice_avail],
             name_string: {
                 let mut string: String = "".to_owned();
                 string += &piece_type_to_prefix(piece_type);
@@ -136,7 +133,7 @@ impl Upgrade {
             tap_artisan: Vec::new(),
             fail_chances: tap.fail_chances(),
             starting_num_taps,
-            unlocked, // THIS IS IGNORED RN just assuming alr_failed > 0 <==> ulocked
+            unlocked,
             unlock_costs: unlock_costs.try_into().unwrap(),
             adv_config: AdvConfig::default(),
             adv_dists: Vec::new(),
@@ -159,7 +156,6 @@ impl Upgrade {
         out
     }
 
-    /// we initialize the support of adv here, and don't update it further (because we aren't doing optimizaiton for adv rn), but that will change in the future
     pub fn new_adv(
         costs: &[f64],
         piece_index: usize,

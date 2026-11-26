@@ -10,12 +10,12 @@
 
 use super::{check, evaluate};
 use crate::advanced_honing::utils::MAX_ADV_STATE;
-use crate::materials::NUM_BASE_MATS;
+use crate::honing_utils::materials::NUM_BASE_MATS;
+use crate::honing_utils::state_bundle::{StateBundle, StateEssence};
 use crate::optimizer::response::{Model, Response};
+use crate::optimizer::state::{OneState, get_pool_ids};
 use crate::optimizer::{Previous, Solved};
 use crate::probe::Probe;
-use crate::state::{OneState, get_pool_ids};
-use crate::state_bundle::{StateBundle, StateEssence};
 use ahash::AHashSet;
 use ordered_float::OrderedFloat;
 use rand::Rng;

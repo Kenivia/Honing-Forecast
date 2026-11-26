@@ -30,7 +30,7 @@ export const ANNOTATION_LABELS = [
 // A material is owned in three bands: character-bound, roster-bound and tradable. What a
 // leftover unit of each band is worth is the user's choice, out of three levels, and must
 // not decrease across the bands. Rust takes this as `plans` and reports one metric per
-// plan; see `ValuationPlan` in crates/core/src/materials.rs.
+// plan; see `ValuationPlan` in crates/core/src/honing_utils/materials.rs.
 // ============================================================================
 
 // Indexed by band, like everything else here. The control panel shows them in reverse;

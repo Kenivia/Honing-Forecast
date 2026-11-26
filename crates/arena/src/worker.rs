@@ -7,12 +7,12 @@ use crate::adv_table;
 use crate::monte_carlo::{McRow, McSpec, check};
 use crate::scenario::Scenario;
 use cpu_time::ThreadTime;
-use hf_core::chest::ChestStates;
+use hf_core::honing_utils::chest::ChestStates;
+use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::optimizer::lab::solve;
+use hf_core::optimizer::state::OneState;
 use hf_core::optimizer::{Previous, scramble};
 use hf_core::probe::{COUNTER_NAMES, Probe};
-use hf_core::state::OneState;
-use hf_core::state_bundle::StateBundle;
 use hf_core::tuning::Tuning;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -211,7 +211,7 @@ pub fn run_job(job: &Job) {
             StdRng::seed_from_u64(job.seed.wrapping_mul(1_000_003).wrapping_add(step as u64));
         let mut filled = payload.clone();
         adv_table::fill(&mut filled);
-        let mut state_bundle = StateBundle::init_from_payload(filled);
+        let mut state_bundle = StateBundle::from_payload(filled);
         state_bundle.tuning = tuning.clone();
         let adv_known = state_bundle.adv_cache.len();
 
@@ -289,7 +289,7 @@ mod tests {
     use hf_core::optimizer::lab::{ALGOS, check};
 
     fn short_solve(seed: u64, algo: &str, step: usize) -> (f64, String) {
-        let mut state_bundle = StateBundle::init_from_payload(dummy().steps[step].clone());
+        let mut state_bundle = StateBundle::from_payload(dummy().steps[step].clone());
         state_bundle.tuning.max_iters = 300;
         state_bundle.tuning.algo = algo.to_string();
         state_bundle.tuning.lab_effort = 0.05;
@@ -363,7 +363,7 @@ mod tests {
     /// a plan put in a blob comes back onto the same upgrades as it was
     #[test]
     fn a_blob_keeps_its_plans() {
-        let state_bundle = StateBundle::init_from_payload(dummy().steps[0].clone());
+        let state_bundle = StateBundle::from_payload(dummy().steps[0].clone());
         let mut rng = StdRng::seed_from_u64(1);
         let plans = [
             scramble(&mut rng, state_bundle.clone(), 40),
@@ -389,7 +389,7 @@ mod tests {
             rel_tol: 1e-3,
         };
         for payload in dummy().steps {
-            let state_bundle = StateBundle::init_from_payload(payload);
+            let state_bundle = StateBundle::from_payload(payload);
             let mut rng = StdRng::seed_from_u64(1);
             let mut scrambled = scramble(&mut rng, state_bundle, 20);
             for row in check(&mut scrambled, &spec, &mut rng) {

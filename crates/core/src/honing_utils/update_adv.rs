@@ -1,6 +1,6 @@
 use crate::{
     advanced_honing::compute::compute_adv_dist_wrapper, constants::juice_info::JuiceInfo,
-    materials::NUM_BASE_MATS, upgrade::Upgrade,
+    honing_utils::materials::NUM_BASE_MATS, upgrade::Upgrade,
 };
 use ahash::AHashMap;
 
@@ -37,7 +37,6 @@ impl Upgrade {
                 self.state.hash,
                 &self.adv_dists[0],
                 this_cost,
-                true,
             );
         }
 
@@ -63,7 +62,6 @@ impl Upgrade {
                 self.state.hash,
                 this_dist,
                 amt,
-                true,
             );
         }
     }

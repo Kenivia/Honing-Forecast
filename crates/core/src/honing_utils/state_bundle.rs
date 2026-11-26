@@ -1,9 +1,9 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
-use crate::chest::ChestStates;
-use crate::core::lattice::CoarseMemo;
+use crate::eval::lattice::CoarseMemo;
+use crate::honing_utils::chest::ChestStates;
+use crate::optimizer::state::OneState;
 use crate::parser::PreparationOutput;
 use crate::probe::Probe;
-use crate::state::{OneState, State};
 use crate::tuning::Tuning;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
@@ -46,13 +46,6 @@ pub struct StateBundle {
     pub tuning: Tuning,
 }
 
-pub fn default_state_arr(upgrade_arr: &Vec<Upgrade>) -> Vec<Vec<OneState>> {
-    let mut out: Vec<Vec<OneState>> = Vec::with_capacity(upgrade_arr.len());
-    for upgrade in upgrade_arr {
-        out.push(State::new_empty(upgrade.normal_dist.len()).payload.clone());
-    }
-    out
-}
 impl StateBundle {
     pub fn set_latest_special_probs(&mut self) {
         let mut out = Vec::with_capacity(self.upgrade_arr.len());
@@ -94,32 +87,11 @@ impl StateBundle {
         }
     }
 
-    pub fn new(prep_output: PreparationOutput, upgrade_arr: Vec<Upgrade>) -> StateBundle {
-        let state_bundle: StateBundle = StateBundle {
-            special_invalid_index: None,
-            metric: -1.0,
-            special_state: (0..upgrade_arr.len()).collect(),
-            chest_states: prep_output
-                .chests
-                .iter()
-                .map(|(key, chest)| (key.clone(), chest.default_state()))
-                .collect(),
-            prep_output,
-            upgrade_arr,
-            metric_type: -1,
-            latest_special_probs: None,
-            min_resolution: 1,
-            num_threads: 0,
-
-            special_cache: AHashMap::new(),
-            adv_cache: AHashMap::new(),
-            gold_memo: AHashMap::new(),
-            coarse_memo: CoarseMemo::default(),
-            special_done: None,
-            tuning: Tuning::default(),
-        };
-
-        state_bundle
+    /// for sending to JS, which keeps its own
+    pub fn without_adv_cache(&self) -> StateBundle {
+        let mut out = self.clone();
+        out.adv_cache = AHashMap::new();
+        out
     }
 
     pub fn my_clone_from(&mut self, source: &StateBundle) {

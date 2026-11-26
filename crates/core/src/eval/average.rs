@@ -1,17 +1,18 @@
 use crate::constants::{FLOAT_TOL, float_tol};
-use crate::core::common::mix;
-use crate::core::lattice::CoarseMemo;
-use crate::core::memo::memo_slice;
-use crate::core::saddlepoint::cumulants::KsTuple;
-use crate::core::shape::Shape;
+use crate::eval::common::mix_hash;
+use crate::eval::lattice::CoarseMemo;
+use crate::eval::memo::memo_slice;
+use crate::eval::saddlepoint::cumulants::KsTuple;
+use crate::eval::shape::Shape;
+use crate::honing_utils::state_bundle::StateBundle;
 use crate::probe::{Counter, Probe};
-use crate::state_bundle::StateBundle;
 use ahash::AHashMap;
 use smallvec::SmallVec;
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
 /// E[(x - S)+] at a lattice point x from the Edgeworth series. The last term is the lattice's:
 /// 1/s^2 becomes 1/s^2 - span^2/12 + ... on a lattice.
+/// THIS LIKE LEGIT NEVER HAPPENS AND IS ONLY HERE FOR SAFETY
 fn edgeworth_leftover(at_zero: KsTuple, x: f64, span: f64) -> f64 {
     let normal_dist = Normal::new(0.0, 1.0).unwrap();
     let sd = at_zero.2.sqrt();
@@ -142,19 +143,19 @@ impl StateBundle {
         probe: &mut Probe,
     ) -> f64 {
         // what the key says about everything but the upgrades
-        let mut base = mix(support_index as u64, tuning_key);
+        let mut base = mix_hash(support_index as u64, tuning_key);
         for &(thresh, price) in thresh_price_pairs {
-            base = mix(mix(base, thresh.to_bits()), price.to_bits());
+            base = mix_hash(mix_hash(base, thresh.to_bits()), price.to_bits());
         }
         let needs_probability = needs_probability(thresh_price_pairs);
         let shared_step = shared_step.filter(|_| needs_probability);
         if let Some(step) = shared_step {
-            base = mix(base, step.to_bits());
+            base = mix_hash(base, step.to_bits());
         }
         let mut total: f64 = 0.0;
         let mut missing: SmallVec<[usize; 8]> = SmallVec::new();
         for (slot, &(skip_count, weight)) in skips.iter().enumerate() {
-            match sums.and_then(|sums| memo.get(&mix(base, sums[slot]))) {
+            match sums.and_then(|sums| memo.get(&mix_hash(base, sums[slot]))) {
                 Some(&known) => total += weight * known,
                 None => missing.push(skip_count),
             }
@@ -194,7 +195,7 @@ impl StateBundle {
             );
             total += weight * this_avg;
             if let Some(sums) = sums {
-                memo.insert(mix(base, sums[slot]), this_avg);
+                memo.insert(mix_hash(base, sums[slot]), this_avg);
             }
         }
         total

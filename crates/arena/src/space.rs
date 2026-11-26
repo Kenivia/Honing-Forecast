@@ -9,14 +9,14 @@ use crate::generate::{self, axis};
 use crate::scenario::{Scenario, upgrade};
 use crate::worker::Essence;
 use ahash::AHashSet;
+use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::honing_utils::update_normal::chance as to_chance;
 use hf_core::optimizer::response::{Model, Response};
 use hf_core::optimizer::solve;
+use hf_core::optimizer::state::{OneState, State};
 use hf_core::parser::OneUpgradeInput;
 use hf_core::payload::Payload;
 use hf_core::probe::Probe;
-use hf_core::state::{OneState, State};
-use hf_core::state_bundle::StateBundle;
 use hf_core::tuning::Tuning;
 use itertools::Itertools;
 use rand::prelude::*;
@@ -382,7 +382,7 @@ fn solved(payload: &Payload, seeds: u64, tuning: &Tuning) -> Vec<StateBundle> {
     (0..seeds)
         .into_par_iter()
         .map(|seed| {
-            let mut state_bundle = StateBundle::init_from_payload(payload.clone());
+            let mut state_bundle = StateBundle::from_payload(payload.clone());
             state_bundle.tuning = tuning.clone();
             solve(
                 &mut StdRng::seed_from_u64(seed),
@@ -401,7 +401,7 @@ fn exhaust_one(scenario: &Scenario, args: &ExhaustArgs) -> Option<Value> {
         streak_length: args.block,
         ..exact_tuning()
     };
-    let base = retuned(&StateBundle::init_from_payload(payload.clone()), &exact);
+    let base = retuned(&StateBundle::from_payload(payload.clone()), &exact);
     let n = base.upgrade_arr.len();
     if n == 0
         || base.upgrade_arr.iter().any(|this| !this.is_normal_honing)
@@ -797,7 +797,7 @@ pub fn tiny(count: u32, lone: u32, lone_taps: usize, cap: f64) -> Vec<Scenario> 
         infos.sort_by_key(|info| (info.piece_index, info.upgrade_index));
 
         // fail taps, on the upgrade with the most plans left, until every plan can be tried
-        let fresh = StateBundle::init_from_payload(
+        let fresh = StateBundle::from_payload(
             generate::build_with(&a, index as u64, false, Some(infos.clone())).payload,
         );
         let models = models(&fresh);
@@ -885,7 +885,7 @@ pub fn best_known(conn: &Connection, scenario: &Scenario, step: usize) -> StateB
     let payload = &scenario.steps[step];
     let mut filled = payload.clone();
     crate::adv_table::fill(&mut filled);
-    let mut state_bundle = StateBundle::init_from_payload(filled);
+    let mut state_bundle = StateBundle::from_payload(filled);
     match db::best_run(
         conn,
         db::step_id(conn, &scenario.name, step, &step_key(payload)),
@@ -1015,10 +1015,7 @@ mod tests {
         for name in ["lone_022_t4_n1", "lone_029_t4_n1"] {
             let scenario = &crate::scenario::load(&dir, name)[0];
             let payload = &scenario.steps[0];
-            let base = retuned(
-                &StateBundle::init_from_payload(payload.clone()),
-                &exact_tuning(),
-            );
+            let base = retuned(&StateBundle::from_payload(payload.clone()), &exact_tuning());
             let model = &models(&base)[0];
             let response = response_of(&base, 0);
             let mut rows = vec![
@@ -1058,7 +1055,7 @@ mod tests {
         for name in ["lone_022_t4_n1", "lone_029_t4_n1"] {
             let scenario = &crate::scenario::load(&dir, name)[0];
             let base = retuned(
-                &StateBundle::init_from_payload(scenario.steps[0].clone()),
+                &StateBundle::from_payload(scenario.steps[0].clone()),
                 &exact_tuning(),
             );
             let model = &models(&base)[0];
@@ -1124,7 +1121,7 @@ mod tests {
         for name in ["lone_022_t4_n1", "lone_029_t4_n1"] {
             let scenario = &crate::scenario::load(&dir, name)[0];
             let base = retuned(
-                &StateBundle::init_from_payload(scenario.steps[0].clone()),
+                &StateBundle::from_payload(scenario.steps[0].clone()),
                 &exact_tuning(),
             );
             let model = &models(&base)[0];
@@ -1317,7 +1314,7 @@ mod tests {
                     let solved = solved(&payload, 1, &Tuning::default()).pop().unwrap();
                     let flow = flow(&solved).max(1.0);
                     let top = retuned(&solved, &reference).metric;
-                    let start = StateBundle::init_from_payload(payload.clone());
+                    let start = StateBundle::from_payload(payload.clone());
                     let mut shares =
                         vec![100.0 * (top - retuned(&start, &reference).metric) / flow];
                     let mut costs = Vec::new();

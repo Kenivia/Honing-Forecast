@@ -2,16 +2,15 @@ use super::response::{Model, Response};
 use super::scaler::AdaptiveScaler;
 use super::{Blob, Previous, Solved};
 
-#[cfg(feature = "wasm")]
-use crate::js_interface::send_progress;
+use super::progress;
+use crate::honing_utils::state_bundle::StateBundle;
+use crate::honing_utils::state_bundle::StateEssence;
 use crate::probe::Probe;
-use crate::state_bundle::StateBundle;
-use crate::state_bundle::StateEssence;
-use crate::timer::Timer;
+use web_time::Instant;
 
 use crate::advanced_honing::utils::MAX_ADV_STATE;
 use crate::constants::juice_info::JuiceInfo;
-use crate::state::OneState;
+use crate::optimizer::state::OneState;
 use crate::upgrade::Upgrade;
 use ahash::AHashSet;
 use ordered_float::OrderedFloat;
@@ -75,20 +74,16 @@ fn upgrade_costs(state_bundle: &StateBundle) -> Vec<f64> {
     weights
 }
 
-#[cfg(feature = "wasm")]
 const TICK_SEC: f64 = 0.333;
 // a state starts a histogram on the page, so it goes less often
-#[cfg(feature = "wasm")]
 const STATE_SEC: f64 = 1.0;
 // the share of the progress shown that the chains fill; the rest waits for the final result
-#[cfg(feature = "wasm")]
 const CHAINS_PCT: f64 = 67.67;
 
 /// The progress of one solve, shared by its chains: one timer, `last` is when the progress and
 /// a state were last sent, `floor` the best of the chains before the current one.
-#[cfg_attr(not(feature = "wasm"), allow(dead_code))]
 struct Report {
-    timer: Timer,
+    timer: Instant,
     last: [f64; 2],
     started: bool,
     chains: i64,
@@ -97,9 +92,8 @@ struct Report {
 
 /// Sends the progress at most once a tick, with the best state at most once a second but only once
 /// this chain beats the ones before.
-#[cfg(feature = "wasm")]
-fn maybe_send_wasm_progress(done: f64, solver_bundle: &mut SolverStateBundle, report: &mut Report) {
-    let elapsed = report.timer.elapsed_sec();
+fn maybe_send_progress(done: f64, solver_bundle: &mut SolverStateBundle, report: &mut Report) {
+    let elapsed = report.timer.elapsed().as_secs_f64();
     if elapsed - report.last[0] < TICK_SEC {
         return;
     }
@@ -109,7 +103,7 @@ fn maybe_send_wasm_progress(done: f64, solver_bundle: &mut SolverStateBundle, re
     if elapsed - report.last[1] < STATE_SEC
         || f64::from(*solver_bundle.best_n_states.peek_max().unwrap().1) <= report.floor
     {
-        send_progress(None, pct);
+        progress::report(None, pct);
         return;
     }
     report.last[1] = elapsed;
@@ -125,7 +119,7 @@ fn maybe_send_wasm_progress(done: f64, solver_bundle: &mut SolverStateBundle, re
         .optimizer_average_gold_metric(&mut dummy_probe);
     solver_bundle.state_bundle.set_latest_special_probs();
 
-    send_progress(Some(&solver_bundle.state_bundle), pct);
+    progress::report(Some(&solver_bundle.state_bundle), pct);
 }
 
 fn start_solver<R: Rng>(
@@ -708,7 +702,7 @@ pub fn solve<R: Rng>(
     // first goes on from a carried plan where there is one, the rest start afresh.
     let mut results: Vec<StateBundle> = Vec::new();
     let mut report = Report {
-        timer: Timer::start(),
+        timer: Instant::now(),
         last: [0.0; 2],
         started: false,
         chains,
@@ -788,11 +782,9 @@ pub fn solve<R: Rng>(
         }
     }
     // every chain ran: the progress waits here for the final result
-    #[cfg(feature = "wasm")]
     if !exited {
-        send_progress(None, CHAINS_PCT);
+        progress::report(None, CHAINS_PCT);
     }
-    let _ = exited;
     let clock = probe.clock();
     results.sort_by(|a, b| b.metric.total_cmp(&a.metric));
     if !tuning.chain_polish.is_empty() {
@@ -1253,10 +1245,8 @@ fn anneal<R: Rng>(
     chain: i64,
     report: Option<&mut Report>,
 ) -> StateBundle {
-    #[cfg(feature = "wasm")]
-    let mut report = report;
-    #[cfg(not(feature = "wasm"))]
-    let _ = report;
+    // nothing to prepare where no one listens
+    let mut report = report.filter(|_| progress::enabled());
     let mut solver_bundle = start_solver(rng, state_bundle, probe);
     let tuning = state_bundle.tuning.clone();
     let mut eqv_wall_time_iters: i64 = 0;
@@ -1265,10 +1255,9 @@ fn anneal<R: Rng>(
     probe.at(offset);
     probe.put("best", state_bundle.metric);
 
-    #[cfg(feature = "wasm")]
     if let Some(report) = report.as_deref_mut().filter(|report| !report.started) {
         report.started = true;
-        send_progress(Some(&solver_bundle.state_bundle), 0.01);
+        progress::report(Some(&solver_bundle.state_bundle), 0.01);
     }
 
     let mut next_polish: i64 = 0;
@@ -1358,11 +1347,10 @@ fn anneal<R: Rng>(
         solver_bundle.temps_without_improvement += 1;
         eqv_wall_time_iters += 1;
 
-        #[cfg(feature = "wasm")]
         if let Some(report) = report.as_deref_mut() {
             let done = (chain as f64 + eqv_wall_time_iters as f64 / tuning.max_iters as f64)
                 / report.chains as f64;
-            maybe_send_wasm_progress(done, &mut solver_bundle, report);
+            maybe_send_progress(done, &mut solver_bundle, report);
         }
     }
     probe.time("moves", clock);

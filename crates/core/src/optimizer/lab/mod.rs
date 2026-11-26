@@ -11,8 +11,8 @@ pub mod simple;
 pub mod surrogate;
 
 use super::{Previous, Solved};
+use crate::honing_utils::state_bundle::StateBundle;
 use crate::probe::Probe;
-use crate::state_bundle::StateBundle;
 use rand::Rng;
 
 /// every lab algorithm, by the name `Tuning::algo` takes

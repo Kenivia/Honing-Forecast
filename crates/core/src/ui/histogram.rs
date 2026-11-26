@@ -1,11 +1,10 @@
 use crate::constants::juice_info::JuiceInfo;
 use crate::constants::*;
-use crate::gold_dist::{GoldDist, gold_distribution};
-use crate::js_interface::remove_adv_cache;
-use crate::materials::{GOLD_LABEL, NUM_BASE_MATS};
+use crate::honing_utils::materials::{GOLD_LABEL, NUM_BASE_MATS};
+use crate::honing_utils::state_bundle::StateBundle;
 use crate::probe::Probe;
-use crate::state_bundle::StateBundle;
 use crate::tuning::Tuning;
+use crate::ui::gold_dist::{GoldDist, gold_distribution};
 use ahash::AHashMap;
 use serde::Serialize;
 use smallvec::smallvec;
@@ -101,7 +100,7 @@ pub fn histogram(state_bundle: &mut StateBundle, dist_plan: Option<usize>) -> Hi
         gold_dist,
         tradable_gold,
         juice_info: state_bundle.prep_output.juice_info.clone(),
-        state_bundle: remove_adv_cache(state_bundle),
+        state_bundle: state_bundle.without_adv_cache(),
     }
 }
 
@@ -122,4 +121,40 @@ fn no_juice_pity(sb: &mut StateBundle) -> Vec<f64> {
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::honing_utils::materials::gold;
+    use crate::payload::Payload;
+
+    /// with nothing to hone, every plan is worth exactly what is owned
+    #[test]
+    fn no_upgrades_is_what_is_owned() {
+        let mut payload = Payload::load_step(
+            "../../arena_data/scenarios/real3/r3_04b85565_09120f_f0_s1.json",
+            0,
+        );
+        payload.upgrade_info = vec![];
+        payload.special_state = None;
+        let red = payload.material_labels[0].clone();
+        payload.materials.get_mut("Gold").unwrap().tradable = 1000.0;
+        payload.materials.get_mut(&red).unwrap().tradable = 100.0;
+        let mut state_bundle = StateBundle::from_payload(payload);
+        let out = histogram(&mut state_bundle, Some(0));
+        let mut any = false;
+        for (plan, metric) in out.metric_per_plan.iter().enumerate() {
+            let owned: f64 = state_bundle.prep_output.bands[plan]
+                .iter()
+                .map(|bands| gold(0.0, bands))
+                .sum();
+            any |= owned != 0.0;
+            assert!(
+                (metric - owned).abs() <= 1e-6 * owned.abs(),
+                "{metric} {owned}"
+            );
+        }
+        assert!(any);
+    }
 }

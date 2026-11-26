@@ -1,7 +1,7 @@
 //! Serves in place of saddlepoint_approximation when the complexity isn't too bad
 
 use crate::constants::{FLOAT_TOL, float_tol};
-use crate::state_bundle::StateBundle;
+use crate::honing_utils::state_bundle::StateBundle;
 use ahash::{AHashMap, RandomState};
 use either::Either;
 use std::hash::{Hash, Hasher};

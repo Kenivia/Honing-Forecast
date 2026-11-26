@@ -8,9 +8,9 @@
 
 use crate::report::table;
 use crate::scenario::Scenario;
+use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::optimizer::scramble;
 use hf_core::probe::{Counter, Probe};
-use hf_core::state_bundle::StateBundle;
 use hf_core::tuning::Tuning;
 use rand::prelude::*;
 use rayon::prelude::*;
@@ -436,7 +436,7 @@ pub fn run(scenarios: &[Scenario], scrambles: usize, tuning: &Tuning) -> Summary
     let summary = steps
         .par_iter()
         .map(|(name, payload)| {
-            let mut state_bundle = StateBundle::init_from_payload((*payload).clone());
+            let mut state_bundle = StateBundle::from_payload((*payload).clone());
             state_bundle.tuning = tuning.clone();
             one_step(name, state_bundle, scrambles)
         })

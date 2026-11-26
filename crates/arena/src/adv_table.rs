@@ -8,8 +8,8 @@ use crate::ROOT;
 use ahash::AHashSet;
 use hf_core::advanced_honing::compute::compute_adv_dist_wrapper;
 use hf_core::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
+use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::payload::Payload;
-use hf_core::state_bundle::StateBundle;
 use rusqlite::{Connection, OptionalExtension, params};
 use std::path::Path;
 use std::time::Duration;
@@ -18,7 +18,7 @@ const PATH: &str = "arena_data/adv_cache.sqlite";
 
 /// puts every distribution the payload's upgrades can ask for into its cache
 pub fn fill(payload: &mut Payload) {
-    let starts: AHashSet<AdvConfig> = StateBundle::init_from_payload(payload.clone())
+    let starts: AHashSet<AdvConfig> = StateBundle::from_payload(payload.clone())
         .upgrade_arr
         .iter()
         .filter(|upgrade| !upgrade.is_normal_honing)
@@ -89,7 +89,7 @@ mod tests {
         let cache = payload.adv_cache.clone().unwrap();
         assert!(!cache.is_empty() && cache.len() % AdvConfig::default().strategies().len() == 0);
         assert_eq!(
-            StateBundle::init_from_payload(payload).adv_cache.len(),
+            StateBundle::from_payload(payload).adv_cache.len(),
             cache.len()
         );
         for (config, kept) in cache.iter().take(40) {

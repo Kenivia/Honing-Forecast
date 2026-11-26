@@ -4,9 +4,9 @@
 //! covers every tap given them. Free taps by gold saved per special leap. Normal honing only.
 
 use super::response::Response;
+use crate::honing_utils::materials::NUM_BASE_MATS;
+use crate::honing_utils::state_bundle::StateBundle;
 use crate::honing_utils::update_normal::chance as to_chance;
-use crate::materials::NUM_BASE_MATS;
-use crate::state_bundle::StateBundle;
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Copy, Default, Deserialize)]
@@ -223,14 +223,14 @@ fn special_order(state_bundle: &mut StateBundle, worth: &[f64]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::materials::OneMaterial;
+    use crate::honing_utils::materials::OneMaterial;
     use crate::payload::Payload;
 
     fn scenario() -> Payload {
-        let path = "../../arena_data/scenarios/real3/r3_04b85565_09120f_f0_s1.json";
-        let file: serde_json::Value =
-            serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
-        serde_json::from_value(file["steps"][0].clone()).unwrap()
+        Payload::load_step(
+            "../../arena_data/scenarios/real3/r3_04b85565_09120f_f0_s1.json",
+            0,
+        )
     }
 
     /// maxroll.gg, T4 Upper weapon +20 with nothing owned, juice at 100: 539,231 gold
@@ -258,7 +258,7 @@ mod tests {
         payload.min_resolution = 10;
         payload.special_budget = 0;
         payload.chests = Default::default();
-        let mut bundle = StateBundle::init_from_payload(payload);
+        let mut bundle = StateBundle::from_payload(payload);
         let maxroll = Maxroll {
             juice: true,
             book: true,
@@ -281,7 +281,7 @@ mod tests {
     #[test]
     fn does_not_depend_on_the_state_before() {
         let run = |full: bool, maxroll: Maxroll| {
-            let mut bundle = StateBundle::init_from_payload(scenario());
+            let mut bundle = StateBundle::from_payload(scenario());
             for index in 0..bundle.upgrade_arr.len() {
                 if !bundle.upgrade_arr[index].is_normal_honing {
                     continue;
@@ -326,7 +326,7 @@ mod tests {
                     material.tradable = 0.0;
                 }
             }
-            let mut bundle = StateBundle::init_from_payload(payload);
+            let mut bundle = StateBundle::from_payload(payload);
             let both = Maxroll {
                 juice: true,
                 book: true,

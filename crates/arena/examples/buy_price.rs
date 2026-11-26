@@ -4,12 +4,12 @@
 // the polish search of marginal.rs and against full solves carried from the plan.
 // `cargo run --release -p hf-arena --example buy_price -- <dir> <name filter> [<name filter> ...]`
 use hf_core::advanced_honing::utils::MAX_ADV_STATE;
-use hf_core::materials::NUM_BASE_MATS;
+use hf_core::honing_utils::materials::NUM_BASE_MATS;
+use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::optimizer::response::Response;
 use hf_core::optimizer::{Previous, polish_only, solve};
 use hf_core::payload::Payload;
 use hf_core::probe::Probe;
-use hf_core::state_bundle::StateBundle;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 use serde::Deserialize;
@@ -223,7 +223,7 @@ fn main() {
     for path in paths {
         let scenario: Scenario =
             serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
-        let mut sb = StateBundle::init_from_payload(scenario.steps[0].clone());
+        let mut sb = StateBundle::from_payload(scenario.steps[0].clone());
         for m in sb.prep_output.base_materials.iter_mut() {
             m.tradable = 0.0;
         }

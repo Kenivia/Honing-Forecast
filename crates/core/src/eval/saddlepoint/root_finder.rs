@@ -2,8 +2,8 @@
 //! This is necessary as part of saddlepoint approximation
 
 use super::cumulants::KsTuple;
+use crate::honing_utils::state_bundle::StateBundle;
 use crate::probe::{Counter, Probe};
-use crate::state_bundle::StateBundle;
 use crate::{constants::FLOAT_TOL, my_dbg};
 // there's definitely some fishy business going on with advanced honing
 

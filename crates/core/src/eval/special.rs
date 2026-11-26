@@ -8,7 +8,7 @@
 //! Admittedly dynamic programming is one of these things that I never really understood so this is algorithm is vibe coded
 //! but this matches experimental result so at least it's working
 use crate::constants::{IGNORE_PROB_TOL, SPECIAL_FLOOR};
-use crate::state_bundle::StateBundle;
+use crate::honing_utils::state_bundle::StateBundle;
 use num::Integer;
 use std::f64;
 use std::mem::swap;
@@ -105,10 +105,9 @@ impl StateBundle {
             .take(self.special_invalid_index.unwrap())
             .count();
         if m == 0 {
-            let mut out = vec![0.0; self.special_state.len()];
-            if !out.is_empty() {
-                out[0] = 1.0;
-            }
+            // no free taps for certain; one entry even with no upgrades
+            let mut out = vec![0.0; self.special_state.len().max(1)];
+            out[0] = 1.0;
 
             if preserve_tail {
                 return Some(out);

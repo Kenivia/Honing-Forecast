@@ -1,8 +1,8 @@
 // use std::f64::NAN;
 
 use super::scaler::AdaptiveScaler;
-use crate::state_bundle::StateBundle;
-use crate::state_bundle::StateEssence;
+use crate::honing_utils::state_bundle::StateBundle;
+use crate::honing_utils::state_bundle::StateEssence;
 use crate::upgrade::PieceType::Armor;
 use ordered_float::OrderedFloat;
 use priority_queue::DoublePriorityQueue;

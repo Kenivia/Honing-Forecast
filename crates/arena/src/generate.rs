@@ -6,15 +6,15 @@ use crate::scenario::{Scenario, upgrade};
 use ahash::AHashMap;
 use hf_core::advanced_honing::sim::one_sim;
 use hf_core::advanced_honing::utils::MAX_ADV_STATE;
-use hf_core::chest::Chest;
+use hf_core::honing_utils::chest::Chest;
+use hf_core::honing_utils::materials::{BandValue, NUM_BASE_MATS, OneMaterial, ValuationPlan};
+use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::honing_utils::update_normal::chance as to_chance;
-use hf_core::materials::{BandValue, NUM_BASE_MATS, OneMaterial, ValuationPlan};
 use hf_core::optimizer::solve;
+use hf_core::optimizer::state::{StreakInfo, get_pool_ids};
 use hf_core::parser::OneUpgradeInput;
 use hf_core::payload::Payload;
 use hf_core::probe::Probe;
-use hf_core::state::{StreakInfo, get_pool_ids};
-use hf_core::state_bundle::StateBundle;
 use hf_core::upgrade::Upgrade;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
@@ -120,7 +120,7 @@ fn set_price(mat: &mut OneMaterial, price: f64) {
 }
 
 fn evaluated(payload: &Payload) -> StateBundle {
-    let mut state_bundle = StateBundle::init_from_payload(payload.clone());
+    let mut state_bundle = StateBundle::from_payload(payload.clone());
     state_bundle.metric = state_bundle.metric_router(&mut Probe::default());
     state_bundle.set_latest_special_probs();
     state_bundle
@@ -195,7 +195,7 @@ pub struct Refs {
 fn max_used(payload: &Payload) -> Vec<f64> {
     let mut out: Vec<f64> = vec![0.0; payload.material_labels.len()];
     for choice in 0..3 {
-        let mut state_bundle = StateBundle::init_from_payload(payload.clone());
+        let mut state_bundle = StateBundle::from_payload(payload.clone());
         let juice_info = state_bundle.prep_output.juice_info.clone();
         for this in state_bundle.upgrade_arr.iter_mut() {
             let (piece_type, upgrade_index, len) =
@@ -803,13 +803,13 @@ pub fn play<R: Rng>(
 
 /// the plan the player follows: a short solve of the payload
 fn planned<R: Rng>(payload: &Payload, rng: &mut R) -> StateBundle {
-    let mut state_bundle = StateBundle::init_from_payload(payload.clone());
+    let mut state_bundle = StateBundle::from_payload(payload.clone());
     state_bundle.tuning.max_iters = 6000;
     // where the optimizer panics the player follows the default state, so the case is kept
     let solved = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         solve(rng, state_bundle, None, &mut Probe::default()).best
     }));
-    let mut best = solved.unwrap_or_else(|_| StateBundle::init_from_payload(payload.clone()));
+    let mut best = solved.unwrap_or_else(|_| StateBundle::from_payload(payload.clone()));
     best.metric = best.metric_router(&mut Probe::default());
     best
 }

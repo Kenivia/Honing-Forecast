@@ -44,11 +44,10 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 
 ## Cargo features
 
-- `hf-core` has no default features.
-- `wasm` gates the histogram, the progress-message bridge and browser logging and timing.
-- `run_tests` only makes `my_dbg!` print natively.
-- `trace` fills in `Probe`, the instrumentation struct. Off in wasm, where it is empty; on in the arena.
-- `my_dbg!` is an exported macro whose feature checks resolve in the *calling* crate. That is why `hf-wasm` declares dummy `wasm` / `run_tests` features.
+- `hf-core` has one feature, `trace`: it fills in `Probe`, the instrumentation struct. Off in wasm, where it is empty; on in the arena.
+- Nothing else in `hf-core` depends on a feature. Browser-only code is picked by `target_arch = "wasm32"` (wasm-only dependencies `web-sys`, `getrandom/wasm_js`), and timing uses `web_time::Instant`, which works on both.
+- `my_dbg!` (`helpers.rs`) prints to the browser console in wasm and to stderr natively. It calls a function of `hf-core`, so its `cfg` is `hf-core`'s, not the calling crate's.
+- The optimizer's progress goes through a hook (`optimizer/progress.rs`): `hf-wasm` sets one that posts to JS. With none set (native), the annealer skips preparing it.
 - The wasm target is built with SIMD enabled (`.cargo/config.toml`).
 
 ## Game glossary

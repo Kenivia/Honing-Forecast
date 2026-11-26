@@ -1,9 +1,9 @@
 //! The coarse lattice's step: each outcome's own, from the standard deviation of its sum, and the
 //! finest of them that a shared pass takes (`Tuning::coarse_shared`)
 
-use crate::core::shape::shape_span;
-use crate::state_bundle::StateBundle;
-use crate::support::Support;
+use crate::eval::shape::shape_span;
+use crate::honing_utils::state_bundle::StateBundle;
+use crate::honing_utils::support::Support;
 use num::Integer;
 
 /// What decides the own coarse step of an outcome, gathered from the last upgrade back
@@ -65,7 +65,8 @@ impl StateBundle {
     /// back, as `exact_spans` and `shape` would see each outcome; an outcome under every threshold
     /// counts too, which needs no skipped minimum.
     pub fn shared_steps(&self, skips: &[usize], wanted: &[bool]) -> Vec<Option<f64>> {
-        let num_mats = self.upgrade_arr[0].cost_dist.len();
+        // there may be no upgrades
+        let num_mats = self.prep_output.table.len();
         let mut out = vec![None::<f64>; num_mats];
         if !self.tuning.coarse_shared || self.tuning.coarse_cells <= 0.0 || skips.is_empty() {
             return out;

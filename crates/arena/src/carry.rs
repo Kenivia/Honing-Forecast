@@ -4,11 +4,11 @@ use crate::db;
 use crate::scenario::Scenario;
 use crate::worker::Essence;
 use comfy_table::{Table, presets::UTF8_BORDERS_ONLY};
-use hf_core::materials::{BandValue, ValuationPlan};
+use hf_core::honing_utils::materials::{BandValue, ValuationPlan};
+use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::parser::OneUpgradeInput;
 use hf_core::payload::Payload;
 use hf_core::probe::Probe;
-use hf_core::state_bundle::StateBundle;
 use hf_core::tuning::Tuning;
 use rusqlite::Connection;
 use std::collections::{BTreeMap, HashMap};
@@ -54,7 +54,7 @@ fn key(info: &OneUpgradeInput) -> (usize, usize, bool) {
 /// The plan of the step before, on this step's upgrades. An upgrade keeps its state, less the
 /// taps done since, and its place in the free tap order; a new upgrade goes last.
 pub fn carried(before: &Payload, plan: &Essence, payload: &Payload) -> StateBundle {
-    let mut state_bundle = StateBundle::init_from_payload(payload.clone());
+    let mut state_bundle = StateBundle::from_payload(payload.clone());
     let was: HashMap<(usize, usize, bool), usize> = before
         .upgrade_info
         .iter()
@@ -137,7 +137,7 @@ pub fn report(conn: &Connection, scenarios: &[Scenario], rows: bool, eps: f64) {
                 state_bundle.tuning = Tuning::reference();
                 state_bundle.metric_router(&mut Probe::default())
             };
-            let default = reference(StateBundle::init_from_payload(payload.clone()));
+            let default = reference(StateBundle::from_payload(payload.clone()));
             let kept = reference(carried(&scenario.steps[step - 1], &before.2, payload));
             let scale = scale(best.0, best.1);
             let headroom = best.0 - default;

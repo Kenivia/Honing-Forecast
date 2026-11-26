@@ -3,8 +3,8 @@
 
 use super::step::StepScan;
 use crate::constants::float_tol;
-use crate::core::shape::Shape;
-use crate::state_bundle::StateBundle;
+use crate::eval::shape::Shape;
+use crate::honing_utils::state_bundle::StateBundle;
 use smallvec::SmallVec;
 
 pub struct Lattice {

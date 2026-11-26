@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     constants::{NUM_ADV_UPGRADES, NUM_NORMAL_UPGRADES, NUM_PIECE_TYPES},
-    materials::NUM_BASE_MATS,
+    honing_utils::materials::NUM_BASE_MATS,
     my_dbg,
 };
 

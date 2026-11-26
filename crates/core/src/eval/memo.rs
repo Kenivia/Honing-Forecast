@@ -1,9 +1,9 @@
 //! The gold memo's keys: what each material's result under each free tap outcome is made of,
 //! from one pass over the upgrades that also takes the shared coarse step
 
-use crate::core::common::mix;
-use crate::core::lattice::step::StepScan;
-use crate::state_bundle::StateBundle;
+use crate::eval::common::mix_hash;
+use crate::eval::lattice::step::StepScan;
+use crate::honing_utils::state_bundle::StateBundle;
 use smallvec::SmallVec;
 
 /// one material's memo keys out of `memo_sums`, None where the memo is off
@@ -30,7 +30,7 @@ impl StateBundle {
 
     /// Each wanted material's shared coarse step (`shared_steps`) comes out of the same pass.
     fn memo_sums(&self, skips: &[(usize, f64)], wanted: &[bool]) -> (Vec<u64>, Vec<Option<f64>>) {
-        let num_mats = self.upgrade_arr[0].cost_dist.len();
+        let num_mats = self.prep_output.table.len();
         let n = self.special_state.len();
         let k = skips.len();
         let mut out = vec![0u64; num_mats * k];
@@ -41,7 +41,7 @@ impl StateBundle {
         for index in 0..=last.min(n) {
             while slot < skips.len() && skips[slot].0 == index {
                 for (sums, skipped) in out.chunks_exact_mut(k).zip(&run) {
-                    sums[slot] = mix(*skipped, 1);
+                    sums[slot] = mix_hash(*skipped, 1);
                 }
                 slot += 1;
             }
@@ -50,7 +50,8 @@ impl StateBundle {
             }
             let u_index = self.special_state[index];
             for (sum, support) in run.iter_mut().zip(&self.upgrade_arr[u_index].cost_dist) {
-                *sum = sum.wrapping_add(mix(u_index as u64, support.access_min(true).to_bits()));
+                *sum =
+                    sum.wrapping_add(mix_hash(u_index as u64, support.access_min(true).to_bits()));
             }
         }
         // and the states of the ones from it on
@@ -73,7 +74,7 @@ impl StateBundle {
                     } else {
                         upgrade.state.hash
                     };
-                    *sum = sum.wrapping_add(mix(u_index as u64, made_of));
+                    *sum = sum.wrapping_add(mix_hash(u_index as u64, made_of));
                 }
             }
             while slot > 0 && skips[slot - 1].0 >= index {

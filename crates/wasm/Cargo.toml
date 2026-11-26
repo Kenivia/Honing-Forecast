@@ -10,7 +10,7 @@ version = "0.1.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-hf-core = { path = "../core", default-features = false, features=["wasm"]}  
+hf-core = { path = "../core", default-features = false }
 hf-scanner = { path = "../scanner" }
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -26,11 +26,3 @@ postcard = { version = "1.1", default-features = false, features = ["alloc"] }
 [build-dependencies]
 hf-core = { path = "../core", default-features = false }
 postcard = { version = "1.1", default-features = false, features = ["alloc"] }
-
-
-
-[features]
-# features here to make my_dbg macro happy  
-wasm=[]  
-run_tests=[]
-default=["wasm"]

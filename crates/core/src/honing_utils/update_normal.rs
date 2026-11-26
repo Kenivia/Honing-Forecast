@@ -1,9 +1,9 @@
 use crate::constants::RATE_SCALE;
 use crate::constants::juice_info::JuiceInfo;
-use crate::materials::NUM_BASE_MATS;
+use crate::honing_utils::materials::NUM_BASE_MATS;
+use crate::honing_utils::support::Outline;
 use crate::my_dbg;
-use crate::state::State;
-use crate::support::Outline;
+use crate::optimizer::state::State;
 use crate::upgrade::Upgrade;
 use serde::{Deserialize, Serialize};
 
@@ -193,7 +193,6 @@ impl Upgrade {
                 self.state.hash,
                 &self.normal_dist,
                 amount,
-                true,
             );
         }
     }

@@ -15,13 +15,13 @@
 use super::evaluate;
 use crate::advanced_honing::utils::MAX_ADV_STATE;
 use crate::constants::{FLOAT_TOL, SPECIAL_TOL, float_tol};
+use crate::honing_utils::materials::NUM_BASE_MATS;
+use crate::honing_utils::state_bundle::{StateBundle, StateEssence};
 use crate::honing_utils::update_normal::chance as to_chance;
-use crate::materials::NUM_BASE_MATS;
 use crate::optimizer::response::{Model, Response};
+use crate::optimizer::state::OneState;
 use crate::optimizer::{Previous, Solved};
 use crate::probe::{Clock, Probe};
-use crate::state::OneState;
-use crate::state_bundle::{StateBundle, StateEssence};
 use rand::rngs::SmallRng;
 use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
@@ -1059,7 +1059,7 @@ impl Run {
         self.sur.refresh_order(&mut self.b);
     }
 
-    fn set_chests(&mut self, states: &crate::chest::ChestStates) {
+    fn set_chests(&mut self, states: &crate::honing_utils::chest::ChestStates) {
         self.b.set_chest_state(states);
         self.sur.refresh_order(&mut self.b);
     }
@@ -1537,7 +1537,7 @@ impl Run {
             ranked.push((self.sur.total(&self.b), states));
         }
         self.set_chests(&old);
-        let apply = move |run: &mut Run, c: Option<&crate::chest::ChestStates>| {
+        let apply = move |run: &mut Run, c: Option<&crate::honing_utils::chest::ChestStates>| {
             run.set_chests(c.unwrap_or(&old))
         };
         self.what = Move::Chest;

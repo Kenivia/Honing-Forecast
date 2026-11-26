@@ -1,7 +1,7 @@
 //! There was an attempt at bounding theta, failed miserably
 //! Currently it only generates a guess, so the triplet is more like a single child
 
-use crate::state_bundle::StateBundle;
+use crate::honing_utils::state_bundle::StateBundle;
 use num::traits::Inv;
 
 impl StateBundle {

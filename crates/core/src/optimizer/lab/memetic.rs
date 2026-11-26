@@ -6,12 +6,12 @@
 
 use super::check;
 use crate::advanced_honing::utils::MAX_ADV_STATE;
-use crate::chest::ChestStates;
+use crate::honing_utils::chest::ChestStates;
+use crate::honing_utils::state_bundle::StateBundle;
 use crate::optimizer::response::Response;
+use crate::optimizer::state::OneState;
 use crate::optimizer::{Previous, Solved};
 use crate::probe::Probe;
-use crate::state::OneState;
-use crate::state_bundle::StateBundle;
 use rand::Rng;
 use smallvec::smallvec;
 

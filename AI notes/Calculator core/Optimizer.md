@@ -18,7 +18,7 @@ Things worth knowing about its shape:
 - It restarts from the best known state very often.
 - On restart it may copy one upgrade's state onto an identical upgrade, since identical upgrades often want identical plans. Identical means normal honing too (an advanced block shares its index with a low normal level, and its state is not a normal state), and the same artisan and taps done, so a state's length never changes.
 - A move changes two upgrades: that is what moves juice between them.
-- In the browser it posts progress at most every 333 ms on one timer for the whole solve (`Report`), with the best state so far at most once a second (each starts a histogram on the page), on a progress tick, once a later chain beats the ones before. The start (0.01%, with the starting state, a carried plan where there is one) is posted once. The chains fill 0 to 67.67%; when every chain has run it posts exactly 67.67% and sits there through the merge, exchange and polishes until the final result shows 100%. An early exit jumps straight to 100%.
+- In the browser (with the `optimizer/progress.rs` hook set by `hf-wasm`) it posts progress at most every 333 ms on one timer for the whole solve (`Report`), with the best state so far at most once a second (each starts a histogram on the page), on a progress tick, once a later chain beats the ones before. The start (0.01%, with the starting state, a carried plan where there is one) is posted once. The chains fill 0 to 67.67%; when every chain has run it posts exactly 67.67% and sits there through the merge, exchange and polishes until the final result shows 100%. An early exit jumps straight to 100%.
 
 ## The shape of a solve
 
@@ -149,7 +149,7 @@ What a run does with them (`Tuning::carry`):
 
 **Shelved since 2026-10-21**: the column is commented out in `MaterialDist.vue` and `start_marginal` (`CharWorkerUtils.ts`) is not called, so nothing runs it. The Rust (`marginal.rs`) and the wasm op (`marginal_value_wrapper`) are still there. What was tried, and where to pick it up, is in `Optimizer tried.md`.
 
-`marginal.rs` (`use_more_prices`) gives the calculator's "Est. gold value" column: for each juice or book some upgrade can take (and with a market price), the market price under which the optimizer would use more of it. Base materials are left out. The plan is polished once (`polish_only`, `anneal` with no iterations), then for each row the price is searched downwards from market over a fixed `POLISHES`, each a polish of that plan with the row's market and taxed prices scaled to the trial price:
+`ui/marginal.rs` (`use_more_prices`) gives the calculator's "Est. gold value" column: for each juice or book some upgrade can take (and with a market price), the market price under which the optimizer would use more of it. Base materials are left out. The plan is polished once (`polish_only`, `anneal` with no iterations), then for each row the price is searched downwards from market over a fixed `POLISHES`, each a polish of that plan with the row's market and taxed prices scaled to the trial price:
 
 - **Away from market**: steps of a tenth of the price's order of magnitude (`10^(floor(log10 price) - 1)`), doubling, from the last price that did not use more, until one does.
 - **Then bisected** between the two for the polishes left. The answer is the middle of that bracket.

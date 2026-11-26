@@ -1,10 +1,10 @@
 // Throwaway: value of owned juice with buying disabled, by full solves at x and x + delta,
 // the second carried from the first. SWEEP=name:label:points:spacing (in uses).
-use hf_core::materials::NUM_BASE_MATS;
+use hf_core::honing_utils::materials::NUM_BASE_MATS;
+use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::optimizer::{Previous, solve};
 use hf_core::payload::Payload;
 use hf_core::probe::Probe;
-use hf_core::state_bundle::StateBundle;
 use hf_core::tuning::Tuning;
 use rand::SeedableRng;
 use rand::rngs::StdRng;
@@ -82,7 +82,7 @@ fn solved(
 fn load(path: &PathBuf) -> (Payload, StateBundle) {
     let scenario: Scenario = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
     let payload = scenario.steps[0].clone();
-    (payload.clone(), StateBundle::init_from_payload(payload))
+    (payload.clone(), StateBundle::from_payload(payload))
 }
 
 fn main() {

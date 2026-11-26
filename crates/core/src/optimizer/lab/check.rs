@@ -1,9 +1,9 @@
 //! Whether a state is a plan the game allows: what the evaluator assumes and does not check.
 
 use crate::advanced_honing::utils::MAX_ADV_STATE;
+use crate::honing_utils::state_bundle::StateBundle;
 use crate::optimizer::response::Model;
-use crate::state::get_pool_ids;
-use crate::state_bundle::StateBundle;
+use crate::optimizer::state::get_pool_ids;
 
 /// why this state is not a plan the game allows, where it is not
 pub fn invalid(state_bundle: &StateBundle) -> Option<String> {

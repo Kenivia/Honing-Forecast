@@ -12,10 +12,10 @@ use crate::generate::{next_up, play};
 use crate::scenario::Scenario;
 use crate::worker::Essence;
 use comfy_table::{Table, presets::UTF8_BORDERS_ONLY};
+use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::optimizer::solve;
 use hf_core::payload::Payload;
 use hf_core::probe::Probe;
-use hf_core::state_bundle::StateBundle;
 use rand::prelude::*;
 use rayon::prelude::*;
 use rusqlite::Connection;
@@ -84,7 +84,7 @@ fn polish(start: &StateBundle, iters: i64, seeds: u64, seed: u64) -> StateBundle
 /// more solve of the size of a re-plan. That last one learns nothing new, so what it gains is
 /// what a re-plan gains from the optimizer's slack alone.
 fn start(payload: &Payload, args: &Args, seed: u64) -> (StateBundle, Vec<ReplanRow>) {
-    let default = evaluated(StateBundle::init_from_payload(payload.clone()));
+    let default = evaluated(StateBundle::from_payload(payload.clone()));
     let cold = polish(&default, args.iters, args.seeds, seed);
     let polished = polish(&cold, args.iters, args.seeds, seed + 100);
     let control = polish(&polished, args.iters, 1, seed + 200);
@@ -368,7 +368,7 @@ mod tests {
     use super::*;
     use crate::generate::{normal_used, pay};
     use crate::scenario::dummy;
-    use hf_core::materials::gold;
+    use hf_core::honing_utils::materials::gold;
 
     /// what the plan is worth, summed over every way its next upgrade can go
     fn over_outcomes(payload: &Payload, plan: &StateBundle) -> f64 {
@@ -427,7 +427,7 @@ mod tests {
         let mut flat = payload.clone();
         flat.upgrade_info.retain(|info| info.upgrade_index == 14);
         for (payload, free_taps_first) in [(payload, false), (flat, true)] {
-            let mut start = StateBundle::init_from_payload(payload.clone());
+            let mut start = StateBundle::from_payload(payload.clone());
             start.tuning.max_iters = 2000;
             let plan = evaluated(
                 solve(

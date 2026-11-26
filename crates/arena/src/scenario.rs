@@ -1,9 +1,9 @@
 //! A scenario is a chain of fully specified payloads, one per optimizer run.
 
 use ahash::AHashMap;
-use hf_core::chest::Chest;
 use hf_core::constants::BASE_JUICE_INFOS;
-use hf_core::materials::{BandValue, NUM_BASE_MATS, OneMaterial, ValuationPlan};
+use hf_core::honing_utils::chest::Chest;
+use hf_core::honing_utils::materials::{BandValue, NUM_BASE_MATS, OneMaterial, ValuationPlan};
 use hf_core::parser::OneUpgradeInput;
 use hf_core::payload::Payload;
 use serde::{Deserialize, Serialize};

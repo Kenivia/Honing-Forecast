@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 
 use crate::constants::{FLOAT_TOL, IGNORE_PROB_TOL};
-use crate::core::saddlepoint::cumulants::KsTuple;
+use crate::eval::saddlepoint::cumulants::KsTuple;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(transparent)]
@@ -18,8 +18,6 @@ impl ProbDist {
         ProbDist {
             payload: new_payload,
             prob_state_hash: 0,
-            // logged_payload: vec![],
-            // log_state_hash: 0,
         }
     }
     pub fn update_payload(&mut self, new_payload: Vec<f64>, new_state_hash: u64) {
@@ -40,9 +38,6 @@ pub struct Support {
     pub support: Vec<f64>,
     #[serde(skip)]
     pub support_state_hash: u64,
-    pub state_invariant: bool, // only talking about the support, prob can always change
-    pub linear: bool,          // gap between 0 and 1 = gap between n and n+1
-
     collapsed_pair: Vec<(f64, f64)>, // (support, prob)
     #[serde(skip)]
     pub collapsed_state_hash: u64,
@@ -50,7 +45,6 @@ pub struct Support {
     pub gap_size: f64,
     max_value: f64,
     min_value: f64,
-    pub first_non_zero_prob_index: usize,
     skipped_pair: Vec<(f64, f64)>,
     /// of the collapsed pairs, kept because they are asked for far more often than they change
     pub mean: f64,
@@ -128,7 +122,6 @@ impl Support {
         }
         self.support_state_hash = state_hash;
         self.gap_size = gap;
-        self.linear = true;
         if outline.holes || outline.len < 2 || gap <= 0.0 {
             self.collapse_support(prob_dist);
             return;
@@ -145,7 +138,6 @@ impl Support {
         self.max_value = self.support[live.end - 1];
         self.skipped_pair[0].0 = self.support[0];
         self.ignore = false;
-        self.first_non_zero_prob_index = 0;
         self.collapsed_state_hash = state_hash;
         self.arithmetic = true;
         self.mean = self.min_value + gap * outline.index[0];
@@ -210,7 +202,6 @@ impl Support {
     ///
     /// we assume that the support is increasing, but p may be 0 in-between (probably exceptionally rare but possible in advanced honing?)
     ///
-    /// also right now everything is linear so some logic is a bit redundant, but keeping them just in case
     pub fn collapse_support(&mut self, prob_dist: &ProbDist) {
         // these hash checks are mostly just for preventing me from doing stupid stuff and saving me from debugging
         // it has the added benefit that we don't update if the state didn't change but is like negligible
@@ -257,7 +248,6 @@ impl Support {
             self.ignore = result.len() == 1 && result[0].0.abs() < FLOAT_TOL;
             self.max_value = max_value;
             self.min_value = min_value;
-            self.first_non_zero_prob_index = 0;
             self.collapsed_pair = result;
             self.collapsed_state_hash = self.support_state_hash;
             self.summarise();
@@ -270,12 +260,10 @@ impl Support {
         new_state_hash: u64,
         prob_dist: &ProbDist,
         gap_size: f64,
-        linear: bool, // max: f64,
     ) {
         self.support = new_payload;
         self.support_state_hash = new_state_hash;
         self.gap_size = gap_size;
-        self.linear = linear;
         self.collapse_support(prob_dist);
     }
 }
@@ -285,15 +273,12 @@ impl Default for Support {
         Self {
             support: vec![0.0],
             support_state_hash: 0,
-            state_invariant: false,
-            linear: false,
             collapsed_state_hash: 0,
             collapsed_pair: vec![(0.0, 1.0)],
             ignore: true,
             gap_size: 0.0,
             max_value: 0.0,
             min_value: 0.0,
-            first_non_zero_prob_index: 0,
             skipped_pair: vec![(0.0, 1.0)],
             mean: 0.0,
             zero: KsTuple::default(),

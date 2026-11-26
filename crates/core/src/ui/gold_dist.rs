@@ -3,8 +3,8 @@
 use crate::advanced_honing::sim::one_sim;
 use crate::advanced_honing::utils::AdvConfig;
 use crate::constants::{BUCKET_COUNT, IGNORE_PROB_TOL, SPECIAL_TOL, float_tol};
-use crate::materials::{NUM_BASE_MATS, gold};
-use crate::state_bundle::StateBundle;
+use crate::honing_utils::materials::{NUM_BASE_MATS, gold};
+use crate::honing_utils::state_bundle::StateBundle;
 use crate::upgrade::Upgrade;
 use ahash::AHashMap;
 use rand::prelude::*;

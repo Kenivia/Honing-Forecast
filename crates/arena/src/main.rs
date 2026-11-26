@@ -18,8 +18,8 @@ mod stress;
 mod worker;
 
 use clap::{Parser, Subcommand, ValueEnum};
+use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::probe::Probe;
-use hf_core::state_bundle::StateBundle;
 use hf_core::tuning::Tuning;
 use monte_carlo::McSpec;
 use report::Selection;
@@ -401,7 +401,7 @@ fn run_jobs(
             scenario
                 .steps
                 .iter()
-                .map(|payload| StateBundle::init_from_payload(payload.clone()))
+                .map(|payload| StateBundle::from_payload(payload.clone()))
                 .collect()
         })
         .collect();
@@ -909,7 +909,7 @@ fn main() {
                         .unwrap();
                     let payload: Option<hf_core::payload::Payload> =
                         serde_json::from_str(&payload).ok();
-                    reference = (step_id, payload.map(StateBundle::init_from_payload));
+                    reference = (step_id, payload.map(StateBundle::from_payload));
                 }
                 let Some(state_bundle) = &reference.1 else {
                     continue;

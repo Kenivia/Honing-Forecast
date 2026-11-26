@@ -5,8 +5,8 @@
 use super::super::response::Response;
 use super::super::simulated_annealing::greedy_order;
 use super::super::{Previous, Solved};
+use crate::honing_utils::state_bundle::StateBundle;
 use crate::probe::Probe;
-use crate::state_bundle::StateBundle;
 use rand::Rng;
 
 pub const OFF: &[&str] = &[];

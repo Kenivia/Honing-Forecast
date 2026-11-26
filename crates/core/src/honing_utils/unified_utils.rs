@@ -1,11 +1,11 @@
 use ahash::AHashMap;
 
 use crate::constants::SPECIAL_TOL;
-use crate::support::Support;
+use crate::honing_utils::support::Support;
 use crate::{
     advanced_honing::utils::{AdvConfig, AdvDistTriplet},
     constants::juice_info::JuiceInfo,
-    state_bundle::StateBundle,
+    honing_utils::state_bundle::StateBundle,
     upgrade::{Spare, Upgrade},
 };
 impl Upgrade {
