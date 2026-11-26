@@ -45,7 +45,8 @@ struct Relay {
 
 static RELAY: OnceLock<Relay> = OnceLock::new();
 static STATE: Mutex<&str> = Mutex::new("idle");
-static LAST_PASS: Mutex<String> = Mutex::new(String::new());
+// the last pass's text and when (UTC)
+static LAST_PASS: Mutex<(String, String)> = Mutex::new((String::new(), String::new()));
 static CONNECTED: AtomicBool = AtomicBool::new(false);
 // minutes between round starts (0: none), and the next start while waiting (unix s, 0 otherwise)
 static GAP: AtomicI64 = AtomicI64::new(120);
@@ -79,10 +80,12 @@ fn send(v: Value) {
 
 fn status() -> Value {
     let (log, log_at) = ui::LAST_LOG.lock().unwrap().clone();
+    let (last_pass, last_pass_at) = LAST_PASS.lock().unwrap().clone();
     json!({"type": "status", "status": {
         "state": state(),
         "game": game::running(),
-        "last_pass": *LAST_PASS.lock().unwrap(),
+        "last_pass": last_pass,
+        "last_pass_at": last_pass_at,
         "log": log,
         "log_at": log_at,
         "setup": report::SETUP.load(Ordering::Relaxed),
@@ -687,7 +690,7 @@ fn main() {
     START.set(Mutex::new(start_tx.clone())).unwrap();
     report::set(|kind, text, img| {
         if kind == "pass" {
-            *LAST_PASS.lock().unwrap() = text.to_string();
+            *LAST_PASS.lock().unwrap() = (text.to_string(), upload::stamp());
         }
         let file = img.and_then(|img| {
             let folder = if kind == "step" { "steps" } else { "shots" };

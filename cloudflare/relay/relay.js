@@ -184,6 +184,10 @@ export class Hub extends DurableObject {
       if (rec.status?.state === "scanning" && msg.status.state !== "scanning") {
         rec.stuck_told = false;
       }
+      // the stuck clock starts at the latest move into scanning, not at a log line from the wait
+      if (rec.status?.state !== "scanning" && msg.status.state === "scanning") {
+        rec.scan_at = Date.now();
+      }
       rec.status = msg.status;
     } else if (msg.type === "event") {
       await this.event(machine, msg);
@@ -225,7 +229,7 @@ export class Hub extends DurableObject {
         await post(this.env, `🔌 **${rec.machine}** disconnected`);
         rec.down_told = true;
       }
-      const last = Date.parse(rec.status?.log_at ?? "") || 0;
+      const last = Math.max(Date.parse(rec.status?.log_at ?? "") || 0, rec.scan_at ?? 0);
       if (
         rec.connected &&
         rec.status?.state === "scanning" &&
@@ -234,7 +238,7 @@ export class Hub extends DurableObject {
       ) {
         await post(
           this.env,
-          `⏳ **${rec.machine}** has logged nothing for ${Math.round((now - last) / 60000)} min: ${rec.status.log}`,
+          `⏳ **${rec.machine}** has logged nothing for ${span(now - last)}: ${rec.status.log}`,
         );
         rec.stuck_told = true;
       }
@@ -331,10 +335,15 @@ async function verified(req, env, body) {
   );
 }
 
-const ago = (t) => {
-  const s = Math.round((Date.now() - t) / 1000);
-  return s < 120 ? `${s} s ago` : `${Math.round(s / 60)} min ago`;
+// largest whole unit only: s, min, h, d
+const span = (ms) => {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  if (s < 60) return `${s} s`;
+  if (s < 3600) return `${Math.floor(s / 60)} min`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h`;
+  return `${Math.floor(s / 86400)} d`;
 };
+const ago = (t) => `${span(Date.now() - t)} ago`;
 
 function describe(rec) {
   const s = rec.status ?? {};
@@ -345,7 +354,8 @@ function describe(rec) {
     `**${rec.machine}**: ${s.state ?? "?"}${s.game ? "" : " (game not running)"}`,
     s.gap !== undefined &&
       `gap: ${s.gap ? `${s.gap} min` : "none"}${s.next ? `, next round <t:${s.next}:R>` : ""}`,
-    s.last_pass && `last pass: ${s.last_pass}`,
+    s.last_pass &&
+      `last pass${s.last_pass_at ? ` (${ago(Date.parse(s.last_pass_at))})` : ""}: ${s.last_pass}`,
     s.log && `log (${ago(Date.parse(s.log_at))}): ${s.log}`,
   ]
     .filter(Boolean)

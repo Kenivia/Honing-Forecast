@@ -56,7 +56,7 @@ I should note that raw Gold (used at the honing npc) is treated as just another 
 
 ### 4. What's different about Honing Forecast?
 
-As far as I know, at least for now, all other Lost Ark calculators compute their "Average gold cost" like so:
+As far as I know, at least for now, all other Lost Ark calculators that can do multiple upgrades at the same time compute their "Averag gold cost" like so:
 
 1. *Find the average cost of each material*
 2. *Subtract how much we have, ignore any negatives*
