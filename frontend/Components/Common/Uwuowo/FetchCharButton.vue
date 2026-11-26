@@ -23,7 +23,7 @@ const props = defineProps<{
   counter?: number; // for triggering when char name input changes
   profile_id?: string;
   linked?: boolean; // last fetched + refresh instead of the popup
-  hide_refresh?: boolean; // the roster card shows its own, with a smaller last fetched line
+  small?: boolean; // roster card: smaller last fetched line
 }>();
 
 const profile = computed(() =>
@@ -84,10 +84,10 @@ async function click() {
     <div class="flex flex-row items-center gap-2">
       <span
         class="text-nowrap text-(--text-muted)"
-        :class="{ 'text-sm': hide_refresh }"
+        :class="{ 'text-sm': small }"
         >Last fetched {{ profile?.fetched_at ? time_ago : "never" }}</span
       >
-      <RefreshButton v-if="!hide_refresh" :profile_id="profile_id" />
+      <RefreshButton :profile_id="profile_id" />
     </div>
     <span v-if="refresh_errors[profile_id]" class="text-xs text-(--warning)">{{
       refresh_errors[profile_id]

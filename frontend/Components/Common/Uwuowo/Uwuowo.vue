@@ -14,7 +14,7 @@ const props = defineProps<{
   hide_region?: boolean;
   region_change?: (_event: any) => void;
   apply?: ApplyFetch;
-  card?: boolean; // roster card: no label and a bigger name once one is typed, refresh shown by the card
+  card?: boolean; // roster card: no label and a bigger name once one is typed, a smaller last fetched line
 }>();
 
 const roster_store = useRosterStore();
@@ -77,7 +77,7 @@ const linked = computed(() => roster_store.char_linked(props.profile));
       :counter="counter"
       :profile_id="profile.id"
       :linked="linked"
-      :hide_refresh="card"
+      :small="card"
     />
   </div>
 </template>

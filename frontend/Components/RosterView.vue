@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useRosterStore } from "@/Stores/RosterConfig";
 import { storeToRefs } from "pinia";
-import { useRouter } from "vue-router";
 import Sidebar from "@/Components/Common/Sidebar.vue";
 import Uwuowo from "./Common/Uwuowo/Uwuowo.vue";
 import RegionSelector from "./Common/RegionSelector.vue";
@@ -9,14 +8,18 @@ import { MarketRegions, start_fetch } from "@/Utils/MarketDataFetcher.js";
 import { ilevel } from "@/Utils/HoningUtil.js";
 import { apply_results } from "./Common/Uwuowo/ApplyResults.js";
 import FetchRosterButton from "./Common/Uwuowo/FetchRosterButton.vue";
-import RefreshButton from "./Common/Uwuowo/RefreshButton.vue";
 import SignInHint from "./Common/Uwuowo/SignInHint.vue";
 import { market_to_uwuowo_region } from "./Common/Uwuowo/UwuowoUtils";
 import { computed, nextTick, ref } from "vue";
 import { VueDraggable } from "vue-draggable-plus";
 import { signed_in } from "@/Utils/BibleAuth";
 import { sync_rosters, syncing } from "@/Utils/BibleSync";
-import { char_name_valid, class_key, get_icon_path } from "@/Utils/Helpers";
+import {
+  char_name_valid,
+  class_key,
+  get_icon_path,
+  icon_mask,
+} from "@/Utils/Helpers";
 import IconButton from "./Common/IconButton.vue";
 import { CLASS_KEYS } from "@/Utils/Constants";
 import BackupButtons from "./Common/BackupButtons.vue";
@@ -28,7 +31,6 @@ import { has_edited_mats } from "@/Stores/RosterConfig";
 import { CharProfile } from "@/Stores/CharacterProfile";
 
 const roster_store = useRosterStore();
-const router = useRouter();
 const { roster_config, roster_ids } = storeToRefs(roster_store);
 
 const filtered_rosters_lists = computed(() =>
@@ -60,14 +62,6 @@ const any_char_names = computed(() =>
 );
 
 const has_class = (p: CharProfile) => CLASS_KEYS.has(class_key(p.class_name));
-
-// the card opens the character, except from its inputs and buttons
-function open_char(event: MouseEvent, profile: CharProfile) {
-  if ((event.target as Element).closest("input, button, select, a, .no-open"))
-    return;
-  if (window.getSelection()?.toString()) return;
-  router.push({ name: "char", params: roster_store.char_params(profile) });
-}
 
 // duplicate's tip names the copy until the tip closes
 const copied = ref<Record<string, string>>({});
@@ -222,9 +216,8 @@ function pick_class(name: string) {
             >
               <div
                 v-for="profile_pair in filtered_rosters_lists[roster_index]"
-                class="char-row scroll-x @container cursor-pointer rounded border border-(--border-muted) bg-(--bg-main) p-1.5 hover:border-(--border-main)"
+                class="char-row scroll-x @container rounded border border-(--border-muted) bg-(--bg-main) p-1.5"
                 :key="profile_pair.profile.id"
-                @click="open_char($event, profile_pair.profile)"
               >
                 <div class="grid grid-cols-[200px_auto] gap-x-2 gap-y-1">
                   <div class="flex min-h-17 flex-col justify-between">
@@ -273,12 +266,28 @@ function pick_class(name: string) {
                       </button>
                     </div>
                     <div
-                      class="no-open grid w-fit cursor-default grid-cols-[auto_auto] gap-1 self-center @min-[348px]:flex"
+                      class="grid w-fit grid-cols-[auto_auto] gap-1 self-center @min-[348px]:flex"
                     >
-                      <RefreshButton
-                        v-if="roster_store.char_linked(profile_pair.profile)"
-                        :profile_id="profile_pair.profile.id"
-                      />
+                      <RouterLink
+                        class="icon-button"
+                        :to="{
+                          name: 'char',
+                          params: roster_store.char_params(
+                            profile_pair.profile,
+                          ),
+                        }"
+                        :aria-label="`Go to character ${roster_store.char_label(profile_pair.profile)}`"
+                        title="Open this character"
+                      >
+                        <span
+                          class="h-full w-full bg-current"
+                          :style="
+                            icon_mask(
+                              'arrow-up-right-from-square-solid-full.svg',
+                            )
+                          "
+                        />
+                      </RouterLink>
                       <IconButton
                         icon="arrows-up-down-left-right-solid-full.svg"
                         class="drag-handle cursor-grab!"

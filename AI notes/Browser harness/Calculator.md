@@ -41,7 +41,7 @@ These accessible names are what MCP snapshots show and what the helpers use.
 - Main / Alt carry `aria-pressed`; the two copies sit in groups `Treat as` (character card) and `Treating as` (leftover line). `getByText("Custom")` also hits the Region option; scope it to those groups.
 - Override radio columns are groups `Juice Usage`, `Book Usage`, `Adv Juice Usage`, `Adv Scroll Usage`, `Special Usage`.
 - Chance column options read `Bound mats`, `Roster mats`, `Tradable`. `Special leaps owned` / `Lower tier special leaps owned` have no row group; find them by textbox name.
-- Roster page: cards are groups `Roster N`; row buttons `Go to character <name>`, `Make a copy of <name>`, `Delete <name>`. Header `Sign in` / `Sign out`; the sync pairing popup is the dialog `Match your characters` with selects `Match <local name>`.
+- Roster page: cards are groups `Roster N`; row link `Go to character <name>`, buttons `Make a copy of <name>`, `Delete <name>`. Header `Sign in` / `Sign out`; the sync pairing popup is the dialog `Match your characters` with selects `Match <local name>`.
 
 A second tab of the site shows a warning banner ("open in another tab"); a test with two pages in one context sees it.
 
