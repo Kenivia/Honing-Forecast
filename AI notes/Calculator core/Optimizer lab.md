@@ -1,12 +1,20 @@
 # Optimizer lab
 
-Optimizer approaches tried beside `optimizer::solve`, in iterations. This note is how the lab works; what it has found is in `Optimizer lab results.md`.
+How optimizer investigations run beside `optimizer::solve`. **The aim is learning, not a better optimizer**: find out exactly what makes a result good, by ablations and by swapping single parts into or out of `solve`. An attempt may read and reuse the production optimizer.
 
-**The aim is learning, not a better optimizer.** The point is to find out exactly what makes a result good: ablations, and single parts swapped into or out of `solve`. A strong optimizer is a side effect. Since iteration 2 an attempt may read and reuse the production optimizer; the "fresh look" rule of iteration 1 no longer applies.
+Each fact has one home:
+
+| Question | Home |
+| --- | --- |
+| How does the lab work? | this note |
+| What do we know, what is a candidate, what is open? | `Further learnings/Optimizer lab results.md` |
+| What should not be tried again? | `Further learnings/Optimizer tried.md` |
+| Old snapshots, iterations, changes that split the record | `Further learnings/Lab history.md` |
+| The evidence | `arena_data/lab/<iteration>/<investigation>/report.md` |
 
 ## Layout
 
-```
+```text
 arena_data/lab/
   runs.sqlite                  every result of the lab (gitignored)
   tools/                       shared scripts
@@ -15,166 +23,88 @@ arena_data/lab/
     report/                    the iteration's final report
     <investigation>/
       report.md                verdict first, then the evidence; frozen when finished
-      final.patch              the code as it ended (a record; the code stays in the tree)
+      final.patch              optional record of the code as it ended
       runs/                    <batch>_queue.json, _done.json, _run.log
       scripts/                 one-off analysis, only if needed
       scratch.sqlite           smoke tests (gitignored); deleted when finished
 ```
 
-Iteration 1 predates this: `iteration1/brief.md`, `archetypes.md`, `attempts/` and `runs/`.
-
-Each fact has one home:
-
-| Question | Home |
-|---|---|
-| How does the lab work? | this note |
-| What do we know, what is a candidate, what is open? | `Optimizer lab results.md` |
-| What should not be tried again? | `Optimizer tried.md` |
-| What is the evidence? | `<investigation>/report.md` |
-
-Invalid data goes to `ignored/junkyard`, not the lab.
+Invalid data goes to `ignored/junkyard`, never the lab.
 
 ## The process
 
-All LLM work happens in supervised sessions; the command only does CPU work.
+All LLM work happens in supervised sessions; `pnpm lab` only does CPU work, started and stopped by hand.
 
-1. **Brief.** The iteration's aim, and which investigations it holds.
-2. **Implement.** A new approach is `crates/core/src/optimizer/lab/<name>.rs`, with a write-up of the algorithm as built. An investigation adds `lab_off`/`lab_on` switches in that file, listed in its `OFF` and `ON`, and off-by-default knobs in `solve` for swap-ins.
+1. **Brief**: the iteration's aim and its investigations.
+2. **Implement**: a new approach is `crates/core/src/optimizer/lab/<name>.rs` with a write-up of the algorithm as built; ablation switches go in its `OFF`/`ON`, swap-ins into `solve` as off-by-default `Tuning` knobs.
 3. **Smoke test** (below), then snapshot into `runs.sqlite`.
-4. **Run.** Write a batch with `tools/queue.py`, and run it with `pnpm lab`. Then `tools/logcheck.py <batch>` must pass.
-5. **Read** with `tools/an.py` (or `cmp.py` and `pay.py`), and write the findings into `report.md` as you go, so that nothing is lost.
-6. **Finish.**
-   - Remove the knobs and switches that failed (and their names from `OFF`/`ON`), so that `solve` stays clean.
-   - Put the verdict at the top of `report.md`.
-   - Move what is now known into `Optimizer lab results.md`, and what failed into `Optimizer tried.md` with its one key number.
-   - Leave the code in the tree with every piece off, and stop for the user to commit. No stash: stashes went stale across commits. `final.patch` (`git diff --output=<investigation>/final.patch <base> -- <files>`) is optional, as a record.
-   - Delete `scratch.sqlite`.
+4. **Run** a batch (`tools/queue.py`, `pnpm lab`); `tools/logcheck.py <batch>` must pass.
+5. **Read** with `tools/an.py` (or `cmp.py`, `pay.py`), writing findings into `report.md` as you go.
+6. **Finish**: remove the knobs and switches that failed; verdict at the top of `report.md`; what is known into `Optimizer lab results.md`, what failed into `Optimizer tried.md` with its one key number; leave the code in the tree with every piece off and **stop for the user to commit** (no stash); delete `scratch.sqlite`.
 
 ## The method
 
-1. **Check that the build repeats its baseline.** The snapshot with nothing set must show 0 wins and 0 losses on `pay.py` against the run it should repeat.
-2. **Read the code for bugs before judging.** The `response_points` error sat in every attempt built on responses.
-3. **Compare against `solve` at matched CPU**, set by set, then payload by payload. Look at where it wins as well as where it loses.
-4. **Ablate each piece** with `lab_off` and `lab_on`. Change one part at a time.
-5. **Swap pieces that look good into `solve`**, off by default, and test them there. A piece that works in a prototype may do nothing in `solve`, and why is worth finding out.
-6. **Follow leads to the bottom** before finishing. Starting a prototype from `solve`'s finished result (`fromsolve` in `price`) shows whether its machinery can improve on `solve`'s endpoint.
+1. **The build repeats its baseline**: with nothing set, 0 wins and 0 losses on `pay.py` against the run it should repeat.
+2. **Read the code for bugs before judging.**
+3. **Compare against `solve` at matched CPU**, set by set, then payload by payload, wins as well as losses.
+4. **Ablate one piece at a time** with `lab_off`/`lab_on`.
+5. **Swap good pieces into `solve`**, off by default, and test them there; a piece that works in a prototype may do nothing in `solve`, and why is worth knowing.
+6. **Follow leads to the bottom**: starting a prototype from `solve`'s result (`fromsolve`) shows whether its machinery improves on `solve`'s endpoint.
 
 ## Running
 
-**Snapshots and batches.** A snapshot is `<investigation prefix>_<letter>` (`sur_a`, `mem_b`), and its batch has the same letter. `i2a`–`i2i` and `lab_r1` are older names.
+A snapshot is `<investigation prefix>_<letter>` (`sur_a`), its batch the same letter.
 
-```
+```text
 cargo build --release -p hf-arena
 target/release/hf-arena.exe --db arena_data/lab/runs.sqlite snap sur_a
 python arena_data/lab/tools/queue.py iteration2/surrogate/a sur_a sur_a:algo=surrogate,lab_effort=1
 pnpm lab iteration2/surrogate/a
 ```
 
-- **`queue.py`** writes one job per set: `real_test` cold, 10 seeds; `real_income_test` chained, 3 seeds; `quick_dev`, `speed_test`, `advanced`, `free_taps`, `juice`, `small`, `large` cold, 3 seeds. `--sets` and `--filter` narrow it; `--seeds n` replaces the standard seeds. The whole list takes about 20–25 minutes a variant. It also knows (only through `--sets`) `speed_test10` and `choices_test`, and iteration 3's `real3_dev`/`_test` (cold), iteration 4's `real3na_dev`/`_test` (cold) and `real3_income_*`, `real3_seq_*` (chained), all at 3 seeds.
-- **`pnpm lab`** runs the batch in order at below normal priority, and writes `<batch>_done.json` and `<batch>_run.log`.
-  - **Queue format**: `[{name, cmd, note?}]`, shell commands run from the repo root. It is read again before each job, so jobs can be added while it runs.
-  - **Started and ended by hand.** Ctrl-C stops the running job (the arena stops cleanly); the same command again goes on from it, since arena jobs carry `--resume`. `pnpm lab status <batch>` lists it.
-  - **No reads of `runs.sqlite` while a batch writes.** The database is in rollback-journal mode and the arena sets no busy timeout, so a long read held the lock at a commit and killed `a_gen` ("database is locked", then poisoned-mutex panics). Analyse between batches; the same command resumes.
-  - **A plain trigger**: queue anything that is only CPU.
-  - **Paths**: commands run under `cmd` on Windows, so an executable's path needs backslashes (`target\arena\bin\<snapshot>.exe`). The driver is the snapshot's own exe, so a build meanwhile cannot touch it.
-- **A variant** is `<label>:key=val,...`; any `Tuning` field can be set by name. `--filter` is a plain substring, not a regex.
-- **Only one job at a time uses the CPU**, or the `cpu_s` of a session means nothing.
-- **Compare `cpu_s` only inside one timeframe**, against a plain baseline in the same batch; a restart or a stopped fan moves it by 10%. Keep the baseline in every batch. `ref` in `cmp.py` compares across batches, for sessions that have the reading.
+- **`queue.py`** writes one job per set (the standard list and its seeds are at the top of the script; about 20–25 minutes a variant). `--sets`, `--filter` (a substring) and `--seeds n` narrow it.
+- **`pnpm lab`** runs the batch in order at below-normal priority. The queue (`[{name, cmd, note?}]`, commands from the repo root under `cmd`, so exe paths need backslashes) is re-read before each job. Ctrl-C stops; the same command resumes (`--resume`). `pnpm lab status <batch>` lists it. The driver is the snapshot's own exe, so a build meanwhile cannot touch it.
+- **No reads of `runs.sqlite` while a batch writes**: rollback-journal mode and no busy timeout, so a long read kills the batch ("database is locked"). Analyse between batches.
+- **One CPU user at a time**, or `cpu_s` means nothing. Compare `cpu_s` only within one batch against a plain baseline in it; `ref` in `cmp.py` corrects across batches where both sides have the reading (`Arena.md`, speed).
+- **Compare CPU, not evaluations**: CPU per evaluation moves with the states searched.
 
-**Tools**, run from the repo root. Every number is in % of flow.
+**Tools** (`arena_data/lab/tools/`, run from the repo root, numbers in % of flow; each script's header has its arguments):
 
-- `tools/cmp.py <base> [variant regex] [set,set] [chained 0|1] [scratch db]`: variants per set against a base, matched by scenario, step and seed. Columns: mean diff per payload, worst and best payload, wins and losses over 0.01%, hit (within 0.01% of the best known), mean gap, evaluations and CPU as ratios, and `ref`, the CPU ratio corrected for the machine's speed, when both sides have the reading (`Arena.md`, "The three measurements"). The re-run's other variants show only when the regex names them. Sets are matched by name, so a base must have run on the same set.
-- `tools/pay.py <A> <B> [k] [scenario substring] [chained 0|1] [scratch db]`: payload by payload, A against B, with both gaps, the number of upgrades and the number of seeds.
-- `tools/rerun_summary.py [variant regex]`: the re-run on its own, every variant against `solve` 48k, with hit, gap and CPU.
-- `tools/an.py`: `cmp`, `pay`, `fmt` and `sets_of` in Python on a cached dump of the light columns of every run (`tools/dump.py`, in `ignored/lab_cache/runs.pkl`). The first load after `runs.sqlite` changes rebuilds it, about 110 s; later loads take about 4 s. Groups are snapshot labels, and `pr_a`'s batches `ra`–`rd`. Use it from a script with `sys.path.insert(0, 'arena_data/lab/tools'); from an import *`.
-- `tools/rep.py <scratch db> <scratch label> <stored label> [variant substring]`: the repeat check, seed by seed, of smoke runs against stored runs of the same variant.
-- `tools/logcheck.py <batch>` (`iteration2/cem/b`): every queued job done, its variant summary naming every variant it ran, and no run died or failed its Monte Carlo check. It fails if it parses no rows.
-- A prototype's trace (`attr.py`) stays in its investigation's `scripts/`, since the keys are its own.
+- `cmp.py`: variants per set against a base, matched by scenario, step and seed: mean diff, worst and best payload, wins and losses over 0.01%, hit, gap, evaluation and CPU ratios.
+- `pay.py`: payload by payload, A against B.
+- `an.py`: `cmp`, `pay`, `fmt`, `sets_of` in Python on a cached dump (`dump.py`, `ignored/lab_cache/runs.pkl`; about 110 s to rebuild after `runs.sqlite` changes, 4 s after). `sys.path.insert(0, 'arena_data/lab/tools'); from an import *`.
+- `rep.py`: the repeat check of smoke runs against stored runs, seed by seed.
+- `logcheck.py <batch>`: every job done, every variant summarised, no run died or failed its Monte Carlo check.
+- A prototype's trace script (`attr.py`) stays in its investigation's `scripts/`.
 
 ## Smoke tests
 
-A smoke test shows that a build runs and does what was meant, in minutes, before a batch is spent on it. It never touches `runs.sqlite`, so a broken build leaves nothing among the results. Use the investigation's `scratch.sqlite`, which `snap` creates.
+Minutes, never in `runs.sqlite`: use the investigation's `scratch.sqlite`, which `snap` creates.
 
-```
+```text
 target/release/hf-arena.exe --db <scratch> snap sur_a
 target/arena/bin/sur_a.exe --db <scratch> --set small run sur_a --mode cold --seeds 3 --jobs 16
 python arena_data/lab/tools/cmp.py <baseline> '' small 0 <scratch>
 target/arena/bin/sur_a.exe --db <scratch> --set quick_dev run sur_a:<knob> --mode cold --seeds 3 --jobs 16 --filter chain_0017
 ```
 
-1. **It repeats.** With nothing set, on `small`, the snapshot must show 0 wins and 0 losses against its baseline. This is what caught the one bad cleaned build of the kick loop.
-2. **It does what was meant.** Run the new knob with `--filter` on the payloads it is for, against the same baseline.
-3. **Promote.** From the same build, `snap` the label into `runs.sqlite` and queue the batch.
+1. **It repeats**: nothing set, on `small`, 0 wins and 0 losses against its baseline.
+2. **It does what was meant**: the new knob with `--filter` on the payloads it is for.
+3. **Promote**: from the same build, `snap` into `runs.sqlite` and queue the batch.
 
-Keep it to about 10 minutes. Anything longer is a batch.
+About 10 minutes; anything longer is a batch.
 
 ## How an attempt plugs in
 
-- `Tuning::algo` names the lab algorithm (`lab::ALGOS`, dispatched by `lab::solve`); empty is `solve`. The arena's worker and `bench --solve` call `lab::solve`, so a variant is `<snapshot>:algo=<name>`.
-- **CPU is the budget.** `Tuning::lab_effort` scales an attempt's work, 1 meaning about the CPU of `solve` overall. Reviews compare curves of quality against CPU: efforts 0.125 to 2 against `solve` at `max_iters` 6000 to 96000. Attempts run on one thread and never stop on a clock.
-- **The driver rejects invalid states** (`lab::check::invalid`, `invalid` in the arena's `main.rs`), so such a run is never the best known. It catches:
-  - ids outside the pools, or two of one pool on a tap;
-  - wrong lengths, or advanced indices out of range;
-  - an order that is not a permutation;
-  - chest states that do not fit;
-  - a plan off the streak-length grid.
-
-  Such a run gets the `error` "invalid state: ...". `solve` passed the check on every run of `quick_dev` (698).
+- `Tuning::algo` names it (`lab::ALGOS`, dispatched by `lab::solve`; empty is `solve`). The arena's worker and `bench --solve` call `lab::solve`, so a variant is `<snapshot>:algo=<name>`.
+- **CPU is the budget**: `Tuning::lab_effort` scales an attempt's work, 1 being about `solve`'s CPU. Attempts run on one thread and never stop on a clock.
+- **Invalid states are rejected** (`lab::check::invalid`): such a run gets the error "invalid state: ..." and is never the best known.
 - `lab_algos_repeat_and_are_valid` (arena worker tests) runs every name in `ALGOS` twice per dummy step.
-- **Ablations**: `Tuning::lab_off` names pieces an attempt leaves out and `Tuning::lab_on` pieces it adds, joined by `+` (`<snapshot>:algo=price,lab_off=order+kicks`). Each attempt names its own in its `OFF` and `ON`, and with neither set it runs as before.
-  - **Unknown names fail.** The arena runs `lab::check_switches` on every variant before it starts (`worker::tuning_with`). It rejects a name nothing reads, a name in the wrong list, and an unknown `sur_kinds` kind, so a typo cannot run as the plain algorithm. `solve` reads the surrogate's switches when `sur_stall` > 0 and memetic's with `mem_polish`, and so does a prototype run with `fromsolve`.
-  - The switches of each prototype: `price` leaves out `order`, `kicks`, `prices`, `replan` and `ratio`, and each kick type: `kchest`, `kwindow`, `kadv`, `kexchange`, `kpiece` and `kperturb`. It adds `advall` (half its advanced kicks put every advanced upgrade of the piece type on one plan), `chestrand` (chest moves of random amounts in place of thirds), `chestboth` (thirds plus 4 random amounts) and `fromsolve` (`solve`'s result as one more carried start, its cost outside the budget). `memetic` leaves out `cross`, `gens`, `restart`, `improve`, `pseed`, `oreplan`, `toggle` and `runs`, and adds `fromsolve` (starts from `solve`'s result, its cost included); each run writes `mem_gain`/`mem_wins`/`mem_cost` trace rows by phase and move (`iteration2/memetic/scripts/attr.py`). `cem` leaves out `refit`, `fresh`, `group` and `oprefix`, and adds `fullreach` (no cap of 10 places on its order polish), `fromsolve` (`solve`'s result as a candidate, raw and snapped, its cost included), `ownstart` (with `fromsolve`, every cycle restarts from cem's own start, `solve`'s result the best to beat), `solvepolish` and `exchange`; each run writes `cem_gain`/`cem_late`/`cem_wins`/`cem_cost` trace rows by phase (`iteration2/cem/scripts/attr.py`). `lns` leaves out `ladder`, `price` and `empty` (each repair start; the freed set is only swept), `rrt` and `adapt`, and adds `fromsolve` (`solve`'s result as a candidate, its cost outside the budget), `insert` (`solve`'s insertion polish after the start and at the end), `chestboth` and `mempolish` (memetic's polish on its best); each run writes `lns_gain`/`lns_wins`/`lns_cost`/`lns_picks` trace rows by phase and arm (`iteration2/lns/scripts/attr.py`).
+- **Ablations**: `lab_off`/`lab_on`, joined by `+` (`<snapshot>:algo=price,lab_off=order+kicks`). Each file's `OFF` and `ON` list its switches, the `ON` ones commented there; with neither set it runs as before. `lab::check_switches` runs on every variant and rejects a name nothing reads, one in the wrong list, and unknown `kick_types`/`sur_kinds`, so a typo cannot run as the plain algorithm. `solve` reads the surrogate's switches when `sur_stall` > 0 and memetic's with `mem_polish`.
 
 ## Reading results
 
-- **Noise.** Treat effects under about 0.01% of flow as null, unless they repeat on the same payloads across sets or seeds. The random stream shifts with any change, so check a "loss" seed by seed before believing it. `Optimizer lab results.md` lists the noisy payloads.
-- **Judge on** `real_test` (38 real characters) and `real_income_test` (22 real income chains), which no attempt saw, plus `quick_dev` and the regime sets (`advanced`, `free_taps`, `juice`, `small`, `large`, `speed_test`) for where each does well. The real sets come from the analytics pulls (`Arena.md`, "Generated scenarios").
+- **Noise**: effects under about 0.01% of flow are null unless they repeat on the same payloads across sets or seeds. The random stream shifts with any change, so check a "loss" seed by seed. The noisy payloads are listed in `Optimizer lab results.md`.
+- **Judge on** the held-out real sets plus `quick_dev` and the regime sets (`advanced`, `free_taps`, `juice`, `small`, `large`, `speed_test`); since iteration 3 the `real3_*` sets (`Arena.md`, generated scenarios).
 - **The best known is over all of `runs.sqlite`**, so it moves as results come in.
-- **The defaults changed on 2026-11-12** (`max_iters` 12000 scaled by `size_power` 0.5, `adv_radius` 1, `coarse_shared`, `coarse_cache`): a snapshot's plain label is `solve` at those, not at 48k. Every snapshot up to `cold_d` is the old 48k alone, and the lab's scripts call the plain label "48k". The old production on a newer build is `max_iters=48000,adv_radius=0,coarse_shared=false,coarse_cache=false,size_power=0`, which repeats `cold_d` exactly (444 of 444 runs); put it in a batch as the base for CPU ratios against 48k. `Tuning::reference` is unchanged.
-- **Compare CPU, not evaluations.** CPU per evaluation moves with the states searched: cem with `refit` off costs x1.11 at x0.88 the evaluations.
-- **The free tap cut changed on 2026-10-31** (`Evaluation pipeline.md`). Snapshots before `cut_a` used the old cut.
-  - **Stored `metric_ref` values stay valid.** All 414,624 were rescored at the new reference: at most 2.2e-6 of flow, and no hit changes.
-  - **Builds since do not repeat older snapshots seed by seed.** Use `cut_a` for the repeat check, and put `solve` in the batch for matched CPU, which is about 5 to 15% cheaper.
-  - **Gains on order-basin payloads against `lab_r1` run high**, since the new cut alone lifts `solve` there. The detail is in `iteration2/free_tap_cut/report.md`.
-  - **CPU ratios inside a batch carry over.** Against `solve` 48k in the same session, every prototype at effort 1 and `solve` 96k cost the same at both cuts within about ±0.05, up to +0.09 on `free_taps`. Absolute `cpu_s` does not carry over: `solve` 48k is x0.78–1.03 per run at the same evaluations, mixed with machine state.
-  - **The effort curves are re-run at the new cut** in `pr_a` (batch `iteration2/price/runs/ra`): `price`, `memetic`, `cem` and `lns` at efforts 0.25–2 (`price` also 0.125) against `solve` 6k–96k; table in `price` report 11. `surrogate`'s is at the old cut only.
-
-## What is in `runs.sqlite`
-
-| Snapshots | What |
-|---|---|
-| `lab_r1` | The re-run of iteration 1. Default of 128 `response_points`, all five attempts in one exe, so that each session has `solve` and all attempts together. **The baseline**; `lab_r1` alone is `solve` 48k. |
-| `i2a`–`i2g` | The `price` investigation. |
-| `i2h`, `i2i` | Registered, no stored runs. `i2i` is the final kick loop's code, and repeats `i2g` exactly (57 of 57 runs). |
-| `sur_a`, `sur_b` | The `surrogate` investigation, old cut. |
-| `sur_c`–`sur_g` | The `surrogate` investigation, new cut. From `sur_e` on, runs carry the `ReferenceUs` reading. |
-| `cut_a` | `solve` at 48k and 96k and each attempt at effort 1, at the new cut (a2d2c0f2). **The baseline for new builds**; `cut_a` alone is `solve` 48k. |
-| `pr_a` | The `price` re-run at the new cut (code of 97e7115d), batches `ra`–`rd`: `solve` 6k–96k, every prototype but `surrogate` at efforts 0.25–2, the kick loop and its variants, `price`'s ablations, and `ascend` by `response_points`. Repeats `cut_a` exactly. |
-| `mem_a`, `mem_b` | The `memetic` investigation (new cut): its ablations, `fromsolve`, `mem_polish` in `solve`, with the kick loop and the surrogate loop in the same sessions. Both repeat `cut_a`. |
-| `cem_a`, `cem_b` | The `cem` investigation (new cut): its ablations, the order-polish cap, `solve`'s start, polish and exchanges inside it, `fromsolve` and `fromsolve+ownstart`; in `cem_b` the kick loop with `mem_polish` and the surrogate loop in the same sessions. Both repeat `cut_a`. |
-| `lns_a`, `lns_b` | The `lns` investigation (new cut): its ablations, `fromsolve`, `mempolish`, `insert`; the rebuild kick in `solve` (`kick_types` `rebuild`) alone and with the kick loop and `mem_polish`; `solve` + `mem_polish`, the kick loop with `mem_polish` and the surrogate loop in the same sessions. Both repeat `cut_a`. |
-| `x10_a` | The `x10` investigation: every variant at `streak_length=10` (`solve` 12k–192k, shorter chains, `agree_exit=3,unanimous=2`, the kick loop). Its best known must be taken over streak-10 runs only. |
-| `bud_a` | Iteration 3's `budget` investigation (code of 530bcd35, repeats `cut_a`): `solve` from `max_iters` 0 to 48k on the `real3_*` sets, KMR+Ls as the reference, `quick` and `carry_stall=1` on the chained ones. |
-| `cold_a` | Iteration 3's `cold` investigation (repeats `bud_a`): cold `real3_dev` singles at x0.2–0.25 of 48k: chain counts, `chain_polish`, `chest_flip`, the exchange's loops. Runs carry the time by phase as `us_*` counters (`iteration3/cold/report.md` §1). |
-| `cold_b` | `cold`'s round 2 (repeats `cold_a`): `adv_radius`, `exchange_rank`, evaluator knobs (`max_lattice_work`, `special_tol`, `max_memo_size`), `magic_number`, and stacks with `exchange_stop` (`iteration3/cold/report.md` §4). |
-| `cold_c` | `cold`'s round 3 (repeats `cold_b`): `coarse_shared`, every free tap outcome's coarse lattice in one pass (`iteration3/cold/report.md` §5). |
-| `cold_d` | `cold`'s round 4 (repeats `cold_c`): `coarse_cache`, `size_power`/`size_ref`/`size_cap`, `min_chains` (since removed, with `exchange_rank` and `exchange_flat`; the tree repeats `cold_d`) (`iteration3/cold/report.md` §6). |
-| `prod_a` | The live production build (9ae4f169: `solve` 48k at 16 `response_points`, the old free tap cut and evaluator), built from a `git archive` copy with `HF_ROOT` set to this repo (so it shares `adv_cache.sqlite`; advanced honing is unchanged since) and copied over the exe `snap` made; its row's sha set by hand. Repeats `lab_r1:response_points=16` exactly (60 of 60 on `small`). Batch `iteration3/prod/a`: against the current default on every `real3_*` set, driven by `cold_d.exe`; `iteration3/prod/scripts/prod.py` tabulates it. |
-| `sim_a` | `algo=simple` (Maxroll's rule) on the cold `real3_dev`/`real3_test` singles, 1 seed (batch `iteration4/simple/a`). |
-| `sim_b` | `algo=maxroll` (the calculator's Maxroll override) with its owned stock switches `ifreached`, `nostock`, `allstock` (since removed), and default `solve` at 3 seeds, on `real3na_dev`/`_test` (real3 cold singles at streak 1, advanced honing removed; batch `iteration4/simple/b`). |
-| `fin_a` | Iteration 2's final batch (`iteration2/report/runs`): `solve` 48k and 96k, the kick loop with `mem_polish` (with `rebuild`, `rebuildempty`, `rebuildprice`), the surrogate loop (plain and screened), the two together, memetic's and cem's runs from `solve`'s endpoint; one session per set, `large` at 10 seeds. Repeats every stored snapshot it shares runs with. |
-
-The re-run in detail, about 22 hours at 16 jobs, each set one session:
-
-- **variants**: `solve` at 6k/12k/24k/48k/96k, `solve` 48k at 16 points (the old production, kept for comparison), and each attempt at efforts 0.125/0.25/0.5/1/2;
-- **seeds**: 10 on `real_test`, 6 on `real_income_test` (two jobs, seeds 0–2 then 3–5), 3 elsewhere;
-- **`ref_*`**: `solve` at 384k, 3 seeds, a session per set, last, only for a firmer best known.
-
-Iteration 1's first run was at 16 `response_points`, where the best response picks wrong plans on lone upgrades. It is in `ignored/junkyard/lab_iteration1_16pt` with its reviews, and nothing should be judged on it.
-
-## Iterations
-
-- **Iteration 1 (batch 1):** archetypes `price`, `surrogate`, `memetic`, `cem` and `lns`, written from scratch without reading the optimizer. The building blocks offered: the evaluator, `shadow_prices`, and the best response (`response.rs`). Brief in `iteration1/brief.md`, write-ups in `iteration1/attempts/`.
-- **Iteration 2:** reviews of each prototype in turn, one investigation each. Status in `iteration2/brief.md`.
-- **Iteration 4 (`simple`, snapshot `sim_a`):** Maxroll's rule as `algo=simple`, a no-search comparison point, against the stored default runs on the cold `real3` singles. Then `algo=maxroll` (snapshot `sim_b`), the calculator's override, on `real3na` for its owned stock rule. Report in `iteration4/simple/report.md`.
-- **Iteration 3:** good results per CPU second on real cases, judged on the `real3_*` sets (real characters, both streak lengths, rosters split 50/50). First the curve of accuracy against CPU per kind of run, far below `solve`'s 48k, then cheap heuristics and categories. Brief and status in `iteration3/brief.md`. It reports how badly runs miss as well as hit: RMS gap and the mean of log10(gap + 0.001).
+- **The baseline for new builds is `cut_a`**; a snapshot's plain label is the current default, not 48k (`Lab history.md`).

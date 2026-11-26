@@ -45,21 +45,38 @@ pub fn solve<R: Rng>(
     }
 }
 
+/// the kinds `Tuning::kick_types` takes; the `rebuild` ones are lab kicks
+pub const KICK_TYPES: &[&str] = &[
+    "window",
+    "chest",
+    "adv",
+    "piece",
+    "rebuild",
+    "rebuildempty",
+    "rebuildprice",
+];
+
+/// the `lab_off` and `lab_on` switches an algorithm reads
+fn switches(algo: &str) -> (&'static [&'static str], &'static [&'static str]) {
+    match algo {
+        "" => (&[], &[]),
+        "price" => (price::OFF, price::ON),
+        "surrogate" => (surrogate::OFF, surrogate::ON),
+        "memetic" => (memetic::OFF, memetic::ON),
+        "cem" => (cem::OFF, cem::ON),
+        "lns" => (lns::OFF, lns::ON),
+        "simple" => (simple::OFF, simple::ON),
+        "maxroll" => (maxroll::OFF, maxroll::ON),
+        other => panic!("no lab algorithm {other}"),
+    }
+}
+
 /// Panics on a switch or kick kind nothing reads, so a typo cannot run as the plain algorithm.
 /// `solve` reads the surrogate's switches in its kick loop and memetic's in `mem_polish`, as
 /// does a lab algorithm that runs `solve` (`fromsolve`).
 pub fn check_switches(tuning: &crate::tuning::Tuning) {
-    let (mut off, mut on): (Vec<&str>, Vec<&str>) = match tuning.algo.as_str() {
-        "" => (vec![], vec![]),
-        "price" => (price::OFF.to_vec(), price::ON.to_vec()),
-        "surrogate" => (surrogate::OFF.to_vec(), surrogate::ON.to_vec()),
-        "memetic" => (memetic::OFF.to_vec(), memetic::ON.to_vec()),
-        "cem" => (cem::OFF.to_vec(), cem::ON.to_vec()),
-        "lns" => (lns::OFF.to_vec(), lns::ON.to_vec()),
-        "simple" => (simple::OFF.to_vec(), simple::ON.to_vec()),
-        "maxroll" => (maxroll::OFF.to_vec(), maxroll::ON.to_vec()),
-        other => panic!("no lab algorithm {other}"),
-    };
+    let (off, on) = switches(&tuning.algo);
+    let (mut off, mut on) = (off.to_vec(), on.to_vec());
     let solves = tuning.algo.is_empty() || tuning.lab_on.split('+').any(|n| n == "fromsolve");
     if solves && tuning.sur_stall > 0 {
         off.extend(surrogate::OFF);
@@ -69,16 +86,7 @@ pub fn check_switches(tuning: &crate::tuning::Tuning) {
         }
     }
     for kind in tuning.kick_types.split('+') {
-        let kinds = [
-            "window",
-            "chest",
-            "adv",
-            "piece",
-            "rebuild",
-            "rebuildempty",
-            "rebuildprice",
-        ];
-        assert!(kinds.contains(&kind), "no kick_types kind {kind}");
+        assert!(KICK_TYPES.contains(&kind), "no kick_types kind {kind}");
     }
     assert!(
         ["", "screen", "none"].contains(&tuning.chain_polish.as_str()),
@@ -110,12 +118,4 @@ pub fn check_switches(tuning: &crate::tuning::Tuning) {
             );
         }
     }
-}
-
-/// the metric of the state as it is, timed and counted as an evaluation
-pub fn evaluate(state_bundle: &mut StateBundle, probe: &mut Probe) -> f64 {
-    let clock = probe.clock();
-    let metric = state_bundle.metric_router(probe);
-    probe.evaluated(clock);
-    metric
 }

@@ -76,7 +76,7 @@ fn missed(base: &StateBundle, plan: &StateBundle) -> f64 {
     let mut probe = Probe::default();
     let mut at_market = base.clone();
     at_market.my_clone_from(plan);
-    at_market.metric_router(&mut probe) - base.clone().metric_router(&mut probe)
+    at_market.evaluate(&mut probe) - base.clone().evaluate(&mut probe)
 }
 
 fn polished(base: &StateBundle, row: usize, price: f64) -> f64 {
@@ -138,7 +138,7 @@ fn adv_usage(sb: &mut StateBundle, index: usize) -> Vec<Vec<f64>> {
 // marginal costs, uses more than its plan does, s how pi moves with the market price.
 fn dual(base: &mut StateBundle, row: usize) -> (f64, Option<f64>, f64, Option<f64>) {
     let mut probe = Probe::default();
-    base.metric = base.metric_router(&mut probe);
+    base.metric = base.evaluate(&mut probe);
     let prices = base.shadow_prices(&mut probe);
     let pi = prices[row];
     let id = row - NUM_BASE_MATS;
@@ -199,7 +199,7 @@ fn dual(base: &mut StateBundle, row: usize) -> (f64, Option<f64>, f64, Option<f6
     let market = base.prep_output.base_materials[row].market_price;
     let delta = 0.01 * market;
     let mut bumped = priced(base, row, market + delta);
-    bumped.metric = bumped.metric_router(&mut probe);
+    bumped.metric = bumped.evaluate(&mut probe);
     let s = (bumped.shadow_prices(&mut probe)[row] - pi) / delta;
     let estimate = b
         .filter(|_| s > 1e-9)

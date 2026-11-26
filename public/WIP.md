@@ -9,6 +9,10 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
   - per-piece serca icon
   - improve auto tier assignment instead of asking for a tier
 
+- rework how widths work (instead of specifying a different max width for every component )
+  - maybe even make it the same width everywhere? maybe not
+- rework m arket page and maybe even merge roster with market?
+
 - ~~let the market scanner sleep~~
 - snap hover point on graph
   - fix the first point

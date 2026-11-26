@@ -9,7 +9,7 @@ Traps in the payload and worker protocol. The current state is in `Wasm contract
 - Don't build the payload in two places: `build_payload` and `payload_for` drifted. The fed-back states need the optimizer result's own `juice_info`, not the histogram's.
 - Don't write `double_balls` or clear reset markers on the stored upgrades while building a payload: Income's runs did it too. Only `build_payload` clears reset markers.
 - Don't append the ids of a "Full" juice or book override to the tap's: replace them with every usable one, or an id appears twice.
-- Don't ask for the gold distribution on every histogram: it made each run five to six times as long (`Calculator core/Evaluation pipeline tried.md`). Don't give `start_eval_hist` a parameter: `@change="start_eval_hist"` passes the event in.
+- Don't ask for the gold distribution on every histogram: it made each run five to six times as long (`Calculator core/Further learnings/Evaluation pipeline tried.md`). Don't give `start_eval_hist` a parameter: `@change="start_eval_hist"` passes the event in.
 
 ## Workers
 

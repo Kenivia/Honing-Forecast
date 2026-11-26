@@ -37,6 +37,7 @@ pub struct Payload {
     pub min_resolution: usize,
     #[serde(default)]
     pub num_threads: usize,
+    /// unread; kept because the arena's step hashes include every field
     #[serde(default = "default_one")]
     pub metric_type: i64,
 
@@ -83,7 +84,6 @@ impl StateBundle {
             express_event,
             min_resolution,
             num_threads,
-            metric_type,
             adv_cache,
             quick,
             ..
@@ -124,7 +124,6 @@ impl StateBundle {
             special_state,
             chest_states,
             special_invalid_index: None,
-            metric_type,
             metric: -1.0,
             prep_output: PreparationOutput {
                 table,

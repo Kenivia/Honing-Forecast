@@ -13,10 +13,8 @@ use crate::constants::juice_info::JuiceInfo;
 use crate::optimizer::state::OneState;
 use crate::upgrade::Upgrade;
 use ahash::AHashSet;
-use ordered_float::OrderedFloat;
 use smallvec::smallvec;
 
-use priority_queue::DoublePriorityQueue;
 use rand::Rng;
 use rand::seq::SliceRandom;
 use std::collections::BTreeMap;
@@ -24,23 +22,6 @@ use std::collections::BTreeMap;
 use super::one_batch::SolverStateBundle;
 
 pub mod lab_hooks;
-
-pub fn my_push(
-    queue: &mut DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
-    new_item: StateEssence,
-    new_metric: OrderedFloat<f64>,
-    max_best_size: usize,
-) {
-    if queue.len() < max_best_size {
-        queue.push(new_item, new_metric);
-        return;
-    }
-
-    if new_metric > *queue.peek_min().unwrap().1 {
-        queue.pop_min();
-        queue.push(new_item, new_metric);
-    }
-}
 
 fn compute_upgrade_impact(state_bundle: &mut StateBundle) -> Vec<f64> {
     let weights = upgrade_costs(state_bundle);
@@ -81,7 +62,9 @@ const STATE_SEC: f64 = 1.0;
 const CHAINS_PCT: f64 = 67.67;
 
 /// The progress of one solve, shared by its chains: one timer, `last` is when the progress and
-/// a state were last sent, `floor` the best of the chains before the current one.
+/// a state were last sent, `floor` the best of the chains before the current one. The start goes
+/// once at 0.01% with the starting state; the chains fill to `CHAINS_PCT`, where it waits through
+/// the merge and polishes; an early exit jumps straight to the final result.
 struct Report {
     timer: Instant,
     last: [f64; 2],
@@ -100,23 +83,14 @@ fn maybe_send_progress(done: f64, solver_bundle: &mut SolverStateBundle, report:
     report.last[0] = elapsed;
     let pct = (CHAINS_PCT * done).clamp(0.01, CHAINS_PCT);
 
-    if elapsed - report.last[1] < STATE_SEC
-        || f64::from(*solver_bundle.best_n_states.peek_max().unwrap().1) <= report.floor
-    {
+    if elapsed - report.last[1] < STATE_SEC || solver_bundle.best_metric() <= report.floor {
         progress::report(None, pct);
         return;
     }
     report.last[1] = elapsed;
 
-    // Materialise the best known state before shipping it to the frontend.
-    solver_bundle.state_bundle.clone_from_essence(
-        solver_bundle.best_n_states.peek_max().unwrap().0,
-        solver_bundle.best_n_states.peek_max().unwrap().1,
-    );
-    let mut dummy_probe = Probe::default();
-    solver_bundle
-        .state_bundle
-        .optimizer_average_gold_metric(&mut dummy_probe);
+    solver_bundle.load_best();
+    solver_bundle.state_bundle.evaluate(&mut Probe::default());
     solver_bundle.state_bundle.set_latest_special_probs();
 
     progress::report(Some(&solver_bundle.state_bundle), pct);
@@ -127,50 +101,25 @@ fn start_solver<R: Rng>(
     state_bundle: &mut StateBundle,
     probe: &mut Probe,
 ) -> SolverStateBundle {
-    let clock = probe.clock();
-    state_bundle.metric = state_bundle.metric_router(probe);
-    probe.evaluated(clock);
+    state_bundle.metric = state_bundle.evaluate(probe);
     state_bundle.set_latest_special_probs();
 
     let scaler = AdaptiveScaler::new(state_bundle.metric.abs(), 50);
     let upgrade_impacts = compute_upgrade_impact(state_bundle);
-
-    let mut best_n_states: DoublePriorityQueue<StateEssence, OrderedFloat<f64>> =
-        DoublePriorityQueue::new();
-    my_push(
-        &mut best_n_states,
-        state_bundle.to_essence(),
-        OrderedFloat(state_bundle.metric),
-        state_bundle.tuning.max_best_size,
-    );
-    SolverStateBundle::initialize(
-        state_bundle,
-        scaler,
-        rng.next_u64(),
-        &best_n_states,
-        &upgrade_impacts,
-    )
+    SolverStateBundle::new(state_bundle, scaler, rng.next_u64(), upgrade_impacts)
 }
 
 /// With the upgrades of the best state as they are, reopens chests of each stack as another
 /// option for as long as that helps, in steps that halve. The chain goes on from the result.
 /// Returns the evaluations it took.
 fn chest_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
-    let stacks: Vec<(String, usize)> = solver_bundle
-        .state_bundle
-        .prep_output
-        .chests
-        .iter()
-        .filter(|(_, chest)| chest.options.len() > 1 && chest.count > 0)
-        .map(|(key, chest)| (key.clone(), chest.options.len()))
-        .collect();
+    let stacks = solver_bundle.state_bundle.choice_stacks();
     // nothing to choose, and the chain is left where it is
     if stacks.is_empty() {
         return 0;
     }
-    let (essence, best_metric) = solver_bundle.best_n_states.peek_max().unwrap();
+    solver_bundle.load_best();
     let state_bundle = &mut solver_bundle.state_bundle;
-    state_bundle.clone_from_essence(essence, best_metric);
     let start = state_bundle.metric;
     let mut evals: i64 = 0;
     let mut improved = true;
@@ -186,9 +135,7 @@ fn chest_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64
                     state[from] -= moved;
                     state[to] += moved;
                     state_bundle.apply_chest_state(false);
-                    let clock = probe.clock();
-                    let metric = state_bundle.metric_router(probe);
-                    probe.evaluated(clock);
+                    let metric = state_bundle.evaluate(probe);
                     evals += 1;
                     if moved > 0 && metric > state_bundle.metric {
                         state_bundle.metric = metric;
@@ -205,13 +152,7 @@ fn chest_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64
         }
     }
     if state_bundle.metric > start {
-        my_push(
-            &mut solver_bundle.best_n_states,
-            state_bundle.to_essence(),
-            OrderedFloat(state_bundle.metric),
-            state_bundle.tuning.max_best_size,
-        );
-        probe.put("best", state_bundle.metric);
+        solver_bundle.keep_current(probe);
     }
     solver_bundle
         .prev_state
@@ -224,23 +165,14 @@ fn chest_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64
 /// decides: a plan built on one option's material otherwise never lets the chests move. The best
 /// of these is kept where it beats the best state. Returns what it took, in evaluations.
 fn chest_flip(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
-    let stacks: Vec<(String, usize)> = solver_bundle
-        .state_bundle
-        .prep_output
-        .chests
-        .iter()
-        .filter(|(_, chest)| chest.options.len() > 1 && chest.count > 0)
-        .map(|(key, chest)| (key.clone(), chest.options.len()))
-        .collect();
+    let stacks = solver_bundle.state_bundle.choice_stacks();
     if stacks.is_empty() {
         return 0;
     }
     let (essence, best_metric) = solver_bundle.best_n_states.peek_max().unwrap();
     let (essence, best_metric) = (essence.clone(), *best_metric);
     let state_bundle = &mut solver_bundle.state_bundle;
-    let normal: Vec<usize> = (0..state_bundle.upgrade_arr.len())
-        .filter(|&index| state_bundle.upgrade_arr[index].is_normal_honing)
-        .collect();
+    let normal = state_bundle.upgrades_of(true);
     let mut work: f64 = 0.0;
     let mut found: Option<(f64, StateEssence)> = None;
     for (key, options) in &stacks {
@@ -255,7 +187,7 @@ fn chest_flip(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
             state.fill(0);
             state[to] = count;
             state_bundle.set_chest_state(&states);
-            state_bundle.metric = state_bundle.metric_router(probe);
+            state_bundle.metric = state_bundle.evaluate(probe);
             work += 1.0;
             for _ in 0..2 {
                 let before = state_bundle.metric;
@@ -275,19 +207,10 @@ fn chest_flip(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
         }
     }
     if let Some((metric, essence)) = found {
-        my_push(
-            &mut solver_bundle.best_n_states,
-            essence,
-            OrderedFloat(metric),
-            solver_bundle.state_bundle.tuning.max_best_size,
-        );
-        probe.put("best", metric);
+        solver_bundle.keep(essence, metric, probe);
     }
-    let (essence, best_metric) = solver_bundle.best_n_states.peek_max().unwrap();
-    solver_bundle
-        .state_bundle
-        .clone_from_essence(essence, best_metric);
-    solver_bundle.state_bundle.metric = solver_bundle.state_bundle.metric_router(probe);
+    solver_bundle.load_best();
+    solver_bundle.state_bundle.metric = solver_bundle.state_bundle.evaluate(probe);
     solver_bundle
         .prev_state
         .my_clone_from(&solver_bundle.state_bundle);
@@ -297,18 +220,16 @@ fn chest_flip(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
 /// One normal upgrade takes its best plan against the rest, where the metric agrees: the
 /// bundle's metric says whether it did. Returns what it took, in evaluations.
 fn respond_one(state_bundle: &mut StateBundle, index: usize, probe: &mut Probe) -> f64 {
-    let response = Response::of(state_bundle, index, probe);
-    let before = state_bundle.upgrade_arr[index].state.payload.clone();
-    let now = response.model.canonical(&response.model.indices(&before));
-    let plan = response.better(&now, state_bundle.tuning.response_joint).1;
+    let (response, now, plan) = best_response(state_bundle, index, probe);
     let work = response.work(state_bundle.tuning.response_steps);
     if now == plan {
         return work;
     }
+    let before = state_bundle.upgrade_arr[index].state.payload.clone();
     state_bundle.upgrade_arr[index]
         .state
         .update_payload(response.model.plan(&plan));
-    let metric = state_bundle.metric_router(probe);
+    let metric = state_bundle.evaluate(probe);
     if metric > state_bundle.metric {
         state_bundle.metric = metric;
     } else {
@@ -317,13 +238,25 @@ fn respond_one(state_bundle: &mut StateBundle, index: usize, probe: &mut Probe) 
     work + 1.0
 }
 
+/// An upgrade's response, its plan now and its best plan against the rest, both canonical.
+fn best_response(
+    state_bundle: &mut StateBundle,
+    index: usize,
+    probe: &mut Probe,
+) -> (Response, Vec<usize>, Vec<usize>) {
+    let response = Response::of(state_bundle, index, probe);
+    let payload = &state_bundle.upgrade_arr[index].state.payload;
+    let now = response.model.canonical(&response.model.indices(payload));
+    let plan = response.better(&now, state_bundle.tuning.response_joint).1;
+    (response, now, plan)
+}
+
 /// From the best state, each normal upgrade in turn takes its best plan against the rest
 /// where the metric agrees, for a few passes or until one moves nothing. The chain goes on
 /// from the result. Returns what it took, in evaluations.
 fn response_polish(solver_bundle: &mut SolverStateBundle, sweeps: usize, probe: &mut Probe) -> i64 {
-    let (essence, best_metric) = solver_bundle.best_n_states.peek_max().unwrap();
+    solver_bundle.load_best();
     let state_bundle = &mut solver_bundle.state_bundle;
-    state_bundle.clone_from_essence(essence, best_metric);
     let start = state_bundle.metric;
     let mut work: f64 = 0.0;
     for _ in 0..sweeps {
@@ -340,20 +273,7 @@ fn response_polish(solver_bundle: &mut SolverStateBundle, sweeps: usize, probe: 
             break;
         }
     }
-    if state_bundle.metric > start {
-        my_push(
-            &mut solver_bundle.best_n_states,
-            state_bundle.to_essence(),
-            OrderedFloat(state_bundle.metric),
-            state_bundle.tuning.max_best_size,
-        );
-        probe.put("best", state_bundle.metric);
-    }
-    // a move that was turned down leaves its supports behind
-    state_bundle.metric = state_bundle.metric_router(probe);
-    solver_bundle
-        .prev_state
-        .my_clone_from(&solver_bundle.state_bundle);
+    solver_bundle.settle(start, probe);
     work.ceil() as i64
 }
 
@@ -361,7 +281,7 @@ fn response_polish(solver_bundle: &mut SolverStateBundle, sweeps: usize, probe: 
 /// takes, either whole or one piece's next level at a time, where one beats the order given.
 pub fn greedy_order(state_bundle: &mut StateBundle, probe: &mut Probe) {
     let mut best = (
-        state_bundle.metric_router(probe),
+        state_bundle.evaluate(probe),
         state_bundle.special_state.clone(),
     );
     if !state_bundle.affords_a_free_tap() {
@@ -398,7 +318,7 @@ pub fn greedy_order(state_bundle: &mut StateBundle, probe: &mut Probe) {
     }
     for order in [whole, stepped] {
         state_bundle.special_state = order;
-        let metric = state_bundle.metric_router(probe);
+        let metric = state_bundle.evaluate(probe);
         if metric > best.0 {
             best = (metric, state_bundle.special_state.clone());
         }
@@ -410,17 +330,14 @@ pub fn greedy_order(state_bundle: &mut StateBundle, probe: &mut Probe) {
 /// budget reaches, for as long as that helps. The chain goes on from the result. Returns the
 /// evaluations it took.
 fn order_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
-    let (essence, best_metric) = solver_bundle.best_n_states.peek_max().unwrap();
+    solver_bundle.load_best();
     let state_bundle = &mut solver_bundle.state_bundle;
-    state_bundle.clone_from_essence(essence, best_metric);
     if !state_bundle.affords_a_free_tap() {
         return 0;
     }
     let start = state_bundle.metric;
     let count = state_bundle.special_state.len();
-    let normal: Vec<usize> = (0..count)
-        .filter(|&index| state_bundle.upgrade_arr[index].is_normal_honing)
-        .collect();
+    let normal = state_bundle.upgrades_of(true);
     let mut evals: i64 = 0;
     for _ in 0..5 {
         let mut improved = false;
@@ -443,11 +360,9 @@ fn order_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64
                     state_bundle.special_state = before;
                     continue;
                 }
-                let clock = probe.clock();
-                let metric = state_bundle.metric_router(probe);
-                probe.evaluated(clock);
+                let metric = state_bundle.evaluate(probe);
                 evals += 1;
-                if metric > state_bundle.metric + state_bundle.metric.abs() * 1e-12 {
+                if beats(metric, state_bundle.metric) {
                     state_bundle.metric = metric;
                     improved = true;
                     tried.clear();
@@ -460,19 +375,7 @@ fn order_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64
             break;
         }
     }
-    if state_bundle.metric > start {
-        my_push(
-            &mut solver_bundle.best_n_states,
-            state_bundle.to_essence(),
-            OrderedFloat(state_bundle.metric),
-            state_bundle.tuning.max_best_size,
-        );
-        probe.put("best", state_bundle.metric);
-    }
-    state_bundle.metric = state_bundle.metric_router(probe);
-    solver_bundle
-        .prev_state
-        .my_clone_from(&solver_bundle.state_bundle);
+    solver_bundle.settle(start, probe);
     evals
 }
 
@@ -480,13 +383,10 @@ fn order_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64
 /// values with the rest as it is, until none moves. The chain goes on from the result. Returns
 /// the evaluations it took.
 fn adv_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
-    let (essence, best_metric) = solver_bundle.best_n_states.peek_max().unwrap();
+    solver_bundle.load_best();
     let state_bundle = &mut solver_bundle.state_bundle;
-    state_bundle.clone_from_essence(essence, best_metric);
     let start = state_bundle.metric;
-    let advanced: Vec<usize> = (0..state_bundle.upgrade_arr.len())
-        .filter(|&index| !state_bundle.upgrade_arr[index].is_normal_honing)
-        .collect();
+    let advanced = state_bundle.upgrades_of(false);
     let radius = state_bundle.tuning.adv_radius;
     let mut evals: i64 = 0;
     for _ in 0..if advanced.is_empty() { 0 } else { 3 } {
@@ -511,7 +411,7 @@ fn adv_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
                         let state = &mut state_bundle.upgrade_arr[index].state;
                         state[entry][0] = value;
                         state.update_hash();
-                        let metric = state_bundle.metric_router(probe);
+                        let metric = state_bundle.evaluate(probe);
                         evals += 1;
                         if metric > state_bundle.metric {
                             (state_bundle.metric, best) = (metric, value);
@@ -530,19 +430,7 @@ fn adv_polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
             break;
         }
     }
-    if state_bundle.metric > start {
-        my_push(
-            &mut solver_bundle.best_n_states,
-            state_bundle.to_essence(),
-            OrderedFloat(state_bundle.metric),
-            state_bundle.tuning.max_best_size,
-        );
-        probe.put("best", state_bundle.metric);
-    }
-    state_bundle.metric = state_bundle.metric_router(probe);
-    solver_bundle
-        .prev_state
-        .my_clone_from(&solver_bundle.state_bundle);
+    solver_bundle.settle(start, probe);
     evals
 }
 
@@ -552,7 +440,7 @@ fn polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
     let tuning = solver_bundle.state_bundle.tuning.clone();
     let mut cost = 0;
     for _ in 0..tuning.polish_rounds {
-        let before = *solver_bundle.best_n_states.peek_max().unwrap().1;
+        let before = solver_bundle.best_metric();
         let clock = probe.clock();
         cost += order_polish(solver_bundle, probe);
         probe.time("order", clock);
@@ -572,7 +460,7 @@ fn polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
             cost += chest_flip(solver_bundle, probe);
             probe.time("flip", clock);
         }
-        if *solver_bundle.best_n_states.peek_max().unwrap().1 <= before {
+        if solver_bundle.best_metric() <= before {
             break;
         }
     }
@@ -580,6 +468,11 @@ fn polish(solver_bundle: &mut SolverStateBundle, probe: &mut Probe) -> i64 {
         cost += response_polish(solver_bundle, tuning.response_polish, probe);
     }
     cost
+}
+
+/// whether a metric beats another by more than rounding
+pub fn beats(metric: f64, other: f64) -> bool {
+    metric > other + other.abs() * 1e-12
 }
 
 /// The polishes alone, from the given state.
@@ -604,7 +497,7 @@ pub fn scramble<R: Rng>(rng: &mut R, mut state_bundle: StateBundle, moves: usize
     for _ in 0..moves {
         solver_bundle.neighbour();
         // the next move reads the free tap probabilities of this state
-        solver_bundle.state_bundle.metric = solver_bundle.state_bundle.metric_router(&mut probe);
+        solver_bundle.state_bundle.metric = solver_bundle.state_bundle.evaluate(&mut probe);
     }
     solver_bundle.state_bundle
 }
@@ -616,7 +509,7 @@ pub fn solve<R: Rng>(
     probe: &mut Probe,
 ) -> Solved {
     if state_bundle.upgrade_arr.is_empty() {
-        state_bundle.metric = state_bundle.metric_router(probe);
+        state_bundle.metric = state_bundle.evaluate(probe);
         state_bundle.set_latest_special_probs();
         return Solved {
             best: state_bundle,
@@ -658,7 +551,7 @@ pub fn solve<R: Rng>(
             .update_payload(vec![slot; upgrade.state.len()]);
     }
     state_bundle.special_state = (0..state_bundle.upgrade_arr.len()).collect();
-    let floor = state_bundle.metric_router(probe);
+    let floor = state_bundle.evaluate(probe);
     let carried = previous
         .map(|previous| previous.carried(&state_bundle))
         .unwrap_or_default();
@@ -676,7 +569,7 @@ pub fn solve<R: Rng>(
                 snap(upgrade, juice_info, block);
             }
         }
-        other.metric = other.metric_router(probe);
+        other.metric = other.evaluate(probe);
         if other.metric > floor
             && !warms
                 .iter()
@@ -791,8 +684,7 @@ pub fn solve<R: Rng>(
         // the chains were polished in part or not at all: the best few in full
         for result in results.iter_mut().take(tuning.polish_top) {
             result.tuning = tuning.clone();
-            result.tuning.max_iters = 0;
-            *result = anneal(rng, result, probe, 1, None);
+            *result = polish_only(rng, result, probe);
         }
         results.sort_by(|a, b| b.metric.total_cmp(&a.metric));
     }
@@ -848,8 +740,7 @@ fn refine<R: Rng>(rng: &mut R, best: &mut StateBundle, mut moved: bool, probe: &
             break;
         }
         let before = best.metric;
-        best.tuning.max_iters = 0;
-        *best = anneal(rng, best, probe, 1, None);
+        *best = polish_only(rng, best, probe);
         if !exchanges || best.metric <= before {
             break;
         }
@@ -859,8 +750,7 @@ fn refine<R: Rng>(rng: &mut R, best: &mut StateBundle, mut moved: bool, probe: &
 
 /// `chest_flip` on the best state, then the polishes where that gained.
 fn flip_final<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
-    let chests = &best.prep_output.chests;
-    if !chests.values().any(|c| c.options.len() > 1 && c.count > 0) {
+    if best.choice_stacks().is_empty() {
         return;
     }
     let before = best.metric;
@@ -870,10 +760,10 @@ fn flip_final<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
     chest_flip(&mut solver_bundle, probe);
     probe.time("flip", clock);
     let (essence, metric) = solver_bundle.best_n_states.peek_max().unwrap();
-    if f64::from(*metric) > before + before.abs() * 1e-12 {
+    if beats(f64::from(*metric), before) {
         let mut flipped = solver_bundle.state_bundle.clone();
         flipped.clone_from_essence(essence, metric);
-        *best = anneal(rng, &mut flipped, probe, 1, None);
+        *best = polish_only(rng, &mut flipped, probe);
     }
 }
 
@@ -882,18 +772,12 @@ fn flip_final<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
 fn kick_loop<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
     let len = best.special_state.len();
     let stacks: Vec<String> = best
-        .prep_output
-        .chests
-        .iter()
-        .filter(|(_, chest)| chest.options.len() > 1 && chest.count > 0)
-        .map(|(key, _)| key.clone())
+        .choice_stacks()
+        .into_iter()
+        .map(|(key, _)| key)
         .collect();
-    let adv: Vec<usize> = (0..len)
-        .filter(|&i| !best.upgrade_arr[i].is_normal_honing)
-        .collect();
-    let normal: Vec<usize> = (0..len)
-        .filter(|&i| best.upgrade_arr[i].is_normal_honing)
-        .collect();
+    let adv = best.upgrades_of(false);
+    let normal = best.upgrades_of(true);
     let types: Vec<String> = best
         .tuning
         .kick_types
@@ -924,7 +808,7 @@ fn kick_loop<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
                 kicked.special_state[at..end].shuffle(rng);
                 // taken before the evaluation, which can change the order
                 let moved = kicked.special_state[at..end].to_vec();
-                kicked.metric = kicked.metric_router(probe);
+                kicked.metric = kicked.evaluate(probe);
                 for index in moved {
                     if kicked.upgrade_arr[index].is_normal_honing {
                         respond_one(&mut kicked, index, probe);
@@ -958,14 +842,11 @@ fn kick_loop<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
                     .copied()
                     .filter(|&i| kicked.upgrade_arr[i].piece_type_usize == piece)
                     .collect();
-                kicked.metric = kicked.metric_router(probe);
+                kicked.metric = kicked.evaluate(probe);
                 let plans: Vec<Vec<OneState>> = which
                     .iter()
                     .map(|&index| {
-                        let response = Response::of(&mut kicked, index, probe);
-                        let before = &kicked.upgrade_arr[index].state.payload;
-                        let now = response.model.canonical(&response.model.indices(before));
-                        let plan = response.better(&now, kicked.tuning.response_joint).1;
+                        let (response, _, plan) = best_response(&mut kicked, index, probe);
                         response.model.plan(&plan)
                     })
                     .collect();
@@ -974,10 +855,9 @@ fn kick_loop<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
                 }
             }
         }
-        kicked.tuning.max_iters = 0;
-        kicked.metric = kicked.metric_router(probe);
-        let polished = anneal(rng, &mut kicked, probe, 1, None);
-        if polished.metric > best.metric + best.metric.abs() * 1e-12 {
+        kicked.metric = kicked.evaluate(probe);
+        let polished = polish_only(rng, &mut kicked, probe);
+        if beats(polished.metric, best.metric) {
             *best = polished;
             stall = 0;
         } else {
@@ -996,7 +876,7 @@ fn sur_loop<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
         round += 1;
         let mut kicked = super::lab::surrogate::kicked(rng, best, kind, probe);
         kicked.tuning.max_iters = 0;
-        kicked.metric = kicked.metric_router(probe);
+        kicked.metric = kicked.evaluate(probe);
         // one round of the polishes first, all of them only where that beats the best
         let screen = best.tuning.sur_screen;
         if screen {
@@ -1006,9 +886,9 @@ fn sur_loop<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
         let mut polished = anneal(rng, &mut kicked, probe, 1, None);
         polished.tuning = best.tuning.clone();
         polished.tuning.max_iters = 0;
-        let better = |p: &StateBundle| p.metric > best.metric + best.metric.abs() * 1e-12;
+        let better = |p: &StateBundle| beats(p.metric, best.metric);
         if screen && better(&polished) {
-            polished = anneal(rng, &mut polished, probe, 1, None);
+            polished = polish_only(rng, &mut polished, probe);
         }
         if better(&polished) {
             *best = polished;
@@ -1023,14 +903,14 @@ fn sur_loop<R: Rng>(rng: &mut R, best: &mut StateBundle, probe: &mut Probe) {
 /// free tap order, and each upgrade's plan, wherever the metric agrees. Chains often find
 /// different parts of the best plan. Returns whether anything was taken.
 fn merge(best: &mut StateBundle, others: &[StateBundle], probe: &mut Probe) -> bool {
-    best.metric = best.metric_router(probe);
+    best.metric = best.evaluate(probe);
     let start = best.metric;
     for _ in 0..3 {
         let before = best.metric;
         for other in others {
             if other.special_state != best.special_state {
                 let kept = std::mem::replace(&mut best.special_state, other.special_state.clone());
-                let metric = best.metric_router(probe);
+                let metric = best.evaluate(probe);
                 if metric > best.metric {
                     best.metric = metric;
                 } else {
@@ -1067,7 +947,7 @@ fn merge(best: &mut StateBundle, others: &[StateBundle], probe: &mut Probe) -> b
                             .update_payload(other.upgrade_arr[index].state.payload.clone());
                     }
                 }
-                let metric = best.metric_router(probe);
+                let metric = best.evaluate(probe);
                 if metric > best.metric {
                     best.metric = metric;
                     continue;
@@ -1083,7 +963,7 @@ fn merge(best: &mut StateBundle, others: &[StateBundle], probe: &mut Probe) -> b
             break;
         }
     }
-    best.metric = best.metric_router(probe);
+    best.metric = best.evaluate(probe);
     best.metric > start
 }
 
@@ -1097,11 +977,9 @@ fn exchange(best: &mut StateBundle, probe: &mut Probe) -> bool {
     if block > 1 && !best.tuning.exchange_blocks {
         return false;
     }
-    best.metric = best.metric_router(probe);
+    best.metric = best.evaluate(probe);
     let start = best.metric;
-    let normal: Vec<usize> = (0..best.upgrade_arr.len())
-        .filter(|&index| best.upgrade_arr[index].is_normal_honing)
-        .collect();
+    let normal = best.upgrades_of(true);
     let models: Vec<Model> = normal
         .iter()
         .map(|&index| Model::of(&best.upgrade_arr[index], &best.prep_output.juice_info, 1))
@@ -1152,8 +1030,8 @@ fn exchange(best: &mut StateBundle, probe: &mut Probe) -> bool {
                     };
                     put(best, normal[from], plan_a, block);
                     put(best, normal[to], plan_b, block);
-                    let metric = best.metric_router(probe);
-                    if metric > best.metric + best.metric.abs() * 1e-12 {
+                    let metric = best.evaluate(probe);
+                    if beats(metric, best.metric) {
                         best.metric = metric;
                     } else {
                         best.upgrade_arr[normal[from]].state.update_payload(kept.0);
@@ -1169,7 +1047,7 @@ fn exchange(best: &mut StateBundle, probe: &mut Probe) -> bool {
             break;
         }
     }
-    best.metric = best.metric_router(probe);
+    best.metric = best.evaluate(probe);
     best.metric > start
 }
 
@@ -1291,24 +1169,15 @@ fn anneal<R: Rng>(
         solver_bundle.count += extra;
         eqv_wall_time_iters += extra;
 
-        let clock = probe.clock();
-        solver_bundle.state_bundle.metric = solver_bundle.state_bundle.metric_router(probe);
-        probe.evaluated(clock);
+        solver_bundle.state_bundle.metric = solver_bundle.state_bundle.evaluate(probe);
 
-        let best_metric = f64::from(*solver_bundle.best_n_states.peek_max().unwrap().1);
-        if solver_bundle.state_bundle.metric > best_metric {
+        if solver_bundle.state_bundle.metric > solver_bundle.best_metric() {
             if mutate_special {
                 solver_bundle.special_affinity =
                     (solver_bundle.special_affinity * tuning.special_affinity_growth).min(1.0);
             }
-            my_push(
-                &mut solver_bundle.best_n_states,
-                solver_bundle.state_bundle.to_essence(),
-                OrderedFloat(solver_bundle.state_bundle.metric),
-                tuning.max_best_size,
-            );
+            solver_bundle.keep_current(probe);
             solver_bundle.temps_without_improvement = 0;
-            probe.put("best", solver_bundle.state_bundle.metric);
         } else if mutate_special {
             solver_bundle.special_affinity *= tuning.special_affinity_decay;
         }
@@ -1358,9 +1227,6 @@ fn anneal<R: Rng>(
     let clock = probe.clock();
     polish(&mut solver_bundle, probe);
     probe.time("polish", clock);
-    solver_bundle.state_bundle.clone_from_essence(
-        &solver_bundle.best_n_states.peek_max().unwrap().0,
-        solver_bundle.best_n_states.peek_max().unwrap().1,
-    );
+    solver_bundle.load_best();
     solver_bundle.state_bundle
 }

@@ -6,7 +6,7 @@
 use super::super::response::{Model, Response};
 use super::super::simulated_annealing::lab_hooks::{polish_counted, refine_counted};
 use super::super::{Previous, Solved};
-use super::{check, evaluate};
+use super::check;
 use crate::advanced_honing::utils::MAX_ADV_STATE;
 use crate::honing_utils::chest::ChestStates;
 use crate::honing_utils::state_bundle::StateBundle;
@@ -54,6 +54,10 @@ const PHASES: usize = 11;
 
 /// the `Tuning::lab_off` and `lab_on` switches this reads
 pub const OFF: &[&str] = &["refit", "fresh", "group", "oprefix"];
+/// `fromsolve`: `solve`'s result as a candidate, raw and snapped, its cost included; `ownstart`
+/// (with it): every cycle restarts from cem's own start; `fullreach`: no cap of 10 places on the
+/// order polish; `solvepolish`, `exchange`: `solve`'s polish and exchanges. Trace rows `cem_gain`,
+/// `cem_late`, `cem_wins`, `cem_cost` by phase (`iteration2/cem/scripts/attr.py`)
 pub const ON: &[&str] = &[
     "fromsolve",
     "ownstart",
@@ -671,7 +675,7 @@ impl Run<'_> {
 
     fn score(&mut self, plan: &mut Plan) -> f64 {
         apply(&mut self.work, plan);
-        let metric = evaluate(&mut self.work, self.probe);
+        let metric = self.work.evaluate(self.probe);
         self.charge(1.0);
         plan.metric = metric;
         if metric > self.cur.metric {
@@ -801,7 +805,7 @@ impl Run<'_> {
         }
         let plan = self.cur.clone();
         apply(&mut self.work, &plan);
-        evaluate(&mut self.work, self.probe);
+        self.work.evaluate(self.probe);
         let mut tail = 1.0;
         let mut reach = 0;
         for p in self.work.special_probs() {
@@ -908,7 +912,7 @@ pub fn solve<R: Rng>(
     probe: &mut Probe,
 ) -> Solved {
     if state_bundle.upgrade_arr.is_empty() {
-        state_bundle.metric = evaluate(&mut state_bundle, probe);
+        state_bundle.metric = state_bundle.evaluate(probe);
         return Solved {
             best: state_bundle,
             blob: Vec::new(),
@@ -1036,7 +1040,7 @@ pub fn solve<R: Rng>(
         run.phase = SHADOW;
         let mut plan = run.best.clone();
         apply(&mut run.work, &plan);
-        evaluate(&mut run.work, run.probe);
+        run.work.evaluate(run.probe);
         let prices = run.work.shadow_prices(run.probe);
         run.spent += 1.0;
         for i in 0..plan.payloads.len() {
@@ -1112,7 +1116,7 @@ pub fn solve<R: Rng>(
     let best = run.best.clone();
     let mut out = run.work;
     apply(&mut out, &best);
-    out.metric = evaluate(&mut out, run.probe);
+    out.metric = out.evaluate(run.probe);
     Solved {
         best: out,
         blob: Vec::new(),

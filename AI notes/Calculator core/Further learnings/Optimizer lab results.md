@@ -1,15 +1,8 @@
 # Optimizer lab: results
 
-What the lab has found, by topic. How the lab works is in `Optimizer lab.md`; what not to try again is in `Optimizer tried.md`. Numbers are in % of flow against `solve` 48k; evidence is in each investigation's `report.md`, under `arena_data/lab/`.
+What the lab has found, by topic. How the lab works is in `../Optimizer lab.md`; what not to try again is in `Optimizer tried.md`. Numbers are in % of flow against `solve` 48k; evidence is in each investigation's `report.md`, under `arena_data/lab/`.
 
-**Baselines** in `runs.sqlite`:
-
-- `lab_r1`: `solve` 48k.
-- `lab_r1:max_iters=96000`: `solve` at 96k.
-- `i2g:kick_stall=32,kick_types=windowq+chest+adv+piece`: the kick loop at the old cut.
-- `cut_a`: `solve` 48k at the free tap cut of 2026-10-31; `cut_a:max_iters=96000` is 96k. Every build since repeats this one, not those above. The three above used the old cut. Their metrics stay comparable, but on order-basin payloads the new cut alone lifts `solve`, so gains measured against `lab_r1` run high there. Every row below is against `cut_a` or a plain baseline that repeats it. Evidence: `iteration2/free_tap_cut/report.md`.
-- `pr_a`: the `price` re-run at the new cut (batches `price/runs/ra`–`rd`); repeats `cut_a` on all 7,948 shared runs. It holds `solve` 6k–96k, the effort curves of `price`, `memetic`, `cem` and `lns` (0.25–2), and the kick loop (`pr_a:kick_stall=32`) with its variants. The curves are in `price` report 11.
-- `fin_a`: every candidate in one session per set (`iteration2/report/runs`), `large` at 10 seeds; repeats `cut_a`, `pr_a`, `sur_g`, `mem_b`, `cem_b`, `lns_a` and `lns_b` on every shared run. The one batch in which the candidates' CPU compares directly; its table is in `iteration2/report/report.md` 5.
+Baselines and what each snapshot holds are in `Lab history.md`; every row below is against `cut_a` or a plain baseline that repeats it.
 
 ## Prototypes
 
@@ -21,6 +14,14 @@ What the lab has found, by topic. How the lab works is in `Optimizer lab.md`; wh
 | `cem` | Take no piece of its model. Its restarts are its strength, and a cap of 10 places in its order polish was most of its loss. Run after `solve`, its restarts reach `b10_week_inc_0004:3` and `single_3375`, which the kick loop misses. | `iteration2/cem/report.md` |
 | `lns` | Take one piece: its rebuild of a piece type, as a kick type in `solve`'s kick loop (`rebuild`). Its destroy step carries it; its ladder, acceptance and adaptive weights carry nothing. Its own start, which drops low levels from the free tap order, is its weakness. | `iteration2/lns/report.md` |
 | `simple` | Maxroll's rule (every material at its buy price, `Response::linear` per upgrade, `greedy_order`; advanced and chests as given). Exact with no stock, chests or free taps (30 of 30); on cold `real3` singles 8.4% of flow mean, 9% hit, against the default's 0.010% / 87%. Owned stock with worthless leftovers, chests and advanced honing are what it misses. A comparison point only. The calculator's Maxroll override (`optimizer/maxroll.rs`, checked against maxroll.gg on 2026-11-18) orders free taps by the site's special leap value, not `greedy_order`. It also puts owned bound and roster juice and books on the taps with the most gold saved a unit if reached, which the site and `algo=simple` do not: on `real3na` (advanced removed, `algo=maxroll`) 5.77% → 4.21% of flow mean, 384 better and 0 worse. Reach-weighted ranking was 4.05% but shipped is the if-reached one, easier to explain; tradable stock as free 4.36% with 70 worse. | `iteration4/simple/report.md` |
+
+## The lab tails in `solve` (all off)
+
+Each runs after the exchanges, on the best state (`simulated_annealing.rs`; their `Tuning` fields say what each knob does).
+
+- **`mem_polish`**: memetic's `polish_state`, in rounds while it gains (at most 4): responses in chunks of 4, a full advanced scan, order moves (each upgrade near its place, to the front, either side of where free taps stop, beside its piece's levels; one upgrade out of the free taps and another in at once; runs of 2–3 to the front or end), chest moves in halving amounts then single chests. A failed order move is retried with the moved upgrades re-planned.
+- **Kick loop** (`kick_stall`, `kick_types`): a random kick, a polish, kept where better, until `kick_stall` in a row gain nothing. `window` shuffles a window of the order starting within the free taps' reach (from `skip_weights`) and re-plans its upgrades, read before the evaluation cleans the order; `chest` opens a stack at random; `adv` gives an advanced upgrade a random plan; `piece` gives a piece type's normal upgrades their responses at once; `rebuild` (`lab_hooks.rs`) empties up to 10 normal upgrades of a piece type or re-prices them with lognormal noise, then responses in turn (`rebuildempty`, `rebuildprice` one half each).
+- **Surrogate loop** (`sur_stall`, `sur_kinds`): a kick (`price`, `rand`, `chest`, `empty`), a descent on the moment surrogate of `lab/surrogate.rs` (every normal upgrade's response plus advanced, order and chest moves ranked on the surrogate, unchecked), then the polish. `sur_screen` polishes one round first and in full only where that beats the best. With `lab_on=truedescent+trueorder+noisy` the descent uses no surrogate.
 
 ## Pieces, and where they stand
 

@@ -10,7 +10,6 @@ use crate::eval::saddlepoint::cumulants::KsTuple;
 use crate::eval::shape::Shape;
 use crate::honing_utils::state_bundle::StateBundle;
 use crate::probe::{Counter, Probe};
-use crate::tuning::RootFinder;
 use ahash::AHashMap;
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
@@ -115,19 +114,17 @@ impl StateBundle {
         seed: Option<KsTuple>,
         probe: &mut Probe,
     ) -> Option<(f64, KsTuple)> {
-        match self.tuning.root_finder {
-            RootFinder::Householder => self.householder(
-                support_index,
-                skip_count,
-                budget,
-                guess,
-                min_value,
-                max_value,
-                min_delta,
-                seed,
-                probe,
-            ),
-        }
+        self.householder(
+            support_index,
+            skip_count,
+            budget,
+            guess,
+            min_value,
+            max_value,
+            min_delta,
+            seed,
+            probe,
+        )
     }
 
     /// Lugannani-Rice formula, for the plain probability
@@ -229,7 +226,6 @@ impl StateBundle {
             chest_states: self.chest_states.clone(),
             special_invalid_index: self.special_invalid_index,
             latest_special_probs: None,
-            metric_type: self.metric_type,
             metric: self.metric,
             min_resolution: self.min_resolution,
             prep_output: self.prep_output.clone(),

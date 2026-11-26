@@ -12,7 +12,6 @@
 //! budget also tries wider responses and single block flips ranked by the true response.
 //! See `arena_data/lab/iteration1/attempts/surrogate.md`.
 
-use super::evaluate;
 use crate::advanced_honing::utils::MAX_ADV_STATE;
 use crate::constants::{FLOAT_TOL, SPECIAL_TOL, float_tol};
 use crate::honing_utils::materials::NUM_BASE_MATS;
@@ -962,7 +961,7 @@ impl Run {
 
     fn eval(&mut self, probe: &mut Probe) -> f64 {
         self.work += 1.0;
-        let metric = evaluate(&mut self.b, probe);
+        let metric = self.b.evaluate(probe);
         self.b.metric = metric;
         if metric > self.best.1 {
             if self.best.1.is_finite() {
@@ -1988,7 +1987,7 @@ pub fn solve<R: Rng>(
 ) -> Solved {
     let mut b = state_bundle;
     if b.upgrade_arr.is_empty() {
-        b.metric = evaluate(&mut b, probe);
+        b.metric = b.evaluate(probe);
         return Solved {
             best: b,
             blob: Vec::new(),
@@ -2035,7 +2034,7 @@ pub fn solve<R: Rng>(
     let best = run.best.0.clone();
     run.load(&best);
     run.sur.refresh_all(&mut run.b);
-    let metric = evaluate(&mut run.b, probe);
+    let metric = run.b.evaluate(probe);
     run.b.metric = metric;
     let raw = run.sur.total_with(&run.b, false);
     put(probe, "sur_n", run.agree.n);

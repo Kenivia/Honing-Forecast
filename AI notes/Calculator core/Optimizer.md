@@ -1,162 +1,87 @@
 # Optimizer
 
-Lives in `crates/core/src/optimizer`. The module header there describes the algorithm; details change often, so this note sticks to what stays true. What was tried and failed, with the key measurement, is in `Optimizer tried.md`; read it before trying something new here.
+Lives in `crates/core/src/optimizer`; `solve` is in `simulated_annealing.rs`, and each step of it has a doc comment there. Every constant is a `Tuning` field (`tuning.rs`, documented per field). This note is what stays true and what the code cannot say. Measurements and dead ends are in `Further learnings/` (`Optimizer tried.md` before trying something new, `Optimizer lab results.md` for what the lab found).
 
 ## What it does
 
-Several short chains of simulated annealing over a `StateBundle`, each polished, the best kept, maximising the average-gold metric (see `Evaluation pipeline.md`). It runs for at most a fixed number of evaluations (`max_iters`, 12,000 at 16 upgrades and scaled by size, below), not a time budget, and returns the best state seen. Until 2026-11-12 it was 48,000 at every size, about 4.5 times the CPU for 0.1–0.16 more mlog (lab iteration 3, `cold/report.md`). Its constants are fields of `Tuning`. "The shape of a solve" below has the parts; the rest of this section is one chain.
+Several short chains of simulated annealing over a `StateBundle`, each polished, the best kept, maximising the average-gold metric (`Evaluation pipeline.md`). The budget is a number of evaluations (`max_iters`, scaled by size), never a clock, and it returns the best state seen.
 
 Decision variables:
 
-- each upgrade's `State` (which juices and books on which taps; or the advanced-honing strategy indices);
+- each upgrade's `State` (juices and books on which taps; or the advanced-honing strategy indices);
 - the free-tap order, `special_state`;
-- how each chest stack is opened, `chest_states`. It starts as given (the payload's, or everything on the first option) and travels with the state everywhere `special_state` does. See "Chests" below.
+- how each chest stack is opened, `chest_states`, which travels everywhere `special_state` does.
 
-Things worth knowing about its shape:
+Its shape:
 
-- The metric has no natural scale, so there is no fixed temperature schedule. An adaptive scaler (`scaler.rs`) adjusts acceptance to track a target acceptance rate over the run.
-- It restarts from the best known state very often.
-- On restart it may copy one upgrade's state onto an identical upgrade, since identical upgrades often want identical plans. Identical means normal honing too (an advanced block shares its index with a low normal level, and its state is not a normal state), and the same artisan and taps done, so a state's length never changes.
+- The metric has no natural scale, so an adaptive scaler (`scaler.rs`) tracks a target acceptance rate in place of a temperature schedule.
+- It restarts from the best state very often, and on a restart may copy one upgrade's state onto an identical one (normal honing, same artisan and taps done, so a state's length never changes).
 - A move changes two upgrades: that is what moves juice between them.
-- In the browser (with the `optimizer/progress.rs` hook set by `hf-wasm`) it posts progress at most every 333 ms on one timer for the whole solve (`Report`), with the best state so far at most once a second (each starts a histogram on the page), on a progress tick, once a later chain beats the ones before. The start (0.01%, with the starting state, a carried plan where there is one) is posted once. The chains fill 0 to 67.67%; when every chain has run it posts exactly 67.67% and sits there through the merge, exchange and polishes until the final result shows 100%. An early exit jumps straight to 100%.
+- Progress goes through the hook in `progress.rs` (set by `hf-wasm`; native has none and skips it). How often and what is sent is on `Report` in `simulated_annealing.rs`.
 
 ## The shape of a solve
 
-`solve` in `optimizer/simulated_annealing.rs`. Everything here is a `Tuning` field.
+1. **Start order** (`greedy_order`): free taps by what they save for what they take, where that beats the given order.
+2. **Shadow-price start** (`shadow.rs`): each material priced at what one more unit costs, every normal upgrade takes its best plan at those prices (`Response::linear`), averaged over rounds. Every other fresh chain starts from it, the rest from the plain start: chains that all start from one place agree on its plan too readily.
+3. **Chains** (`anneal`): `max_iters` shared between at least 4 chains, each ending in the polishes.
+4. **Polishes** (`polish`, rounds while anything moves): free-tap order (`order_polish`, each upgrade to each place a free tap reaches), responses (`response_polish`), advanced strategies (`adv_polish`), chests (`chest_polish`).
+5. **Early exit**: enough chains agree on one metric (`agree_exit`, `unanimous`), or, going on from a plan, `carry_stall` chains in a row do not better it.
+6. **Merge**: the best chain takes from the others, where the metric agrees, their order, their plans for a whole piece type (shared juices) and single plans.
+7. **Exchange** (`refine`): uses of a juice or book move between two upgrades in growing amounts (blocks under a streak length, both put back on the grid), then the polishes again.
+8. **Lab tails, off by default**: `mem_polish`, the kick loop (`kick_stall`, `kick_types`) and the surrogate loop (`sur_stall`); see their `Tuning` fields. They are the candidates of `Optimizer lab results.md`.
 
-1. **A starting free tap order** (`greedy_order`): the upgrades by what a free tap saves for what it takes, whole and one piece's next level at a time, where either beats the order given.
-2. **A start from shadow prices** (`shadow_start` rounds, `optimizer/shadow.rs`): each material is priced at what one more unit of it costs at the state as it is (its band thresholds moved a little, over the free tap outcomes), every normal upgrade takes its best plan under those prices alone (`Response::linear`, no evaluation), the state is evaluated and the best kept. The prices are the running average of each round's; it stops when no plan moves. Every other fresh chain starts from it, the rest from the plain start: chains that all start from it agree on its plan too readily.
-3. **Chains** (`anneal`): the evaluations are shared between several chains, each from the same start with its own random numbers, each ending in the polishes. How many is by size (`chains` 0): a chain gets `chain_iters_per_upgrade` evaluations an upgrade, no less than `chain_iters_min`, and there are never fewer than 4 chains. One long chain settles into one of many plans that nothing near betters; another chain lands elsewhere.
-   - `max_iters` is scaled by (`size_ref` 16 / upgrades) to the power `size_power` (0.5), at most `size_cap` (48,000): 24k at 4 upgrades, 12k at 16, 8.5k at 32. Small payloads are cheap and gain most from more chains (`iteration3/cold/report.md` §5–6).
-4. **The polishes** (`polish`, `polish_rounds` rounds while any of them moves the best state):
-   - the free tap order (`order_polish`): each upgrade to each place a free tap can still reach (`order_reach`);
-   - the responses (`response_polish`, see "Responses");
-   - the advanced upgrades (`adv_polish`): each entry of a strategy walks within `adv_radius` (1) of its best so far until a step gains nothing (0 tries all 19 values; the walk ends on the same states for a fifth less CPU);
-   - the chests (`chest_polish`).
-5. **Leaving early**: once `agree_exit` results have ended on the same metric, or once the first `unanimous` have and none elsewhere; or, going on from a plan (below), once `carry_stall` chains in a row have not bettered it. Too few agreeing chains leave on a plan that is reliably not the best on small payloads.
-6. **Merge** (`merge`): the best chain's result takes from each other chain's, where the metric agrees, its free tap order, its plans for a whole piece type (they share juices and books), and its plan for each upgrade.
-7. **Exchange** (`exchange`, in `refine`): uses of a juice or a book go from one upgrade to another that takes the same, in growing amounts: the last taps that take it of the one, the first that do not of the other. Then the polishes again, and again while it moves anything. Under a streak length (`exchange_blocks`) the amounts are blocks, and both plans are put back on the grid (`snap`) before the metric decides.
-8. **Memetic polish** (`mem_polish`, off): after the exchanges, the best state takes the lab `memetic`'s polish once (`optimizer/lab/memetic.rs`, `polish_state`), in rounds while it gains, at most 4. Each round is:
-   - responses in chunks of 4;
-   - a full advanced scan;
-   - order moves: each upgrade to places near it, to the front, either side of where free taps stop, and beside its piece's levels; one upgrade out of the free taps and another in at once; runs of 2–3 to the front or the end;
-   - chest moves between options in halving amounts, then single chests in two places.
-
-   A failed order move is retried with the moved upgrades re-planned. The pairs and the re-plan are what take the order basins that `order_polish`'s single insertions leave. At x1.03–1.17 the CPU it loses no payload. With the kick loop the two take each other's order basins. A lab result (`Optimizer lab results.md`), not yet on.
-9. **Kick loop** (`kick_loop`, off: `kick_stall` 0): the best state takes a kick, is polished, and the result is kept where better, until `kick_stall` kicks in a row gain nothing. The kicks (`kick_types`) are taken at random:
-   - `window`: a window of the free tap order, starting within the free taps' reach, is shuffled, and the upgrades in it are re-planned (responses) before the polish. Without that re-plan, `order_polish` puts them straight back. They are taken before the evaluation, since that cleans the order.
-   - `chest`: a stack is opened at random.
-   - `adv`: an advanced upgrade gets a random plan.
-   - `piece`: a piece type's normal upgrades all take their response at once.
-   - `rebuild` (lab, used only when named in `kick_types`): up to 10 normal upgrades of one piece type are emptied, or each takes its best plan at shadow prices with lognormal noise, then responses run in turn over them before the polish (`rebuild_kick` in `simulated_annealing/lab_hooks.rs`). Added to the four kinds with `mem_polish`, it takes the joint re-splits of a shared juice (`single_3375`, `b10_week_inc_0004:3`, `single_0085`) at x0.97–1.25 the CPU of the loop. A lab result, not yet on. `rebuildempty` and `rebuildprice` run one half each; the emptying half carries it (`Optimizer lab results.md`). An unknown name in `kick_types` panics in the arena (`lab::check_switches`).
-
-   At 32 it loses no payload. It reaches order basins that the chains miss, at x1.4–2.7 the CPU. A lab result (`Optimizer lab results.md`), not yet on. Its window kick takes the free taps' reach from `skip_weights`, as `solve` does since the free tap cut.
-10. **Surrogate loop** (`sur_loop`, off: `sur_stall` 0): the best state takes a kick (`sur_kinds`), goes down a descent on the moment surrogate of `optimizer/lab/surrogate.rs`, is polished, and is kept where better, until `sur_stall` kicks in a row gain nothing.
-   - The descent: every normal upgrade's response, plus advanced, order and chest moves ranked on the surrogate, in rounds, none of them checked. The order moves among the plans let it reach a new basin before `order_polish` puts the order back; the descent usually ends on it.
-   - The kicks: `price` (prices kicked), `rand` (random plans and two order insertions, within reach with the lab switch `randreach`), `chest`, `empty`.
-   - `sur_screen` polishes one round first, and in full only where that beats the best: 13–24% less CPU, same gain.
-   - With the lab switches `truedescent+trueorder+noisy` the descent uses no surrogate, at +30–87% the CPU.
-
-   At `sur_stall=32,sur_kinds=rand+chest+empty,lab_on=randreach` it loses no payload, at x2.0–3.3 the CPU. A lab result (`Optimizer lab results.md`), not yet on.
-
-A chained run (`Previous`, see "Chained runs") puts the plan of the run before in front of all this.
-
-**The free tap order is only moved while the budget can pay for a free tap** (`StateBundle::affords_a_free_tap`); otherwise those moves are wasted. `special_floor` keeps a move of the order from being drawn with nothing as its chance, which would lock the order out when the first upgrade costs more than the budget.
-
-**What is still missed** is small and in few payloads, the hardest being one piece with many levels sharing a partial stock of juice, where every run ends on another split of it.
+**The free-tap order is only moved while the budget can pay for a free tap** (`StateBundle::affords_a_free_tap`); `special_floor` keeps the order from being locked out when the first upgrade costs more than the budget.
 
 ## Rules a neighbour move must respect
 
-Evaluation assumes these; breaking them corrupts results without an error.
+Evaluation assumes these; breaking them corrupts results without an error. `optimizer::lab::check::invalid` checks most of them, and the arena runs it on every result.
 
 - `special_state` stays a permutation of upgrade indices. Never reorder the upgrade array.
-- A state's length never changes.
-- A state may be any plan: the pass of responses at the end does not keep to streaks. Reading its streaks (`compute_streak_info`) then gives the nearest streak state, which is what a perturbation goes on from.
-- A chest state has one entry per option, none negative, summing to the chest's count. Change it through `set_chest_state`, or call `apply_chest_state` after, or the bands are stale.
-- A book id used on an upgrade must be one that exists for that piece type and level. Id 0 means none.
-- Never the same id twice on one tap. The evaluator counts it once, but a move that makes one is a bug, and the arena treats such a state as an error (`Arena.md`).
-- Advanced-honing strategy indices stay within their maximum.
-- Update the state's hash after changing it.
-- For normal honing, taps the player has already done are fixed and must not be modified.
-- Normal-honing states are kept in a restricted form: for each juice pool, one streak from the first tap and one streak from the last. This is an empirical simplification, not a proven one, and the perturbation code depends on it. It is nearly free (`State space.md`), and the responses reach the plans outside it.
+- A state's length never changes. For normal honing, taps already done are fixed.
+- A chest state has one entry per option, none negative, summing to the count. Change it through `set_chest_state`, or call `apply_chest_state` after, or the bands are stale.
+- A book id used on an upgrade must exist for that piece type and level. Id 0 means none.
+- Never the same id twice on one tap: the evaluator scores it well above any real plan.
+- Advanced-honing strategy indices stay within `MAX_ADV_STATE`.
+- Update the state's hash after changing it (`update_payload` does).
+- Random moves keep normal-honing states in the streak form: per juice pool, one streak from the first tap and one from the last. This is empirical (`State space.md`) and the perturbation code depends on it. Responses may leave any plan; `compute_streak_info` reads the nearest streak state back.
+- All randomness comes from the solver's `rng`, and nothing sums floats in hash-map order, so a seed repeats (`a_seed_repeats_exactly`).
 
 ## Chests
 
-Two things change a chest state, and neither draws from the rng or touches the chain where no stack has a choice, so a payload without one runs as if there were no chests:
-
-- **A chest move** (`chest_move`, `Tuning::chest_move_rate` of the moves): some chests of one stack go from one option to another, at most all of the option's early in the run and one at the end. It is a move like any other: evaluated, then accepted or rejected.
-- **A polish** (`chest_polish`, every `Tuning::chest_polish_every` evaluations of a chain, once at its start and with the other polishes at its end): from the best state, with the upgrades as they are, every pair of options of every stack is tried in steps that halve, for as long as anything helps. Its evaluations count against `max_iters`, and the chain goes on from the result.
-
-Opening the chests well is the easy part; what is left of the gap with chests is in the upgrades and the free tap order. Two kinds of payload stay stuck: a stack offering a book or scroll no upgrade uses yet (the chests are worth nothing until a state uses it, and the state is worse until the chests are there), and a large free tap budget with a stack that adds to it.
-
-A move that goes on after a chest move must compute the free tap probabilities first: `neighbour` reads them for the current budget, and a chest move may have made a budget that no evaluation has seen.
+A chest move (`chest_move_rate`) shifts some chests of one stack between options and is accepted or rejected like any move; `chest_polish` tries every pair of options in halving steps from the best state. Neither touches the rng where no stack has a choice, so such a payload runs as if there were no chests. A move after a chest move must recompute the free-tap probabilities first, since the budget may be new.
 
 ## Responses
 
-`optimizer/response.rs` works out the best plan of one normal upgrade with the rest of the state as it is, over every plan and not only the streaks (`State space.md` has why that is possible). Three things can use it, each a `Tuning` field:
+`response.rs` works out the best plan of one normal upgrade with the rest fixed, over every plan, not only streaks (`State space.md`). Used by `response_polish` (on: nearly all of what responses gain), `response_every` and `response_rate` (off: more responses are worse).
 
-- **`response_polish`, on by default**: at the end, from the best state, each normal upgrade in turn takes its best plan where the metric agrees, for up to that many passes. A solve can therefore return a state that is not a streak state. This is nearly all of what responses gain.
-- **`response_every`, off**: the same single pass every so many evaluations, the chain going on from the result.
-- **`response_rate`, off**: the share of normal honing moves that are a response of one upgrade in place of a random change of its streaks (`respond`). An upgrade whose state and whose rest of the state are as they were when it last responded is not asked again; where none is left the move is a random one. `response_kick` changes another upgrade at random first. More responses are worse: a response costs many evaluations' worth of time, taken from the free tap order, the advanced upgrades and the chests.
-
-A response is charged what it took, in evaluations: its table evaluations, and the steps of its recursion at `response_steps` to one. That is about its time, within a factor of two either way.
-
-Inside a response:
-
-- **One id a pool, then two** (`response_mixed`, on): the search over every plan keeps to one id a pool. From what it finds, or from the plan the upgrade has where that is better, each pool then takes its best taps with any two of its ids, a tap taking either (`improve`), where the table fits. A regular book on the first taps and an enhanced one after is the usual case; without it a state with such a plan is one the responses cannot keep.
-- **`response_joint`**: an upgrade with two pools is searched over both at once while that is at most this many steps, and pool by pool from its plan past that (`Response::improve`).
-- **`response_points`**: where the lattice does not answer, what an amount of a material is worth is taken at that many amounts and joined by lines. Default 128. At 16, the lines picked the wrong plan for some lone upgrades, by up to 0.96% of flow. Raising it costs no measurable CPU (`arena_data/lab/iteration2/price/report.md`).
-- The recursion's table is kept between responses in a thread local, stamped, because most of it is never reached and clearing it was most of a response.
+- `response_mixed` (on): after the one-id-per-pool search, each pool may take two of its ids on different taps (a regular book then an enhanced one).
+- `response_points` where the lattice does not answer; low values pick wrong plans (`Optimizer tried.md`).
+- A response is charged its table evaluations plus its recursion's steps at `response_steps` to one.
+- The recursion's table is kept between responses in a stamped thread local; clearing it was most of a response.
 
 ## Streak length
 
-The game can do ten taps at once, so a plan may be asked to change what it takes only every so many taps. The payload's `min_resolution` is that number (`StateBundle::block`; `Tuning::streak_length` overrides it, which is how the arena varies it). The frontend sends the profile's `min_resolution`, 1 or 10 by the "Force x10 streak length" checkbox in the optimizer control panel (saved with the profile; new profiles and V7 migrations default to 10).
+The game does ten taps at once, so a plan may be asked to change only every so many taps: `StateBundle::block`, from the payload's `min_resolution` (the "Force x10 streak length" checkbox, default 10) or `Tuning::streak_length`.
 
-- **The rule**: from an upgrade's next tap on, the taps go in blocks of that many, and every tap of a block takes the same. So every streak, of taking or of not taking, is a multiple of it but the last before the pity, which the pity cuts.
-- **A random move** rounds its front streak down to a block and starts its back streak where a block does, and changes a streak by two blocks at least, or the rounding would undo it.
-- **A response** chooses once a block and plays the block through, so it is the best of the plans that keep the rule, and its table is only kept where a block starts. `Model::filled` gives a plan cut at its pity its whole last block back: a pool left alone while another moves the pity out would otherwise stop inside a block.
-- **A plan to go on from is put on the grid first**: `solve` snaps the given state and the carried plan before comparing them with the empty plan, or a plan from a run at streak length 1 would win as the warm start and be returned off the grid. `snap` (in `simulated_annealing.rs`) gives every tap of a block what its first tap takes (`Model::filled`), and leaves a plan alone where that changes none of its live taps (`Model::canonical`), so a block in the middle and one cut at the pity survive. So an off-grid front streak grows to the end of its block and a back streak shrinks to the start of the next; a streak length change is a new payload hash, so such a plan never reaches a quick run. `State::snap_to_block` (front and back streak per pool, nearest block) is only for the lab: it drops the middle blocks the responses leave, which cost a quick run (a Choices option) its carried plan and put the worst options below the run without.
-- **What the rule costs is in what is owned**: an owned amount that is not a whole number of blocks is either left over or topped up at the buy price. The search itself still finds the best plan that keeps the rule.
-
-## What a move costs
-
-Keep an iteration outside the evaluator cheap:
-
-- **Accepting or rejecting copies every upgrade's state**, changed or not. `State::copy_from` does it without allocating and leaves a payload with the same hash alone.
-- `clone_from_essence` skips a payload that is already the one wanted.
-- **The state hash is `ahash` with fixed seeds**, in place of SipHash. The seeds are fixed because a seed has to repeat.
-
-Of what is left, most is `neighbour` (two `WeightedIndex` built per move, and the streaks written back over the whole payload) and then the copy on accepting. Changing the first without changing what the rng is asked for takes care.
-
-**A restart brings the streaks back** (`Tuning::fresh_streaks`, on). `clone_from_essence` restores a payload and leaves its `streak_cache`, and `perturb_normal` builds the next payload from that cache, so without it the first move of a normal upgrade after a restart goes on from where the chain was.
+- From an upgrade's next tap on, taps go in blocks and every tap of a block takes the same; only the last streak before the pity may be cut.
+- Random moves round to blocks; a response chooses once a block (`Model::filled` gives a pity-cut plan its last block back).
+- A plan to go on from is snapped first (`snap`), or a streak-1 plan would win as the warm start and come back off the grid. `snap` leaves a plan whose live taps it would not change. `State::snap_to_block` is lab only: it drops the middle blocks the responses leave.
+- What the rule costs is in what is owned (stock not a whole number of blocks), not in the search.
 
 ## Chained runs
 
-`solve` takes an optional `Previous`: plans to go on from, the best first (`Plan`, in `optimizer/mod.rs`). Each plan is keyed by upgrade (piece, level, normal or advanced) with its states run-length coded, so it goes onto another payload's upgrades without that payload. The arena hands the last run's best plan and its blob (`Previous::of`). The wasm hands none: the frontend feeds the last result's state back in the payload, which is the same plan.
+`solve` takes an optional `Previous` (`optimizer/mod.rs`): plans keyed by upgrade (piece, level, normal or advanced), states run-length coded, so they go onto another payload. The arena hands the last run's best plan and its blob; the wasm hands none, since the frontend puts the last state in the payload.
 
-**The blob** (`Solved::blob`, `Blob`): the other plans a run's chains ended on, distinct by metric, best first, at most `elites` of them, as postcard bytes. `elites` defaults to 0, so it is empty. The frontend does not carry one.
-
-What a run does with them (`Tuning::carry`):
-
-- **Each is carried over** (`Plan::carry`): an upgrade that is still there keeps its state, less the taps done since (its first slots), and its place in the free tap order; a new one goes last and starts empty; a chest stack whose key and count are as they were is opened as it was. The arena's `carry::carried` is the same rule, kept apart because it reads a stored state.
-- **Only those that beat the empty plan count**, the state given with the payload among them, and only one of a metric.
-- **The best `warm_polish` of them are polished first** (`carry_polish`), each a result like a chain's; the best of those is the carried plan.
-- **The first chain goes on from it** (for `carry_iters` of a chain's evaluations), the others start afresh as in a cold run. A chain that starts from the carried plan almost never leaves it, so only the fresh ones say whether it is still the best.
-- **The run ends** as a cold one does, when enough results agree, or when `carry_stall` chains in a row have not bettered the best. That second rule is for a run with a plan to go on from only; on a cold one it costs hit rate. Leaving as soon as the chain from the carried plan finds nothing better drifts: week after week the plan is kept past its time.
-- **`quick`** in the payload (the frontend sets it on a choice's option, which goes on from the run without; the wasm copies it to `Tuning::quick`) makes it one stalled chain in place of `carry_stall`, unless polishing the carried plan gained more than `quick_settle` of what the upgrades cost (`upgrade_costs`: their base materials at the last band's price). Most options leave the plan as it was, and one fresh chain finding nothing better is enough there. A large juice or leapstone option (Paradise at Level 10) moves it a lot and gets the whole search. Not for a chain of runs, where the plan drifts, so the Income page does not set it.
+- `Plan::carry`: an upgrade still there keeps its state less the taps done since, and its place in the order; a new one goes last, empty; a chest stack with the same key and count is opened as before.
+- Only plans that beat the empty plan count; the best `warm_polish` are polished (`carry_polish`). The first chain goes on from the best of them, the others start fresh: a chain from the carried plan almost never leaves it.
+- `carry_stall` ends a run with a plan to go on from; on a cold run it costs hit rate.
+- `quick` (the frontend sets it on a choice's option): one stalled chain is enough, unless polishing the carried plan moved it by more than `quick_settle` of the upgrades' cost. Not for chains of runs (the plan drifts), so Income does not set it.
+- The blob (`Blob`, `elites`, off) holds other plans the chains ended on.
 
 ## Marginal value
 
-**Shelved since 2026-10-21**: the column is commented out in `MaterialDist.vue` and `start_marginal` (`CharWorkerUtils.ts`) is not called, so nothing runs it. The Rust (`marginal.rs`) and the wasm op (`marginal_value_wrapper`) are still there. What was tried, and where to pick it up, is in `Optimizer tried.md`.
-
-`ui/marginal.rs` (`use_more_prices`) gives the calculator's "Est. gold value" column: for each juice or book some upgrade can take (and with a market price), the market price under which the optimizer would use more of it. Base materials are left out. The plan is polished once (`polish_only`, `anneal` with no iterations), then for each row the price is searched downwards from market over a fixed `POLISHES`, each a polish of that plan with the row's market and taxed prices scaled to the trial price:
-
-- **Away from market**: steps of a tenth of the price's order of magnitude (`10^(floor(log10 price) - 1)`), doubling, from the last price that did not use more, until one does.
-- **Then bisected** between the two for the polishes left. The answer is the middle of that bracket.
-- **Never found**: the lowest price tried, shown as "<"; if that reached 0, not even for free, shown as "-".
-
-"Uses more" is the row's expected usage (`avg_used`, exact whatever the tuning) rising past a relative 1e-6.
+Shelved: `ui/marginal.rs` and its wasm op exist, nothing calls them. How it worked and where to pick it up: `Further learnings/Marginal value.md`.
 
 ## Testing a change
 
-Use the arena (`Arena.md`): snapshot the variants, run them against each other, and read the gap, hit rate and counters. Approaches written from scratch beside `solve` are in `optimizer/lab`, picked by `Tuning::algo` (`Optimizer lab.md`). All randomness must come from the solver's own `rng` so that a seed repeats. `scramble` exposes the neighbour moves for making random valid states. `simulated_annealing/lab_hooks.rs` holds lab-only code: `polish_counted` and `refine_counted` for `cem`, which nothing in `solve` calls, and `rebuild_kick`, the kick loop's lab kick type `rebuild`.
+Use the arena (`Arena.md`): snapshot the variants, run them against each other, read gap, hit rate and counters. A refactor must repeat seed for seed: `pnpm arena bench --set pilot --solve 0 --out x.tsv` before and after, under the tunings it touches, must give the same metrics. New approaches go in `optimizer/lab` (`Optimizer lab.md`); `simulated_annealing/lab_hooks.rs` holds the lab-only pieces of `solve`. `scramble` makes random valid states from the neighbour moves.

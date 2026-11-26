@@ -28,7 +28,7 @@ pub fn rebuild_kick<R: Rng>(
         .collect();
     set.shuffle(rng);
     set.truncate(10);
-    sb.metric = sb.metric_router(probe);
+    sb.metric = sb.evaluate(probe);
     let empty = match kind {
         "rebuildempty" => true,
         "rebuildprice" => false,
@@ -58,7 +58,7 @@ pub fn rebuild_kick<R: Rng>(
                 .update_payload(response.model.plan(&found));
         }
     }
-    sb.metric = sb.metric_router(probe);
+    sb.metric = sb.evaluate(probe);
     for _ in 0..3 {
         set.shuffle(rng);
         let before = sb.metric;
@@ -80,10 +80,7 @@ pub fn polish_counted<R: Rng>(
     state_bundle.tuning.max_iters = 0;
     let mut solver_bundle = start_solver(rng, state_bundle, probe);
     let cost = polish(&mut solver_bundle, probe) + 1;
-    solver_bundle.state_bundle.clone_from_essence(
-        &solver_bundle.best_n_states.peek_max().unwrap().0,
-        solver_bundle.best_n_states.peek_max().unwrap().1,
-    );
+    solver_bundle.load_best();
     (solver_bundle.state_bundle, cost)
 }
 
@@ -96,7 +93,7 @@ pub fn refine_counted<R: Rng>(
 ) -> i64 {
     #[cfg(feature = "trace")]
     let before = probe.data.counts[0];
-    state_bundle.metric = state_bundle.metric_router(probe);
+    state_bundle.metric = state_bundle.evaluate(probe);
     refine(rng, state_bundle, true, probe);
     #[cfg(feature = "trace")]
     return probe.data.counts[0] - before + 1;

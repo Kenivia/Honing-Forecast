@@ -1,8 +1,9 @@
-// use std::f64::NAN;
+//! One chain's working state: the state being moved, the one it came from and the best seen.
 
 use super::scaler::AdaptiveScaler;
 use crate::honing_utils::state_bundle::StateBundle;
 use crate::honing_utils::state_bundle::StateEssence;
+use crate::probe::Probe;
 use crate::upgrade::PieceType::Armor;
 use ordered_float::OrderedFloat;
 use priority_queue::DoublePriorityQueue;
@@ -13,10 +14,8 @@ use rand::rngs::SmallRng;
 pub struct SolverStateBundle {
     pub state_bundle: StateBundle,
     pub scaler: AdaptiveScaler,
-    // pub temp: f64,
     pub rng: SmallRng,
-    // pub max_state_len: usize,
-    // pub best_state_so_far: StateBundle,
+    /// the best `Tuning::max_best_size` states seen
     pub best_n_states: DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
     pub prev_state: StateBundle,
     pub count: i64,
@@ -30,36 +29,76 @@ pub struct SolverStateBundle {
 }
 
 impl SolverStateBundle {
-    pub fn initialize(
+    /// a chain from this evaluated state, the only best so far
+    pub fn new(
         state_bundle: &StateBundle,
         scaler: AdaptiveScaler,
         seed: u64,
-        best_n_states: &DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
-        upgrade_impact: &Vec<f64>,
+        upgrade_impact: Vec<f64>,
     ) -> Self {
-        Self {
+        let mut out = Self {
             state_bundle: state_bundle.clone(),
             scaler,
-
-            // temp: NAN,
             special_affinity: 0.9,
             rng: SmallRng::seed_from_u64(seed),
-            // max_state_len,
-            best_n_states: best_n_states.clone(),
+            best_n_states: DoublePriorityQueue::new(),
             prev_state: state_bundle.clone(),
             count: 0,
             temps_without_improvement: 0,
-            upgrade_impact: upgrade_impact.clone(),
+            upgrade_impact,
             settled: vec![(0, 0); state_bundle.upgrade_arr.len()],
             extra_cost: 0,
+        };
+        out.push(state_bundle.to_essence(), state_bundle.metric);
+        out
+    }
+
+    fn push(&mut self, essence: StateEssence, metric: f64) {
+        let queue = &mut self.best_n_states;
+        if queue.len() < self.state_bundle.tuning.max_best_size {
+            queue.push(essence, OrderedFloat(metric));
+        } else if OrderedFloat(metric) > *queue.peek_min().unwrap().1 {
+            queue.pop_min();
+            queue.push(essence, OrderedFloat(metric));
         }
     }
+
+    pub fn best_metric(&self) -> f64 {
+        f64::from(*self.best_n_states.peek_max().unwrap().1)
+    }
+
+    /// a state among the best, written to the trace as one
+    pub fn keep(&mut self, essence: StateEssence, metric: f64, probe: &mut Probe) {
+        self.push(essence, metric);
+        probe.put("best", metric);
+    }
+
+    pub fn keep_current(&mut self, probe: &mut Probe) {
+        let metric = self.state_bundle.metric;
+        self.keep(self.state_bundle.to_essence(), metric, probe);
+    }
+
+    /// the state being moved becomes the best seen
+    pub fn load_best(&mut self) {
+        let (essence, metric) = self.best_n_states.peek_max().unwrap();
+        self.state_bundle.clone_from_essence(essence, metric);
+    }
+
+    /// The end of a polish from the best state: the state is kept where it beats `start`, and
+    /// the chain goes on from it, evaluated again since a turned down move leaves its supports.
+    pub fn settle(&mut self, start: f64, probe: &mut Probe) {
+        if self.state_bundle.metric > start {
+            self.keep_current(probe);
+        }
+        self.state_bundle.metric = self.state_bundle.evaluate(probe);
+        self.prev_state.my_clone_from(&self.state_bundle);
+    }
+
     pub fn perform_crossover(&mut self) {
         if self.best_n_states.len() < 2 {
             return;
         }
-        let best = self.best_n_states.peek_max().unwrap();
-        self.state_bundle.clone_from_essence(best.0, best.1);
+        self.load_best();
         if self.state_bundle.tuning.fresh_streaks {
             for upgrade in self.state_bundle.upgrade_arr.iter_mut() {
                 upgrade.state.streak_cache = None;
@@ -105,13 +144,6 @@ impl SolverStateBundle {
             }
         }
     }
-    // pub fn current_resolution(&self) -> usize {
-    //     if self.progress() > COOLING_PHASE_START {
-    //         (self.lam_rate() / MAGIC_NUMBER).ceil() as usize * DEFAULT_RESOLUTION
-    //     } else {
-    //         self.state_bundle.min_resolution
-    //     }
-    // }
     pub fn progress(&self) -> f64 {
         self.count as f64 / self.state_bundle.tuning.max_iters as f64
     }
@@ -132,7 +164,4 @@ impl SolverStateBundle {
                     .powf(-(self.progress() - cooling_phase_start) / (1.0 - cooling_phase_start)) // i mean this 1000 seems to work fine for all MAX_ITERS so whatever
         }
     }
-    // pub fn one_batch(&mut self, batch_iters: i64) {
-
-    // }
 }

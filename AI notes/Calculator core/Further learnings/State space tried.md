@@ -1,6 +1,6 @@
 # State space: what not to try
 
-Warnings for `State space.md`. Read before trying something new on the shape of a plan. `Arena.md`, "The state space", has the commands.
+Warnings for `../State space.md`. Read before trying something new on the shape of a plan. `Arena.md`, "The state space", has the commands.
 
 ## The landscape
 

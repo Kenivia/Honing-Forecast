@@ -3,7 +3,7 @@
 //! plans they give, coordinate steps on each kinked material) make start points; a primal
 //! phase of true responses, advanced, order and chest moves polishes them; price kicks after.
 
-use super::{check, evaluate};
+use super::check;
 use crate::advanced_honing::utils::MAX_ADV_STATE;
 use crate::honing_utils::state_bundle::{StateBundle, StateEssence};
 use crate::optimizer::response::{Model, Response};
@@ -53,6 +53,9 @@ pub const OFF: &[&str] = &[
     "kpiece",
     "kperturb",
 ];
+/// `chestrand`: chest moves of random amounts in place of thirds; `chestboth`: thirds plus 4
+/// random amounts; `advall`: half the advanced kicks put every advanced upgrade of a piece type on
+/// one plan; `fromsolve`: `solve`'s result as one more carried start, its cost outside the budget
 pub const ON: &[&str] = &["chestrand", "chestboth", "advall", "fromsolve"];
 /// the kicks by where their share of a roll ends, and their names for `Tuning::lab_off`
 const KICKS: [(f64, &str); 6] = [
@@ -125,7 +128,7 @@ impl Run {
             }
         }
         self.work += 1.0 + CHANGED_WORK * changed as f64;
-        let metric = evaluate(&mut self.sb, probe);
+        let metric = self.sb.evaluate(probe);
         self.sb.metric = metric;
         if gain(metric, self.best.0) {
             self.best = (metric, self.sb.to_essence());
@@ -293,12 +296,12 @@ impl Run {
             .min()
             .unwrap_or(1)
             .max(1);
-        let base = evaluate(&mut self.sb, probe);
+        let base = self.sb.evaluate(probe);
         self.sb.prep_output.special_budget += delta;
-        let up = evaluate(&mut self.sb, probe);
+        let up = self.sb.evaluate(probe);
         self.sb.prep_output.special_budget -= delta;
         self.work += 2.0;
-        self.sb.metric = evaluate(&mut self.sb, probe);
+        self.sb.metric = self.sb.evaluate(probe);
         ((up - base) / delta as f64).max(0.0)
     }
 
@@ -740,7 +743,7 @@ pub fn solve<R: Rng>(
 ) -> Solved {
     let n = sb.upgrade_arr.len();
     if n == 0 {
-        sb.metric = evaluate(&mut sb, probe);
+        sb.metric = sb.evaluate(probe);
         return Solved {
             best: sb,
             blob: Vec::new(),
@@ -1013,7 +1016,7 @@ pub fn solve<R: Rng>(
         run.load(&empty);
     }
     let mut out = run.sb;
-    out.metric = evaluate(&mut out, probe);
+    out.metric = out.evaluate(probe);
     Solved {
         best: out,
         blob: Vec::new(),

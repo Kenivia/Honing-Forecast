@@ -93,18 +93,18 @@ pub fn run(scenarios: &[Scenario], args: &Args, tuning: &Tuning) {
                 }
                 for (index, essence) in given.get(name).into_iter().flatten().enumerate() {
                     let mut this = base.clone();
-                    essence.apply(&mut this);
+                    this.apply_essence(&essence);
                     states.push((format!("{name} best{index}"), this));
                 }
                 states
                     .into_iter()
                     .map(|(label, mut state)| {
                         let mut probe = Probe::default();
-                        let metric = state.metric_router(&mut probe);
+                        let metric = state.evaluate(&mut probe);
                         let start = Instant::now();
                         let mut reps = 0;
                         while start.elapsed().as_secs_f64() < args.seconds {
-                            state.metric_router(&mut Probe::default());
+                            state.evaluate(&mut Probe::default());
                             reps += 1;
                         }
                         // what it uses does not depend on the tuning, so not at an expensive one

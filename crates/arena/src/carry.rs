@@ -24,7 +24,7 @@ pub fn gross(state_bundle: &StateBundle) -> f64 {
     state_bundle.prep_output.plans = vec![ValuationPlan([BandValue::Worthless; 3])];
     state_bundle.prep_output.optimizer_plan = 0;
     state_bundle.apply_chest_state(false);
-    state_bundle.metric_router(&mut Probe::default())
+    state_bundle.evaluate(&mut Probe::default())
 }
 
 /// what the state uses on average, at market price, whoever owns it
@@ -135,7 +135,7 @@ pub fn report(conn: &Connection, scenarios: &[Scenario], rows: bool, eps: f64) {
             // as metric_ref is
             let reference = |mut state_bundle: StateBundle| {
                 state_bundle.tuning = Tuning::reference();
-                state_bundle.metric_router(&mut Probe::default())
+                state_bundle.evaluate(&mut Probe::default())
             };
             let default = reference(StateBundle::from_payload(payload.clone()));
             let kept = reference(carried(&scenario.steps[step - 1], &before.2, payload));

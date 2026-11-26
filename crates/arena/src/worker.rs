@@ -7,10 +7,8 @@ use crate::adv_table;
 use crate::monte_carlo::{McRow, McSpec, check};
 use crate::scenario::Scenario;
 use cpu_time::ThreadTime;
-use hf_core::honing_utils::chest::ChestStates;
-use hf_core::honing_utils::state_bundle::StateBundle;
+use hf_core::honing_utils::state_bundle::{StateBundle, StateEssence};
 use hf_core::optimizer::lab::solve;
-use hf_core::optimizer::state::OneState;
 use hf_core::optimizer::{Previous, scramble};
 use hf_core::probe::{COUNTER_NAMES, Probe};
 use hf_core::tuning::Tuning;
@@ -41,46 +39,8 @@ pub struct Job {
     pub mc: Option<McSpec>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Essence {
-    pub state_arr: Vec<Vec<OneState>>,
-    pub special_state: Vec<usize>,
-    #[serde(default)]
-    pub chest_states: ChestStates,
-}
-
-impl Essence {
-    pub fn of(state_bundle: &StateBundle) -> Essence {
-        Essence {
-            state_arr: state_bundle
-                .upgrade_arr
-                .iter()
-                .map(|upgrade| upgrade.state.payload.clone())
-                .collect(),
-            special_state: state_bundle.special_state.clone(),
-            chest_states: state_bundle.chest_states.clone(),
-        }
-    }
-
-    pub fn apply(&self, state_bundle: &mut StateBundle) {
-        for (state, upgrade) in self
-            .state_arr
-            .iter()
-            .zip(state_bundle.upgrade_arr.iter_mut())
-        {
-            upgrade.state.update_payload(state.clone());
-        }
-        state_bundle.special_state = self.special_state.clone();
-        // a snapshot from before chests sends none
-        if self
-            .chest_states
-            .keys()
-            .eq(state_bundle.chest_states.keys())
-        {
-            state_bundle.set_chest_state(&self.chest_states);
-        }
-    }
-}
+/// what runs.sqlite stores of a state
+pub type Essence = StateEssence;
 
 #[derive(Serialize, Deserialize)]
 pub struct StepResult {
@@ -129,7 +89,7 @@ fn result(
         wall_s: 0.0,
         eval_s: None,
         metric: state_bundle.metric,
-        essence: Essence::of(state_bundle),
+        essence: state_bundle.to_essence(),
         blob_bytes: 0,
         counters: COUNTER_NAMES
             .iter()
@@ -172,7 +132,7 @@ fn time_evaluation(state_bundle: &mut StateBundle) -> f64 {
     let cpu = ThreadTime::now();
     let mut reps: usize = 0;
     while wall.elapsed().as_secs_f64() < 0.3 {
-        state_bundle.metric_router(&mut Probe::default());
+        state_bundle.evaluate(&mut Probe::default());
         reps += 1;
     }
     cpu.elapsed().as_secs_f64() / reps as f64
@@ -265,7 +225,7 @@ pub fn run_job(job: &Job) {
                         )
                     };
                     let mut probe = new_probe(job.detail);
-                    this.metric = this.metric_router(&mut probe);
+                    this.metric = this.evaluate(&mut probe);
                     let mut out = result(step, source, &tuning, &this, probe);
                     out.cpu_s = time_evaluation(&mut this);
                     out.mc = check(&mut this, job.mc.as_ref().unwrap(), &mut rng);
@@ -298,7 +258,7 @@ mod tests {
         assert_eq!(check::invalid(&best), None, "{algo}");
         (
             best.metric,
-            serde_json::to_string(&Essence::of(&best)).unwrap(),
+            serde_json::to_string(&best.to_essence()).unwrap(),
         )
     }
 
@@ -375,8 +335,8 @@ mod tests {
             let mut carried = state_bundle.clone();
             kept.carry(&mut carried);
             assert_eq!(
-                serde_json::to_string(&Essence::of(&carried)).unwrap(),
-                serde_json::to_string(&Essence::of(plan)).unwrap()
+                serde_json::to_string(&carried.to_essence()).unwrap(),
+                serde_json::to_string(&plan.to_essence()).unwrap()
             );
         }
     }

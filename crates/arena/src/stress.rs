@@ -404,7 +404,7 @@ fn one_step(name: &str, base: StateBundle, scrambles: usize) -> Summary {
         };
         summary.note("states");
         if catch_unwind(AssertUnwindSafe(|| {
-            state_bundle.metric_router(&mut Probe::default())
+            state_bundle.evaluate(&mut Probe::default())
         }))
         .is_err()
         {

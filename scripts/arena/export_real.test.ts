@@ -1,3 +1,8 @@
+// Arena sets `real` (singles) and `real_income` (chains) from the analytics pulls in ignored/analytics: each character's
+// latest snapshot with something wanted, typed placeholders left out, up to two a roster (the one wanting most and one
+// wanting another amount), built as the Income page builds a payload on a fresh profile with the snapshot's grids and
+// disabled labels (a disabled material's bound stock is MAX_AMOUNT). A seeded half of the characters at streak length 1,
+// the rest 10 (meta.min_resolution). Chains: each roster's first pick, now and 12 weeks ahead at Auto income.
 import fs from "node:fs";
 import path from "node:path";
 import { describe, it } from "vitest";

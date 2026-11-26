@@ -335,8 +335,8 @@ fn parse_variant(conn: &Connection, spec: &str) -> Variant {
 fn score(reference: &StateBundle, essence: &Essence) -> (f64, f64, f64) {
     let mut state_bundle = reference.clone();
     state_bundle.tuning = Tuning::reference();
-    essence.apply(&mut state_bundle);
-    let metric = state_bundle.metric_router(&mut Probe::default());
+    state_bundle.apply_essence(&essence);
+    let metric = state_bundle.evaluate(&mut Probe::default());
     (
         metric,
         carry::gross(&state_bundle),
@@ -349,7 +349,7 @@ fn score(reference: &StateBundle, essence: &Essence) -> (f64, f64, f64) {
 fn invalid(reference: &StateBundle, out: &StepResult) -> Option<String> {
     let mut state_bundle = reference.clone();
     state_bundle.tuning.streak_length = out.tuning["streak_length"].as_u64().unwrap_or(0) as usize;
-    out.essence.apply(&mut state_bundle);
+    state_bundle.apply_essence(&out.essence);
     hf_core::optimizer::lab::check::invalid(&state_bundle)
         .map(|why| format!("invalid state: {why}"))
 }

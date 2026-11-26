@@ -64,7 +64,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 
 ## Index
 
-Each note describes the code as it is now. Where something was tried and failed or ruled out, a `<note> tried.md` beside the note holds a "don't try X: why" warning. **Read a tried file only when trying something new** in its area. When changing something, update the main note to the new state; add to the tried file only a warning against an alternative that failed, never a changelog.
+Each note describes the code as it is now. Where something was tried and failed or ruled out, a `<note> tried.md` beside the note holds a "don't try X: why" warning. **Read a tried file only when trying something new** in its area. When changing something, update the main note to the new state; add to the tried file only a warning against an alternative that failed, never a changelog. `Calculator core/` keeps its tried files and other learnings (measurements, history, shelved work) in `Calculator core/Further learnings/`, the main folder holding only instructions and documentation.
 
 - `Calculator core/Domain model.md`: the structs and index conventions.
 - `Calculator core/Evaluation pipeline.md`: payload to result, method selection, invariants.
@@ -72,7 +72,7 @@ Each note describes the code as it is now. Where something was tried and failed 
 - `Calculator core/State space.md`: what a normal honing plan is, and the exact best plan of one upgrade.
 - `Calculator core/Arena.md`: the native test harness: variants, snapshots, scenarios, sets, what it measures.
 - `Calculator core/Optimizer lab.md`: how optimizer investigations run: file layout, `pnpm lab`, tools, smoke tests and how results are judged.
-- `Calculator core/Optimizer lab results.md`: what those investigations found, by topic: candidates for production, what makes a result good, open questions.
+- `Calculator core/Further learnings/`: the tried files of the notes above; `Optimizer lab results.md` (what the investigations found: candidates, what makes a result good, open questions); `Lab history.md` (snapshots in `runs.sqlite`, iterations, changes that split the record); `Marginal value.md` and `Maxroll override.md` (shelved or dead code); `Honing data in the game files.md`.
 - `Working in this repo.md`: line endings, scratch space, what the type checker cannot see, and the test suites. Read before a large edit.
 - `Frontend/State and persistence.md`: the store, data scopes, localStorage and migrations.
 - `Frontend/Domain move.md`: handing each browser's localStorage from pages.dev to honing-forecast.com; staging and launch steps.

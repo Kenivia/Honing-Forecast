@@ -1,3 +1,8 @@
+// Arena folder `real3` from every analytics pull: a character's snapshots grouped into families (same done and wanted
+// cells, stock within 10% of its gold value). Each family's latest as a cold single (r3_); per roster the character whose
+// latest family wants most as an income chain (r3inc_); each character with 3+ families as a chain of them (r3seq_).
+// Every one at streak length 1 and 10 (_s1, _s10); rosters split 50/50 by a seeded shuffle into the _dev/_test sets.
+// meta: pull date (pulled), roster, split, family size (members). Rebuild after a new pull.
 import fs from "node:fs";
 import path from "node:path";
 import { describe, it } from "vitest";

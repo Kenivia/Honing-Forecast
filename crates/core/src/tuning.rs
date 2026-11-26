@@ -7,16 +7,10 @@ use crate::constants::SPECIAL_FLOOR;
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum RootFinder {
-    Householder,
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Tuning {
     // evaluator
-    pub root_finder: RootFinder,
     pub y_value_tol: f64,
     pub max_root_find_iter: usize, // was 20 before, but crashed 1 time
     pub max_brute_size: usize,
@@ -185,7 +179,6 @@ pub struct Tuning {
 impl Default for Tuning {
     fn default() -> Self {
         Tuning {
-            root_finder: RootFinder::Householder,
             y_value_tol: 1e-6,
             max_root_find_iter: 30,
             max_brute_size: 50000,
@@ -283,7 +276,6 @@ impl Tuning {
     pub fn evaluator_key(&self) -> u64 {
         let mut hasher = std::hash::DefaultHasher::new();
         (
-            self.root_finder as u8,
             self.max_root_find_iter,
             self.max_brute_size,
             self.max_lattice_work,

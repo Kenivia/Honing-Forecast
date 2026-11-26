@@ -38,7 +38,7 @@ pub fn solve<R: Rng>(
     if !bundle.upgrade_arr.is_empty() {
         greedy_order(&mut bundle, probe);
     }
-    bundle.metric = super::evaluate(&mut bundle, probe);
+    bundle.metric = bundle.evaluate(probe);
     bundle.set_latest_special_probs();
     Solved {
         best: bundle,

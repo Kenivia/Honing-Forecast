@@ -56,6 +56,8 @@ const RPASS: usize = 15;
 pub const OFF: &[&str] = &[
     "cross", "gens", "restart", "improve", "pseed", "oreplan", "toggle", "runs",
 ];
+/// `fromsolve`: start from `solve`'s result, its cost included. Trace rows `mem_gain`,
+/// `mem_wins`, `mem_cost` by phase and move (`iteration2/memetic/scripts/attr.py`)
 pub const ON: &[&str] = &["fromsolve"];
 
 #[derive(Clone)]
@@ -139,7 +141,7 @@ pub fn polish_state<R: Rng>(rng: &mut R, bundle: &mut StateBundle, probe: &mut P
     let metric = ctx.eval();
     ctx.polish(rng, metric, f64::INFINITY);
     let mut out = ctx.bundle;
-    out.metric = super::evaluate(&mut out, ctx.probe);
+    out.metric = out.evaluate(ctx.probe);
     if out.metric > metric {
         *bundle = out;
     }
@@ -162,7 +164,7 @@ impl Ctx<'_> {
 
     fn eval(&mut self) -> f64 {
         self.charge(1.0);
-        let metric = super::evaluate(&mut self.bundle, self.probe);
+        let metric = self.bundle.evaluate(self.probe);
         self.bundle.metric = metric;
         if metric > self.top {
             if self.top.is_finite() {
@@ -1028,7 +1030,7 @@ pub fn solve<R: Rng>(
     probe: &mut Probe,
 ) -> Solved {
     if bundle.upgrade_arr.is_empty() {
-        bundle.metric = super::evaluate(&mut bundle, probe);
+        bundle.metric = bundle.evaluate(probe);
         return Solved {
             best: bundle,
             blob: Vec::new(),
@@ -1283,7 +1285,7 @@ pub fn solve<R: Rng>(
         out.special_state.clone_from(&seed.order);
         out.set_chest_state(&seed.chests);
     }
-    out.metric = super::evaluate(&mut out, ctx.probe);
+    out.metric = out.evaluate(ctx.probe);
     Solved {
         best: out,
         blob: Vec::new(),

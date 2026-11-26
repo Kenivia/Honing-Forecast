@@ -18,7 +18,6 @@ pub struct StateBundle {
     pub chest_states: ChestStates,
     pub special_invalid_index: Option<usize>,
     pub latest_special_probs: Option<Vec<f64>>,
-    pub metric_type: i64,
     pub metric: f64,
     pub min_resolution: usize,
     pub prep_output: PreparationOutput,
@@ -79,12 +78,29 @@ impl StateBundle {
             .any(|upgrade| upgrade.is_normal_honing && upgrade.special_cost <= budget)
     }
 
-    pub fn metric_router(&mut self, probe: &mut Probe) -> f64 {
-        match self.metric_type {
-            0 => unreachable!(), //self.success_prob_metric(performance),
-            1 => self.optimizer_average_gold_metric(probe),
-            _ => f64::NAN,
-        }
+    /// the metric of the state as it is, timed as an evaluation (`Probe::evaluated`)
+    pub fn evaluate(&mut self, probe: &mut Probe) -> f64 {
+        let clock = probe.clock();
+        let metric = self.optimizer_average_gold_metric(probe);
+        probe.evaluated(clock);
+        metric
+    }
+
+    /// the chest stacks with a choice, and their option counts
+    pub fn choice_stacks(&self) -> Vec<(String, usize)> {
+        self.prep_output
+            .chests
+            .iter()
+            .filter(|(_, chest)| chest.options.len() > 1 && chest.count > 0)
+            .map(|(key, chest)| (key.clone(), chest.options.len()))
+            .collect()
+    }
+
+    /// indices of the normal honing upgrades, or of the advanced ones
+    pub fn upgrades_of(&self, normal: bool) -> Vec<usize> {
+        (0..self.upgrade_arr.len())
+            .filter(|&index| self.upgrade_arr[index].is_normal_honing == normal)
+            .collect()
     }
 
     /// for sending to JS, which keeps its own
@@ -122,6 +138,18 @@ impl StateBundle {
         }
     }
 
+    /// a state stored elsewhere put on these upgrades; its chest states only where its stacks
+    /// are these (a snapshot from before chests sends none)
+    pub fn apply_essence(&mut self, essence: &StateEssence) {
+        for (state, upgrade) in essence.state_arr.iter().zip(self.upgrade_arr.iter_mut()) {
+            upgrade.state.update_payload(state.clone());
+        }
+        self.special_state = essence.special_state.clone();
+        if essence.chest_states.keys().eq(self.chest_states.keys()) {
+            self.set_chest_state(&essence.chest_states);
+        }
+    }
+
     pub fn clone_from_essence(&mut self, source: &StateEssence, input_metric: &OrderedFloat<f64>) {
         for (s, upgrade) in source.state_arr.iter().zip(self.upgrade_arr.iter_mut()) {
             if upgrade.state.payload != *s {
@@ -135,9 +163,11 @@ impl StateBundle {
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+/// The decisions of a state alone; the arena stores it as JSON.
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct StateEssence {
     pub state_arr: Vec<Vec<OneState>>,
     pub special_state: Vec<usize>,
+    #[serde(default)]
     pub chest_states: ChestStates,
 }

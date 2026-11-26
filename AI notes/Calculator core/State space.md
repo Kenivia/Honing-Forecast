@@ -1,6 +1,6 @@
 # State space of normal honing
 
-The shape of the metric over one upgrade's state, the streak restriction (`Optimizer.md`, "Rules a neighbour move must respect"), and how the exact best plan of one upgrade is found. The arena tools that measure it are in `crates/arena/src/space.rs` (`Arena.md`, "The state space"). What not to repeat is in `State space tried.md`; read it only when trying something new here.
+The shape of the metric over one upgrade's state, the streak restriction (`Optimizer.md`, "Rules a neighbour move must respect"), and how the exact best plan of one upgrade is found. The arena tools that measure it are in `crates/arena/src/space.rs` (`Arena.md`, "The state space"). What not to repeat is in `Further learnings/State space tried.md`; read it only when trying something new here.
 
 ## What a plan is
 

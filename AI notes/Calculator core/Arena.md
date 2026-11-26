@@ -1,194 +1,108 @@
 # Arena
 
-`crates/arena` (`hf-arena`) is the native test harness for `crates/core`. It measures three things and keeps every result in a SQLite file:
+`crates/arena` (`hf-arena`) is the native test harness for `crates/core`, run as `pnpm arena <command>` (`cargo run --release -p hf-arena --`; `--help` lists the commands and their flags). It measures **correctness** (the evaluator against Monte Carlo), **accuracy** (the optimizer's result against the best known) and **speed**, and keeps every result in `arena_data/arena.sqlite` (gitignored, deletable; snapshots then need taking again).
 
-- **Correctness**: the evaluator against a Monte Carlo simulation.
-- **Accuracy**: how good the optimizer's result is, per test case.
-- **Speed**: CPU time and work counters.
-
-Run it with `pnpm arena <command>`, which is `cargo run --release -p hf-arena --`.
-
-Traps from running it, and what was ruled out, are in `Arena tried.md`; read it before a long run.
+What was ruled out, and the measurements behind the traps below, are in `Further learnings/Arena tried.md`.
 
 ## Variants and snapshots
 
-A variant is what gets compared. There are two ways to make one, and they combine:
-
-- **Constants** live in `Tuning` (`crates/core/src/tuning.rs`), a serde-skipped field on `StateBundle` whose default is production. A variant overrides fields by name: `current:max_iters=6000,y_value_tol=1e-5`. A new knob needs a field there and a read where the constant used to be; nothing in the arena changes.
-- **Code** is a snapshot. `pnpm arena snap <label>` copies the binary that was just built to `target/arena/bin/<label>.exe` and stores the git commit and the working tree's diff against it in the database. No commit or branch is involved. Restore a variant's code with `git apply` on that diff.
-
-`current` is the working tree as built, without a snapshot. So the loop for several code changes is: edit, `snap a`, edit, `snap b`, then `pnpm arena run baseline a b` once. `optimizer::solve` always exists; there are no optimizer version folders or cargo features.
-
-**The driver checks a variant's keys against its own `Tuning`**, so the driver has to be a build that knows them. The working loop: build, `snap <label>`, copy `target/release/hf-arena.exe` somewhere (`target/arena/driver.exe`) and run that copy with the labels. The tree can then be edited and built while a run goes on, and a variant is always a snapshot.
+- **Constants** are `Tuning` fields (`crates/core/src/tuning.rs`). A variant overrides them by name: `current:max_iters=6000,y_value_tol=1e-5`. A new knob needs only a field and a read.
+- **Code** is a snapshot: `pnpm arena snap <label>` copies the binary just built to `target/arena/bin/<label>.exe` and stores the commit and the working tree's diff (`git apply` restores it). `current` is the working tree as built.
+- **The driver checks a variant's keys against its own `Tuning`**, so it must be a build that knows them. Loop: build, `snap <label>`, run a copy of `target/release/hf-arena.exe` (`target/arena/driver.exe`) so the tree can be rebuilt meanwhile.
 
 ## How a run executes
 
-The binary is both driver and worker. The driver (always the current build) loads scenarios, starts one worker process per job, and is the only thing that writes the database. A worker is a variant's binary run as `worker`: one job as JSON on stdin, one JSON line per result on stdout. Consequences:
+The binary is driver and worker. The driver loads scenarios, starts one worker process per job (a variant's exe run as `worker`, one job as JSON on stdin, one JSON line a result on stdout) and alone writes the database.
 
-- A snapshot never needs to know the current schema. It does need to understand the job, so **fields added to `Job` or `StepResult` need a serde default** or old snapshots stop working.
-- A panic in a variant kills one job. It is recorded with its stderr and shown as `died`; the rest of the session carries on.
-- Jobs are ordered so that variants take turns, seeds outermost. With `--jobs 1` that removes drift between variants.
+- **Fields added to `Job` or `StepResult` need a serde default**, or old snapshots stop working. The stored state is `StateEssence` (JSON field names are API for the same reason).
+- A panic kills one job; it is recorded with its stderr as `died`.
+- Jobs go seed by seed, variants taking turns, so `--jobs 1` has no drift between variants and a session stopped early covers every scenario about equally.
+- **A run with an invalid state is never the best known**: the driver checks every state (`optimizer::lab::check::invalid`) and records an `error` starting `invalid state`.
+- `run --resume` reuses the latest session started with exactly the same arguments; Ctrl-C stops cleanly; `--first-seed N` adds seeds in a new session. A one-step scenario only needs `--mode cold`.
 
 ## The advanced honing table
 
-`arena_data/adv_cache.sqlite` (`adv_table.rs`, gitignored) keeps the advanced honing distributions between runs, so that no solve works one out. Before a step is solved the worker puts every distribution its upgrades can ask for into `payload.adv_cache`; the core is not involved.
-
-- **A row is one start position** (xp, balls, next free, next big, double balls, +30/+40) and holds all 361 strategies from it, about 230 kB. A start not in the file is worked out once, about half a second, and kept.
-- **What it holds is what the core would compute, to the bit**, so a seed gives the same run with or without it.
-- **The `AdvMiss` counter is how many distributions a solve still had to work out.** It should be 0. If it is not, the table's key and the core's `AdvConfig` have come apart.
-- `bench` fills it too. `replan` does not: every upgrade played is a new start, and the file would grow by a row for each.
-- Delete the file after any change to `compute_adv_dist`. Nothing notices a stale one.
+`arena_data/adv_cache.sqlite` (`adv_table.rs`, gitignored) holds advanced-honing distributions between runs: one row per start position with all 361 strategies, computed once (about half a second) and bit-identical to what the core would compute. The worker fills `payload.adv_cache` before a solve. **`AdvMiss` should be 0**; if not, the table's key and `AdvConfig` have come apart. `bench` fills it, `replan` does not. **Delete the file after any change to `compute_adv_dist`**: nothing notices a stale one.
 
 ## Scenarios
 
-`arena_data/scenarios/*.json`, each `{ "steps": [payload, ...] }` with every step a full `Payload`. `pnpm arena dummy` writes the placeholder one. Its payloads carry four chest stacks, keyed "0" to "3": a three-way choice, an obtain-all with gold, fractional amounts, and one that gives special leaps. A worker's `Essence` carries `chest_states` next to `special_state`; one whose keys are not the reference's is left out and the reference's default is kept.
+`arena_data/scenarios/*.json`, each `{ "steps": [payload, ...] }`. Folders are not descended, so a generated folder is run with `--scenarios arena_data/scenarios/<set>` or through a set. `pnpm arena dummy` writes the placeholder (four chest stacks of each kind).
 
-Every scenario runs **cold** (each step alone) and **chained** (each step is handed a `Previous`: the last best plan and the plans of the optimizer's blob, capped at `Tuning::max_blob_bytes`). A step is seeded the same way in both. A chained step starts from the plan of the step before (`Optimizer.md`, "Chained runs"); `carry=false` makes it a cold one again.
-
-**A star** (`meta.star` true) hands every step the `Previous` of its first, not of the step before: the first is the Choices page's run without a choice, the others its options. Chained mode is what the page does; cold mode solves each option alone.
-
-A Serca payload's materials have to be the Serca labels of the frontend, the four Serca books included; `python scripts/arena/add_serca_books.py` gave every older one the books (none owned, 15,000 gold), and does nothing to a payload that has them.
-
-`arena_data/scenarios/regressions` holds payloads that broke the evaluator. `pnpm arena run --scenarios arena_data/scenarios/regressions --mode cold --seeds 3` is the check.
+- Every scenario runs **cold** (each step alone) and **chained** (each step handed a `Previous` of the step before; `Optimizer.md`, chained runs), seeded the same in both. **A star** (`meta.star`) hands every step its first step's `Previous`: the Choices page's run without a choice, then its options.
+- **Best known is per payload**, hashed from the serialised `Payload` with sorted keys. Editing a payload, or adding or removing a `Payload` field, makes new cases with no history.
+- A Serca payload needs the four Serca books among its materials (`python scripts/arena/add_serca_books.py`).
+- `arena_data/scenarios/regressions` holds payloads that broke the evaluator: `pnpm arena run --scenarios arena_data/scenarios/regressions --mode cold --seeds 3`.
 
 ## Generated scenarios
 
-`pnpm arena gen <set> --singles N --chains N --steps N --sweeps --stress` (`generate.rs`) writes a set into `arena_data/scenarios/<set>/`. Loading a folder does not descend, so a set is run with `--scenarios arena_data/scenarios/<set>` and the default folder stays the dummy.
+`pnpm arena gen <set> --singles N --chains N --steps N [--sweeps] [--stress] [--chests] [--no-adv] [--weekly N] [--offset N]` (`generate.rs`).
 
-- **A case is a point on 18 axes** (`AXES`: tier, size, level band, piece mix, jitter between pieces, advanced share, progress, wealth, imbalance, band split, juice owned, juice price, free taps, plan, chests, price noise, chest base share, chest optional share), each in [0, 1), and `build` turns the point into a payload. Drawing payload fields independently makes every case look alike; drawing these does not. The point is kept in the scenario's `meta.axes`.
-- **Owned amounts are quantiles**: the wealth axis is how often the owned amount is enough under the default state, and imbalance spreads that between materials. So the same wealth means the same thing at any size. Juices, which the default state does not use, are a share of one juice per tap instead.
-- **Generating a set again gives other payloads once the evaluator has changed**, since the quantiles are read off the evaluator. A payload that moved is a new case with no history.
-- **Singles and chains are points of a Sobol sequence** (seeds 1 and 2), so `--offset` gives a set that shares nothing with another, and a longer set starts with the shorter one.
-- **A chain replays a player**: most steps solve the payload, do the upgrade the plan wants next (`generate::next_up` and `generate::play`, which `replan` shares) and apply one outcome of it (done, free tapped, or some failed taps in), by the rules `monte_carlo::simulate` uses. The rest are income, a price move, a goal added or removed. `meta.kinds` names what happened before each step. Unopened chests are not drawn on when a material runs out.
-- **Sweeps** move one axis at a time around three anchors; **stress** is every upgrade a character has.
-- **Chests are off** unless `--chests`: the axis is pinned to none and a chain's chest step becomes income. See "Chests in a generated case".
-- **`--no-adv`** pins the advanced share to none.
-- **Advanced honing is generated with the rule of before**: double balls only under the express event (`Frontend/Wasm contract.md`).
-- **`--weekly N`** writes 2N chains of `--steps` weeks (`generate::weekly`, Sobol seed 3): a player with the same income every week who plans once a week. No chests, no advanced honing. A step is the payload at the start of a week.
-  - The income is what the default state uses on average over about thirty weeks (0.7 to 1.6 of it), each material with its own constant noise; juices, books and free taps are a share of that or none.
-  - `week_inc_*`: nothing is honed, only the income moves. All steps have the same upgrades, and the cost goes to nothing as the stock grows.
-  - `week_hone_*`: the player starts with little, and each week follows a short solve's plan (`next_up`, as chains do) for as long as what is owned covers the base materials of the next tap, buying only juices; a tap short leaves the upgrade in progress. The chain ends when the upgrades do.
-- A case whose generation panics is left out and the panic is on stderr. A chain step the optimizer panics on is kept, with the player following the default state.
+- **A case is a point on 18 axes** (`AXES`, documented there; kept in `meta.axes`), which `build` turns into a payload. Owned amounts are quantiles read off the evaluator, so **regenerating after an evaluator change gives other payloads**.
+- Singles and chains are Sobol points (`--offset` for a disjoint set). **A chain replays a player**: solve, do the upgrade the plan wants next (`next_up`, `play`), apply one outcome; other steps are income, a price move, a goal change (`meta.kinds`). **Sweeps** move one axis around three anchors; **stress** is every upgrade a character has; `--weekly` writes constant-income chains (`generate::weekly`, `week_inc_*` and `week_hone_*`). Chests are off unless `--chests`.
+- A case whose generation panics is left out; a chain step the optimizer panics on is kept, the player following the default state.
 
-The generated folders, and the commands that made them:
+The folders:
 
-| Folder | Command |
+| Folder | Made by |
 | --- | --- |
-| `explore` (600 singles, 200 chains of 8, 150 sweeps: 2316 payloads), `explore_stress` | generated without `--chests` (the exact command is not recorded) |
+| `explore`, `explore_stress` | generated without `--chests` (command not recorded) |
 | `normal` | `gen normal --singles 500 --offset 3000 --no-adv` |
-| `weekly` (48 chains, 24 of each kind) | `gen weekly --weekly 24 --steps 30` |
-| `chests` (402 scenarios, 822 payloads) | `gen chests --singles 300 --chains 60 --steps 8 --sweeps --chests --offset 1000`, less the sweeps that have no chests. The offset keeps its names apart from `explore`'s, which sets look scenarios up by |
-| `seeded` | `nh_dev` with `v0`'s state from seed 0 given in each payload, as the frontend gives the plan it shows when the user optimizes again. Names start with `seed_`; compare with the same payload unseeded by name |
-| `tiny` | `pnpm arena tiny` ("The state space") |
-| `choices` (22 stars, 289 payloads), `income` (8 chains of 24) | `pnpm exec vitest run --config scripts/arena/vitest.export.config.ts`: the real save of `tests/income-fixture.json` through the pages' own job builders (`scripts/arena/export_pages.test.ts`). Choices: per character with upgrades, the bonus chests of the three raids shown and Paradise (Destiny at Base and Level 10, Netherworld at Base), as stars. Income: every snapshot, now and 12 weeks ahead. Every payload is at a streak length of 10, as the site sends |
-| `b10` | the scenarios of `speed_dev` and `speed_test` with `min_resolution` 10, as the site sends by default (names start with `b10_`) |
-| `real` (38 singles), `real_income` (22 chains of 13) | `pnpm exec vitest run --config scripts/arena/vitest.export_real.config.ts` (`export_real.test.ts`): real characters from the analytics pulls in `ignored/analytics`, each one's latest snapshot with something wanted, typed placeholders left out, up to two a roster (the one wanting most and one wanting another amount). Built as the Income page builds a payload, on a fresh profile with the snapshot's grids and disabled labels (so default valuation; since 2026-11-17 a disabled material's bound stock is `MAX_AMOUNT`, as on the calculator, so a re-export differs there from sets exported before); a seeded random half of the characters at streak length 1, the rest 10 (`meta.min_resolution`), a character's single and chain alike. The chains are the first pick of each roster, now and 12 weeks ahead at the Income page's Auto income for its item level. Sets `real_test` and `real_income_test`; held out in iterations 1–2, not since |
-| `real3` (1,662 singles, 100 income chains, 292 family chains) | `pnpm exec vitest run --config scripts/arena/vitest.export_real3.config.ts` (`export_real3.test.ts`): every pull, a character's snapshots grouped into families (same done and wanted cells, stock within 10% of its gold value at the snapshot's prices). Each family's latest as a cold single (`r3_`); per roster the character whose latest family wants the most as an income chain like `real_income` (`r3inc_`); each character with 3 families or more as a chain of them in order (`r3seq_`). Every one at streak length 1 and 10 (`_s1`, `_s10`). Rosters split 50/50 by a seeded shuffle into sets `real3_dev`/`real3_test`, `real3_income_dev`/`_test`, `real3_seq_dev`/`_test`. `meta` carries the pull date (`pulled`), roster, split and family size (`members`); rebuild after a new pull |
+| `weekly` | `gen weekly --weekly 24 --steps 30` |
+| `chests` | `gen chests --singles 300 --chains 60 --steps 8 --sweeps --chests --offset 1000`, less sweeps without chests |
+| `seeded` | `nh_dev` with `v0`'s seed-0 state given in each payload (`seed_` names) |
+| `tiny` | `pnpm arena tiny` |
+| `choices`, `income` | `pnpm exec vitest run --config scripts/arena/vitest.export.config.ts`: the real save `tests/income-fixture.json` through the pages' own job builders (`export_pages.test.ts`), all at streak 10 |
+| `b10` | `speed_dev` and `speed_test` at `min_resolution` 10 (`b10_` names) |
+| `real`, `real_income` | `vitest.export_real.config.ts` (`export_real.test.ts`): real characters from `ignored/analytics` pulls, half at streak 1 |
+| `real3` | `vitest.export_real3.config.ts` (`export_real3.test.ts`): every pull, snapshots grouped into families; singles `r3_`, income chains `r3inc_`, family chains `r3seq_`, each at `_s1` and `_s10`; rosters split 50/50 into `_dev`/`_test` sets. Rebuild after a new pull |
 
-`python arena_data/explore_report.py [session] [folder]` prints what a run of `explore` says: hit rate, time and when the best was found by size, by axis, by sweep level and by what happened before a chain step.
-
-## Chests in a generated case
-
-The cases are meant to cover what the optimizer can be handed, not what a player usually has.
-
-- **The `chests` axis is how many stacks**: none under 0.12, then 1 to 8.
-- **A stack is sized against the average used with every tap taking all it can** (`max_used`: a juice and a book on every tap, both on every advanced tap, the most over which id of a pool it is), not against what the default state uses, which is no juice at all. Free taps are sized against what it takes on average to free tap every upgrade.
-- **Base materials from a stack are mostly small**: `chest_base` gives 1 to 15% of that reference four times in five and 15 to 150% otherwise. **Optional ones (juices, books, scrolls, free taps) are anything**: `chest_optional` is 2% to 300%. Each stack has its own noise on top, and stacks add up.
-- **What a stack gives is one of 14 families** (`chest_family`), after the game's chests: red or blue; fusion, free taps or shards; free taps, red or blue; all five of those; free taps or leapstones; lava or glacier, alone or with books; books only; bundles of several materials an option; fusion, lava or free taps; gold or a juice; and obtain-alls of base materials, of optional ones and of free taps. A book no upgrade of the case can use is a legitimate option.
-- **A stack is 1 to 300 chests**, fewer where the whole stack gives only a few units. Four Serca stacks in ten are converted T4 materials: fifths of a unit a chest, roster bound at best.
-- `python arena_data/chest_report.py [session] [--by choice|stacks|kind]` puts a session's variants side by side with the gap as a share of `flow`.
+How each export picks and builds its payloads is in the test file's header. `python arena_data/explore_report.py [session] [folder]` and `chest_report.py [session] [--by choice|stacks|kind]` summarise a run by axis or chest shape.
 
 ## Sets
 
-A set is a named list of scenarios for one purpose, in `arena_data/sets/<name>.txt`: one scenario name a line, `name:4` for only its first 4 steps, `#` for a comment, the first of which is what the set is for. Names are looked up under the scenarios folder and the folders in it, so a set can mix generated folders.
+`arena_data/sets/<name>.txt`: a scenario name a line (`name:4` for its first 4 steps, `#` comments, the first saying what it is for). Names are found in every scenario folder, so a set can mix them. `pnpm arena sets` lists them with that comment; `--set <name>` works on `run`, `verify`, `carry`, `bench`, `stress`. `pnpm arena define <name> --note ... --kind single --where n=32..41 --where juice_owned=0.4..0.7 --steps 4 --limit 12` writes one from filters and keeps the command in the file.
 
-- `pnpm arena sets` lists them. `--set <name>` on `run`, `verify` and `carry` uses one in place of the folder: `pnpm arena run baseline current --set pilot`.
-- `pnpm arena define <name> --note "..." --kind single --where n=32..41 --where juice_owned=0.4..0.7 --steps 4 --limit 12` writes one from filters: `--kind` is a prefix of the name (single, chain, sweep, stress), a `--where` key is an axis of `meta.axes`, `n` (upgrades of the first step) or `steps`. The command is kept in the file. Or write the file by hand.
-- A truncated chain's steps are the same payloads, so they share their best known with the full chain.
-- `pilot` is the quick first run for a new variant: a few seconds of CPU a seed. Payloads picked to be hit a quarter to three quarters of the time, which is where a variant can move the result either way; some have chests.
-- `nh_dev` and `nh_test` are the singles of the `normal` folder with 4 upgrades or more, the even ones (158) and the odd ones (157): normal honing only. The first is what the optimizer of October 2026 was developed on, the second was kept out of it. `nh_quick` is every fourth of `nh_dev`.
-- `weekly` is the 48 weekly chains, `weekly_dev` the first six of each kind, which the chained runs were tuned on, and `weekly_test` the other 36.
-- `chests` is every case of the `chests` folder that has a choice in it, chains cut to three steps: 349 scenarios, 453 payloads, about 15 minutes for three variants and three seeds at 16 jobs.
-- `speed_dev` mixes every kind (`nh_quick`, the small named sets, every eighth of `chests`, ten weeks of `weekly_dev`, `chains`); `speed_test` is held out of it. `speed_dev10` and `speed_test10` are the same at a streak length of 10 (`b10`). `choices_dev`/`choices_test` and `income_dev`/`income_test` split the real pages' characters in two.
-- `opt_dev` and `opt_test` are the `speed_dev10`, `speed_dev`, `choices_dev`, `income_dev` sets (and the `_test` ones) together; `quick_dev` a quick cut of `opt_dev` (every other single, short weekly and chains, both streak lengths, half the choices, eight income weeks), about 380 payloads, 2 minutes a variant and seed at 16 jobs. `warm_dev` is its runs that go on from a plan, with the Paradise stars added.
-- `cpu_check` (pilot, two choice stars, two income chains) is for CPU time at `--jobs 1`, a few minutes a variant; `income_all` every income chain at full length; `fail_small` is scratch (small payloads an earlier default missed); `paradise_dev` the Paradise scenarios of `warm_dev`.
-- The rest (`advanced`, `chains`, `free_taps`, `juice`, `large`, `small`, `stress`, `replan`) say what they are for in their first comment.
+The ones to know: `pilot` (a quick first look), `small`, `quick_dev` (about 380 payloads, 2 minutes a variant and seed at 16 jobs), `opt_dev`/`opt_test`, `real3_*` (iteration 3's judges), `cpu_check` (CPU time at `--jobs 1`), and the regime sets `advanced`, `free_taps`, `juice`, `large`.
 
 ## Against a fixed baseline
 
-The best known moves every time a variant finds something new, so a hit rate read today is not the one read tomorrow. A frozen snapshot (one taken before the change) is the fixed point instead: run it next to a new variant, or in a session of its own, and compare with `python arena_data/diff_report.py <sessions> [--base <label>] [--by n|kind|week] [--like text] [--strip text] [--worst 10] [--db file]`.
+The best known moves whenever any run finds something new, so compare against a frozen snapshot instead: `python arena_data/diff_report.py <sessions> [--base <label>] [--by n|kind|week] [--like text] [--strip text] [--worst 10] [--db file]`.
 
-- **`diff` is signed**: a variant's mean over seeds less the baseline's on the same seeds, per payload, as a share of the flow of the baseline's best seed. `+` and `-` count the payloads that moved by more than `--eps`. Nothing in it depends on what else is in the database.
-- `hit`, `x10` and `gap` are still against the best any run has reached (within `eps`, within ten times it, and the mean), and so still move.
-- `spread` is the best seed less the worst of a payload, and `same` the share of payloads whose seeds all agree: the run to run variance.
-- The database keeps every run's metric and state, so all of it can be read another way later.
+- `diff` is signed: a variant's mean over seeds less the baseline's on the same seeds, per payload, as a share of the baseline's flow. It depends on nothing else in the database.
+- `hit`, `x10`, `gap` are against the best known (within `eps`, within ten times it, mean) and still move. `spread` and `same` are the run-to-run variance.
 
-**A run with an error is never the best known.** A state that puts the same id twice on a tap is scored well above any real plan by the evaluator, which does not check. The driver checks every state it is sent (`optimizer::lab::check`: ids, lengths, the order, chest states, the streak-length grid) and marks a run that fails with an `error` starting `invalid state`; runs recorded before 2026-10-27 were only marked by hand. `diff_report.py` counts them per variant.
+## Carrying a plan over, and re-planning
 
-## Carrying a plan over
+- `pnpm arena carry [--set chains] [--rows]`: each chain step's best known state carried onto the next step (`carry::carried`, the same rule as `Plan::carry`) and scored against its default and best under `Tuning::reference()`. `recovered` is the share of the way from default to best. Needs runs in the database.
+- `pnpm arena replan --set replan --paths 30 --every 1` (`replan.rs`): plays each scenario's first step to the end many times, re-solving from the carried plan every `--every` upgrades. The gain of a re-plan is `resolved - carried`; a `control` solve that learns nothing measures the optimizer's slack, and the first paths are re-scored exactly. Rows in the `replan` table (path -1 the starting plan). Not covered: chests, re-planning inside an advanced upgrade, planning knowing it will be re-planned.
 
-`pnpm arena carry [--set chains] [--rows]` takes, for every chain step after the first, the best known state of the step before, puts it on the step's upgrades (`carry::carried`: a state less the taps done since, the free tap order with gone upgrades dropped and new ones last) and scores it against the default state and the step's best known, all under `Tuning::reference()` as `metric_ref` is. No optimizer runs: it reads the database, so the steps need runs in it. `recovered` is the share of the way from the default to the best that the carried plan already covers.
+## The measurements
 
-## What re-planning is worth
+- **Correctness** (`verify`): the given state and scrambles (`optimizer::scramble`) simulated and compared per material and in total, the evaluator at `Tuning::reference()`. A row passes within `z` standard errors plus `rel_tol`. `run --mc` checks the first seed's result. A failing row is usually the method, not the simulation: look at which method the material got; `max_lattice_work=2000000000` answers exactly.
+- **Accuracy** (`run`): the gap to the best metric any run reached on the payload, every result re-scored at `Tuning::reference()` (`metric_ref`, 1e-5 of flow at worst), so a state exploiting the optimizer's own approximation does not score. `hit %` is within `--eps` (1e-4). Runs also store `gross` (every leftover worthless) and `flow` (market value of what the state uses), which gaps are divided by; dividing by the metric is meaningless near zero. `pnpm arena rescore` fills these for old runs.
+- **Probabilities** (`stress`, `stress.rs`): every material's probability at some 70 thresholds, for the given state and scrambles 20, 200 and 2000 moves away, against an exact convolution; plus `leftover` rows, E[(t - S)+] by the metric's own route. Lattice, brute and trivial must be exact. Reads and writes no database. It sees what `verify` cannot (thresholds other than the payload's, no Monte Carlo noise).
+- **Speed**: thread CPU time around `solve`, plus exact counters (`Probe`). `eval_s` (inside `StateBundle::evaluate`) and the rest of `wall_s` split evaluating from deciding; `us_<key>` counters are `Probe::time` phases. **`ReferenceUs`** is the machine's speed: each driver thread times fixed work (`worker::reference_s`, free of hf-core on purpose, never to be changed) before its first job and every 5 minutes. `cpu_s / ReferenceUs` compares across batches, roughly; trust it on sessions of 10 minutes or more, and keep a plain baseline in each batch anyway.
+- **The evaluator alone** (`bench`): `pnpm arena bench [--set name] [--filter text] [--tuning key=value] [--states file] [--out file] [--jobs 1]` evaluates each step's given state, two scrambles and any `--states` (`"scenario:step"` to essences) for counters and time; `--out` writes metric, seconds and flow a state (`python arena_data/bench_diff.py before.tsv after.tsv`). Pass `max_memo_size=0` or the repeats time the memo. `--solve <seed>` runs whole solves: their `--out` metrics before and after a refactor must be identical.
 
-The metric assumes the plan made now is followed to the end. `pnpm arena replan --set replan --paths 30 --every 1` (`replan.rs`) measures what is given up by that: it plays each scenario's first step to the end many times, and after every `--every` upgrades carries the plan over and runs the optimizer again from it.
-
-- **The gain of a re-plan is `resolved - carried`**, two evaluator outputs on the same payload. `solve` starts from the state it is given and returns the best it saw, so it is never negative. The gains of a path add up to what following the re-plans is worth over following the first plan, with no noise from the gold itself: the only sampling is which outcomes happened. This rests on carrying a plan over an upgrade keeping its value on average, which `carrying_a_plan_keeps_its_value` checks over every outcome.
-- **The player does `generate::next_up`**, the lowest level left on the piece the free tap order starts with, because the evaluator's free tap order may name a level whose piece is not there yet (it means: pay for the levels under it, then free tap). Chains are generated with the same rule.
-- **Three guards against a gain that is not information**: the starting plan is the best of `--seeds` cold solves and as many more from that; `control` is one more solve from it, which learns nothing, so its gain is the optimizer's slack; and on the first paths the two metrics are taken again with `max_brute_size` at its maximum, which sums every probability exactly, to see that a gain is not the optimizer finding the approximation's errors.
-- Rows are in the `replan` table, one per re-plan, path -1 being the starting plan. `--session N` prints a session's tables again; `--resume` skips the paths a session has.
-- Not covered: chests, re-planning in the middle of an advanced upgrade, and choosing a plan knowing that it will be re-planned. Free taps left over when they run out on an upgrade are kept by the player, which the evaluator does not count on.
-
-## Stopping and resuming
-
-`run --resume` reuses the latest session started with exactly the same arguments and skips the jobs that already have a row. Ctrl-C stops cleanly: nothing a killed worker was doing is recorded. Jobs go seed by seed, so a session stopped early has covered every scenario about equally. `--first-seed N` starts the seeds at N, to add seeds to an earlier run in a new session. A scenario of one step gives the same run chained as cold, so a set of singles only needs `--mode cold`.
-
-## The three measurements
-
-- **Correctness** (`verify`): for every step, the given state and some scrambled ones (`optimizer::scramble`, random valid moves) are simulated and compared per material and in total. The evaluator's side is `Tuning::reference()` (`monte_carlo::check`), whatever the variant ran with. A row passes when the difference is within `z` standard errors plus `rel_tol` of the value. Failures are rows, not panics. The same command times one evaluation. `run --mc` does the check on the first seed's result instead.
-  - **A failing row is usually the saddlepoint formula, not the simulation.** Look at which method the material got before suspecting the supports. `max_lattice_work=2000000000` answers every material exactly and is how a doubt is settled.
-- **Accuracy** (`run`): the gap to the best metric any run in the database has reached on the same payload. The driver re-scores every result with `Tuning::reference()` (`metric_ref`, see `Evaluation pipeline.md`), because a variant's own `metric` is not comparable once the evaluator differs and the optimizer's own is up to 1e-4 off. `hit %` is the share of seeds within `--eps` (1e-4) of the best known, which is ten times the reference's worst error.
-  - `metric_ref` is the coarse lattice at 64 points, not the evaluator the optimizer ran with, so a state that exploits the optimizer's error does not score for it. It is still an approximation, 1e-5 of flow at worst. Compare against `max_brute_size` at its maximum (`replan` does) when that is the question.
-  - Next to `metric_ref` a run has `gross`, the same with every leftover worthless (the gold spent), and `flow`, the market value of what the state uses on average. `pnpm arena rescore` scores runs recorded before the reference (`ref_reference` null) again under it and fills these in.
-  - **What the gap is divided by is undecided.** The report divides by the best metric, which is near zero wherever credit cancels cost or everything is owned. Spent plus credit (`metric_ref - 2 * gross`) vanishes in the same cases. `flow` does not.
-- **Probabilities** (`stress`, `stress.rs`): `pnpm arena stress [--scenarios dir | --set name] [--scrambles 3] [--tuning key=value]`. For the given state and scrambles 20, 200 and 2000 moves away, every material's probability is asked for at some 70 thresholds (packed around the mean, at quantiles, at the ends of the range, at random), plain, and compared with an exact convolution done here. A third kind, `leftover`, is t F - mean F' = E[(t - S)+], what the metric takes of the two, by the route the metric would take (`expected_leftover`), its error in standard deviations of the sum; `mean signed` below 0 there is optimistic. The `leftover` rows are the metric's route (lattice or coarse lattice), the `plain` rows the probability's (lattice, saddlepoint or brute force), whatever the tuning. It reads nothing from the database and writes nothing. The table is by method, region and kind; lattice, brute and trivial must be exact, and a panic is counted by where it was. `verify` cannot see what this sees: it compares the metric at the payload's own thresholds, and within Monte Carlo noise. Materials whose convolution would be too big are left out and counted.
-- **Speed**: thread CPU time around `solve` only, plus counters. The counters are exact and repeatable; CPU time is not, see "Traps".
-  - **The `ReferenceUs` counter is the machine's speed around a job.** Each of the driver's threads times fixed work (`worker::reference_s`, about a second) before its first job and every 5 minutes after, between jobs, so that the reading has the load of the run. A job's result gets the mean of the threads' latest readings. `cpu_s / ReferenceUs` compares across batches and timeframes; `cpu_s` alone does not, since heat and boost move it by 10% or more within a run. It is a correction, not an exact measure: from 8 to 16 jobs, solves slowed x1.70 and the reading x1.83. So keep a plain baseline in each batch as the first comparison. **A session shorter than 5 minutes has only its opening readings**, all taken in one second, so a moment's disturbance skews the whole session. `sur_e` on `advanced` read 2.24 s against about 0.9 s elsewhere, while its plain `solve` ran at `cut_a`'s speed. Trust `ref x` on sessions of 10 minutes or more.
-  - **`reference_s` knows nothing of hf-core on purpose**: built on the evaluator, a faster build would read as a faster machine and cancel its own gain. Leave its work as it is, or old readings stop comparing with new ones.
-  - **It is a correction, not an exact measure.** It reads a mix of arithmetic and memory, and other work may slow by a different amount. Sessions from before it have no reading.
-  - **`eval_s` and `decide_s` split a solve's `wall_s`** into the evaluations (`Probe::clock` and `Probe::evaluated` around `metric_router`) and everything else the optimizer does: choosing a move, copying states, the best list. They are wall time, because thread CPU time comes in 15 ms ticks, and are empty for a snapshot that does not send them.
-- **The evaluator alone** (`bench`, `bench.rs`): `pnpm arena bench [--scenarios dir | --set name] [--filter text] [--tuning key=value] [--states file] [--out file] [--jobs 1]` evaluates each step's given state, two scrambles of it and any states handed in (`--states`, a json of `"scenario:step"` to a list of essences) once for the counters, then repeatedly for the time. `--out` writes one line a state with its metric, the seconds of an evaluation and its flow (at the default tuning, which it does not depend on), which is how two builds of the evaluator are compared state by state. It reads and writes no results database. The repeats are of one state, so pass `max_memo_size=0` or they time the memo. `--solve <seed>` times one solve a step instead. `python arena_data/bench_diff.py before.tsv after.tsv` puts two `--out` files side by side.
-
-**After any change to the evaluator**, compare against the build before: CPU time with `--jobs 1` on `pilot` and `stress`; the same search with the memo off (most `pilot` payloads should find their best at the same iteration); the metric state by state (`bench --out` and `bench_diff.py`); `stress`; `verify`; and a full pass of `explore`.
+**After any change to the evaluator**, against the build before: CPU at `--jobs 1` on `pilot` and `stress`; the same search with the memo off; `bench --out` state by state; `stress`; `verify`; a full pass of `explore`.
 
 ## The state space
 
-`space.rs`, for what `State space.md` reports. None of it writes the database.
+`space.rs`, for `State space.md`; none of it writes the database.
 
-- `pnpm arena tiny [--count 60] [--lone 30] [--lone-taps 20] [--cap 3e6]` writes `arena_data/scenarios/tiny`: cases of one to three normal upgrades with taps failed until every plan can be tried, and lone upgrades with 20 taps left. No chests, no advanced honing, free taps on half.
-- `pnpm arena exhaust --scenarios arena_data/scenarios/tiny [--block 10] [--out file.jsonl]` tries every plan and every free tap order of each case on the exact metric, and reports the best, the best the streaks can make, what the annealer finds and what `ascend` reaches. A lone upgrade with more plans than `--cap` is not enumerated: its best plan comes from `Response::best`. `--block` is the streak length (`Optimizer.md`), under which only the plans that keep to it are tried. About 10 minutes at 1, seconds at 10.
-- `cargo test --release -p hf-arena lone_exact -- --ignored --nocapture` scores the response's plan, the best streak plan and four solves of `lone_022` and `lone_029` (single upgrades whose best plan is not a streak plan) with the evaluator and with `monte_carlo::exact_single`, a plain sum over the tap of success. `lone_dump` and `lone_moves` (same flags, plus `DUMP_OUT=<file>`) write their per-tap data and every placement of the juices, by material, as JSON.
-- `pnpm arena ascend [--set name] [--filter text] [--tuning key=value] [--out file.jsonl]` starts from each step's best known state, and from that state with nothing on its normal upgrades, and lets each upgrade in turn take its best plan, of the streaks only and of every plan. The gain is a share of `flow`.
-- `pnpm arena landscape --filter text --x 0f --y 0b --out file.tsv` writes the metric over two streak lengths of each normal upgrade, the rest as best known: under the default tuning, under `--tuning`, and as the response has it. An axis is a pool and `f` or `b`. `python arena_data/landscape_plot.py file.tsv out_dir` draws them.
+- `pnpm arena tiny [--count 60] [--lone 30] [--lone-taps 20] [--cap 3e6]` writes `scenarios/tiny`: one to three normal upgrades with every plan triable, and lone upgrades with 20 taps left.
+- `pnpm arena exhaust --scenarios arena_data/scenarios/tiny [--block 10] [--out file.jsonl]`: every plan and free-tap order on the exact metric, against the best streak plan, the annealer and `ascend`. About 10 minutes at block 1.
+- `cargo test --release -p hf-arena lone_exact -- --ignored --nocapture` (and `lone_dump`, `lone_moves` with `DUMP_OUT=<file>`): lone upgrades whose best plan is not a streak plan, scored with the evaluator and `monte_carlo::exact_single`.
+- `pnpm arena ascend [--set name] [--tuning ...] [--out file.jsonl]`: from each best known state, and from it emptied, each upgrade takes its best plan in turn, of streaks only and of all plans.
+- `pnpm arena landscape --filter text --x 0f --y 0b --out file.tsv`: the metric over two streak lengths of each normal upgrade; `python arena_data/landscape_plot.py file.tsv out_dir` draws it.
 
 ## Looking inside a run
 
-`Probe` (`crates/core/src/probe.rs`) is threaded through the evaluator and the optimizer. Without the `trace` cargo feature it has no fields and its methods are empty, which is what wasm builds. With it:
-
-- `probe.count(Counter::X)` is always kept. Add a counter by adding a name to the `counters!` list.
-- `probe.put("key", value)` and `probe.put_text("key", || ...)` record a row at the iteration last given to `probe.at(..)`. They end up in the `trace` and `trace_text` tables.
-- Wrap per-iteration rows in `if probe.detail()`, which is on only with `--detail`. The optimizer already writes `best` on every improvement, and `metric`, `accepted`, `scale` and move kinds under detail.
-
-`pnpm arena trace <run id> [key]` prints a run's rows as CSV; `pnpm arena compare [variants] [--session N]` prints a session's tables, or variants across sessions. Counters and tuning are JSON columns; query them with `json_extract`.
+`Probe` (`crates/core/src/probe.rs`, filled only with the `trace` feature): `count(Counter::X)` (add a name to `counters!`), `put`/`put_text` rows at the iteration of the last `at(..)` (into the `trace` and `trace_text` tables), per-iteration rows only under `if probe.detail()` (`--detail`). `pnpm arena trace <run id> [key]` prints a run's rows as CSV; `pnpm arena compare [variants] [--session N]` a session's tables. Counters and tuning are JSON columns (`json_extract`).
 
 ## Traps
 
-- **A seed must repeat exactly.** Two things break that: the global `rand::random_*` functions (use the solver's `rng`), and summing floats in hash map iteration order (`brute.rs` uses fixed hasher seeds for this reason; `ahash` maps are seeded per instance otherwise). The `a_seed_repeats_exactly` test guards it.
-- **CPU time needs `--jobs 1`.** Running many workers at once inflated it about threefold here. Windows also accounts thread time in ticks of about 15 ms, so short measurements are repeated (`time_evaluation`).
-- **The Monte Carlo samples normal honing from the upgrade's own tap distribution.** It checks everything built on that distribution, and free taps and advanced honing from the game rules, but not the tap distribution itself. Its advanced honing simulation, `tap_map_generator` and `gold` live in core, which the gold distribution shares them with; its free taps stay its own, so it still checks `special_probs`.
-- **The Monte Carlo reads the bands and the free-tap budget of the state it is given**, so it checks the evaluator under a chest state, not `resolve_chests` itself; that has a unit test in `chest.rs`. `scramble` opens the chests at random first (`randomize_chest_state`), so scrambled states have random chest states.
-- **`--jobs` defaults to half the logical cores.** Pass the number of cores for a long run, and 1 when the time is what is measured.
-- **A mean of gaps over flow is ruled by a few payloads with almost no flow** (millions of percent). `chest_report.py` prints it, but read the median, the 90th percentile and the hit rate.
-- **Where everything is owned the true metric is zero and the optimizer chases approximation error**: best states with a few thousand gold of negative cost have been found on jobs moving millions. Gaps there are noise, whatever they are divided by.
-- **Best known is per payload.** Editing a scenario's payload makes it a new case with no history. The payload is hashed with its keys sorted, since its hash maps serialise in no fixed order.
-- The database (`arena_data/arena.sqlite`) is gitignored and can be deleted; snapshots in `target/arena/bin` then lose their rows and must be taken again.
+- **A seed must repeat exactly**: no global `rand::random_*`, no float sums in hash-map order (`brute.rs` uses fixed hasher seeds). `a_seed_repeats_exactly` guards it.
+- **CPU time needs `--jobs 1`**; many workers inflate it about threefold, and Windows counts thread time in 15 ms ticks. `--jobs` defaults to half the logical cores; pass the core count for a long run.
+- **Monte Carlo samples normal honing from the upgrade's own tap distribution**, so it does not check that distribution itself; and it reads the bands and free-tap budget of the given chest state, so `resolve_chests` has its own unit test.
+- **Read medians, the 90th percentile and hit rate, not a mean gap over flow**: a few near-zero-flow payloads rule the mean. Where everything is owned the true metric is zero and gaps are noise.

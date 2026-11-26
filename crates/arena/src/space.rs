@@ -7,7 +7,6 @@ use crate::carry::{flow, step_key};
 use crate::db;
 use crate::generate::{self, axis};
 use crate::scenario::{Scenario, upgrade};
-use crate::worker::Essence;
 use ahash::AHashSet;
 use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::honing_utils::update_normal::chance as to_chance;
@@ -275,7 +274,7 @@ fn with_plans(
         this.state.update_payload(model.plan(plan));
     }
     state_bundle.special_state = order.to_vec();
-    state_bundle.metric = state_bundle.metric_router(&mut Probe::default());
+    state_bundle.metric = state_bundle.evaluate(&mut Probe::default());
     state_bundle
 }
 
@@ -284,7 +283,7 @@ fn retuned(state_bundle: &StateBundle, tuning: &Tuning) -> StateBundle {
     let mut state_bundle = state_bundle.clone();
     state_bundle.tuning = tuning.clone();
     state_bundle.gold_memo.clear();
-    state_bundle.metric = state_bundle.metric_router(&mut Probe::default());
+    state_bundle.metric = state_bundle.evaluate(&mut Probe::default());
     state_bundle
 }
 
@@ -320,7 +319,7 @@ fn descend(
     tops: &mut Tops,
 ) {
     if depth == plans.len() {
-        let metric = state_bundle.metric_router(&mut Probe::default());
+        let metric = state_bundle.evaluate(&mut Probe::default());
         tops.states += 1.0;
         let worst = |list: &Vec<(f64, usize, Vec<usize>)>| {
             if list.len() == KEPT {
@@ -636,7 +635,7 @@ pub fn ascend(start: &StateBundle, streaks_only: bool, sweeps: usize) -> (StateB
             state_bundle.upgrade_arr[index]
                 .state
                 .update_payload(model.plan(&plan));
-            let metric = state_bundle.metric_router(&mut Probe::default());
+            let metric = state_bundle.evaluate(&mut Probe::default());
             if metric > state_bundle.metric {
                 state_bundle.metric = metric;
                 moved = true;
@@ -648,7 +647,7 @@ pub fn ascend(start: &StateBundle, streaks_only: bool, sweeps: usize) -> (StateB
             break;
         }
     }
-    state_bundle.metric = state_bundle.metric_router(&mut Probe::default());
+    state_bundle.metric = state_bundle.evaluate(&mut Probe::default());
     (state_bundle, responses)
 }
 
@@ -890,14 +889,14 @@ pub fn best_known(conn: &Connection, scenario: &Scenario, step: usize) -> StateB
         conn,
         db::step_id(conn, &scenario.name, step, &step_key(payload)),
     ) {
-        Some((_, _, essence)) => essence.apply(&mut state_bundle),
+        Some((_, _, essence)) => state_bundle.apply_essence(&essence),
         None => {
             let found = solved(payload, 4, &Tuning::default());
             let best = found
                 .iter()
                 .max_by(|a, b| a.metric.total_cmp(&b.metric))
                 .unwrap();
-            Essence::of(best).apply(&mut state_bundle);
+            state_bundle.apply_essence(&best.to_essence());
         }
     }
     state_bundle
@@ -977,7 +976,7 @@ pub fn landscape(conn: &Connection, scenarios: &[Scenario], args: &LandscapeArgs
                             bundle.upgrade_arr[index]
                                 .state
                                 .update_payload(state.payload.clone());
-                            *metric = bundle.metric_router(&mut Probe::default());
+                            *metric = bundle.evaluate(&mut Probe::default());
                         }
                         out.push((x, y, model.pity(&indices).0, metrics));
                     }
@@ -1233,7 +1232,7 @@ mod tests {
                     let mut solved = solved(&payload, 1, &Tuning::default()).pop().unwrap();
                     let flow = flow(&solved).max(1.0);
                     let top = retuned(&solved, &reference).metric;
-                    solved.metric = solved.metric_router(&mut Probe::default());
+                    solved.metric = solved.evaluate(&mut Probe::default());
                     let prices = solved.shadow_prices(&mut Probe::default());
                     // the solve's order and advanced upgrades, its normal upgrades emptied
                     let mut start = solved.clone();
@@ -1242,7 +1241,7 @@ mod tests {
                         upgrade.state.update_payload(vec![OneState::new(); len]);
                     }
                     let empty = retuned(&start, &reference).metric;
-                    start.metric = start.metric_router(&mut Probe::default());
+                    start.metric = start.evaluate(&mut Probe::default());
                     let mut fixed = start.clone();
                     hf_core::optimizer::shadow_start(&mut fixed, 4, &mut Probe::default());
                     for index in 0..start.upgrade_arr.len() {

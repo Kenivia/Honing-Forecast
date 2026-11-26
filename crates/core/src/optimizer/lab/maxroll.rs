@@ -29,7 +29,7 @@ pub fn solve<R: Rng>(
         special: true,
     };
     apply_owned(&mut bundle, all, owned);
-    bundle.metric = super::evaluate(&mut bundle, probe);
+    bundle.metric = bundle.evaluate(probe);
     bundle.set_latest_special_probs();
     Solved {
         best: bundle,

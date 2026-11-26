@@ -81,9 +81,7 @@ pub fn shadow_start(state_bundle: &mut StateBundle, iterations: usize, probe: &m
     };
     let steps = state_bundle.tuning.response_steps;
     let joint = state_bundle.tuning.response_joint;
-    let clock = probe.clock();
-    state_bundle.metric = state_bundle.metric_router(probe);
-    probe.evaluated(clock);
+    state_bundle.metric = state_bundle.evaluate(probe);
     let mut work = 1.0;
     let mut best = (state_bundle.metric, plans(state_bundle));
     let mut prices: Option<Vec<f64>> = None;
@@ -120,9 +118,7 @@ pub fn shadow_start(state_bundle: &mut StateBundle, iterations: usize, probe: &m
         if !moved {
             break;
         }
-        let clock = probe.clock();
-        state_bundle.metric = state_bundle.metric_router(probe);
-        probe.evaluated(clock);
+        state_bundle.metric = state_bundle.evaluate(probe);
         work += 1.0;
         if state_bundle.metric > best.0 {
             best = (state_bundle.metric, plans(state_bundle));
@@ -133,6 +129,6 @@ pub fn shadow_start(state_bundle: &mut StateBundle, iterations: usize, probe: &m
             state_bundle.upgrade_arr[index].state.update_payload(plan);
         }
     }
-    state_bundle.metric = state_bundle.metric_router(probe);
+    state_bundle.metric = state_bundle.evaluate(probe);
     work
 }

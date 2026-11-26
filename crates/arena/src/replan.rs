@@ -10,7 +10,6 @@ use crate::carry::{carried, flow};
 use crate::db::{self, ReplanRow};
 use crate::generate::{next_up, play};
 use crate::scenario::Scenario;
-use crate::worker::Essence;
 use comfy_table::{Table, presets::UTF8_BORDERS_ONLY};
 use hf_core::honing_utils::state_bundle::StateBundle;
 use hf_core::optimizer::solve;
@@ -50,7 +49,7 @@ pub struct Args {
 }
 
 fn evaluated(mut state_bundle: StateBundle) -> StateBundle {
-    state_bundle.metric = state_bundle.metric_router(&mut Probe::default());
+    state_bundle.metric = state_bundle.evaluate(&mut Probe::default());
     state_bundle
 }
 
@@ -58,7 +57,7 @@ fn evaluated(mut state_bundle: StateBundle) -> StateBundle {
 fn exact(state_bundle: &StateBundle) -> f64 {
     let mut state_bundle = state_bundle.clone();
     state_bundle.tuning.max_brute_size = usize::MAX;
-    state_bundle.metric_router(&mut Probe::default())
+    state_bundle.evaluate(&mut Probe::default())
 }
 
 /// paths and sizes the exact metric is taken on, as a check that a gain is not the optimizer
@@ -138,7 +137,7 @@ fn one_path(
             break;
         }
         payload.adv_cache = Some(plan.adv_cache.clone());
-        let kept = evaluated(carried(&before, &Essence::of(&plan), &payload));
+        let kept = evaluated(carried(&before, &plan.to_essence(), &payload));
         plan = if step % args.every == 0 {
             let new = polish(&kept, args.iters, 1, rng.next_u64());
             rows.push(ReplanRow {
@@ -381,7 +380,7 @@ mod tests {
             let used = normal_used(plan, index, taps);
             pay(&mut next, plan, &used);
             next.upgrade_info.remove(index);
-            let kept = evaluated(carried(payload, &Essence::of(plan), &next));
+            let kept = evaluated(carried(payload, &plan.to_essence(), &next));
             let new_bands = &kept.prep_output.bands[kept.prep_output.optimizer_plan];
             let sunk: f64 = (0..used.len())
                 .map(|row| gold(used[row], &bands[row]) - gold(0.0, &new_bands[row]))

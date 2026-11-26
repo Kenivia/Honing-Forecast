@@ -1,6 +1,6 @@
 # Evaluation pipeline: what not to try
 
-Warnings for `Evaluation pipeline.md`: things that failed or were ruled out. Read before trying something new on the evaluator.
+Warnings for `../Evaluation pipeline.md`: things that failed or were ruled out. Read before trying something new on the evaluator.
 
 The overnight test of the saddlepoint's replacements is archived with its driver, results and conclusions in `ignored/core experiments/FINDINGS.md` at the repository root (gitignored): everything tried against the approximations' weakness with one dominant upgrade, and the code of the dropped alternatives (the size-biased pair, the split). Earlier speed measurements are in `Arena tried.md`.
 

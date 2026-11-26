@@ -23,6 +23,11 @@ use rand_distr::StandardNormal;
 use serde_json::{Map, Value, json};
 use std::collections::BTreeMap;
 
+/// What a case is, each in [0, 1). Owned amounts are quantiles of what the default state uses
+/// (wealth, spread by imbalance), so read off the evaluator. Chests: none under 0.12, else 1 to 8
+/// stacks, each of 1 to 300 chests from one of the `chest_family` kinds, sized against `max_used`
+/// (base materials mostly 1–15% of it, optional ones 2–300%), four Serca stacks in ten converted
+/// T4 materials.
 pub const AXES: [&str; 18] = [
     "tier",
     "size",
@@ -121,7 +126,7 @@ fn set_price(mat: &mut OneMaterial, price: f64) {
 
 fn evaluated(payload: &Payload) -> StateBundle {
     let mut state_bundle = StateBundle::from_payload(payload.clone());
-    state_bundle.metric = state_bundle.metric_router(&mut Probe::default());
+    state_bundle.metric = state_bundle.evaluate(&mut Probe::default());
     state_bundle.set_latest_special_probs();
     state_bundle
 }
@@ -810,7 +815,7 @@ fn planned<R: Rng>(payload: &Payload, rng: &mut R) -> StateBundle {
         solve(rng, state_bundle, None, &mut Probe::default()).best
     }));
     let mut best = solved.unwrap_or_else(|_| StateBundle::from_payload(payload.clone()));
-    best.metric = best.metric_router(&mut Probe::default());
+    best.metric = best.evaluate(&mut Probe::default());
     best
 }
 

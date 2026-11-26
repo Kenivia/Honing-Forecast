@@ -1,3 +1,6 @@
+// Arena sets `choices` and `income` from the real save tests/income-fixture.json, through the pages' own job builders.
+// Choices: per character with upgrades, the bonus chests of the three raids shown and Paradise (Destiny at Base and
+// Level 10, Netherworld at Base), as stars. Income: every snapshot, now and 12 weeks ahead. All at streak length 10.
 import fs from "node:fs";
 import path from "node:path";
 import { nextTick } from "vue";

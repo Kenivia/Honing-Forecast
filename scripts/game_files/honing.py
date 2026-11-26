@@ -1,7 +1,7 @@
 """
 Rebuilds the normal honing of the constants JSONs from the game's tables, says which fields differ from the JSON
 each starts from, and writes the result. Serca gets everything normal honing has; T4 only its rates (its costs
-are discounted, AI notes/Calculator core/Domain model.md). The rest is kept from the base, with the chances
+are discounted, AI notes/Calculator core/Further learnings/Honing data in the game files.md). The rest is kept from the base, with the chances
 turned into the game's integers. Run after scanner_setup/game_files/extract.py.
 
     python scripts/game_files/honing.py

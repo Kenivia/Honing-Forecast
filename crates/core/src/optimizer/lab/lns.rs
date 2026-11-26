@@ -8,7 +8,7 @@
 //! Lab switches (`OFF`, `ON`) and the trace (`lns_*` rows) are in
 //! `arena_data/lab/iteration2/lns/report.md`.
 
-use super::{check, evaluate};
+use super::check;
 use crate::advanced_honing::utils::MAX_ADV_STATE;
 use crate::honing_utils::materials::NUM_BASE_MATS;
 use crate::honing_utils::state_bundle::{StateBundle, StateEssence};
@@ -42,6 +42,9 @@ const STALL: f64 = 0.45;
 const BUILD_TRIES: usize = 8;
 /// the `Tuning::lab_off` and `lab_on` switches this reads
 pub const OFF: &[&str] = &["ladder", "price", "empty", "rrt", "adapt"];
+/// `fromsolve`: `solve`'s result as a candidate, its cost outside the budget; `insert`: `solve`'s
+/// insertion polish after the start and at the end; `mempolish`: memetic's polish on its best.
+/// Trace rows `lns_gain`, `lns_wins`, `lns_cost`, `lns_picks` (`iteration2/lns/scripts/attr.py`)
 pub const ON: &[&str] = &["fromsolve", "insert", "chestboth", "mempolish"];
 /// trace rows: phases of the start and the end, then the arms
 const PHASES: usize = 8 + ARMS.len();
@@ -253,7 +256,7 @@ fn make_valid(sb: &mut StateBundle) {
 impl Search<'_> {
     fn evaluate(&mut self, sb: &mut StateBundle) -> f64 {
         self.work += 1.0;
-        let metric = evaluate(sb, self.probe);
+        let metric = sb.evaluate(self.probe);
         sb.metric = metric;
         metric
     }
