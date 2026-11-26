@@ -30,4 +30,4 @@ Warnings for the currency reader (`Currency.md`): what failed or was ruled out. 
 
 ## Not tried
 
-Other resolutions and brightness settings than those of the stills and captures in `scanner_setup/brightness`, a lossy recording, and the inventory's tooltip when the inventory is high enough not to push it up.
+Other resolutions and brightness settings than those of the stills and captures in `scanner_setup/test_stills`, a lossy recording, and the inventory's tooltip when the inventory is high enough not to push it up.

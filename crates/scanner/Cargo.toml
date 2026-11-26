@@ -28,5 +28,8 @@ strsim = "0.11.1"
 serde_bytes = "0.11.19"
 lz4_flex = { version = "0.14.0", default-features = false, features = ["std", "safe-decode", "checked-decode"] }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+clap = { version = "4.6", features = ["derive"] }
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = "0.3"

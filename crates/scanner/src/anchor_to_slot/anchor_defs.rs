@@ -307,7 +307,7 @@ pub struct AnchorVariant {
     pub bound: Bound,
     // searched when the lone inventory is not at its bound, as rationed by search_lone
     pub roam: Option<Bound>,
-    // Setting from the matched patch's mean, fitted to the captures in scanner_setup/brightness/brightness sweep inputs
+    // Setting from the matched patch's mean, fitted to the captures in scanner_setup/test_stills/brightness sweep
     pub brightness: Option<[f64; 3]>,
 }
 

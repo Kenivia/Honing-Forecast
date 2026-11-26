@@ -16,12 +16,10 @@ export default async ({ page, hf }) => {
 ```
 
 - An image becomes a stream repeating that frame. A video plays once, drawn frame by frame, then repeats its last frame twice a second.
-- **Headless Chromium does not draw every frame of a video playing at full speed**: under load frames get drawn twice and others skipped (a third of them in one run). To feed the scanner every frame, play the upload at half speed: before opening the page, wrap `HTMLMediaElement.prototype.play` in an init script so it sets `playbackRate = 0.5` on blob sources. Count what was drawn by wrapping `CanvasRenderingContext2D.prototype.drawImage`.
-- Works headless and headed, in Chromium and Firefox, for PNG and H.264 MP4.
+- **Feed it debug captures (`.hfcap`), not videos**: a replay scans every recorded frame and repeats exactly, where headless Chromium drops and doubles frames of a video playing at full speed. A still works too. Works headless and headed, in Chromium and Firefox.
 - Any file size works. The `Aspect` and `Brightness` selects are under the capture card's "Troubleshooting" toggle (hidden during a replay), both on auto; manual brightness shows an input labelled `In-game brightness`. A change to those two shows `Apply` and `Cancel` buttons, and nothing happens until `Apply` (idle, `Apply` only keeps them for the next capture). Applied settings are saved in localStorage, so within one MCP session a later page load starts with them, and the toggle cannot close the section while one is off its default.
-- **Recordings are whatever is in `ignored/scanner_tests/recordings`** (any video, plus the `.hfcap` debug captures; all git-ignored, so local). The suite and the profile take every video there, the suite and the e2e tests every `.hfcap`, so a new one only has to be dropped in. `python scanner_setup/brightness/probe_capture.py "<file>"` says what one is. A recording stands for itself in a measurement by its file name. Local stills kept as tests are in `ignored/scanner_tests/stills/<folder>/`, and `expected.json` files there say what some must read (`pnpm scanner-check`); stills and captures of the live game come from `pnpm game-capture` (`Screen scanner/Live game.md`).
-- Stills: `scanner_setup/brightness/brightness sweep inputs/1080 char inv` (lone inventory) and `.../1080p storage` (storage layout with a chest tooltip), both 1080p at every brightness setting; the `<height> raw` folders hold native stills per resolution, and `1440p raw/old` has `inventory top left.png` and `hover tooltip.png` (a character inventory with items), the `storage ...` files (the storage layout) and `21 by 9 storage.png` (storage at forced 21:9; auto detects it; keep 2560x1440).
-- The file must be exactly the game's resolution: there is no resolution input. A native 3440x1440 recording is taken as 21:9 by auto. Headless Chromium plays 60 fps ones at half speed without trouble.
+- **Test inputs** (captures in `ignored/scanner_tests/recordings`, stills in `scanner_setup/test_stills/` and `ignored/scanner_tests/stills/`) are listed in `Screen scanner/Developing and testing.md`. Useful stills here: `test_stills/brightness sweep/1080p inventory` (lone inventory) and `1080p storage` (storage layout with a chest tooltip); `test_stills/resolutions/1440p` has `inventory top left.png`, `hover tooltip.png`, the `storage ...` files and `21 by 9 storage.png` (forced 21:9 at 2560x1440).
+- The file must be exactly the game's resolution: there is no resolution input. A native 3440x1440 capture is taken as 21:9 by auto.
 - The grid keeps its slots after `Stop` and stays editable; starting the next capture wipes it, and the capture card says so while idle.
 - The first scan is slow (wasm init, the anchor searches). Slots get a canvas once their page has been looked at, which takes a while for a full page; until then they show `?`. A slot's status is its border colour (`style.borderColor` holds the CSS variable, see `Slot grid.md`).
 - Chests read from tooltips show in the dashboard under the grid when a slot with that chest's icon is hovered or clicked. The dashboard's inputs are labelled `Item`, `Amount` and `Tradability` (the last two only while an item is chosen; match `Tradability` exactly, the manifest has inputs ending in it), with buttons `Save edit` (disabled until amount and tradability are filled), `Retry` and `Okay`. Every frame of an uploaded recording is scanned. Texts arrive later than the frame they were cut from, so wait for the OCR queue to empty (`window.__ocr_timings` stops growing) before reading the grid.
@@ -36,24 +34,6 @@ export default async ({ page, hf }) => {
 - To test the manifest without a capture, set `slots`, `chests`, `edits` (through `set_edit`) and `seen_pages` in `ScanStore.ts` from `page.evaluate`. Import the module by the URL the app loaded it from (look it up in `performance.getEntriesByType("resource")`); a hot-reloaded file has a `?t=` query, and the bare path gives a second, unused instance.
 - **A Vue warning on every slot of every grid update kills the run.** Playwright keeps logged objects alive, so the headless browser grew past 4 GB and the page stopped answering within seconds (an `active` prop given null instead of false did this). If the page hangs right after capture starts, count console warnings first.
 
-## Recording test inputs
-
-A recording stands in for a live screen share, so it should carry the same losses and no others. The share is **not** lossless: Chromium's desktop capturer hands over ARGB and the capture client runs it through libyuv `ConvertToI420`, so the frames reaching `copyTo(dest, { format: "RGBA" })` are 4:2:0 chroma-subsampled but otherwise uncompressed. Firefox has no `MediaStreamTrackProcessor`, so there the frames come off a `<video>` instead, the same way an upload does.
-
-OBS settings that match:
-
-| Where | Setting |
-| --- | --- |
-| Video | Base = Output, no scaling; 30 fps (matches `CAPTURE_FPS`) |
-| Advanced | Color Format NV12, Color Space 709, Color Range **Limited** |
-| Output (advanced) | x264, rate control CRF, **CRF 1**, preset veryfast, profile high, mp4 |
-| Source | Window or Display Capture, method Windows 10 (WGC), cursor on, transform reset |
-
-- **CRF 1, not 0.** Lossless H.264 needs `qpprime_y_zero_transform_bypass_flag`, which exists only in the High 4:4:4 Predictive profile, so x264 stamps profile 244 on the file even when the pixels are 4:2:0. Firefox then refuses it outright (`media error 3`, "Decoder may not have the capability to handle the requested video format with YUV444 chroma subsampling") and VLC's hardware path mangles the colours. CRF 1 stays in High profile, decodes in both browsers, and its quantisation is far under the 4:2:0 loss that is being reproduced anyway. The profile is in the SPS, so a bad file has to be re-recorded, not remuxed.
-- **Limited range, not full.** OBS's mp4 does tag `colr nclx` 709/limited, and the browser agrees with it; full range with a lost tag would crush blacks and skew the brightness reading.
-- A hardware encoder at Main profile with no colour tags gives extra lossy compression, which eats the yellow out of a thin last digit (`Tooltips.md`); record with the settings above instead.
-- `python scanner_setup/brightness/probe_capture.py "<file.mp4>"` prints resolution, fps, profile, chroma, range, colour tags and the x264 options read out of the SEI, and flags profile 244, non-4:2:0, full range and a frame rate away from 30. A good file reads `profile 100 (High)`, `chroma 4:2:0`, `lossless=0`, `range=limited`, `crf=1.0`.
-
 ## State you can read
 
 - The card shows no live/idle status. While capturing, with "Troubleshooting" open (a button, `/Troubleshooting/`), it shows the element labelled `Frames scanned per second` (`N fps scanned`); open it and wait on that.
@@ -63,38 +43,13 @@ OBS settings that match:
 - Debug captures (`Pipeline.md`, "Debug captures"), behind "Show debug options": the buttons `Record debug capture` / `Stop recording` (enabled while capturing) and `Download capture` (enabled once recording has stopped with something recorded; it raises a download event), and the element labelled `Capture size`, as `122 MB ready`. Setting a `.hfcap` on the upload input re-runs it; when it is through the card shows `Replay finished, re-run on this build.` While recording, `window.__record_timings` has one record per frame recorded (`copy`, `record`, `bytes`) and the scan timings have `forward`.
 - Leaving the scanner page pauses the loop but keeps the stream; returning shows `Frames scanned per second` again without a new upload.
 
-## Measuring scan time
+## Measuring and checking a change
 
-`pnpm scanner-profile [--name=<run>] [--no-build] [--firefox] [--keep] [recording...]` does the whole thing: it builds the wasm, starts vite if nothing answers on :5173, plays each recording through the scanner page, writes a dump per recording to `target/scan-profiles/<run>/` (`last` without a name) and prints the stage breakdown. With no recording it does every one in `ignored/scanner_tests/recordings`, about 15 minutes for the four there now. `--keep` leaves the dev server running. `scanner_setup/browser/scan_summary.mjs <dump>...` re-prints a dump, so a run can be re-read without replaying anything.
-
-- **`target/` is not watched by vite** (`server.watch.ignored`); the many files of `target/slot-bench` would otherwise make the dev server unresponsive and every run time out.
-- **With no dev server up, the first run usually dies on `page.goto` timing out** while vite compiles the page for the first time. Run it again with `--keep`, which leaves the server up.
-- **It builds the wasm every time**, dev server or not, so it never measures a stale `crates/wasm/pkg`. `--no-build` is for a second run of the same tree.
-- `pnpm scanner-compare <run a> <run b>` prints two runs side by side, mean ms per scanned frame of every stage with the change, per recording.
-
-- The browse script empties the page's three arrays every two seconds and keeps the records itself, since the page only holds the last 5000 and the longer 1440p recording makes 7,600.
-- One recording takes twice its length and a little more: it plays at half speed (headless Chromium skips frames at full speed) and then waits for the OCR queue to drain.
-- **Do not edit any project file while a run is in flight.** Vite reloads the page, which empties the timing arrays; a dump with 0 scans is that. A `cargo build` alongside does the same another way: the upload is still loading when the script starts counting frames, and it sees none.
-- The scripts are `profile_scanner.mjs` (the wrapper), `profile_scanner_browse.mjs` (the browse script), `scan_summary.mjs` and `scan_compare.mjs`, all in `scanner_setup/browser`.
-
-## Checking and timing a scanner change
-
-The native suite says whether a change alters what is read; the browser profile says what it costs. Both keep runs by name, so the order is the same each time:
-
-1. `pnpm scanner-suite run before` on the tree as it is (`scanner_setup/scanner/suite.py`: `tooltip_test` over every recording, the stills folders and each folder of `ignored/scanner_tests/stills` (as `local-<folder>`), and `capture_replay` over every debug capture in `ignored/scanner_tests/recordings`, into `target/scanner-suite/before/`, about 5 minutes). A run named `reference` is kept there from the last change; if it is of the current tree it will do.
-2. Make the change. `pnpm scanner-suite run after`, then `pnpm scanner-suite cmp before after`: `.txt` byte for byte, `.err` without timing values and thread ids, so a stage called more or less often still shows as a difference. The harness repeats exactly (`Pipeline.md`), so no difference means nothing read changed.
-3. `pnpm check`.
-4. For timing, back to back: `git stash`, `pnpm scanner-profile --name=before`, `git stash pop`, `pnpm scanner-profile --name=after`, `pnpm scanner-compare before after`. Name one or two recordings to keep it short.
-
-- **Only compare browser runs made back to back.** The same build gave 13.1 and 16.4 ms wasm calls an hour apart on this machine. Have the game closed.
-- `pnpm scanner-suite timings <a> [<b>]` prints the native stage timers as ms per scanned frame. They only mean something from `run <name> --seq`, which plays the recordings one at a time; a normal run plays all of them at once.
-- A stage with no timer is measured with a temporary `timing::timed("m/...", ...)` around it, which then shows in `timings` with its call count. A timed call costs about 60 ns natively, which matters past a million calls.
-- The 768p and 900p stills say little, and the 900p folder ends in an out-of-bounds crop; both are in the run so that it stays that way. The suite's still folders are listed in `STILL_FOLDERS` (`suite.py`) and only their top level is globbed: a still moved into a subfolder drops out of the run silently, so update the list with it.
-- The suite needs python with opencv, which reads each recording's frame size; that size is the game resolution.
+`pnpm scanner-profile` replays debug captures on this page and dumps the three timing arrays below; how to run it, and the native suite that says whether a change alters what is read, are in `Screen scanner/Developing and testing.md`.
 
 The dumps are the three arrays the page keeps, all in ms:
 
-`window.__scan_timings` holds one record per scan (last 5000): `read` (waiting for a frame), `to_worker`, `copy`, `wasm_call`, `to_main`, `process_result` (merging the result, not rendering), `total`, and `rust`, a list of `[name, total, calls]` for the stages inside the wasm call. `frame_time` is the frame's timestamp in microseconds. A scan saw a tooltip if `rust` has `tooltip/layout`, a chest if it has `tooltip/chest`. A frame that was not scanned because too little changed has no `anchors` (it still has `changed`, `apply_ocr` and `to_value`). Skip the first record, which carries startup, and the records after the video ended, which are its last frame repeating twice a second and show up as a `frame_time` gap of half a second. `window.__scan_renders` has the duration of each grid update. `window.__ocr_timings` has one record per OCR batch: `jobs`, `width` (px of the lines as captured, no longer of the 64 px strips), `took`, `waited` (how long its first reads took from being queued) and `left` (lines still queued); a batch with no first read in it records `waited: 0`, so those have to be dropped before taking a median. The scanner's own `rust` list no longer has any OCR in it.
+`window.__scan_timings` holds one record per scan (last 5000): `read` (waiting for a frame), `to_worker`, `copy`, `wasm_call`, `to_main`, `process_result` (merging the result, not rendering), `total`, and `rust`, a list of `[name, total, calls]` for the stages inside the wasm call. A scan saw a tooltip if `rust` has `tooltip/layout`, a chest if it has `tooltip/chest`; a frame skipped as still has no `anchors`. Skip the first record, which carries startup. `window.__scan_renders` has the duration of each grid update. `window.__ocr_timings` has one record per OCR batch: `jobs`, `width` (px of the lines as captured), `took`, `waited` (how long its first reads took from being queued; 0 for a batch with none, so drop those before a median) and `left` (lines still queued).
 
 ## Real screen share, headed only
 

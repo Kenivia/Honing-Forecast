@@ -1,9 +1,20 @@
 // Scores the number reader on ignored/market/dataset/labels.json: glyph_eval
 // With strips folders (market_scan --strips), reads their number crops again and prints each read that changed.
+// --debug prints the three closest digits of every glyph.
+use clap::Parser;
 use hf_market::glyph;
 
+#[derive(Parser)]
+struct Cli {
+    strips: Vec<String>,
+    #[arg(long)]
+    debug: bool,
+}
+
 fn main() {
-    let folders: Vec<String> = std::env::args().skip(1).collect();
+    let cli = Cli::parse();
+    glyph::DEBUG.store(cli.debug, std::sync::atomic::Ordering::Relaxed);
+    let folders = cli.strips;
     if !folders.is_empty() {
         return reread(&folders);
     }

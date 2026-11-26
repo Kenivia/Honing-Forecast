@@ -4,9 +4,10 @@
 // the matcher is at fault; if the anchor is right and the slots are not, the offsets in the anchor
 // to inventory map are.
 //   cargo run --release --bin anchor_locate -- <image>...
+use clap::Parser;
 use hf_scanner::{
     anchor_to_slot::anchor_defs::ANCHORS,
-    dev_utils::native,
+    dev_utils::native::{self, Options},
     image_utils::{
         brightness::normalize_brightness,
         common::{Rect, get_resizer},
@@ -14,13 +15,21 @@ use hf_scanner::{
     interface::setup::icon_lookup,
     scanner_state::ScannerState,
 };
-use std::env;
+
+#[derive(Parser)]
+struct Cli {
+    images: Vec<String>,
+    #[command(flatten)]
+    options: Options,
+}
 
 fn main() {
     println!(
         "file\tscale\tanchor\tvariant\treported_x\treported_y\tdx\tdy\tscore_reported\tscore_best"
     );
-    for path in env::args().skip(1) {
+    let cli = Cli::parse();
+    native::configure(&cli.options);
+    for path in cli.images {
         let image = image::open(&path).unwrap().to_rgba8();
         let (width, height) = (image.width() as usize, image.height() as usize);
         let (mut state, mut pixels) = native::new_state(width, height);

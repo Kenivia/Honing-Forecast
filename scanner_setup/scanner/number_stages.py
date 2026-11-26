@@ -1,7 +1,7 @@
 """
 Puts the stage images the number_probe bin wrote for each read into one picture per read. Needs opencv.
 
-    python scanner_setup/tooltips/number_stages.py <probe out dir>
+    python scanner_setup/scanner/number_stages.py <probe out dir>
 
 Writes <dir>/f<frame>.png.
 """

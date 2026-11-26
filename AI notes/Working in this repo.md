@@ -58,7 +58,7 @@ copies of each crate before a `cargo clean` on 2026-10-27, so clean it again whe
 | `pnpm test:rust`     | Rust unit tests for the core and scanner, and the arena's short checks.  |
 | `pnpm arena`         | The core's test harness. See `Calculator core/Arena.md`.                 |
 | `pnpm arena stress`  | The evaluator's probabilities against an exact convolution.              |
-| `pnpm scanner-suite` | The scanner over every recording and still, natively; compares two runs. |
+| `pnpm scanner-suite` | The scanner over every capture and still, natively; compares two runs. `pnpm scanner-check` holds it to known answers (`Screen scanner/Developing and testing.md`). |
 
 TypeScript is pinned to 5.x because `vue-tsc` needs the `./lib/tsc` entry point that
 TypeScript 6 removed. Do not upgrade TypeScript without checking `pnpm check` still runs.

@@ -1,0 +1,146 @@
+{
+ "char inventory no hover.png": {
+  "Silver": [
+   0,
+   341815830,
+   0
+  ],
+  "Shards": [
+   10937774,
+   0,
+   0
+  ]
+ },
+ "char inventory, hovered outside.png": {
+  "Silver": [
+   0,
+   341815830,
+   0
+  ],
+  "Gold": [
+   400000,
+   5000,
+   3018587
+  ]
+ },
+ "currency breakdown default position .png": {
+  "Silver": [
+   0,
+   341815830,
+   0
+  ],
+  "Shards": [
+   10937774,
+   0,
+   0
+  ]
+ },
+ "currency breakdown default position 21 by 9.png": {
+  "Silver": [
+   0,
+   341815830,
+   0
+  ],
+  "Shards": [
+   10937774,
+   0,
+   0
+  ]
+ },
+ "currency breakdown default position hovered.png": {
+  "Silver": [
+   0,
+   341815830,
+   0
+  ],
+  "Gold": [
+   400000,
+   5000,
+   3018587
+  ],
+  "Shards": [
+   10937774,
+   0,
+   0
+  ]
+ },
+ "currency breakdown in different position hovered.png": {
+  "Silver": [
+   0,
+   341815830,
+   0
+  ],
+  "Shards": [
+   10937774,
+   0,
+   0
+  ]
+ },
+ "hovered in inventory tooltip left.png": {
+  "Silver": [
+   0,
+   341815830,
+   0
+  ],
+  "Gold": [
+   400000,
+   5000,
+   3018587
+  ],
+  "Shards": [
+   10937774,
+   0,
+   0
+  ]
+ },
+ "hovered in inventory tooltip right.png": {
+  "Silver": [
+   0,
+   341815830,
+   0
+  ],
+  "Gold": [
+   400000,
+   5000,
+   3018587
+  ],
+  "Shards": [
+   10937774,
+   0,
+   0
+  ]
+ },
+ "hovered in storage tooltip left.png": {
+  "Gold": [
+   400000,
+   5000,
+   3018587
+  ]
+ },
+ "hovered in storage tooltip right 21 by 9.png": {
+  "Silver": [
+   0,
+   341815830,
+   0
+  ],
+  "Gold": [
+   400000,
+   5000,
+   3018587
+  ]
+ },
+ "no gold no silver in top bar, currency breakdown no hover.png": {
+  "Shards": [
+   10937774,
+   0,
+   0
+  ]
+ },
+ "no shard in top bar currency breakdown.png": {
+  "Silver": [
+   0,
+   341815830,
+   0
+  ]
+ }
+}

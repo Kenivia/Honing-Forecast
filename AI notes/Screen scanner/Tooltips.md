@@ -1,8 +1,6 @@
 # Hover tooltips
 
-How the item tooltip is read. The scanner reads it in `crates/scanner/src/tooltip`, as the last step of every scan. The research behind it was done in Python (`scanner_setup/tooltips/tooltip_poc.py` and `video_report.py`), which still run and also cover the one thing the scanner does not do (matching the chest rows' icons).
-
-The cases each rule was made for, the measurements and what was tried and dropped are in `Tooltips tried.md`. Read it only when trying something new here.
+How the item tooltip is read, in `crates/scanner/src/tooltip`, as the last step of every scan. What a tooltip looks like, where it goes and what the cursor covers, measured, is in `Further learnings/How the game draws.md`; read that before changing a constant here. The cases each rule was made for and what was tried and dropped are in `Further learnings/Tooltips tried.md`.
 
 ## What the scanner does with it
 
@@ -51,9 +49,7 @@ Each frame: find the title bar, read the title, find the "Amount Stacked" number
 - **Which page.** The slots beside a tooltip are those of the page last lit in that window (`tooltip_page_num`), not only of a page lit right now: the tooltip of a slot in the top rows is tall enough to cover the tabs of its own window. The page is given up when another tab is lit, the window is lost, or its own tab has looked dark on three scans in a row while no tooltip was over it. Slots are still only read while a tab is lit.
 - **Result.** `hover` in the scanner state has the voted title, icon, amount, tradability and slot. The slot gets `hovered`, `tooltip_amount`, `tradability` and `label`, which it keeps while it holds the same icon. A hover only writes what it read: a tooltip seen for a frame or two while fading in has no tradability and often no amount, and must not blank what a longer hover of the same slot wrote. The slot also gets `tooltip_failed` when the hover is over (or out of reads) with no amount: no amount line found, or no two crops ever agreeing. A slot the user edited is not written to. The slot's own OCR'd count is left alone; the tooltip amount is the full number where the slot shows 9999 or is misread.
 
-Colours are compared after brightness normalisation, so the constants in the Rust code are a few levels below the on-screen values quoted below. Pixel constants there are 1440p and scaled by the scanner's scale factor like everything else; the sizes in this note are the 1080p measurements, which are 3/4 of them.
-
-`cargo run --release --bin tooltip_test` is the native harness: it runs the whole scanner over stills, or over a recording piped in as raw frames by `scanner_setup/tooltips/dump_frames.py`, and prints each hover and every slot that got tooltip data. `pnpm scanner-suite` runs it over every recording and the stills folders and compares two runs (`Browser harness/Screen scanner.md`).
+Colours are compared after brightness normalisation, so the Rust constants sit a few levels below the on-screen values. Pixel constants are 1440p.
 
 ## Chests
 
@@ -85,38 +81,10 @@ A chest is one of `scanner_setup/templates/chests.json`, the game's own list of 
 
 `cargo run --release --bin chest_rows -- "<name> | <count>" ...` prints the chests some rows read as, for trying a read by hand.
 
-## What a tooltip looks like
-
-Top to bottom:
-
-- **Title bar.** Fully opaque, one flat colour (30, 34, 39), 307 px wide. 34 px tall with a one-line title, 52 px with two lines. The item name is in the rarity colour, followed by a white `[X n]` that can wrap onto the second line. Above the text is a clean strip of the bar colour, 11 rows. A single-item stack has no `[X n]` at all.
-- **Body.** About 97% opaque over (14, 19, 20), so its pixels sit 0 to 8 levels above that colour depending on what is behind.
-  - Item icon: 64 x 64, the native icon art, 7 px in from the title's left edge and 17 px below the title bar, over a rarity gradient. Rarity and "Item Tier n" text to its right.
-  - Optional right-aligned white line ("Required Item Lv. 1640").
-  - Bound items only: a white left-aligned "Bound to Character" / "Bound to Roster" line, then a red right-aligned "Untradable". Tradable items have a white right-aligned "Tradable" instead and no bind line.
-  - Description lines in tan (228, 204, 130), with phrases some descriptions highlight in pale yellow (255, 255, 172, the game's `#FFFFFFAC`). "Consumed before tradable items." is in the bright amount yellow.
-  - "Amount Stacked: n" and "Total Amount Owned: n": white label, number in opaque (255, 213, 0), with a thousands separator.
-  - Red restriction lines, then cyan acquisition sources.
-- **Chest contents** (boxes and pouches): a pure black (0, 0, 0) panel inset 5 px in the body, placed after the restriction lines. A header with one yellow phrase, then one row per item: a 30 px icon square 18 px in from the title's left edge, the name in rarity colour, and a white "xN" under the name.
-  The header comes in three kinds: "Obtain [all] of the following items." (one short word), "You can [select and obtain 1] of the following items." (white text after it on the same line), "There is a [chance that you can obtain one] of the following items." (yellow runs to the end of the line). "Obtain one of the following items at random" also has one short yellow word.
-- **Shortcut hints.** A separate, narrower box below, 80% black. Its lines depend on where the item is; nothing useful is in it.
-
-All sizes are 1080p pixels and scale with the UI height. Colours are at the brightness of the 1080p examples.
-
-## Placement
-
-The tooltip sits against the hovered slot's column: its title starts 8 px right of the slot's right edge, or ends 12 px left of the slot's left edge when it flips to the left. Its top equals the slot's top, unless the screen bottom would cut it off, in which case it is pushed up and only the column is known. Most examples are pushed up.
-
-## The cursor
-
-Screenshots do not include the cursor, the recording does. It is customisable, so it is never a matching target. It sits over the hovered slot and, when the tooltip is on the slot's right, pokes into the tooltip's left edge. At the largest size it reaches about 90 px in: the left of the title bar, most of the icon when the tooltip is level with the slot, and the start of the bind and amount labels are covered. The hovered slot itself and its hover glow (a brighter inner ring about 6 px wide) are usually covered and must not be relied on. Whatever the cursor touches merges with it when the body is split into lines, so the header and amount lines are read only from columns 100 px and beyond.
-
-Tooltips also fade in over a few frames, during which no colour matches.
-
 ## Known limits
 
 - **Reading depends on the brightness estimate being right to a few settings.** Text colours are normalised like everything else (the setting does change them), so there is no shortcut around the estimate; it is within a setting at 1080p (`Pipeline.md`).
-- **Colour limits are by hue where they can be.** After normalising with the gamma law, a text colour's channel ratios are the same at every setting and on soft edges, to within 0.02: amount yellow has green at 0.82 of red and blue at 0; description tan 0.89 and 0.54; red 0.39 and 0.37; white and grey 1. How bright a text pixel is depends on how much of the glyph covers it (110 to 255, median 150 to 200) and drops a few percent towards setting 100. So yellow is told by its ratios on any text pixel. Its blue limit is half of red: compression washes thin yellow out (green up to 0.95 of red, blue up to 0.4), and tan is only just beyond at 0.54. A description line cannot pass for an amount anyway, having no white label.
+- **Colour limits are by hue where they can be**, since a text colour's channel ratios survive normalising at every setting. Yellow's blue limit is half of red, because compression washes thin yellow out; tan is only just beyond it, and a description line has no white label anyway.
 - **The chest panel's black is 6 or less.** It is 0 on screen. The body around it normalises to 12 to 20, and a higher limit lets the panel start among the amount lines at bright settings.
 - **Across brightness settings**, title, amount, tradability and contents read at every setting but 5. At 5 the title bar and the body are one level apart in every channel, which is where the two cross over. On a compressed recording at setting 0 no tooltip is found: compression leaves the dark panels as noise between 0 and 7.
 - **Where the title bar ends** is found in the captured colours, as three rows in a row that differ from the bar by a quarter of its level (at least 2). Done on normalised colours it fails below setting 50, where bar and body are a few levels apart and normalising multiplies that along with the noise. The body's own colour is likewise checked after taking off up to 9 captured levels of what shows through.
@@ -126,7 +94,7 @@ Tooltips also fade in over a few frames, during which no colour matches.
 - **Two stacks of one item in a column** resolve only if the tooltip is level with one of them, their own counts differ and were read right, or they show the same count and only one of them lit up.
 - **The Decay and Phantom books** (purple, "[13-15]" and "[16-19]") have no template and no row, so they are irrelevant slots.
 - **Chests that share an icon** (II and III of the same pouch) are one slot template. Their rows tell them apart, so each needs its own hover unless every chest the icon can be opens alike.
-- **H.264 recordings break exact colours.** The scanner matches the title colour with a tolerance of 8 either way. Live screen share is 4:2:0 but otherwise uncompressed (`Browser harness/Screen scanner.md`).
+- **H.264 recordings break exact colours.** The scanner matches the title colour with a tolerance of 8 either way. Live screen share is 4:2:0 but otherwise uncompressed, and debug captures keep it as it was.
 - **Character against Roster bound** is told apart only by how far the bind line extends (English text). When the cursor hides the line the frame casts no vote.
 - **Titles and row names are English only.**
 - The recogniser returns `?` for characters it does not know, the bracket of the count among them.

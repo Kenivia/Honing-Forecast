@@ -1,7 +1,7 @@
-// Profiles the screen scanner end to end: builds the wasm, serves if needed, plays each
-// recording through the scanner, then prints the stage breakdown.
-// pnpm scanner-profile [--name=<run>] [--no-build] [--firefox] [--keep] [recording...]
-// With no recording, every one in ignored/scanner_tests/recordings. Dumps go to target/scan-profiles/<run>/
+// Profiles the screen scanner end to end: builds the wasm, serves if needed, replays each debug
+// capture through the scanner page, then prints the stage breakdown.
+// pnpm scanner-profile [--name=<run>] [--no-build] [--firefox] [--keep] [capture.hfcap...]
+// With none named, every capture in ignored/scanner_tests/recordings. Dumps go to target/scan-profiles/<run>/
 // ("last" without a name), so a before and an after can be kept side by side for scanner-compare.
 import { spawn } from "node:child_process";
 import fs from "node:fs";
@@ -9,14 +9,13 @@ import path from "node:path";
 
 const BASE_URL = "http://localhost:5173";
 const RECORDINGS = "ignored/scanner_tests/recordings";
-const VIDEO = /\.(mp4|mkv|webm|mov)$/i;
 
 const args = process.argv.slice(2);
 const flags = args.filter((a) => a.startsWith("--"));
 const named = args.filter((a) => !a.startsWith("--"));
 const files = named.length
   ? named
-  : fs.readdirSync(RECORDINGS).filter((x) => VIDEO.test(x)).sort().map((x) => path.join(RECORDINGS, x));
+  : fs.readdirSync(RECORDINGS).filter((x) => x.endsWith(".hfcap")).sort().map((x) => path.join(RECORDINGS, x));
 const run_name = flags.find((x) => x.startsWith("--name="))?.slice(7) ?? "last";
 const out_dir = path.join("target/scan-profiles", run_name);
 

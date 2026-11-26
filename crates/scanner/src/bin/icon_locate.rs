@@ -2,19 +2,28 @@
 // trusting the grid position. Prints the offset from the grid so it can be checked for a pattern,
 // and what the match score gains by moving there.
 //   cargo run --release --bin icon_locate -- <image>...
+use clap::Parser;
 use hf_scanner::{
-    dev_utils::native,
+    dev_utils::native::{self, Options},
     image_utils::{brightness::normalize_brightness, common::get_resizer},
     interface::setup::icon_lookup,
     scanner_state::ScannerState,
 };
-use std::env;
+
+#[derive(Parser)]
+struct Cli {
+    images: Vec<String>,
+    #[command(flatten)]
+    options: Options,
+}
 
 fn main() {
     println!(
         "file\tscale\teff\tinventory\troot_x\troot_y\tpage\trow\tcol\ticon\tgrid_x\tgrid_y\tdx\tdy\tscore_grid\tscore_int\tscore_best"
     );
-    for path in env::args().skip(1) {
+    let cli = Cli::parse();
+    native::configure(&cli.options);
+    for path in cli.images {
         let image = image::open(&path).unwrap().to_rgba8();
         let (width, height) = (image.width() as usize, image.height() as usize);
         let (mut state, mut pixels) = native::new_state(width, height);

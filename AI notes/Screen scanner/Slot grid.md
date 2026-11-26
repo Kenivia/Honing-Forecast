@@ -2,7 +2,7 @@
 
 What the scanner page shows: every slot of the three windows, coloured by how far the scanner got with it, and a dashboard to inspect and correct one slot. The scan is treated as a snapshot: amounts are assumed not to change while it is taken.
 
-Code: `ScanStore.ts` (state), `SlotGrid.vue`, `SlotCell.vue`, `SlotDashboard.vue`. The status is worked out in Rust (`slot_status` in `scan_result.rs`). The cases behind the status rules are in `Slot grid tried.md`; read it only when changing them.
+Code: `ScanStore.ts` (state), `SlotGrid.vue`, `SlotCell.vue`, `SlotDashboard.vue`. The status is worked out in Rust (`slot_status` in `scan_result.rs`). The cases behind the status rules are in `Further learnings/Slot grid tried.md`; read it only when changing them.
 
 ## Status
 

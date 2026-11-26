@@ -1,7 +1,7 @@
 """
 Scores the output of the text_bench bin: per text strip variant, how many tooltip texts read right.
 
-    python scanner_setup/tooltips/text_bench.py <tsv>... [--show N]
+    python scanner_setup/scanner/text_bench.py <tsv>... [--show N]
 
 A title or a chest row's name is right when it is a title the game has, to the letter (a misread is
 almost never another real one). A count, an amount, a description line or a currency line has no

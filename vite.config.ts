@@ -77,7 +77,7 @@ export default defineConfig({
         "**/ignored/**",
         "**/target/**",
         "**/scanner_setup/game_files/**",
-        "**/scanner_setup/brightness/**",
+        "**/scanner_setup/test_stills/**",
         "**/scanner_setup/codex/**",
         "**/.tmp/**",
       ],

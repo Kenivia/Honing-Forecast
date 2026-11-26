@@ -13,11 +13,12 @@
 //                           line also as the strip the recogniser reads
 //   --check                 holds the slots against the hand edits of the end record, the only
 //                           right answers a capture has (see capture_edit)
-// TIMINGS=1 also prints each timed stage's total to stderr.
+//   --timings               each timed stage's total over the run, to stderr
+use clap::Parser;
 use hf_scanner::{
     dev_utils::{
         capture::read_frames,
-        native::{self, check_edits, describe, describe_chest, print_statuses},
+        native::{self, Options, check_edits, describe, describe_chest, print_statuses},
         timing,
     },
     scanner_state::{ScannerState, SlotAddress},
@@ -25,12 +26,30 @@ use hf_scanner::{
 };
 use std::{
     collections::{BTreeMap, HashMap},
-    env, fs,
+    fs,
 };
 
-fn option(args: &[String], name: &str) -> Option<String> {
-    let at = args.iter().position(|x| x == name)?;
-    Some(args[at + 1].clone())
+#[derive(Parser)]
+struct Cli {
+    capture: String,
+    #[arg(long)]
+    reference: Option<String>,
+    #[arg(long)]
+    slot: Option<String>,
+    #[arg(long)]
+    ocr: bool,
+    #[arg(long, default_value_t = 0)]
+    from: u64,
+    #[arg(long, default_value_t = u64::MAX)]
+    to: u64,
+    #[arg(long)]
+    dump: Option<String>,
+    #[arg(long)]
+    check: bool,
+    #[arg(long)]
+    timings: bool,
+    #[command(flatten)]
+    options: Options,
 }
 
 fn key(address: &SlotAddress) -> String {
@@ -98,30 +117,32 @@ fn print_ended(state: &mut ScannerState, seen: &HashMap<u32, (u64, u64)>, at: &s
 }
 
 fn main() {
-    let args: Vec<String> = env::args().skip(1).collect();
-    let path = &args[0];
-    let slot = option(&args, "--slot");
-    let ocr = args.iter().any(|x| x == "--ocr");
-    let dump = option(&args, "--dump");
-    let reference_path = option(&args, "--reference");
-    let check = args.iter().any(|x| x == "--check");
-    let from: u64 = option(&args, "--from").map_or(0, |x| x.parse().unwrap());
-    let to: u64 = option(&args, "--to").map_or(u64::MAX, |x| x.parse().unwrap());
+    let cli = Cli::parse();
+    native::configure(&cli.options);
+    let Cli {
+        capture: path,
+        reference: reference_path,
+        slot,
+        ocr,
+        from,
+        to,
+        dump,
+        check,
+        timings,
+        ..
+    } = cli;
     if let Some(folder) = &dump {
         fs::create_dir_all(folder).unwrap();
     }
 
-    let file = fs::read(path).unwrap();
+    let file = fs::read(&path).unwrap();
     let (mut start, frames, end) = read_frames(&file);
     if let (Some(path), Some(end)) = (&reference_path, &end) {
         fs::write(path, end).unwrap();
     }
-    let priors = std::mem::take(&mut start.priors);
-    println!("{start:?}  {} priors", priors.len());
-    let (mut state, _pixels) = native::new_state(start.width, start.height);
-    state.set_priors(priors);
-    state.screen_info.forced_21_9 = start.forced_21_9;
-    state.screen_info.brightness = start.brightness;
+    let priors = start.priors.len();
+    let (mut state, _pixels) = native::replay_state(&mut start);
+    println!("{start:?}  {priors} priors");
     state.hover_log = Some(vec![]);
 
     // per hover: the first and last scan it was on screen
@@ -257,8 +278,7 @@ fn main() {
         );
         println!("check: {right} of {all} slots set by hand read right");
     }
-    // TIMINGS=1: each timed stage's total over the run, to stderr
-    if env::var("TIMINGS").is_ok() {
+    if timings {
         let mut timings = timing::take();
         timings.sort_by(|a, b| a.0.cmp(b.0));
         for (name, total, calls) in timings {

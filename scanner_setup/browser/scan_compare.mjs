@@ -12,7 +12,8 @@ function means(file) {
   const raw = JSON.parse(fs.readFileSync(file, "utf8")).scans;
   let last_live = 0;
   for (let i = 1; i < raw.length; i++) {
-    if (raw[i].frame_time - raw[i - 1].frame_time < 200_000) last_live = i;
+    // a replay's records carry no frame time and all count
+    if (!(raw[i].frame_time - raw[i - 1].frame_time >= 200_000)) last_live = i;
   }
   const rows = raw.slice(1, last_live + 1);
   const scanned = rows.filter((s) => s.rust.some((x) => x[0] === "anchors"));

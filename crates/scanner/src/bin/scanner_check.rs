@@ -1,11 +1,12 @@
-// Holds the scanner to what is known of the local test inputs in ignored/scanner_tests. Each
-// expected.json there (stills/<folder>/, recordings/) names files of its folder with the currencies
-// they must read Good, as [char bound, roster bound, tradable]:
+// Holds the scanner to what is known of its test inputs: every expected.json under
+// scanner_setup/test_stills (tracked) and ignored/scanner_tests (this PC only) names files of its
+// folder with the currencies they must read Good, as [char bound, roster bound, tradable]:
 //   {"hud 90 bar gold hover.png": {"Gold": [280000, 0, 3960769]}}
 // A capture's hand edits (capture_edit) are checked too. Exits 1 if anything is wrong.
 //   cargo run --release -p hf-scanner --bin scanner_check [-- <part of a file name>...]
+use clap::Parser;
 use hf_scanner::{
-    dev_utils::native::{ROOT, check_edits, replay_capture, scan_still},
+    dev_utils::native::{self, Options, ROOT, check_edits, replay_capture, scan_still},
     interface::scan_result::SlotStatus,
     scanner_state::ScannerState,
 };
@@ -18,6 +19,15 @@ use std::{
 
 // captures are held whole in memory, the largest near 1 GB
 const WORKERS: usize = 3;
+const ROOTS: [&str; 2] = ["scanner_setup/test_stills", "ignored/scanner_tests"];
+
+#[derive(Parser)]
+struct Cli {
+    /// only the files whose name contains one of these
+    filters: Vec<String>,
+    #[command(flatten)]
+    options: Options,
+}
 
 fn currencies(state: &ScannerState, expected: &Value, report: &mut Vec<String>) -> bool {
     let mut ok = true;
@@ -74,10 +84,12 @@ fn check(path: &PathBuf, expected: &Value) -> (bool, String) {
 }
 
 fn main() {
-    let filters: Vec<String> = std::env::args().skip(1).collect();
-    let root = PathBuf::from(ROOT).join("ignored/scanner_tests");
+    let cli = Cli::parse();
+    native::configure(&cli.options);
+    let filters = cli.filters;
     let mut cases = vec![];
-    for expected in glob(&root) {
+    let roots = ROOTS.iter().map(|x| PathBuf::from(ROOT).join(x));
+    for expected in roots.filter(|x| x.exists()).flat_map(|x| glob(&x)) {
         let all: Value = serde_json::from_slice(&fs::read(&expected).unwrap()).unwrap();
         for (file, want) in all.as_object().unwrap() {
             let path = expected.parent().unwrap().join(file);

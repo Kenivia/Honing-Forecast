@@ -340,8 +340,13 @@ impl ScannerState {
     }
 
     // Debug only: the icons a slot is closest to, as (name, confidence, confidence without the
-    // overlays found on it, place in the shortlist's order), whatever the pass limits.
-    pub fn slot_scores(&mut self, slot_address: &SlotAddress) -> Vec<(String, f64, f64, usize)> {
+    // overlays found on it, place in the shortlist's order), whatever the pass limits. With a dump
+    // folder, each slot as seen goes there next to the icon it is closest to.
+    pub fn slot_scores(
+        &mut self,
+        slot_address: &SlotAddress,
+        dump: Option<&str>,
+    ) -> Vec<(String, f64, f64, usize)> {
         let (height, s) = (
             self.screen_info.effective_height,
             self.screen_info.scale_factor,
@@ -372,8 +377,7 @@ impl ScannerState {
                 (name, full, masked, apart)
             })
             .collect();
-        // DUMP=<folder> writes what the slot looks like next to the icon it is closest to
-        if let Ok(folder) = std::env::var("DUMP") {
+        if let Some(folder) = dump {
             let best = all
                 .iter()
                 .max_by(|a, b| a.1.max(a.2).total_cmp(&b.1.max(b.2)))

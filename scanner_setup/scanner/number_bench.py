@@ -2,7 +2,7 @@
 Scores the output of the number_bench bin: wrong reads per clean-up variant and alphabet. Recordings
 and debug captures are scored alike.
 
-    python scanner_setup/tooltips/number_bench.py <tsv>...
+    python scanner_setup/scanner/number_bench.py <tsv>...
 
 Stills of one scene at several brightness settings (a folder of them) are scored against the read
 most of them agree on. Recordings are scored against the tooltip amounts, per read and per slot

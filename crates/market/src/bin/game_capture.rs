@@ -2,6 +2,7 @@
 // game driven by the lostark-market MCP. The cursor is not in the frames.
 //   game_capture still <file.png>
 //   game_capture record <file.hfcap> [--seconds N]   until N seconds, F10, or <file>.stop exists
+use clap::Parser;
 use hf_market::game::{Game, abort_held, ms};
 use hf_scanner::dev_utils::capture::{InputRecorder, MAGIC, START, Start, record};
 use hf_scanner::scanner_state::Detected;
@@ -15,23 +16,31 @@ use std::{
 // as the page's CAPTURE_FPS
 const FRAME: Duration = Duration::from_millis(33);
 
+#[derive(Parser)]
+enum Cli {
+    /// The client area at full resolution
+    Still { file: String },
+    /// A debug capture with no end record (capture_edit adds one)
+    Record {
+        file: String,
+        #[arg(long)]
+        seconds: Option<f64>,
+    },
+}
+
 fn main() {
-    let args: Vec<String> = std::env::args().skip(1).collect();
-    let path = Path::new(&args[1]);
+    let (file, seconds) = match Cli::parse() {
+        Cli::Still { file } => (file, None),
+        Cli::Record { file, seconds } => (file, Some(seconds)),
+    };
+    let path = Path::new(&file);
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).unwrap();
     }
     let mut game = Game::find();
-    match args[0].as_str() {
-        "still" => game.shot(None).save(path).unwrap(),
-        "record" => {
-            let seconds = args
-                .iter()
-                .position(|x| x == "--seconds")
-                .map(|i| args[i + 1].parse::<f64>().unwrap());
-            record_to(&mut game, path, seconds);
-        }
-        x => panic!("unknown command {x}"),
+    match seconds {
+        None => game.shot(None).save(path).unwrap(),
+        Some(seconds) => record_to(&mut game, path, seconds),
     }
 }
 

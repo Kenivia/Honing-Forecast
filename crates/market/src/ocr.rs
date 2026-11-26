@@ -1,44 +1,5 @@
-// Reading text off a screenshot with hf-scanner's recogniser.
-use hf_scanner::{
-    interface::setup::load_ocr_engine,
-    ocr::{
-        recognize::recognize_line,
-        text::{TextParams, text_strip_with},
-    },
-};
-use image::{RgbaImage, imageops::crop_imm};
-use std::sync::Once;
-
-static INIT: Once = Once::new();
-
-fn init() {
-    INIT.call_once(|| {
-        load_ocr_engine(crate::assets::OCRS.to_vec());
-    });
-}
-
-/// One line of light text on a dark panel, in client pixels. 50 is the brightness that leaves pixels as they are.
-pub fn read(img: &RgbaImage, x: u32, y: u32, w: u32, h: u32) -> String {
-    init();
-    let crop = crop_imm(img, x, y, w, h).to_image();
-    let params = std::env::var("TEXT_STRIP").map_or(TextParams::NOW, |s| TextParams::parse(&s));
-    let strip = text_strip_with(&crop, false, 50.0, &params);
-    recognize_line(&strip, false).trim().to_string()
-}
-
-/// A number such as `1,279`, `1062.2` (`decimal`: one digit after the point) or `-` (None).
-/// Err when the text is not a number, e.g. covered by a popup.
-pub fn number(
-    img: &RgbaImage,
-    x: u32,
-    y: u32,
-    w: u32,
-    h: u32,
-    decimal: bool,
-) -> Result<Option<f64>, String> {
-    let t = read(img, x, y, w, h);
-    parse_number(&t, decimal).ok_or(t)
-}
+// Text helpers around the recognisers: parsing numbers, comparing names, reading a box (pp.rs).
+use image::RgbaImage;
 
 pub fn parse_number(t: &str, decimal: bool) -> Option<Option<f64>> {
     let t = t.trim();

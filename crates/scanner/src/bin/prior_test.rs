@@ -3,21 +3,27 @@
 //   no tooltips   how many slots the priors alone put in order, and whether as the first run had them
 //   flipped       every prior's tradability turned, tooltips on: a hovered slot keeps its tooltip's
 //   cargo run --release --bin prior_test -- <file.hfcap>...
+use clap::Parser;
 use hf_scanner::{
     dev_utils::{
         capture::read_frames,
-        native::{self, check_edits, priors_of},
+        native::{self, Options, check_edits, priors_of},
     },
     interface::scan_result::SlotResult,
     scanner_state::{Prior, ScannerState, Tradability},
 };
-use std::{collections::BTreeMap, env, fs};
+use std::{collections::BTreeMap, fs};
+
+#[derive(Parser)]
+struct Cli {
+    captures: Vec<String>,
+    #[command(flatten)]
+    options: Options,
+}
 
 fn run(file: &[u8], priors: Vec<Prior>, no_tooltips: bool) -> (ScannerState, Vec<u8>) {
-    let (start, frames, _) = read_frames(file);
-    let (mut state, pixels) = native::new_state(start.width, start.height);
-    state.screen_info.forced_21_9 = start.forced_21_9;
-    state.screen_info.brightness = start.brightness;
+    let (mut start, frames, _) = read_frames(file);
+    let (mut state, pixels) = native::replay_state(&mut start);
     state.set_priors(priors);
     state.no_tooltips = no_tooltips;
     for input in frames {
@@ -58,8 +64,9 @@ fn flip(x: Tradability) -> Tradability {
 }
 
 fn main() {
-    let paths: Vec<String> = env::args().skip(1).collect();
-    for path in paths {
+    let cli = Cli::parse();
+    native::configure(&cli.options);
+    for path in cli.captures {
         println!("== {path}");
         let file = fs::read(&path).unwrap();
         let end = read_frames(&file).2.unwrap_or("{}".into());

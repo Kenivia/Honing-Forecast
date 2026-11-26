@@ -2,20 +2,46 @@
 // capture_replay --check holds a run against. The rest of the end record is what the page showed,
 // which may be wrong, and is left alone.
 //   cargo run --release --bin capture_edit -- <file.hfcap> list
-//   cargo run --release --bin capture_edit -- <file.hfcap> set "Roster 0 5,1" amount=13 tradability=RosterBound [item=use_11_213@relic]
+//   cargo run --release --bin capture_edit -- <file.hfcap> set "Roster 0 5,1" --amount 13 --tradability RosterBound [--item use_11_213@relic]
 //   cargo run --release --bin capture_edit -- <file.hfcap> remove "Roster 0 5,1"
 //   cargo run --release --bin capture_edit -- <file.hfcap> accept
 // accept sets every slot to what the page showed, for a capture whose reading was all checked by
 // hand; an irrelevant slot's edit has no item.
 // A slot is named as the page's edits name it. The item defaults to the icon the page showed in
-// that slot, item=none sets it irrelevant; tradability is Tradable, RosterBound or CharBound.
+// that slot, --item none sets it irrelevant; tradability is Tradable, RosterBound or CharBound.
+use clap::{Parser, Subcommand};
 use hf_scanner::dev_utils::capture::{END, MAGIC};
 use serde_json::{Value, json};
-use std::{env, fs};
+use std::fs;
+
+#[derive(Parser)]
+struct Cli {
+    capture: String,
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    List,
+    Set {
+        slot: String,
+        #[arg(long)]
+        amount: Option<u32>,
+        #[arg(long)]
+        tradability: Option<String>,
+        #[arg(long)]
+        item: Option<String>,
+    },
+    Remove {
+        slot: String,
+    },
+    Accept,
+}
 
 fn main() {
-    let args: Vec<String> = env::args().skip(1).collect();
-    let (path, command) = (&args[0], args[1].as_str());
+    let cli = Cli::parse();
+    let path = &cli.capture;
     let file = fs::read(path).unwrap();
     assert!(file.starts_with(MAGIC), "not an {MAGIC:?} capture");
 
@@ -37,8 +63,8 @@ fn main() {
         end["edits"] = json!({});
     }
 
-    match command {
-        "list" => {
+    match cli.command {
+        Command::List => {
             for (key, edit) in end["edits"].as_object().unwrap() {
                 println!(
                     "{key}: {} x{} {}",
@@ -47,8 +73,12 @@ fn main() {
             }
             return;
         }
-        "set" => {
-            let key = &args[2];
+        Command::Set {
+            slot: key,
+            amount,
+            tradability,
+            item,
+        } => {
             let mut parts = key.split(' ');
             let inventory_type = parts.next().unwrap();
             let page_num: u32 = parts.next().unwrap().parse().unwrap();
@@ -65,30 +95,22 @@ fn main() {
                 .find(|x| x["address"] == address)
                 .and_then(|x| x["icon_name_score"][0].as_str())
                 .map(str::to_string);
-            let mut edit = json!({
+            let item = match item.as_deref() {
+                Some("none") => None,
+                Some(x) => Some(x.to_string()),
+                None => Some(shown.expect("no icon shown there, give --item")),
+            };
+            let edit = json!({
                 "address": address,
-                "item": shown,
-                "amount": null,
-                "tradability": null,
+                "item": item,
+                "amount": amount,
+                "tradability": tradability,
             });
-            for field in &args[3..] {
-                let (name, value) = field.split_once('=').unwrap();
-                edit[name] = match name {
-                    "amount" => json!(value.parse::<u32>().unwrap()),
-                    "item" if value == "none" => Value::Null,
-                    "item" | "tradability" => json!(value),
-                    _ => panic!("no field {name}"),
-                };
-            }
-            assert!(
-                edit["item"].is_string() || args[3..].iter().any(|x| x == "item=none"),
-                "no icon shown in {key}, give item="
-            );
             println!("{key}: {edit}");
             end["edits"][key.as_str()] = edit;
         }
         // every slot as the page showed it, once that was checked by hand
-        "accept" => {
+        Command::Accept => {
             for slot in end["slots"].as_array().unwrap().clone() {
                 let a = &slot["address"];
                 let key = format!(
@@ -114,11 +136,10 @@ fn main() {
             }
             println!("{} edits", end["edits"].as_object().unwrap().len());
         }
-        "remove" => {
-            let removed = end["edits"].as_object_mut().unwrap().remove(&args[2]);
-            assert!(removed.is_some(), "no edit for {}", args[2]);
+        Command::Remove { slot } => {
+            let removed = end["edits"].as_object_mut().unwrap().remove(&slot);
+            assert!(removed.is_some(), "no edit for {slot}");
         }
-        _ => panic!("list, set, remove or accept"),
     }
 
     let payload = serde_json::to_vec(&end).unwrap();

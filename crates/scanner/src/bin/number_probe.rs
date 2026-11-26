@@ -1,10 +1,10 @@
 // Every stage of one slot's number clean-up as images, each time the scanner reads that slot.
-//   cargo run --release --bin number_probe -- <out dir> <Roster|CharStorage|CharInventory> <page> <row> <col> <image>
-//   python scanner_setup/tooltips/dump_frames.py <mp4> | cargo run --release --bin number_probe -- <out dir> <inv> <page> <row> <col> --stdin <width> <height>
-//   python scanner_setup/tooltips/number_stages.py <out dir>     (one picture per read)
+//   cargo run --release --bin number_probe -- <out dir> <Roster|CharStorage|CharInventory> <page> <row> <col> <image or capture.hfcap>
+//   python scanner_setup/scanner/number_stages.py <out dir>     (one picture per read)
 // Page, row and column count from 0. Files are f<frame>_<stage>.png.
+use clap::Parser;
 use hf_scanner::{
-    dev_utils::native,
+    dev_utils::native::{self, Options, replay_capture_with, scan_still_with},
     interface::setup::BASE_ICONS,
     ocr::{
         number::{
@@ -15,7 +15,19 @@ use hf_scanner::{
     scanner_state::{InventoryType, ScannerState, SlotAddress},
 };
 use image::{GrayImage, Luma, Rgba, RgbaImage};
-use std::{env, fs, io::Read};
+use std::fs;
+
+#[derive(Parser)]
+struct Cli {
+    out: String,
+    inventory: String,
+    page: usize,
+    row: usize,
+    column: usize,
+    source: String,
+    #[command(flatten)]
+    options: Options,
+}
 
 fn grey(w: u32, h: u32, value: impl Fn(usize) -> f64) -> GrayImage {
     GrayImage::from_fn(w, h, |x, y| {
@@ -66,47 +78,34 @@ fn dump(state: &ScannerState, address: &SlotAddress, out: &str, frame: usize) {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().skip(1).collect();
-    let out = &args[0];
+    let cli = Cli::parse();
+    native::configure(&cli.options);
+    let out = &cli.out;
     fs::create_dir_all(out).unwrap();
     let address = SlotAddress {
-        inventory_type: match args[1].as_str() {
+        inventory_type: match cli.inventory.as_str() {
             "Roster" => InventoryType::Roster,
             "CharStorage" => InventoryType::CharStorage,
             _ => InventoryType::CharInventory,
         },
-        page_num: args[2].parse().unwrap(),
-        pos_in_inv: (args[3].parse().unwrap(), args[4].parse().unwrap()),
+        page_num: cli.page,
+        pos_in_inv: (cli.row, cli.column),
     };
-    let still = (args[5] != "--stdin").then(|| image::open(&args[5]).unwrap().to_rgba8());
-    let (width, height): (usize, usize) = match &still {
-        Some(image) => (image.width() as usize, image.height() as usize),
-        None => (args[6].parse().unwrap(), args[7].parse().unwrap()),
-    };
-    let (mut state, mut pixels) = native::new_state(width, height);
-
-    let mut stdin = std::io::stdin().lock();
-    for frame in 0.. {
-        match &still {
-            Some(image) if frame < 30 => pixels.copy_from_slice(image.as_raw()),
-            Some(_) => break,
-            None => {
-                if stdin.read_exact(&mut pixels).is_err() {
-                    break;
-                }
-            }
-        }
-        state.cropper();
-        // a job still waiting was asked for on this frame
+    // a job still waiting was asked for on this frame
+    let each = |state: &mut ScannerState, frame: usize| {
         if state
             .slot_infos
             .get(&address)
             .is_some_and(|x| x.amount_job.is_some())
         {
-            dump(&state, &address, out, frame);
+            dump(state, &address, out, frame);
         }
-        state.run_ocr_inline();
-    }
+    };
+    let state = if cli.source.ends_with(".hfcap") {
+        replay_capture_with(&cli.source, each).0
+    } else {
+        scan_still_with(&cli.source, each).0
+    };
     println!(
         "ends as {:?}",
         state.slot_infos.get(&address).map(|x| &x.amount)

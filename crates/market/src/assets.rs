@@ -19,7 +19,6 @@ pub static PP_DICT: &str = include_str!(concat!(
     env!("HF_ROOT"),
     "/ignored/market/models/en_PP-OCRv5_mobile_rec/dict.txt"
 ));
-pub static OCRS: &[u8] = include_bytes!(concat!(env!("HF_ROOT"), "/public/text-recognition.rten"));
 pub static FONT: &[u8] = include_bytes!(concat!(env!("HF_ROOT"), "/public/fonts/English.ttf"));
 
 static PROFILE: OnceLock<PathBuf> = OnceLock::new();

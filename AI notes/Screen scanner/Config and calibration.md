@@ -1,6 +1,6 @@
 # Scanner config and calibration
 
-The scanner recognises things by comparing screen crops with stored templates. This note covers where those templates and the brightness constants come from. All of it is developer tooling; end users do not calibrate anything. What was ruled out and the older tools are in `Config and calibration tried.md`; read it only when trying something new here.
+The scanner recognises things by comparing screen crops with stored templates. This note covers where those templates and the brightness constants come from. All of it is developer tooling; end users do not calibrate anything. What was ruled out is in `Further learnings/Config and calibration tried.md`; read it only when trying something new here.
 
 ## ScannerConfig.msgpack
 
@@ -20,29 +20,27 @@ Template **names are a contract** with the Rust constants: anchor and page-tab n
 
 The file is built from two sources, in this order:
 
-1. **Icons, from Python.** `scanner_setup/templates/items.json` is the item table: one row per in-game item with its tooltip `title`, its `icon` (a file in `scanner_setup/templates/Icons`) and the `rarity` background. `scanner_setup/templates/chests.json` is the chest table, written from the game's files together with the art in `scanner_setup/templates/ChestIcons` (`Game files.md`); each of its "top" rows makes a template named `<icon>@<rarity>`, and a slot with such an icon is a chest. `scanner_setup/templates/make_msg_pack.py` composites each distinct icon over its background and replaces the Icon templates in `public/ScannerConfig.msgpack` in place, leaving every other template alone. Rows may share an icon (books of one kind, a material and its event or roster-bound namesakes), and a row without an icon is only a title the tooltip reader accepts. A row's optional `confidence` becomes the template's required confidence, and has to be the same on every row of an icon. The book rows have it because their slots score a little under the other icons' (`Icon matching bench tried.md`). A book row's `body` is its gear and honing levels as the tooltip's description gives them. Both tables are compiled into the scanner crate. The same run makes the Decoy templates from `decoys.json` (written by `decoys.py`).
+1. **Icons, from Python.** `scanner_setup/templates/items.json` is the item table: one row per in-game item with its tooltip `title`, its `icon` (a file in `scanner_setup/templates/Icons`) and the `rarity` background. `scanner_setup/templates/chests.json` is the chest table, written from the game's files together with the art in `scanner_setup/templates/ChestIcons` (`Game files.md`); each of its "top" rows makes a template named `<icon>@<rarity>`, and a slot with such an icon is a chest. `scanner_setup/templates/make_msg_pack.py` composites each distinct icon over its background and replaces the Icon templates in `public/ScannerConfig.msgpack` in place, leaving every other template alone. Rows may share an icon (books of one kind, a material and its event or roster-bound namesakes), and a row without an icon is only a title the tooltip reader accepts. A row's optional `confidence` becomes the template's required confidence, and has to be the same on every row of an icon. The book rows have it because their slots score a little under the other icons' (`Further learnings/Icon matching bench tried.md`). A book row's `body` is its gear and honing levels as the tooltip's description gives them. Both tables are compiled into the scanner crate. The same run makes the Decoy templates from `decoys.json` (written by `decoys.py`).
 2. **Anchors, from Python.** `scanner_setup/anchor setup/anchors.py` edits the Anchor templates of `public/ScannerConfig.msgpack` in place and leaves the icons alone:
    - `add <still> <name> <x> <y> <width> <height> --offset <x> <y> [--brightness 70] [--confidence 0.8]` cuts a whole-pixel rectangle out of a 1440p still, normalises it from the setting the still was taken at with the gamma law, and adds it, or replaces the anchor of that name where it stands. `--offset` is what the config stores: where the template sits relative to the root it gives.
    - `locate <still> <name>` finds a stored anchor in a still and says how far apart the pixels are, which gives the rectangle to cut again and checks the still's setting.
    - `list`, `confidence <name> <value|none>`, `remove <name>`, `export`.
    - Every anchor is also kept as `scanner_setup/anchor setup/anchors/<name>.png` for review (`export` writes them all).
 
-`scanner_setup/templates/ScannerConfig.msgpack` is a leftover from an older flow and is no longer written.
-
 ## Where each anchor template was cut from
 
-The older anchor templates are cut from the stills in `scanner_setup/brightness/1440p raw/old`, at whole pixels, and normalised from setting 70 with the gamma law. The stills carry no record of their setting; 70 is read off the sort button's flat face, which is level 62 in every one of them (62.4 at setting 70 on the 1080p captures; one level is about 1.5 settings).
+The older anchor templates are cut from the stills in `scanner_setup/test_stills/resolutions/1440p`, at whole pixels, and normalised from setting 70 with the gamma law. The stills carry no record of their setting; 70 is read off the sort button's flat face, which is level 62 in every one of them (62.4 at setting 70 on the 1080p captures; one level is about 1.5 settings).
 
 - `storage page 1.png` to `storage page 4.png` (pet menu): the storage page tabs, the pet Storage button, and the two storages' top-right icon groups. Each tab's active template is from the still with that page open, its inactive one from another.
 - `storage npc.png`: the NPC Storage button.
 - `inventory top left.png`: the sort button, the search button, character page 1 active and page 2 inactive.
 - `pet icon.png`: character page 2 active and page 1 inactive.
 - There is no 1440p still with roster page 2 open, so "Roster page 1 inactive" and "Roster page 2 active" are character-storage tab pixels, which look the same.
-- `scanner_setup/brightness/1440p raw/silver gold shard/*.png` (**setting 50**, read off the sort button with `locate`): the currency templates. `Basic currency header` and `Currency window tab` (the currency window's anchor, offsets from the game's top left) and `Destiny shard` from `currency breakdown default position .png`; `Gold coin`, `Silver coin` and the three `Bar ...` icons from `char inventory no hover.png`; `Gold tooltip title` from `hovered in inventory tooltip left.png`. The coins are cut with their rim and 2 px around it (`Currency.md`). The icons' offsets are not read: their bounds are in `currency.rs`. None has a brightness curve. The game's own files only have the large item art of these currencies (`Game files.md`), so they were cut from stills.
+- `scanner_setup/test_stills/currency 1440p/*.png` (**setting 50**, read off the sort button with `locate`): the currency templates. `Basic currency header` and `Currency window tab` (the currency window's anchor, offsets from the game's top left) and `Destiny shard` from `currency breakdown default position .png`; `Gold coin`, `Silver coin` and the three `Bar ...` icons from `char inventory no hover.png`; `Gold tooltip title` from `hovered in inventory tooltip left.png`. The coins are cut with their rim and 2 px around it (`Currency.md`). The icons' offsets are not read: their bounds are in `currency.rs`. None has a brightness curve. The game's own files only have the large item art of these currencies (`Game files.md`), so they were cut from stills.
 
 ## Rarity backgrounds
 
-`scanner_setup/templates/Backgrounds/<rarity>.webp` is what a slot of that rarity shows behind the art. The ancient one was rebuilt from recordings (`Config and calibration tried.md`); the others are the stored files.
+`scanner_setup/templates/Backgrounds/<rarity>.webp` is what a slot of that rarity shows behind the art. The ancient one was rebuilt from recordings (`Further learnings/Config and calibration tried.md`); the others are the stored files.
 
 ## Brightness calibration
 
@@ -53,11 +51,9 @@ The game's brightness slider changes every pixel, so a template captured at one 
 
 The fitted curves are per-variant constants in `anchor_defs.rs`. A variant can also have none, and then says nothing about the brightness; the icon groups have none (see `Pipeline.md`).
 
-The curves of the sort button, the search button and the NPC Storage button were fitted to the mean of the matched patch at all 21 settings, over both sets of 1080p captures in `scanner_setup/brightness/brightness sweep inputs` (`1080 char inv`, the lone inventory, and `1080p storage`, the storage layout at the NPC). The means came from a temporary print in the anchor search, so there is no script that reproduces them as is. The pet menu's Storage button has no such captures and keeps a curve derived from the brightness model.
+The curves of the sort button, the search button and the NPC Storage button were fitted to the mean of the matched patch at all 21 settings, over both 1080p sweeps in `scanner_setup/test_stills/brightness sweep` (`1080p inventory`, the lone inventory, and `1080p storage`, the storage layout at the NPC). The means came from a temporary print of each matched patch's mean in the anchor search; to fit a new anchor, print the same over both sweeps and fit the curve the others use (`anchor_defs.rs`). The pet menu's Storage button has no such captures and keeps a curve derived from the brightness model.
 
-`scanner_setup/brightness/calibrate_anchor.py` is defunct and kept for reference (`Config and calibration tried.md`).
-
-Calibrate on the resolution that matters most: a curve fitted at 1080p reads a button 2 to 3 settings high at 1440p.
+Calibrate at the resolution that matters most: a curve fitted at 1080p reads a button 2 to 3 settings high at 1440p. A new anchor needs a sweep of stills at all 21 settings, taken in game (`Developing and testing.md`).
 
 The fit's greyscale weights and the gamma ratio must match the Rust side. The model is described in `Pipeline.md`.
 

@@ -18,7 +18,7 @@ These notes are high-level. They cover what is hard to work out from reading one
 | `frontend/` | Vue 3 + Pinia + Tailwind app. `@` aliases to this folder. |
 | `cloudflare/` | A Worker that proxies and caches market prices and character lookups, and stores analytics uploads and the market scanner's passes in D1 (`schema.sql`). |
 | `public/` | Static assets, changelogs, `WIP.md` (the author's roadmap), scanner config and OCR model. |
-| `scanner_setup/` | Everything that builds or calibrates the scanner config: source icons (`templates/`), game-file extraction, brightness calibration, anchor setup, the browser profiling scripts. |
+| `scanner_setup/` | Everything that builds, calibrates or tests the scanner: source icons (`templates/`), game-file extraction (`game_files/`), anchor setup, the tracked test stills (`test_stills/`), the suite and bench scripts (`scanner/`), the browser profiling scripts. |
 | `scripts/` | Changelog helper, the pre-deploy check, analytics pull and analysis (`analytics/`), a market price and population viewer (`market/`, `pnpm market`, `Forecasting/Market.md`), the Income page's mock save (`mock income/`) and game-data helpers (`game_files/`, `json_parser/`, `arena/`); everything scanner-specific lives in `scanner_setup/` instead. |
 | `tests/` | Playwright e2e tests (`tests/e2e/`), node-side frontend tests (migrations, the real-save fixture, cross-tier relations, `pnpm test:node`), Vitest unit and component tests (`unit/`, `pnpm test:unit`), and test fixtures (real saves `V7 config`, `v8 config`, `V10 config`, `V10 config 2`, `V11 config`, `v12 config.json`; `test-results/`). |
 | `arena_data/` | Arena scenarios and its gitignored results database, plus the Python report scripts that read it. |
@@ -40,7 +40,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 - `pnpm pull-analytics` downloads and deletes the analytics uploads, `pnpm analytics` pulls and then serves the plots (`Frontend/External services.md`).
 - `pnpm market-scan` runs the market scanner (materials and gems) in a loop; see `Market scanner/Overview.md`.
 - `pnpm change-log` scaffolds the next changelog file in `public/change-logs`.
-- `pnpm browsers` installs the Playwright browsers; `pnpm scanner-suite`, `scanner-check`, `game-capture`, `scanner-profile` and `scanner-compare` are the scanner's tools (`Screen scanner/`). `pnpm remove-tmp` clears `.tmp/` (`Working in this repo.md`).
+- `pnpm browsers` installs the Playwright browsers; `pnpm scanner-suite`, `scanner-check`, `game-capture`, `scanner-profile` and `scanner-compare` are the scanner's tools (`Screen scanner/Developing and testing.md`). `pnpm remove-tmp` clears `.tmp/` (`Working in this repo.md`).
 
 ## Cargo features
 
@@ -64,7 +64,7 @@ Not source of truth: `dist/` (committed build output), `crates/wasm/pkg/` (wasm-
 
 ## Index
 
-Each note describes the code as it is now. Where something was tried and failed or ruled out, a `<note> tried.md` beside the note holds a "don't try X: why" warning. **Read a tried file only when trying something new** in its area. When changing something, update the main note to the new state; add to the tried file only a warning against an alternative that failed, never a changelog. `Calculator core/` keeps its tried files and other learnings (measurements, history, shelved work) in `Calculator core/Further learnings/`, the main folder holding only instructions and documentation.
+Each note describes the code as it is now. Where something was tried and failed or ruled out, a `<note> tried.md` beside the note holds a "don't try X: why" warning. **Read a tried file only when trying something new** in its area. When changing something, update the main note to the new state; add to the tried file only a warning against an alternative that failed, never a changelog. `Calculator core/`, `Screen scanner/` and `Market scanner/` keep their tried files and other learnings (measurements, history, shelved work) in a `Further learnings/` folder, the main folder holding only instructions and documentation; point to code comments rather than growing a note.
 
 - `Calculator core/Domain model.md`: the structs and index conventions.
 - `Calculator core/Evaluation pipeline.md`: payload to result, method selection, invariants.
@@ -79,18 +79,21 @@ Each note describes the code as it is now. Where something was tried and failed 
 - `Frontend/Wasm contract.md`: payload building, worker protocol, what must match Rust.
 - `Frontend/External services.md`: market prices, character import, analytics uploads, market scanner passes, changelogs.
 - `Frontend/UI components.md`: shared components; `HoverTip`, the site's hover tooltip.
+- `Lost Ark client.md`: driving the game (MCP servers, input, menus), how it draws what both scanners read, its life cycle (launch, maintenance, days), and what to redo when the game changes.
 - `Screen scanner/Pipeline.md`: capture to recognised slots, and what is still stubbed.
+- `Screen scanner/Developing and testing.md`: the test inputs, which check answers what (`scanner-check`, `scanner-suite`, e2e, profile), reproducing a case in the live game, debugging a misread, the benches.
 - `Screen scanner/Tooltips.md`: reading the hover tooltip, chests among it, and tying it to a slot.
 - `Screen scanner/Config and calibration.md`: the template config and brightness calibration.
-- `Screen scanner/Icon matching bench.md`: the offline bench for how a slot is matched to an icon.
 - `Screen scanner/Slot grid.md`: the scanner page's slot grid, slot statuses and manual edits.
-- `Screen scanner/Game files.md`: reading items, chests and icons out of the installed game.
+- `Screen scanner/Game files.md`: reading items, chests and icons out of the installed game, and what to re-run after a patch.
 - `Screen scanner/Currency.md`: silver, gold and shards off the inventory, the currency window, the bar at the top of the screen and gold's tooltip.
-- `Screen scanner/Live game.md`: driving the game on this PC, stills and captures of it (`pnpm game-capture`), and the local test inputs with known answers (`pnpm scanner-check`).
 - `Screen scanner/Manifest.md`: the scan as materials per band and chests, merged with saved pages and other characters, the export, and the budget snapshots.
 - `Screen scanner/Income.md`: the Income page: snapshots over time, their optimizer runs, the income estimate and manual income.
 - `Screen scanner/Choices.md`: the Choices page: what taking each option of a choice (a raid's bonus chest) is worth, and adding it to the budgets.
-- `Market scanner/Overview.md`: the native market scanner: running it, input, getting around the Market, reading numbers by the game's font and items by crops, what a pass reads, storage.
+- `Screen scanner/Further learnings/`: the tried files, and `How the game draws.md` (measurements of slot numbers, tooltips, the cursor, the UI scale and brightness).
+- `Market scanner/Overview.md`: the native market scanner: running it, getting around the Market, reading numbers by the game's font and items by crops, what a pass reads, upload and storage.
+- `Market scanner/Developing and testing.md`: exploring a screen, new reference crops, when a screen changes, checking the readers, building beside running machines.
+- `Market scanner/Remote.md`: other PCs: the agent, the relay, Discord, recovery, signing, the machines.
 - `Forecasting/Market.md`: price and population data on file toward forecasting prices, the gap estimate, and observations so far.
 - `Forecasting/HF analytics.md`: what the site's own analytics uploads offer for forecasting so far.
 - `Forecasting/Community.md`: community income estimates per content (sites, their tables, how each values a run) for cross-checking.

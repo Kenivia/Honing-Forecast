@@ -2,7 +2,7 @@
 
 Silver, gold and Destiny Shards are read apart from the slots, in `crates/scanner/src/currency.rs`, as the last step of every scanned frame. The page shows them in a bar above the slot grid, in the same card (`CurrencyBar.vue`) and the manifest adds them to its cells (`Manifest.md`).
 
-Things that failed here are in `Currency tried.md`; read it only when trying something new.
+Things that failed here are in `Further learnings/Currency tried.md`; read it only when trying something new.
 
 ## Where they are read
 
@@ -56,5 +56,5 @@ The scan result's `currencies` lists each with its status (the slots' `SlotStatu
 ## Tools
 
 - `print_statuses` (`tooltip_test`, `capture_replay`) prints each currency and every field's votes.
-- `pnpm scanner-check` holds the currencies of the stills and captures in `ignored/scanner_tests` to known bands (`Live game.md`): every HUD size at 16:9 and forced 21:9 (`stills/hud_size`), live captures at HUD 110%, and `honing-forecast-2026-11-24T07-22-59-049Z.hfcap` (a user's, HUD 100%, a one-line owned amount and a 6-digit total).
+- `pnpm scanner-check` holds currencies to known bands (`Developing and testing.md`): `test_stills/currency 1440p` (inventory, window and gold's tooltip, 16:9 and forced 21:9), every HUD size at both aspects (`ignored/scanner_tests/stills/hud_size`), live captures at HUD 110%, and a user's capture at HUD 100% with a one-line owned amount.
 - The native bins detect forced 21:9 on stills like the page does; `capture_replay` takes it from the capture's start record.

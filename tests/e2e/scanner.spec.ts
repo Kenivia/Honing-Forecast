@@ -785,7 +785,7 @@ const NEWEST = new URL(
 );
 const STILL = fileURLToPath(
   new URL(
-    "../../scanner_setup/brightness/brightness sweep inputs/1080 char inv/50.png",
+    "../../scanner_setup/test_stills/brightness sweep/1080p inventory/50.png",
     import.meta.url,
   ),
 );

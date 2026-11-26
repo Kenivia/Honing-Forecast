@@ -2,40 +2,39 @@
 // region.rs), uploads each pass (upload.json), then waits a gap and scans again, until F10 or Ctrl+C. F10 stores
 // and uploads what the pass read so far. --strips keeps every crop read (strips.rs). With one region the
 // logged-in character is used as is.
-// market_scan [--upload-only] [--gap MINUTES] [--once] [--quick] [--strips]
-//     [--only materials,gems,accessories,exchange] [--regions NAE,EUC] [--db PATH]
+// market_scan --help for the switches.
+use clap::Parser;
 use hf_market::{
     db,
     game::{Game, Stopped, check_abort, ms, quiet_stops},
-    region, run,
-    ui::{self, log},
+    run,
+    ui::log,
     upload,
 };
 
+#[derive(Parser)]
+struct Cli {
+    /// Minutes between the end of a round and the next
+    #[arg(long, default_value_t = 60.0)]
+    gap: f64,
+    /// One round, then exit
+    #[arg(long)]
+    once: bool,
+    /// Send the passes not sent yet, then exit
+    #[arg(long)]
+    upload_only: bool,
+    #[arg(long)]
+    db: Option<String>,
+    #[command(flatten)]
+    pass: run::Args,
+}
+
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    let arg = |k: &str| {
-        args.iter()
-            .position(|a| a == k)
-            .map(|i| args[i + 1].clone())
-    };
-    let gap: f64 = arg("--gap").map_or(60.0, |v| v.parse().unwrap());
-    let once = args.iter().any(|a| a == "--once");
-    ui::QUICK.store(
-        args.iter().any(|a| a == "--quick"),
-        std::sync::atomic::Ordering::Relaxed,
-    );
-    let o = run::Opts {
-        only: arg("--only").unwrap_or("materials,gems,accessories,exchange".into()),
-        strips: args.iter().any(|a| a == "--strips"),
-        regions: arg("--regions")
-            .unwrap_or("NAE,EUC".into())
-            .split(',')
-            .map(region::get)
-            .collect(),
-    };
-    let conn = db::open(&arg("--db").unwrap_or(db::path()));
-    if args.iter().any(|a| a == "--upload-only") {
+    let cli = Cli::parse();
+    let (gap, once) = (cli.gap, cli.once);
+    let o = cli.pass.opts();
+    let conn = db::open(&cli.db.unwrap_or(db::path()));
+    if cli.upload_only {
         upload::send_pending(&conn);
         return;
     }

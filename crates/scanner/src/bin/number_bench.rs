@@ -2,16 +2,16 @@
 // is cleaned up with each of VARIANTS and read with both alphabets. Then two more: the shape reader
 // alone ("shapes"), and as the scanner reads (the shapes when sure, else the first variant's read).
 // The shapes read public/fonts/English.ttf.
-//   cargo run --release --bin number_bench -- <image>... > stills.tsv
-//   python scanner_setup/tooltips/dump_frames.py <mp4> | cargo run --release --bin number_bench -- --stdin <width> <height> > rec.tsv
-//   cargo run --release --bin number_bench -- <capture.hfcap>... > caps.tsv
-//   python scanner_setup/tooltips/number_bench.py stills.tsv rec.tsv ...
+//   cargo run --release --bin number_bench -- <image or capture.hfcap>... > reads.tsv
+//   python scanner_setup/scanner/number_bench.py reads.tsv ...
 // A capture's truth is its hand edits, else its tooltip amounts. The clean-up's time per variant goes
-// to stderr.
+// to stderr. --glyphs <folder> keeps every number crop and the background expected behind it, named
+// by the line's last field; --save <folder> keeps every strip.
 // Lines: READ source frame slot icon, then per variant the full-alphabet read and the digits one;
 // TRUTH source slot icon amount, for slots a tooltip was tied to.
+use clap::Parser;
 use hf_scanner::{
-    dev_utils::{capture::read_frames, native},
+    dev_utils::native::{self, Options, replay_capture_with, scan_still_with},
     interface::setup::BASE_ICONS,
     ocr::{
         number::{NumberParams, number_background, number_strip},
@@ -21,11 +21,18 @@ use hf_scanner::{
     scanner_state::{ScannerState, SlotAddress},
 };
 use image::{Rgba, RgbaImage};
-use std::{
-    env, fs,
-    io::Read,
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
+
+#[derive(Parser)]
+struct Cli {
+    sources: Vec<String>,
+    #[arg(long)]
+    glyphs: Option<String>,
+    #[arg(long)]
+    save: Option<String>,
+    #[command(flatten)]
+    options: Options,
+}
 
 // the first is what the scanner does; add what is being tried
 fn variants() -> Vec<(&'static str, NumberParams)> {
@@ -41,6 +48,7 @@ fn place(address: &SlotAddress) -> String {
 }
 
 fn report(
+    cli: &Cli,
     state: &ScannerState,
     address: &SlotAddress,
     source: &str,
@@ -51,9 +59,7 @@ fn report(
     let name = &info.icon_name_score.as_ref().unwrap().0;
     let template = BASE_ICONS.read()[name].data.clone();
     let mut line = format!("READ\t{source}\t{frame}\t{}\t{name}", place(address));
-    // GLYPHS=<folder> keeps every number crop and the background expected behind it, named by the
-    // last field of the line
-    let glyphs = env::var("GLYPHS").ok().map(|folder| {
+    let glyphs = cli.glyphs.as_ref().map(|folder| {
         let id = format!("{source}_{frame}_{}", place(address))
             .replace([' ', ',', '(', ')', '/', '\\', ':', '.'], "_");
         let number = &info.observed_number.data;
@@ -80,8 +86,7 @@ fn report(
             &params,
         );
         times[index] += start.elapsed();
-        // SAVE=<folder> keeps every strip
-        if let Ok(folder) = env::var("SAVE") {
+        if let Some(folder) = &cli.save {
             let id =
                 format!("{frame}_{}_{variant}", place(address)).replace([' ', ',', '(', ')'], "_");
             strip.save(format!("{folder}/{id}.png")).unwrap();
@@ -116,50 +121,22 @@ fn report(
 }
 
 fn main() {
-    let args: Vec<String> = env::args().skip(1).collect();
+    let cli = Cli::parse();
+    native::configure(&cli.options);
     println!(
-        "VARIANTS\t{}",
+        "VARIANTS	{}",
         variants()
             .iter()
             .map(|x| x.0)
             .chain(["shapes", "shapes, else OCR"])
             .collect::<Vec<_>>()
-            .join("\t")
+            .join("	")
     );
-    let from_stdin = args[0] == "--stdin";
-    let sources: Vec<String> = if from_stdin {
-        vec!["stdin".to_string()]
-    } else {
-        args.clone()
-    };
     let mut times = vec![Duration::ZERO; variants().len() + 1];
     let mut strips = 0;
-    for source in &sources {
-        if source.ends_with(".hfcap") {
-            strips += capture(source, &mut times);
-            continue;
-        }
-        let still = (!from_stdin).then(|| image::open(source).unwrap().to_rgba8());
-        let (width, height): (usize, usize) = match &still {
-            Some(image) => (image.width() as usize, image.height() as usize),
-            None => (args[1].parse().unwrap(), args[2].parse().unwrap()),
-        };
-        let (mut state, mut pixels) = native::new_state(width, height);
-
-        let mut stdin = std::io::stdin().lock();
-        for frame in 0.. {
-            match &still {
-                // enough scans for every slot to get its look
-                Some(image) if frame < 30 => pixels.copy_from_slice(image.as_raw()),
-                Some(_) => break,
-                None => {
-                    if stdin.read_exact(&mut pixels).is_err() {
-                        break;
-                    }
-                }
-            }
-            state.cropper();
-            // a job still waiting was asked for on this frame
+    for source in &cli.sources {
+        // a job still waiting was asked for on this frame
+        let mut each = |state: &mut ScannerState, frame: usize| {
             let asked: Vec<SlotAddress> = state
                 .slot_infos
                 .iter()
@@ -167,16 +144,17 @@ fn main() {
                 .map(|(address, _)| *address)
                 .collect();
             for address in asked {
-                report(&state, &address, source, frame, &mut times);
+                report(&cli, state, &address, source, frame, &mut times);
                 strips += 1;
             }
-            state.run_ocr_inline();
-        }
-        for (address, info) in &state.slot_infos {
-            if let (Some(amount), Some(icon)) = (&info.tooltip_amount, &info.icon_name_score) {
-                println!("TRUTH\t{source}\t{}\t{}\t{amount}", place(address), icon.0);
-            }
-        }
+        };
+        let (state, end) = if source.ends_with(".hfcap") {
+            let (state, _pixels, end) = replay_capture_with(source, &mut each);
+            (state, end)
+        } else {
+            (scan_still_with(source, &mut each).0, None)
+        };
+        truth(&state, source, end);
     }
     let names = variants().into_iter().map(|x| x.0).chain(["shapes"]);
     for (name, time) in names.zip(&times) {
@@ -187,38 +165,17 @@ fn main() {
     }
 }
 
-// a debug capture replayed as the scanner would; returns how many strips were made
-fn capture(source: &str, times: &mut [Duration]) -> usize {
-    let file = fs::read(source).unwrap();
-    let (start, frames, end) = read_frames(&file);
-    let (mut state, _pixels) = native::new_state(start.width, start.height);
-    state.screen_info.forced_21_9 = start.forced_21_9;
-    state.screen_info.brightness = start.brightness;
-    let mut strips = 0;
-    for (frame, input) in frames.into_iter().enumerate() {
-        state.replay(input, vec![]);
-        let asked: Vec<SlotAddress> = state
-            .slot_infos
-            .iter()
-            .filter(|(_, info)| info.amount_job.is_some())
-            .map(|(address, _)| *address)
-            .collect();
-        for address in asked {
-            report(&state, &address, source, frame, times);
-            strips += 1;
-        }
-        state.run_ocr_inline();
-    }
+// the tooltip amounts, then a capture's hand edits, which win
+fn truth(state: &ScannerState, source: &str, end: Option<String>) {
     let icon = |address: &SlotAddress| {
         let info = state.slot_infos.get(address)?;
         Some(info.icon_name_score.as_ref()?.0.clone())
     };
     for (address, info) in &state.slot_infos {
         if let (Some(amount), Some(name)) = (&info.tooltip_amount, icon(address)) {
-            println!("TRUTH\t{source}\t{}\t{name}\t{amount}", place(address));
+            println!("TRUTH	{source}	{}	{name}	{amount}", place(address));
         }
     }
-    // hand edits last, so they win
     let end: serde_json::Value = serde_json::from_str(&end.unwrap_or("{}".into())).unwrap();
     for edit in end["edits"]
         .as_object()
@@ -229,8 +186,7 @@ fn capture(source: &str, times: &mut [Duration]) -> usize {
         let address: SlotAddress = serde_json::from_value(edit["address"].clone()).unwrap();
         if let (Some(_), Some(name)) = (edit["item"].as_str(), icon(&address)) {
             let amount = edit["amount"].as_u64().unwrap_or(1);
-            println!("TRUTH\t{source}\t{}\t{name}\t{amount}", place(&address));
+            println!("TRUTH	{source}	{}	{name}	{amount}", place(&address));
         }
     }
-    strips
 }

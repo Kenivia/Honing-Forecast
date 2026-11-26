@@ -1,18 +1,26 @@
 // Debug: for every slot of a still that looks like something, the icons it is closest to.
-//   cargo run --release --bin slot_scores -- <image>...
-use hf_scanner::{anchor_to_slot::anchor_defs::ALL_SLOT_ADDRESSS, dev_utils::native};
-use std::env;
+//   cargo run --release --bin slot_scores -- <image>... [--dump <folder>]
+// --dump writes each slot as seen next to the icon it is closest to.
+use clap::Parser;
+use hf_scanner::{
+    anchor_to_slot::anchor_defs::ALL_SLOT_ADDRESSS,
+    dev_utils::native::{self, Options, scan_still},
+};
+
+#[derive(Parser)]
+struct Cli {
+    images: Vec<String>,
+    #[arg(long)]
+    dump: Option<String>,
+    #[command(flatten)]
+    options: Options,
+}
 
 fn main() {
-    for path in env::args().skip(1) {
-        let image = image::open(&path).unwrap().to_rgba8();
-        let (width, height) = (image.width() as usize, image.height() as usize);
-        let (mut state, mut pixels) = native::new_state(width, height);
-        pixels.copy_from_slice(image.as_raw());
-        for _ in 0..30 {
-            state.cropper();
-            state.run_ocr_inline();
-        }
+    let cli = Cli::parse();
+    native::configure(&cli.options);
+    for path in &cli.images {
+        let (mut state, _pixels) = scan_still(path);
         println!(
             "{path}  brightness {:?}",
             state.screen_info.brightness.value
@@ -38,7 +46,7 @@ fn main() {
             .collect();
         addresses.sort_by_key(|a| (format!("{:?}", a.inventory_type), a.pos_in_inv));
         for address in addresses {
-            let scores = state.slot_scores(&address);
+            let scores = state.slot_scores(&address, cli.dump.as_deref());
             if scores[0].1.max(scores[0].2) < 0.9 {
                 continue;
             }

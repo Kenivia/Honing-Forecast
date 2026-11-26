@@ -4,8 +4,11 @@ use ab_glyph::{Font, FontVec, PxScale, point};
 use image::RgbaImage;
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex, OnceLock},
+    sync::{Arc, Mutex, OnceLock, atomic::AtomicBool},
 };
+
+// glyph_eval --debug: the three closest digits of every glyph, to stderr
+pub static DEBUG: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug, Clone)]
 pub struct Glyph {
@@ -153,7 +156,7 @@ fn read_inner(img: &RgbaImage, x0: u32, x1: u32, y0: u32, y1: u32) -> String {
         }
         ((value(img, x as u32, y as u32) as f32 - bg) / (fg - bg).max(1.0)).clamp(0.0, 1.0)
     };
-    let debug = std::env::var("GLYPH_DEBUG").is_ok();
+    let debug = DEBUG.load(std::sync::atomic::Ordering::Relaxed);
     let mut s = String::new();
     for g in &glyphs {
         let (w, h) = (g.x1 - g.x0, g.y1 - g.y0);

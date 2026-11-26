@@ -1,10 +1,15 @@
 // What the native bins share: the config and the recogniser from public/, and a state over a
 // frame buffer the bin owns.
 
-use std::{collections::BTreeMap, fs, sync::Once};
+use std::{
+    collections::BTreeMap,
+    fs,
+    sync::{Once, OnceLock},
+};
 
 use crate::{
     buffer::Buffer,
+    dev_utils::capture::{Start, read_frames},
     interface::{
         scan_result::{SlotResult, SlotStatus},
         setup::{load_ocr_engine, set_config},
@@ -16,24 +21,47 @@ use crate::{
 
 pub const ROOT: &str = env!("HF_ROOT");
 
+// Switches every bin takes (flattened into its arguments), set before its first state.
+#[derive(clap::Args, Clone, Default)]
+pub struct Options {
+    /// Make tooltip and currency strips another way (TextParams), e.g. "levels=60,200"
+    #[arg(long)]
+    pub text_strip: Option<String>,
+    /// Read every slot number with the recogniser, not by the font's shapes
+    #[arg(long)]
+    pub no_shapes: bool,
+    /// Keep the slot step's time budget, as in the browser (results then vary with the load)
+    #[arg(long)]
+    pub slot_budget: bool,
+}
+
+static OPTIONS: OnceLock<Options> = OnceLock::new();
+
+pub fn configure(options: &Options) {
+    OPTIONS.set(options.clone()).ok().unwrap();
+}
+
+fn options() -> &'static Options {
+    OPTIONS.get_or_init(Options::default)
+}
+
 pub fn load() {
     static LOADED: Once = Once::new();
     LOADED.call_once(|| {
         let config = fs::read(format!("{ROOT}/public/ScannerConfig.msgpack")).unwrap();
         set_config(rmp_serde::from_slice(&config).unwrap());
         load_ocr_engine(fs::read(format!("{ROOT}/public/text-recognition.rten")).unwrap());
-        // TEXT_STRIP="levels=60,200" makes tooltip and currency strips another way (TextParams)
-        if let Ok(spec) = std::env::var("TEXT_STRIP") {
-            *crate::ocr::text::TEXT_PARAMS.write() = crate::ocr::text::TextParams::parse(&spec);
+        if let Some(spec) = &options().text_strip {
+            *crate::ocr::text::TEXT_PARAMS.write() = crate::ocr::text::TextParams::parse(spec);
         }
-        // NO_SHAPES=1 reads every number by the OCR
-        if std::env::var("NO_SHAPES").is_err() {
+        if !options().no_shapes {
             load_number_font(fs::read(format!("{ROOT}/public/fonts/English.ttf")).unwrap());
         }
     });
 }
 
-// a state and the frame it scans, to be filled by the caller; 21:9 and brightness are detected
+// A state and the frame it scans, to be filled by the caller; 21:9 and brightness are detected.
+// No time budget unless asked for, so that a run repeats.
 pub fn new_state(width: usize, height: usize) -> (ScannerState, Vec<u8>) {
     load();
     let mut pixels = vec![0u8; width * height * 4];
@@ -45,10 +73,18 @@ pub fn new_state(width: usize, height: usize) -> (ScannerState, Vec<u8>) {
         lut: None,
         brightness: 0.0,
     };
-    (
-        ScannerState::new(buffer, Default::default(), Default::default()),
-        pixels,
-    )
+    let mut state = ScannerState::new(buffer, Default::default(), Default::default());
+    state.no_slot_budget = !options().slot_budget;
+    (state, pixels)
+}
+
+// A state for a capture's frames, with the settings it was recorded with and the priors it was given.
+pub fn replay_state(start: &mut Start) -> (ScannerState, Vec<u8>) {
+    let (mut state, pixels) = new_state(start.width, start.height);
+    state.set_priors(std::mem::take(&mut start.priors));
+    state.screen_info.forced_21_9 = start.forced_21_9;
+    state.screen_info.brightness = start.brightness;
+    (state, pixels)
 }
 
 // what the bins print of a hover, a chest and the slots
@@ -166,31 +202,40 @@ pub fn print_statuses(state: &ScannerState) {
     }
 }
 
-// A still, scanned enough times for every slot to be read. The state reads from the pixels returned
-// with it.
-pub fn scan_still(path: &str) -> (ScannerState, Vec<u8>) {
+// A still, scanned enough times for every slot to be read (a few go each scan); `each` sees the
+// state after every scan, before its lines are read. The state reads from the pixels returned with it.
+pub fn scan_still_with(
+    path: &str,
+    mut each: impl FnMut(&mut ScannerState, usize),
+) -> (ScannerState, Vec<u8>) {
     let image = image::open(path).unwrap().to_rgba8();
     let (mut state, mut pixels) = new_state(image.width() as usize, image.height() as usize);
     pixels.copy_from_slice(image.as_raw());
-    state.no_slot_budget = true;
-    for _ in 0..30 {
+    for scan in 0..30 {
         state.cropper();
+        each(&mut state, scan);
         state.run_ocr_inline();
     }
     (state, pixels)
 }
 
-// A debug capture run again as capture_replay runs it, and its end record.
-pub fn replay_capture(path: &str) -> (ScannerState, Vec<u8>, Option<String>) {
+pub fn scan_still(path: &str) -> (ScannerState, Vec<u8>) {
+    scan_still_with(path, |_, _| {})
+}
+
+// A debug capture run again as capture_replay runs it (every line read before the next frame);
+// `each` sees the state after every frame, before its lines are read. Returns the end record too.
+pub fn replay_capture_with(
+    path: &str,
+    mut each: impl FnMut(&mut ScannerState, usize),
+) -> (ScannerState, Vec<u8>, Option<String>) {
     let file = fs::read(path).unwrap();
-    let (mut start, frames, end) = crate::dev_utils::capture::read_frames(&file);
+    let (mut start, frames, end) = read_frames(&file);
     drop(file);
-    let (mut state, pixels) = new_state(start.width, start.height);
-    state.set_priors(std::mem::take(&mut start.priors));
-    state.screen_info.forced_21_9 = start.forced_21_9;
-    state.screen_info.brightness = start.brightness;
-    for input in frames {
+    let (mut state, pixels) = replay_state(&mut start);
+    for (index, input) in frames.into_iter().enumerate() {
         state.replay(input, vec![]);
+        each(&mut state, index);
         let texts: Vec<(u32, String)> = std::mem::take(&mut state.ocr_queue)
             .iter()
             .map(|job| (job.id, job.line.read()))
@@ -200,6 +245,10 @@ pub fn replay_capture(path: &str) -> (ScannerState, Vec<u8>, Option<String>) {
     }
     read_rest(&mut state);
     (state, pixels, end)
+}
+
+pub fn replay_capture(path: &str) -> (ScannerState, Vec<u8>, Option<String>) {
+    replay_capture_with(path, |_, _| {})
 }
 
 // At the end of the input: every line still waiting is read, and what that sends off too.

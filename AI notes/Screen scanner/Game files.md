@@ -2,17 +2,25 @@
 
 `scanner_setup/game_files` builds the scanner's chest table and icon art from the installed game's own files. Nothing reads `scanner_setup/codex` (old downloads from lostarkcodex.com, git-ignored).
 
-1. `extract.py` pulls the tables, the fonts and the icon sheets out of the game, once per game patch. `fonts.py` then cuts the fonts down for the scanner.
-2. `chests.py` writes `scanner_setup/templates/chests.json` and `scanner_setup/templates/ChestIcons`: every chest that opens to something the scanner counts, and every other chest drawn like one of those.
-3. `decoys.py` writes `scanner_setup/templates/decoys.json` and `scanner_setup/templates/DecoyIcons`: what we do not count that looks like one of our templates.
-4. `python scanner_setup/templates/make_msg_pack.py` and `pnpm run wasm`, as for any change to the tables.
-5. `bonus_chests.py` writes `frontend/Data/bonus_chests.json`, the raids' bonus chests as choices for the Choices page ("Bonus chests" below). It needs only the tables.
+## After a patch
 
-Four more read the same tables through `game.py` but live in `scripts/game_files/`: `honing.py` (the normal honing constants of both tiers, "Honing data in the game files" in `Calculator core/Domain model.md`), `paradise.py`, which writes `frontend/Data/paradise.json` ("Paradise" below), `income.py`, which writes `frontend/Data/income.json` ("Income in the client" below), and `equipment_icons.py`, which writes the gear icons ("Equipment icons" below).
+Every generated file comes from the installed client, so a patch means running them all again, in this order, and reading the `git diff` of what they write:
+
+1. `python scanner_setup/game_files/extract.py` pulls the tables, the fonts and the icon sheets (below). Keep the client as `ignored/game_files_<export date>/` (raw `.lpk`s and decrypted tables, with a `README.md`) and diff its tables with the last snapshot's, to see what the patch added (`dump_all` in `ignored/game_files_2026-10-19/` decrypts an archive whole). A script that needs a table not yet extracted adds it to `extract/Program.cs`.
+2. `fonts.py` cuts the fonts down for the slot-number reader (`public/fonts/`).
+3. `chests.py` writes `scanner_setup/templates/chests.json` and `ChestIcons/`: every chest that opens to something the scanner counts, and every other chest drawn like one of those.
+4. `decoys.py` writes `decoys.json` and `DecoyIcons/`: what we do not count that looks like one of our templates.
+5. `python scanner_setup/templates/make_msg_pack.py`, then `pnpm run wasm` (the tables are compiled in).
+6. `bonus_chests.py` writes `frontend/Data/bonus_chests.json` ("Bonus chests" below).
+7. In `scripts/game_files/`, through the same `game.py`: `honing.py` (the honing constants, `Calculator core/Further learnings/Honing data in the game files.md`), `paradise.py` (`frontend/Data/paradise.json`), `income.py` (`frontend/Data/income.json`; event shops are listed by hand in `EVENT_SHOPS`) and `equipment_icons.py` (the gear icons).
+8. `python crates/market/tools/market_items.py` writes the market scanner's item art (`crates/market/items/`).
+9. Check: `pnpm scanner-check`, a suite `cmp` against the last reference run, `pnpm test:rust` (honing constants), and the pages that show the generated data.
+
+A new content usually needs more than a re-run. A new material goes into `items.json` (with aliases, below) before `chests.py`; a new event shop into `EVENT_SHOPS`; a new Paradise season is picked up by `paradise.py` taking the newest two seasons. Anything new the client added (a box kind, a column, a `ClassifyType`) is worth a look against the rules below.
 
 `game.py` is what they share (`table`, `text`, `box`, `listed`, `icon_info`, `icon_art`, `load_index`). `find_icon.py` is for looking: it says which icon a slot in a capture is drawn with.
 
-What was checked and what is not in the client is in `Game files tried.md`; read it only when trying something new here.
+What was checked and what is not in the client is in `Further learnings/Game files tried.md`; read it only when trying something new here.
 
 ## What is needed, and where it lives
 
@@ -30,7 +38,7 @@ Claude Code will not run a downloaded exe on its own: `umodel_lostark_v7.exe` is
 - **`scanner_setup/game_files/fonts/`**: everything under `Binaries/Fonts` in `font.lpk`, by its path there (languages share file names): the fonts and a `FontMap.xml` per language folder, which maps the UI's text styles to files (the root's is Korean). `fonts.py` cuts each language's main style (`$YG760`) down to "0123456789+" into `public/fonts/<Language>.ttf` for the slot-number shape reader (`Pipeline.md`), which the native bins and the shape test read too. These are shipped and tracked.
 - **`scanner_setup/game_files/atlas/`**: the textures of the `EFUI_IconAtlas_*` packages as PNG, in `<package>/Texture2D/<sheet>.png`. umodel takes a package by its real name only with `-nameresolve`; on disk the files have scrambled names.
 
-Vite watches the whole project, so big folders are in `server.watch.ignored` in `vite.config.ts` (`scanner_setup/game_files`, `scanner_setup/brightness`, `scanner_setup/codex`, `ignored`, `crates`, `target`).
+Vite watches the whole project, so big folders are in `server.watch.ignored` in `vite.config.ts` (`scanner_setup/game_files`, `scanner_setup/test_stills`, `scanner_setup/codex`, `ignored`, `crates`, `target`).
 
 ## The tables
 
@@ -46,13 +54,9 @@ Every table has `PrimaryKey` and `SecondaryKey`; text columns hold keys into `Ga
 
 Contents that differ by class sit in one column per class (each ending in `Id`) with `NormalId` 0: a filled column is a class that gets the row, and its id is what that class gets. `game.box` returns them apart (`class_columns`), each with every title it has. Rows carry `ClassifyType`/`ClassifyIndex`, which gate them on an event or a piece of content; `chests.py` ignores them.
 
-The honing tables (`ItemEnhanceCommon`, `ItemQualityOption`, `ItemEnhanceMaterial`) are read by `scripts/game_files/honing.py`: see "Honing data in the game files" in `Calculator core/Domain model.md`.
+The honing tables (`ItemEnhanceCommon`, `ItemQualityOption`, `ItemEnhanceMaterial`) are read by `scripts/game_files/honing.py`: see `Calculator core/Further learnings/Honing data in the game files.md`.
 
-**Which client.** The tables and atlas are from the client after the October 2026 update (archives dated 2026-10-21), and every generated file is from it. The update added the Serca vambrace (ItemEnhanceCommon group 411102), the Serca books ("Tremor"), Paradise key rows and the tables `ClassItemMapping` and `ZoneEpicGateBossChallenge*`, and stored juice rates ten times finer (out of 100,000).
-
-The November 2026 update (archives dated 2026-11-18) is the client now; every generated file was re-run on it. It left the honing tables (`ItemEnhance*`, `ItemQualityOption`) and Paradise (`TrinityInferno*`) as they were, so `honing.py`, `paradise.py` and `bonus_chests.py` came out the same. It added 84 boxes: the "Clear: Vestiges of the End" chests (Normal `use_14_63` legendary, Hard `use_14_64` relic, levels 1 to 6 plus the Clear Celebration chests), the Firmamental Shard / Breakthrough / Fusion / Support chests, Metallurgy and Tailoring Selection Chest VI, the Extreme stone and fusion chests, and new gold and silver bars; and the table `DmgFontGroup`.
-
-**Snapshots.** `ignored/game_files_2026-10-19/` holds the client as of 2026-10-19, before the update: raw `.lpk`s, every table decrypted, the extracted tables and atlas, and the tooling. `ignored/game_files_2026-10-26/` is the same for the October client (archives 2026-10-21) and `ignored/game_files_2026-11-18/` for the current one, both without the tooling. A folder is named by the day it was exported. Each `README.md` says what is where. The first's `dump_all` decrypts any archive whole (all the tables in `data2.lpk`, about 40 s), which is how two clients were compared table by table; look for a table there before adding it to `extract/Program.cs`.
+**Which client.** Every generated file is from the client of 2026-11-18 (snapshot `ignored/game_files_2026-11-18/`). Older snapshots: `game_files_2026-10-19/` (with the tooling and `dump_all`) and `game_files_2026-10-26/`.
 
 ## The icons
 
@@ -84,7 +88,7 @@ An icon is named `<Icon>_<IconIndex>` in lower case (`use_12_91`). `IconInfo.loa
 - **Irrelevant rows** (`irrelevant: true`): every other box that is drawn with the art and rarity of a top row, so that a slot holding one can be told from the chest it looks like (`Slot grid.md`). It has to have an English name and not be expired; its tier does not matter, and it needs something listed. Its contents are what its tooltip lists, with no chest ids. Rows that read the same are one. Ones with `level` matter to the slot reader (`Tooltips.md`, "Irrelevant chests").
 - **`by_class`** (irrelevant rows): the chest has contents that differ by class. Its contents then hold every title any class has, one entry each, and the reader only asks that each row of the tooltip be one of them (`Tooltips.md`). Relevant rows keep `extra`.
 - **A card is listed without "Card"**: the tooltip says "Lumencaligo" for the item "Lumencaligo Card" (`Item.Category` 32000, `game.listed`).
-- **Not in the table: chests the client has no contents for.** Chests by category with no `RandomBoxBase` row (old gear chests, "Raid: Ur'nil", the "Illusion Gift Chest" and "Cryptic Treasure Chest" that give gold) are left out on purpose: such a slot reads as the chest it is drawn like, and is set by hand (`Game files tried.md`). Also not in: an irrelevant box with nothing listed, and the relevant boxes of tiers 1 to 3.
+- **Not in the table: chests the client has no contents for.** Chests by category with no `RandomBoxBase` row (old gear chests, "Raid: Ur'nil", the "Illusion Gift Chest" and "Cryptic Treasure Chest" that give gold) are left out on purpose: such a slot reads as the chest it is drawn like, and is set by hand (`Further learnings/Game files tried.md`). Also not in: an irrelevant box with nothing listed, and the relevant boxes of tiers 1 to 3.
 - **Left out by art** (`UNWANTED_ICONS`): a chest drawn with one of its icons is dropped the same way. That is five quest-chest icons (`all_quest_02_*`) and `use_11_161` to `163`, the three Conquest Campaign Upgrade Chests (Normal, Hard, Nightmare: one-time catch-up rewards), whose art and rarity skin chests share, so a slot of them could never be told apart without a hover.
 - **The art** goes to `scanner_setup/templates/ChestIcons/<icon>.png`, 64 px, cut lossless from the sheets. `make_msg_pack.py` names each template `<icon>@<rarity>`. Rows past their expiry date drop out each time it is run.
 
@@ -101,7 +105,7 @@ The Serca books ("Metallurgy: Tremor [12-15]" and the like) are drawn with the H
 `python scanner_setup/game_files/decoys.py`, after `chests.py` and after any change to `items.json`: a decoy is whatever is not ours, so the list follows the tables. What the scanner does with it is in `Pipeline.md`, "Slots".
 
 - **The pool** is every icon of a named item on every rarity some item has it on. The art and rarity of any item titled like a material of `items.json` are left out, since our material art is a lossy copy of the game's and would be its own decoy.
-- **A decoy** is a pair that renders within `NEAR` (0.93) of one of our templates and under `SAME` (0.99, the same picture, which a duplicate of our art under another name is). Rendered as a template is at 1080p, 46x29 without its outermost pixels, and scored as the scanner scores a slot. The margin under the slot limit covers a slot scoring a little off what its template would (`Icon matching bench tried.md`).
+- **A decoy** is a pair that renders within `NEAR` (0.93) of one of our templates and under `SAME` (0.99, the same picture, which a duplicate of our art under another name is). Rendered as a template is at 1080p, 46x29 without its outermost pixels, and scored as the scanner scores a slot. The margin under the slot limit covers a slot scoring a little off what its template would (`Further learnings/Icon matching bench tried.md`).
 - **A chest template's art on another rarity is a decoy however far** (still under `SAME`; 23 of them, from 0.89 up). Under the hover highlight such a slot can pass as the template, and only a decoy that wins on the next clean look undoes that (`Pipeline.md`, "Slots"). Three rarities of chest art are the same picture as a template and stay out: `use_4_220@rare` (`shop_icon_31@rare`), `use_4_225@legendary` (`use_4_224@legendary`), `use_6_182@relic` (its legendary).
 - **A row** of `decoys.json` is `icon`, `rarity`, the template it is `like` and how `alike`. The art goes to `scanner_setup/templates/DecoyIcons/<icon>.png`.
 - **A decoy is not known to be irrelevant, only not in our tables.** A chest that should count and is missing from `chests.json` becomes a decoy, and is then refused where before it was only unrecognised.
@@ -126,11 +130,11 @@ Paradise is "Hell" in the client (`TrinityInferno*`), the sekwahar "hell_drops" 
 - **`TrinityInfernoReward`**: a row per reward set (`PrimaryKey`) and level (`SecondaryKey` 1, 10, 20 ... 100: Base, Level 1 ... 10). `MainDropId1` to `20` are the main rewards with weights `Ratio1` to `20` (all 10, so the three offered are drawn evenly), `SubDropId` the additional rewards and `PlentyDropId` the Wealth ones, about ten times as much, given instead of them; both are 0 on every Netherworld set. Each is a drop, read as for chests; every row of them has `DropBase.Ratio` 100 and one entity.
 - **Two sets for one item level**: 1730 has 1024 (T4 materials) and 1025 (Serca), both under "Hell Key V". The newest set of an item level is the highest id (what `paradise.py` takes; the sekwahar page agrees).
 - **`paradise.py`** writes one choice per mode, item level and level from the newest two seasons' `ClassifyType` 19 keys (`InfernoType` 2 and 3). A row is a `Choice` with `names` (what each option is), `options` (the main reward plus the additional rewards, by label) and `wealth` (plus the Wealth ones instead; left out where there is no Wealth, so for all of Netherworld), `difficulty` the item level, `title` the level, `band` 0 (the materials are "(Bound)" and the gold bars, category 34304, character bound). A select-one chest of materials (the stone selection chests, the advanced honing support chests) is one option per material; gold bars are their gold. What is no material is an option that gives only the additional rewards.
-- **No 1770 yet** (2026-11-18): no item asks for more than 1750, and neither update changed `TrinityInfernoReward`. The October key rows are events whose key items are not in `Item` yet.
+- **No 1770 yet** in the current client: no item asks for more than 1750.
 
 ## Income in the client
 
-Found 2026-10-26 in the full tables of the snapshot (queries and outputs in `ignored/income_research_2026-10-26/gamefiles/`). `income.py` reads the raid gates, the Crucible, the playtime reward, the weekly mission reward and the guild, Clear Medal and live event shops into `frontend/Data/income.json` for the Income page's Auto income (`Income.md`): an item is its options (a select-one chest one per pick, a random one its average), a gate its gold by band, Clear Medals, materials and bonus chest. The live event shops are listed by `DirectShopMeta` id in the script (`EVENT_SHOPS`), so a new event needs adding there. Open (to return to): the 2026-11-18 Soft Bean shop (10026, to 2026-12-16) is listed but adds no rows, since its rows have `ShopLimitIndex` 0 and carry `DirectShop.PurchaseLimit` (e.g. 75) instead of an `AcquireLimit` row, so `shop_row` drops them; reading `PurchaseLimit` as one limit over the event is the likely fix. Rates and amounts the client lacks are in `Game files tried.md`.
+From the full tables (queries and outputs in `ignored/income_research_2026-10-26/gamefiles/`). `income.py` reads the raid gates, the Crucible, the playtime reward, the weekly mission reward and the guild, Clear Medal and live event shops into `frontend/Data/income.json` for the Income page's Auto income (`Income.md`): an item is its options (a select-one chest one per pick, a random one its average), a gate its gold by band, Clear Medals, materials and bonus chest. The live event shops are listed by `DirectShopMeta` id in the script (`EVENT_SHOPS`), so a new event needs adding there. Open (to return to): the 2026-11-18 Soft Bean shop (10026, to 2026-12-16) is listed but adds no rows, since its rows have `ShopLimitIndex` 0 and carry `DirectShop.PurchaseLimit` (e.g. 75) instead of an `AcquireLimit` row, so `shop_row` drops them; reading `PurchaseLimit` as one limit over the event is the likely fix. Rates and amounts the client lacks are in `Further learnings/Game files tried.md`.
 
 - **Raid clear rewards**: `StagePerReward.RewardDropIndex` (the free clear), `UnlimitRewardDropIndex` (accessories, ability stones, bracelets on every clear), `FirstClearRewardDropIndex`. **A gold entity's band is `DropEntity.NormalType`**: 2 tradable, 4 roster bound, 5 character bound (inferred, but it matches the community sheet on every gate). The weekly limit of 3 gold raids per character is `ZoneEpicGate.GoldRewardGroupId` 50001 / `GoldRewardGroupLimitCount`; the 6 gold-earning characters are in `GameMsg` text only.
 - **Paradise Hell's rules**: descents per key `TrinityInferno.JumpCount` (5 / 6 / 7), Destiny key transmutes `TrinityInfernoKeyTrans`, per-floor altars and the 63% risky descent every 10 floors `TrinityInfernoEvent`, altar effect weights `TrinityInfernoLucky` (which number is which effect is not stored), Wealth chance `TrinityInfernoReward.PlentyPropRatio` 10. Descents are uniform 1–20 by `GameMsg`. Enough to simulate the level a run ends on, except the risky descent's size.

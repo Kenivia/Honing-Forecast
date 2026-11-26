@@ -39,7 +39,7 @@ cloudflare/.dev.vars
 
 
 
-scanner_setup/brightness/all icons/*
+scanner_setup/brightness/
 scanner_setup/game_files/tables/
 scanner_setup/game_files/atlas/
 scanner_setup/game_files/fonts/

@@ -1,19 +1,32 @@
 // Scores text strip variants (TextParams): replays debug captures as the scanner would, keeps every
 // distinct tooltip and currency line it sends to be read, and reads each under every variant.
 //   cargo run --release --bin text_bench -- <capture.hfcap>... > text.tsv
-//   python scanner_setup/tooltips/text_bench.py text.tsv
+//   python scanner_setup/scanner/text_bench.py text.tsv
 // Lines: VARIANTS then the names; LINE source id role unit, then the read under each variant. The
 // role is title, name or count (a chest row), amount, description or other (currency and the
-// like); lines of one unit are one text. STRIPS=<folder> also writes each line's strips.
+// like); lines of one unit are one text. --strips <folder> also writes each line's strips.
+use clap::Parser;
 use hf_scanner::{
-    dev_utils::{capture::read_frames, native},
+    dev_utils::{
+        capture::read_frames,
+        native::{self, Options},
+    },
     ocr::{
         jobs::{Kind, OCRLine},
         recognize::recognize_line,
         text::{TextParams, text_strip_with},
     },
 };
-use std::{collections::BTreeMap, env, fs};
+use std::{collections::BTreeMap, fs};
+
+#[derive(Parser)]
+struct Cli {
+    captures: Vec<String>,
+    #[arg(long)]
+    strips: Option<String>,
+    #[command(flatten)]
+    options: Options,
+}
 
 // the first is what the scanner does; add what is being tried
 fn variants() -> Vec<(&'static str, TextParams)> {
@@ -33,8 +46,9 @@ fn variants() -> Vec<(&'static str, TextParams)> {
 }
 
 fn main() {
-    let sources: Vec<String> = env::args().skip(1).collect();
-    let strips = env::var("STRIPS").ok();
+    let cli = Cli::parse();
+    native::configure(&cli.options);
+    let (sources, strips) = (cli.captures, cli.strips);
     let variants = variants();
     println!(
         "VARIANTS\t{}",
@@ -78,10 +92,8 @@ fn main() {
 #[allow(clippy::type_complexity)]
 fn capture(source: &str) -> (BTreeMap<u32, OCRLine>, BTreeMap<u32, (String, String)>) {
     let file = fs::read(source).unwrap();
-    let (start, frames, _) = read_frames(&file);
-    let (mut state, _pixels) = native::new_state(start.width, start.height);
-    state.screen_info.forced_21_9 = start.forced_21_9;
-    state.screen_info.brightness = start.brightness;
+    let (mut start, frames, _) = read_frames(&file);
+    let (mut state, _pixels) = native::replay_state(&mut start);
     let mut lines = BTreeMap::new();
     let mut roles = BTreeMap::new();
     // reads still waiting after the last scan; the ones past them were sent in this one

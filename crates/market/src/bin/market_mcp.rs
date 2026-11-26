@@ -225,13 +225,16 @@ impl ServerHandler for Market {
     }
 }
 
+#[derive(clap::Parser)]
+struct Cli {
+    /// Drive this machine's agent through the relay instead of the game on this PC
+    #[arg(long)]
+    remote: Option<String>,
+}
+
 #[tokio::main]
 async fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    let machine = args
-        .iter()
-        .position(|a| a == "--remote")
-        .map(|i| args[i + 1].clone());
+    let machine = <Cli as clap::Parser>::parse().remote;
     REMOTE
         .set(machine.map(|machine| {
             let cfg: Value = serde_json::from_str(

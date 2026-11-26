@@ -12,6 +12,34 @@ use crate::{
 use rusqlite::Connection;
 use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 
+// What a pass reads, shared by market_scan and market_agent (flattened into their arguments).
+#[derive(clap::Args)]
+pub struct Args {
+    /// Sections: materials, gems, accessories (paused), exchange
+    #[arg(long, default_value = "materials,gems,exchange")]
+    pub only: String,
+    /// Regions, scanned in this order
+    #[arg(long, default_value = "NAE,EUC")]
+    pub regions: String,
+    /// Every path in a few minutes: a few rows, levels and pairs of each
+    #[arg(long)]
+    pub quick: bool,
+    /// Keep every crop read, with what was read (strips.rs)
+    #[arg(long)]
+    pub strips: bool,
+}
+
+impl Args {
+    pub fn opts(&self) -> Opts {
+        crate::ui::QUICK.store(self.quick, std::sync::atomic::Ordering::Relaxed);
+        Opts {
+            only: self.only.clone(),
+            strips: self.strips,
+            regions: self.regions.split(',').map(crate::region::get).collect(),
+        }
+    }
+}
+
 pub struct Opts {
     /// materials,gems,accessories,exchange
     pub only: String,

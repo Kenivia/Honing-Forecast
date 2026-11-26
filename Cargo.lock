@@ -1100,6 +1100,7 @@ dependencies = [
  "ab_glyph",
  "base64",
  "chrono",
+ "clap",
  "fastrand",
  "hf-scanner",
  "image",
@@ -1128,6 +1129,7 @@ version = "0.1.0"
 dependencies = [
  "ab_glyph",
  "ahash",
+ "clap",
  "fast_image_resize",
  "image",
  "imageproc",

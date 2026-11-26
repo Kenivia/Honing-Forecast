@@ -14,12 +14,13 @@ const rust_map = (r) => Object.fromEntries((r ?? []).map(([n, t, c]) => [n, [t, 
 
 function summarize(file) {
   const d = JSON.parse(fs.readFileSync(file, "utf8"));
-  // the first scan is the whole-frame anchor search, and the records after the
-  // video ended are its last frame repeating twice a second
+  // the first scan is the whole-frame anchor search, and the records after an
+  // upload ended are its last frame repeating twice a second
   const raw = d.scans;
   let last_live = 0;
   for (let i = 1; i < raw.length; i++) {
-    if (raw[i].frame_time - raw[i - 1].frame_time < 200_000) last_live = i;
+    // a replay's records carry no frame time and all count
+    if (!(raw[i].frame_time - raw[i - 1].frame_time >= 200_000)) last_live = i;
   }
   const rows = raw.slice(1, last_live + 1).map((s) => ({ ...s, r: rust_map(s.rust) }));
   // a frame dropped by worth_scanning never reaches the anchors
@@ -34,7 +35,7 @@ function summarize(file) {
     `${d.recording?.split(/[\\/]/).pop() ?? "?"}, ${d.threads} threads`,
   );
   console.log(
-    `${d.draws} frames drawn, ${rows.length} scanned frames of the recording, ${(
+    `${rows.length} scanned frames of the recording, ${(
       (100 * scanned.length) / rows.length
     ).toFixed(0)}% scanned (${skipped.length} skipped)`,
   );

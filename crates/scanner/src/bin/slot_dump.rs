@@ -5,17 +5,26 @@
 // first scan, scans it was seen on, on how many of them a tooltip was over or beside it), per look the normalised icon crop
 // (_i), the same with MARGIN px around it (_m) and the whole slot as captured (_r), and the
 // templates in <folder>/../templates-<ui height>.
+use clap::Parser;
 use hf_scanner::{
     anchor_to_slot::anchor_defs::{COMBINED_NUMBER_HEIGHT, SLOT_ORDER},
     dev_utils::capture::read_frames,
-    dev_utils::native,
+    dev_utils::native::{self, Options},
     image_utils::{
         brightness::normalize_brightness,
         common::{Rect, get_resizer},
     },
     interface::setup::{BASE_ICONS, icon_lookup},
 };
-use std::{collections::HashMap, env, fs};
+use std::{collections::HashMap, fs};
+
+#[derive(Parser)]
+struct Cli {
+    capture: String,
+    out: String,
+    #[command(flatten)]
+    options: Options,
+}
 
 const MARGIN: f64 = 3.0;
 const MAX_LOOKS: usize = 40;
@@ -30,17 +39,16 @@ struct Look {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().skip(1).collect();
-    let (path, out) = (&args[0], &args[1]);
+    let cli = Cli::parse();
+    native::configure(&cli.options);
+    let (path, out) = (&cli.capture, &cli.out);
     fs::create_dir_all(out).unwrap();
     let file = fs::read(path).unwrap();
-    let (start, frames, end) = read_frames(&file);
+    let (mut start, frames, end) = read_frames(&file);
     if let Some(end) = end {
         fs::write(format!("{out}/reference.json"), end).unwrap();
     }
-    let (mut state, _pixels) = native::new_state(start.width, start.height);
-    state.screen_info.forced_21_9 = start.forced_21_9;
-    state.screen_info.brightness = start.brightness;
+    let (mut state, _pixels) = native::replay_state(&mut start);
 
     let mut looks: HashMap<String, HashMap<u64, Look>> = HashMap::new();
     for (index, input) in frames.into_iter().enumerate() {

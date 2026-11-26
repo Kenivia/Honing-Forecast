@@ -1,8 +1,14 @@
 // Reads every text crop of a strips folder with pp.rs, beside what the pass read: pp_eval <strips folder>
+use clap::Parser;
 use hf_market::pp;
 
+#[derive(Parser)]
+struct Cli {
+    strips: String,
+}
+
 fn main() {
-    let dir = std::env::args().nth(1).unwrap();
+    let dir = Cli::parse().strips;
     for line in std::fs::read_to_string(format!("{dir}/index.jsonl"))
         .unwrap()
         .lines()

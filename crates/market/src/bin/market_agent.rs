@@ -10,14 +10,14 @@
 // build at the start and at every round, restarting in the same console (--resume: scanning without asking);
 // only a newer build signed by the publisher's key (update_key.hex) is taken. Commands other than status, start,
 // pause and gap must be signed by that key too (sign.rs); `exec` runs a PowerShell script.
-// market_agent [--dev] [--setup] [--quick] [--strips] [--only materials,gems,exchange] [--regions NAE,EUC]
-//     [--gap MINUTES]
+// market_agent --help for the switches.
 use base64::Engine;
+use clap::Parser;
 use hf_market::{
     assets, ctl, db,
     game::{self, Closed, Game, Stopped, check_abort, ms, panic_text, quiet_stops},
     input::awake,
-    region, report, run, sign,
+    report, run, sign,
     ui::{self, log, looks},
     upload,
 };
@@ -645,33 +645,37 @@ fn scan(conn: &rusqlite::Connection, o: &run::Opts, current: &mut Option<&'stati
     }
 }
 
+#[derive(Parser)]
+struct Cli {
+    /// The repo's folders instead of the portable layout beside the exe
+    #[arg(long)]
+    dev: bool,
+    /// Report a screenshot of every step (setup mode)
+    #[arg(long)]
+    setup: bool,
+    /// Minutes between rounds, on multiples of it in UTC; 0 runs them back to back
+    #[arg(long)]
+    gap: Option<i64>,
+    /// Scanning without asking, after a self-update restart
+    #[arg(long)]
+    resume: bool,
+    #[command(flatten)]
+    pass: run::Args,
+}
+
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    let has = |k: &str| args.iter().any(|a| a == k);
-    let arg = |k: &str| {
-        args.iter()
-            .position(|a| a == k)
-            .map(|i| args[i + 1].clone())
-    };
-    if !has("--dev") {
+    let cli = Cli::parse();
+    if !cli.dev {
         assets::portable();
     }
-    report::SETUP.store(has("--setup"), Ordering::Relaxed);
-    ui::QUICK.store(has("--quick"), Ordering::Relaxed);
-    let o = run::Opts {
-        only: arg("--only").unwrap_or("materials,gems,exchange".into()),
-        strips: has("--strips"),
-        regions: arg("--regions")
-            .unwrap_or("NAE,EUC".into())
-            .split(',')
-            .map(region::get)
-            .collect(),
-    };
+    report::SETUP.store(cli.setup, Ordering::Relaxed);
+    let o = cli.pass.opts();
     // --gap, else the last one set remotely (data/gap), else 2 hours
     let saved = std::fs::read_to_string(assets::data().join("gap")).ok();
-    let gap = arg("--gap")
-        .or(saved)
-        .map_or(120, |v| v.trim().parse().unwrap());
+    let gap = cli
+        .gap
+        .or(saved.map(|v| v.trim().parse().unwrap()))
+        .unwrap_or(120);
     GAP.store(gap, Ordering::Relaxed);
     let cfg_path = assets::data().join("relay.json");
     let Ok(cfg) = std::fs::read_to_string(&cfg_path) else {
@@ -724,7 +728,7 @@ fn main() {
     while !CONNECTED.load(Ordering::Relaxed) {
         ms(200);
     }
-    let resume = has("--resume");
+    let resume = cli.resume;
     if !resume {
         log(&format!("update: {}", update(false)));
     }
