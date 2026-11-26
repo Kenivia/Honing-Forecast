@@ -16,12 +16,12 @@
 
 pub mod lab;
 pub mod maxroll;
-mod neighbour;
-mod one_batch;
+pub mod neighbour;
+pub mod one_batch;
 pub mod response;
-mod scaler;
-mod shadow;
-mod simulated_annealing;
+pub mod scaler;
+pub mod shadow;
+pub mod simulated_annealing;
 
 use crate::chest::ChestStates;
 use crate::state::OneState;

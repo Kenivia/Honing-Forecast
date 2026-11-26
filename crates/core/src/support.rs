@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 
 use crate::constants::{FLOAT_TOL, IGNORE_PROB_TOL};
-use crate::core::probability::cumulants::KsTuple;
+use crate::core::saddlepoint::cumulants::KsTuple;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(transparent)]

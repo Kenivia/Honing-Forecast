@@ -24,7 +24,7 @@ use std::collections::BTreeMap;
 
 use super::one_batch::SolverStateBundle;
 
-pub(crate) mod lab_hooks;
+pub mod lab_hooks;
 
 pub fn my_push(
     queue: &mut DoublePriorityQueue<StateEssence, OrderedFloat<f64>>,
@@ -365,7 +365,7 @@ fn response_polish(solver_bundle: &mut SolverStateBundle, sweeps: usize, probe: 
 
 /// Starts from the free tap order that takes the upgrades by what a free tap saves for what it
 /// takes, either whole or one piece's next level at a time, where one beats the order given.
-pub(crate) fn greedy_order(state_bundle: &mut StateBundle, probe: &mut Probe) {
+pub fn greedy_order(state_bundle: &mut StateBundle, probe: &mut Probe) {
     let mut best = (
         state_bundle.metric_router(probe),
         state_bundle.special_state.clone(),

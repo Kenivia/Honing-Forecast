@@ -76,17 +76,18 @@ impl StateBundle {
 
         out
     }
-    /// This thing is called insanely often and it's kinda takes longer than i'd like (like +10% overall its kinda crazy)
-    /// TODO ig
+    /// Called very often, so no boxed iterator
     pub fn find_min_max(&self, support_index: i64, skip_count: usize) -> (f64, f64) {
-        let min_value = self
-            .extract_all_support_with_meta(support_index)
-            .enumerate()
+        let supports = || {
+            self.special_state
+                .iter()
+                .map(|&u_index| self.support_from_index(u_index, support_index))
+                .enumerate()
+        };
+        let min_value = supports()
             .map(|(index, x)| x.access_min(skip_count > index))
             .sum();
-        let max_value = self
-            .extract_all_support_with_meta(support_index)
-            .enumerate()
+        let max_value = supports()
             .map(|(index, x)| x.access_max(skip_count > index))
             .sum();
         (min_value, max_value)

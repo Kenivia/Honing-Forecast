@@ -1,6 +1,6 @@
 use crate::advanced_honing::utils::{AdvConfig, AdvDistTriplet};
 use crate::chest::ChestStates;
-use crate::core::mean::CoarseMemo;
+use crate::core::lattice::CoarseMemo;
 use crate::parser::PreparationOutput;
 use crate::probe::Probe;
 use crate::state::{OneState, State};

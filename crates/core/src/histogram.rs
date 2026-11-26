@@ -46,10 +46,12 @@ pub fn histogram(state_bundle: &mut StateBundle, dist_plan: Option<usize>) -> Hi
 
     let mut cum_percentiles: Vec<Vec<(f64, f64)>> = vec![Vec::with_capacity(BUCKET_COUNT); num_sup];
     let mut chance_within: Vec<[f64; 3]> = vec![[0.0; 3]; num_sup];
+    let pity = state_bundle.pity();
+    let luckiest = state_bundle.luckiest_mf();
 
     for (support_index, item) in cum_percentiles.iter_mut().enumerate() {
-        let this_pity = state_bundle.pity()[support_index] as f64;
-        let this_one_tap = state_bundle.luckiest_mf()[support_index] as f64;
+        let this_pity = pity[support_index] as f64;
+        let this_one_tap = luckiest[support_index] as f64;
 
         for index in 0..(BUCKET_COUNT + 1) {
             let this_budget =

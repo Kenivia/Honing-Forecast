@@ -7,6 +7,8 @@ The overnight test of the saddlepoint's replacements is archived with its driver
 ## The metric
 
 - Don't put a saddlepoint back in the metric (the old "direct" leftover): its error leans optimistic and differs by state, so the optimizer prefers misjudged states. The coarse lattice has a worst error of 1.5e-4 of flow against 3.5e-3, for 1.3 times the time per evaluation, and plans came out equal or better (13k gold on `saddlepoint_out_of_range_t4_n27`).
+- Don't work out the shared coarse step (`coarse_shared`, gold memo key) apart from `memo_sums`' pass: its cost is another pass over every upgrade and material, not `shape`'s step arithmetic. On `cpu_check` (2026-11-26, against 20.6 µs an evaluation): a `shape` per outcome +2.0 µs; one pass of its own +3.3 (most outcomes are on the exact lattice, so `shape` ran only once or twice); the step kept in the gold memo under all the outcomes' keys +1.1 (a lookup a material); each result kept with its own step and its pass's, no lookup, +1.3 (a step flipping back and forth overwrote results, coarse work +17%, and 24-byte entries slowed the rest); a scan of every material inside `memo_sums` +1.4. Wanted materials only, with the gcd and lattice size skipped where they cannot matter, is within noise of no step at all.
+- Don't expect the fixed shared step to be faster than taking it over the memo's misses: it is always the finest, so coarse work is 8% more; steadier steps make the coarse cells' cache hit more, which about pays for it.
 - Don't expect the Edgeworth leftover to be exercised: the coarse lattice never failed over 2,631 solves (98 million evaluations).
 - Don't sum the lattice's masses up to a threshold at or past the top: rounding leaves a fraction of a gold per material at a threshold of a billion, which summed over juices showed as a gain from spending nothing ("-0" / "-1" gold). Answer (1, 1) outright.
 
@@ -40,6 +42,8 @@ Evidence: `arena_data/lab/iteration2/free_tap_cut/report.md`.
 
 - Don't clone distributions on every advanced-honing memo hit or allocate per branch: that was 59% of a solve (75 to 96% with advanced upgrades). The one-buffer layout of `compute_adv_dist_wrapper` fixed it.
 - Don't ship every advanced start position in the wasm (some 8,400 of them, 361 strategies each): too large. Only the fresh ones (0.6 MB) are built in.
+- Don't move supports into a central per-material store for locality: a mirror of what the light passes read (`memo_sums`, `shape`, `find_min_max`, `simple_avg`, `exact_spans`, about 17% of an evaluation), with the memo's key parts cached per upgrade, saved about 1.5% on `cpu_check` (2026-11-26). Those passes are bound by arithmetic and allocation, not reads: `memo_sums`' allocations were 0.5 µs of its 2.1 (now one flat buffer, -2.9% a solve), its step scans (integer `%`, gcd) and `take_steps` most of the rest; `find_min_max`'s cost was its boxed iterators (now a plain loop, -0.6%).
+- Don't keep the memo's key parts per upgrade (rebuilt when its state changes) or skip the step scan's `%` where the gap equals the span: neither beat noise over 10 rounds of `cpu_check` once the allocations were gone.
 - Not done: sharing one memo between the strategies of a start is another 2 to 3 times, at 60 to 160 MB while it runs. A plain-sums-against-a-table-of-powers cumulant loop that a compiler could vectorise is untried.
 
 ## The gold distribution

@@ -13,7 +13,7 @@ use smallvec::smallvec;
 /// plan at the shadow prices times lognormal noise (0.35), half and half (`rebuildempty` and
 /// `rebuildprice` take one half only); then responses in turn over them, kept where better,
 /// until none moves (3 rounds at most).
-pub(crate) fn rebuild_kick<R: Rng>(
+pub fn rebuild_kick<R: Rng>(
     rng: &mut R,
     sb: &mut StateBundle,
     normal: &[usize],
@@ -72,7 +72,7 @@ pub(crate) fn rebuild_kick<R: Rng>(
 }
 
 /// The polishes alone, and what they took in evaluations.
-pub(crate) fn polish_counted<R: Rng>(
+pub fn polish_counted<R: Rng>(
     rng: &mut R,
     state_bundle: &mut StateBundle,
     probe: &mut Probe,
@@ -89,7 +89,7 @@ pub(crate) fn polish_counted<R: Rng>(
 
 /// `refine` from the given state, and the evaluations it took by the probe's count, responses
 /// left out.
-pub(crate) fn refine_counted<R: Rng>(
+pub fn refine_counted<R: Rng>(
     rng: &mut R,
     state_bundle: &mut StateBundle,
     probe: &mut Probe,

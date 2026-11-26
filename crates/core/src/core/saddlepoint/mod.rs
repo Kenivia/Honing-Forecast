@@ -1,9 +1,13 @@
 //! The plain probability of being within a budget: the exact lattice where it is small, else the
 //! Lugannani-Rice formula (split on the largest upgrade where it misbehaves), else brute force
 
+pub mod bound;
+pub mod cumulants;
+pub mod root_finder;
+
 use crate::constants::{FLOAT_TOL, float_tol};
-use crate::core::probability::cumulants::KsTuple;
-use crate::core::probability::shape::Shape;
+use crate::core::saddlepoint::cumulants::KsTuple;
+use crate::core::shape::Shape;
 use crate::probe::{Counter, Probe};
 use crate::state_bundle::StateBundle;
 use crate::tuning::RootFinder;
@@ -68,7 +72,7 @@ impl StateBundle {
             probe.count(Counter::Trivial);
             return 0.0;
         };
-        if let Some(lattice) = self.lattice(support_index, skip_count) {
+        if let Some(lattice) = self.lattice(support_index, skip_count, shape) {
             probe.count(Counter::Lattice);
             return lattice.within(inp_budget);
         }
