@@ -16,25 +16,28 @@ import { grid_change_callback } from "@/Components/Character/CharWorkerUtils";
 export function apply_results(
   target_profile: CharProfile,
   results: UwuowoPiece[],
-  force_t4: boolean,
   dont_run: boolean,
   class_name?: string,
-  keep_tier?: boolean, // only switch to Serca once every piece is Serca
+  keep_tier?: boolean, // refresh: only switch to Serca once every piece is Serca, else keep the tier
 ) {
   if (class_name) target_profile.class_name = class_name;
   target_profile.fetched_at = Date.now();
   target_profile.sidereal_level = results[WEAPON_ROW]?.sidereal_level ?? null;
   const old_tier: number = target_profile.tier;
-  const serca = results.slice(0, NUM_ADV_PIECES).map((x) => x.tier === 1);
-  const new_tier: number = force_t4
-    ? 0
-    : keep_tier
-      ? serca.every((x) => x)
-        ? 1
-        : old_tier
-      : serca.some((x) => x)
-        ? 1
-        : 0;
+  const main = results.slice(0, NUM_ADV_PIECES);
+  // manual fetch: Serca once every piece is ready to transfer (+20 with adv +40, Serca or sidereal), else T4
+  const new_tier: number = keep_tier
+    ? main.every((x) => x.tier === 1)
+      ? 1
+      : old_tier
+    : main.every(
+          (x) =>
+            x.tier === 1 ||
+            x.sidereal_level !== undefined ||
+            (x.plus_n >= 20 && x.adv >= 40),
+        )
+      ? 1
+      : 0;
   // console.log(results, old_tier, new_tier);
   if (old_tier !== new_tier) {
     change_tier(target_profile, true);
@@ -67,7 +70,8 @@ export function apply_results(
       convert_apply_done_want(
         new_tier === 1 ? 0 : 1, // the function expects actual changing, old_tier might not equal resuelts[row].tierw
         new_tier,
-        force_t4 ? 18 : results[row].plus_n,
+        // manual T4: a Serca piece counts as fully honed T4 (Serca +18 is T4 +25)
+        !keep_tier && new_tier === 0 ? 18 : results[row].plus_n,
         want,
         target_profile.normal_grid[row],
         true,

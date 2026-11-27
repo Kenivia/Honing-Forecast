@@ -155,7 +155,6 @@ const spread_multiple = computed(
               if (typeof parsed_chars[char_name].result !== 'string') {
                 apply(
                   parsed_chars[char_name].result.pieces,
-                  false, // assume no forcing t4
                   char_name,
                   parsed_chars[char_name].result.class_name,
                 );
@@ -189,9 +188,9 @@ const spread_multiple = computed(
           :region="region"
           :char_name="char_name"
           :apply="
-            (result, force_t4, char_name, class_name) => {
+            (result, char_name, class_name) => {
               delete parsed_chars[char_name];
-              apply(result, force_t4, char_name, class_name);
+              apply(result, char_name, class_name);
             }
           "
           :char_parsed="parsed_char"

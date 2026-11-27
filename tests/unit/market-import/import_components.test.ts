@@ -76,9 +76,9 @@ describe("FetchRosterButton", () => {
     expect(w.text()).toContain("Class: Berserker");
 
     await button(w, "Confirm all").trigger("click");
-    expect(apply.mock.calls.map((c) => [c[1], c[2], c[0].length])).toEqual([
-      [false, "Beta", 7],
-      [false, "Gamma", 7],
+    expect(apply.mock.calls.map((c) => [c[1], c[0].length])).toEqual([
+      ["Beta", 7],
+      ["Gamma", 7],
     ]);
     expect(w.text()).not.toContain("Are these your children?");
   });
@@ -103,12 +103,7 @@ describe("FetchRosterButton", () => {
     expect(w.text()).toContain("Gamma failed: Fetching failed");
     // Gamma failed, so Beta is not the last panel and the popup stays open
     await button(w, "Confirm").trigger("click");
-    expect(apply).toHaveBeenCalledWith(
-      expect.any(Array),
-      false,
-      "Beta",
-      "Bard",
-    );
+    expect(apply).toHaveBeenCalledWith(expect.any(Array), "Beta", "Bard");
     expect(w.text()).not.toContain("Class: Bard");
     expect(w.text()).toContain("Gamma failed");
   });
@@ -156,16 +151,11 @@ describe("FetchCharButton", () => {
     expect(w.text()).toContain("Achieved ilevel: 1,712.50");
     expect(w.text()).not.toContain("(T4)");
     await button(w, "Confirm").trigger("click");
-    expect(apply).toHaveBeenCalledWith(
-      expect.any(Array),
-      false,
-      "Beta",
-      "Bard",
-    );
+    expect(apply).toHaveBeenCalledWith(expect.any(Array), "Beta", "Bard");
     expect(w.text()).not.toContain("This you?");
   });
 
-  it("offers T4 or Serca for mixed gear", async () => {
+  it("mixed gear has a single confirm, no tier choice", async () => {
     serve({ "/NA/Beta/": char_mixed });
     const apply = vi.fn();
     const w = mount(
@@ -174,11 +164,11 @@ describe("FetchCharButton", () => {
     );
     await w.find("button").trigger("click");
     await flushPromises();
-    expect(w.text()).toContain("both Serca gear and T4 gear");
-    await button(w, "Confirm (T4)").trigger("click");
+    expect(w.text()).not.toContain("both Serca gear and T4 gear");
+    expect(button(w, "Confirm (T4)")).toBeUndefined();
+    await button(w, "Confirm").trigger("click");
     expect(apply).toHaveBeenLastCalledWith(
       expect.any(Array),
-      true,
       "Beta",
       "Sorceress",
     );

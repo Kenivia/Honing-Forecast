@@ -231,11 +231,10 @@ function pick_class(name: string) {
                         ]
                       "
                       :apply="
-                        (result, force_t4, _name, class_name) => {
+                        (result, _name, class_name) => {
                           apply_results(
                             profile_pair.profile,
                             result,
-                            force_t4,
                             true,
                             class_name,
                           );
@@ -342,10 +341,10 @@ function pick_class(name: string) {
                   "
                   :any_char_name="any_char_names[roster_index]"
                   :apply="
-                    (result, force_t4, char_name, class_name) => {
+                    (result, char_name, class_name) => {
                       const added = roster_store.add_char(roster_id);
                       roster_store.rename_char(added.id, char_name);
-                      apply_results(added, result, force_t4, true, class_name);
+                      apply_results(added, result, true, class_name);
                     }
                   "
                 />

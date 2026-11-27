@@ -42,7 +42,6 @@ export async function refresh_char(id: string) {
   apply_results(
     now,
     result.pieces,
-    false,
     id !== useRosterStore().active_profile.id,
     result.class_name,
     true,

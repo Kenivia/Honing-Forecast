@@ -53,7 +53,6 @@ function sidereal_piece(level: number): UwuowoPiece {
 // what an import hands its caller to apply
 export type ApplyFetch = (
   pieces: UwuowoPiece[],
-  force_t4: boolean,
   char_name?: string,
   class_name?: string,
 ) => void;

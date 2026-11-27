@@ -7,7 +7,7 @@ import {
 } from "./UwuowoUtils";
 
 import { computed } from "vue";
-import { NUM_ADV_PIECES, PIECE_NAMES } from "@/Utils/Constants";
+import { PIECE_NAMES } from "@/Utils/Constants";
 import LabeledPieceIcon from "../LabeledPieceIcon.vue";
 
 const props = defineProps<{
@@ -22,26 +22,14 @@ const emit = defineEmits<{
   show_popup: [new_state: boolean];
 }>();
 
-function confirm(force_t4: boolean) {
+function confirm() {
   if (props.close_on_success) {
     emit("show_popup", false);
   }
 
   const { pieces, class_name } = props.char_parsed.result;
-  props.apply(pieces, force_t4, props.char_name, class_name);
+  props.apply(pieces, props.char_name, class_name);
 }
-const have_both = computed(() => {
-  return (
-    props.char_parsed &&
-    props.char_parsed.result &&
-    props.char_parsed.result.pieces
-      .slice(0, NUM_ADV_PIECES)
-      .some((x) => x.tier === 1) &&
-    props.char_parsed.result.pieces.some(
-      (x) => x.tier === 0, //  && (x.plus_n < 20 || x.adv < 40),
-    )
-  );
-});
 
 const link = computed(
   () => `https://lostark.bible/character/${props.region}/${props.char_name}`,
@@ -111,43 +99,17 @@ const link = computed(
       {{ link }}</a
     >
 
-    <div v-if="have_both" class="flex w-full flex-col flex-wrap">
-      <span>
-        You seem to have both Serca gear and T4 gear. We cannot calculate the
-        cost of upgrades from different tiers at the same time.
-      </span>
-      <span> Pick what tier you want to calculate: </span>
-    </div>
-    <div
-      class="flex w-full pt-2"
-      :class="have_both ? 'flex-col items-center' : 'flex-row justify-around'"
-    >
+    <div class="flex w-full flex-row justify-around pt-2">
       <button
-        v-if="have_both"
-        class="generic-button text-(--achieved)!"
-        @click="() => confirm(true)"
-      >
-        Confirm (T4)
-      </button>
-      <div
         v-if="char_parsed.result && char_parsed.status !== FETCH_MSG"
-        class="flex flex-row content-end"
+        class="generic-button text-(--achieved)!"
+        @click="confirm"
       >
-        <button
-          class="generic-button text-(--achieved)!"
-          @click="() => confirm(false)"
-        >
-          Confirm {{ have_both ? "(Serca)" : "" }}</button
-        ><span
-          v-if="have_both"
-          class="w-0 basis-0 origin-right transform-[translateY(8px)] pl-px text-left text-xs text-(--text-very-muted)"
-          >(default)</span
-        >
-      </div>
+        Confirm
+      </button>
       <button
         @click="emit('show_popup', false)"
-        class="generic-button bg-(--warning-dark)! text-(--text-bright)!"
-        :class="{ 'order-first': !have_both }"
+        class="generic-button order-first bg-(--warning-dark)! text-(--text-bright)!"
       >
         Cancel
       </button>

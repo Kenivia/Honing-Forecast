@@ -267,11 +267,10 @@ describe("RosterView", () => {
     ]);
     const uwu = wrapper.findAllComponents({ name: "Uwuowo" });
     expect(uwu[1].props("profile")).toStrictEqual(store.all_profiles[2]);
-    uwu[1].props("apply")(["result"], true, "Bob", "Bard");
+    uwu[1].props("apply")(["result"], "Bob", "Bard");
     expect(vi.mocked(apply_results).mock.calls[0]).toEqual([
       store.all_profiles[2],
       ["result"],
-      true,
       true,
       "Bard",
     ]);
@@ -287,13 +286,12 @@ describe("RosterView", () => {
       "Alice",
       "Carol",
     ]);
-    fetchers[1].props("apply")(["r"], false, "Dave", "Bard");
+    fetchers[1].props("apply")(["r"], "Dave", "Bard");
     const dave = store.all_profiles.at(-1);
     expect([dave.char_name, dave.roster_id]).toEqual(["Dave", "1"]);
     expect(vi.mocked(apply_results)).toHaveBeenCalledWith(
       dave,
       ["r"],
-      false,
       true,
       "Bard",
     );

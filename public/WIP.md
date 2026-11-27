@@ -14,7 +14,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - rework m arket page and maybe even merge roster with market?
 
 - ~~let the market scanner sleep~~
-- snap hover point on graph
+- snap hover point on graph to owned 
   - fix the first point
   - maybe switch to using  chart js
 

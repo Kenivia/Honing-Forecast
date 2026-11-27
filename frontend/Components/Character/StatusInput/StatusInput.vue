@@ -77,8 +77,8 @@ function scroll_to_bands() {
         :region_change="roster_store.active_region_change"
         :region="active_region"
         :apply="
-          (result, force_t4, _name, class_name) =>
-            apply_results(active_profile, result, force_t4, false, class_name)
+          (result, _name, class_name) =>
+            apply_results(active_profile, result, false, class_name)
         "
       />
       <SignInHint />
