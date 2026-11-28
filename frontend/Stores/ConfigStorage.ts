@@ -285,11 +285,7 @@ export const debounced_write_roster_config = debounce(write_state_async, 500);
 // ============================================================================
 
 export function export_config(config: RosterConfig): string {
-  return JSON.stringify(
-    { version: STORAGE_VERSION, ...to_saved(config) },
-    null,
-    2,
-  );
+  return JSON.stringify({ version: STORAGE_VERSION, ...to_saved(config) });
 }
 
 // Runs the same migration chain as a load, so older backups still import.

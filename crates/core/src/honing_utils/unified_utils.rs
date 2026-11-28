@@ -22,11 +22,13 @@ impl Upgrade {
         let spare = self.spare.get_or_insert_with(|| {
             Box::new(Spare {
                 normal_dist: self.normal_dist.clone(),
+                tap_artisan: self.tap_artisan.clone(),
                 adv_dists: self.adv_dists.clone(),
                 cost_dist: self.cost_dist.clone(),
             })
         });
         std::mem::swap(&mut self.normal_dist, &mut spare.normal_dist);
+        std::mem::swap(&mut self.tap_artisan, &mut spare.tap_artisan);
         std::mem::swap(&mut self.adv_dists, &mut spare.adv_dists);
         std::mem::swap(&mut self.cost_dist, &mut spare.cost_dist);
         if self.is_normal_honing {

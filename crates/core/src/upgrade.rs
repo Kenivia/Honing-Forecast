@@ -57,6 +57,7 @@ pub struct Upgrade {
 #[derive(Debug, Clone)]
 pub struct Spare {
     pub normal_dist: ProbDist,
+    pub tap_artisan: Vec<f64>,
     pub adv_dists: Vec<ProbDist>,
     pub cost_dist: Vec<Support>,
 }
