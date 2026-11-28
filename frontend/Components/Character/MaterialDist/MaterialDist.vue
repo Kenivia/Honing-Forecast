@@ -223,7 +223,7 @@ const any_credited = computed(() =>
 // parallel to chance_band, which also picks the owned column shown
 const CHANCE_TEXTS = ["Char-Bound", "Roster-Bound", "Tradable"].map(
   (band) =>
-    `Chance to succeed at all upgrades before running out of ${band} material.`,
+    `Chance to succeed all upgrades before running out of ${band} material.`,
 );
 const CHANCE_COLORS = ["var(--bound)", "var(--roster)", "var(--tradable)"];
 const OWNED_TITLES = ["Bound mats", "Roster mats", "Tradable"];

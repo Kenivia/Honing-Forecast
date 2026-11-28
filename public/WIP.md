@@ -3,18 +3,22 @@
 
 If you'd like to help with any of the below, feel free to get in touch via [Discord](https://discord.gg/KWDpQyvgzc)!
 
+
+- fix streak issue? 
 - unify hover tooltip and aria
 - ~~sort out the roster setup ui~~
-- bible syncing take in serca
-  - per-piece serca icon
-  - improve auto tier assignment instead of asking for a tier
+- ~~bible syncing take in serca~~
+  - ~~per-piece serca icon~~
+  - ~~improve auto tier assignment instead of asking for a tier~~
 
 - rework how widths work (instead of specifying a different max width for every component )
   - maybe even make it the same width everywhere? maybe not
-- rework m arket page and maybe even merge roster with market?
+- rework market page and maybe even merge roster with market?
+
+- improve choices page UI
 
 - ~~let the market scanner sleep~~
-- snap hover point on graph to owned 
+- snap hover point on graph to owned
   - fix the first point
   - maybe switch to using  chart js
 
@@ -51,6 +55,7 @@ If you'd like to help with any of the below, feel free to get in touch via [Disc
 - lifeskill mats
 - mari shop offers?
 - currency exchange
+- KR prices
 
 ## CP increase comparison
 

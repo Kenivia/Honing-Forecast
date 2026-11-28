@@ -36,9 +36,9 @@ function resetActive() {
 </script>
 <template>
   <div class="w-full items-center">
-    <div class="control-panel-title">Controls</div>
+    <div class="control-panel-title pl-1!">Controls</div>
 
-    <div class="py-1 text-sm">
+    <div class="py-1 pl-1.5 text-sm">
       <label class="control-panel-checkbox-row">
         <input v-model="roster_config.show_all_rows" type="checkbox" />
         <span>Show all mats </span>

@@ -8,7 +8,11 @@ const props = withDefaults(defineProps<{ header?: string; width: number }>(), {
   header: "",
 });
 
-const isNarrow = useMediaQuery(() => `(max-width: ${props.width}px)`);
+// extra sidebar width for a longer header; keep in sync with .side-bar's --extra
+const EXTRA = 20;
+const isNarrow = useMediaQuery(
+  () => `(max-width: ${props.width + EXTRA}px)`,
+);
 
 const sidebarOpen = ref(false);
 const open = () => (sidebarOpen.value = true);
@@ -28,16 +32,14 @@ const close = () => (sidebarOpen.value = false);
           'side-bar--narrow': isNarrow,
           'side-bar--open': isNarrow && sidebarOpen,
         }"
-        :style="{
-          paddingTop: isNarrow ? '56px' : '',
-        }"
       >
-        <span
-          class="side-bar-header items-center border-b border-(--border-muted)"
-          >{{ props.header }}
-        </span>
-        <slot name="sidebar" :close="close" :is-narrow="isNarrow" />
-        <Footer />
+        <span class="side-bar-header" :title="props.header">{{
+          props.header
+        }}</span>
+        <div class="side-bar-body">
+          <slot name="sidebar" :close="close" :is-narrow="isNarrow" />
+          <Footer />
+        </div>
       </nav>
 
       <div class="flex min-w-0 grow flex-col">
@@ -63,32 +65,40 @@ const close = () => (sidebarOpen.value = false);
 </template>
 
 <style scoped>
-/* ── Sidebar header (title + close button) ───────────────── */
+/* ── Sidebar header: the same height as the Characters tab row (min-h-11) so the borders line up ── */
 .side-bar-header {
-  justify-content: space-between;
-  padding: 0px 0px 8px 12px;
-  margin-top: -46px;
-  margin-left: -8px; /* this is needed to make the bottom border look nice */
-  width: 100%;
-  justify-self: flex-start;
-  position: absolute;
+  flex-shrink: 0;
+  height: 2.75rem;
+  line-height: calc(2.75rem - 1px);
+  padding: 0 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--text-muted);
   font-size: 1.1rem;
   border-bottom: 1px solid var(--border-muted);
 }
 
+/* links, controls and footer; each sets its own indent */
+.side-bar-body {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 12px 2px;
+}
+
 /* ── Nav links ───────────────────────────────────────────── */
 
 .side-bar {
-  width: 200px;
+  --extra: 20px;
+  width: calc(200px + var(--extra));
   flex-shrink: 0;
-  gap: 2px;
-  padding: 56px 2px 12px 2px;
   border-right: 1px solid var(--border-muted);
   height: calc(100vh - var(--top-row-h));
   top: var(--top-row-h);
   align-self: flex-start;
-  justify-content: space-between;
   position: sticky;
   z-index: 1;
   background-color: var(--bg-muted);

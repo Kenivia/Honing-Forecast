@@ -10,9 +10,9 @@ const analytics_tooltip = `Sends your owned materials and chests, plus your upgr
 </script>
 <template>
   <div class="w-full items-center">
-    <div class="control-panel-title">Scanner</div>
+    <div class="control-panel-title pl-1!">Scanner</div>
 
-    <div class="py-1 text-sm">
+    <div class="py-1 pl-1.5 text-sm">
       <label class="control-panel-checkbox-row">
         <input v-model="show_debug" type="checkbox" />
         <span>Show debug options</span>

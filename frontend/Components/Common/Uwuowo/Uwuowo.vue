@@ -43,17 +43,19 @@ const linked = computed(() => roster_store.char_linked(props.profile));
     {{ profile.char_name }} already exists
   </div>
   <div
-    class="flex h-fit basis-full flex-row items-center gap-1 py-0.5 pl-1"
-    :class="card ? 'w-full' : 'w-min justify-around'"
+    class="flex h-fit w-full basis-full flex-row items-center gap-1 py-0.5 pl-1"
   >
     <span v-if="!named" class="w-fit text-nowrap"> Char name:</span>
+    <!-- a named roster card's box grows with a long name over the emblem, up to the card's width; elsewhere it fills the row -->
     <NameInput
       :name="profile.char_name"
       :placeholder="roster_store.char_default_label(profile)"
       label="Char name"
       :locked="linked"
       :class="[
-        card ? 'min-w-0 flex-1' : 'min-w-full',
+        named
+          ? 'relative z-10 max-w-[calc(100cqw-4px)] min-w-full! flex-none field-sizing-content'
+          : 'min-w-0 flex-1',
         { 'text-xl!': named, 'pl-0!': card && linked },
       ]"
       @input="draft = ($event.target as HTMLInputElement).value"

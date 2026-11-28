@@ -116,6 +116,7 @@ FETCHABLE_REGIONS.forEach((region) => start_fetch(region));
   <div class="flex min-h-lvh max-w-full flex-col">
     <header
       ref="top_row"
+      @dragstart.prevent
       class="group sticky top-0 z-50 flex flex-row border-b border-(--border-muted) bg-(--bg-muted)"
     >
       <!-- Sidebar.vue's burger, shown while its page is narrow -->

@@ -40,7 +40,7 @@ const link = computed(
   <div class="w-60 rounded-sm border border-(--border-muted) px-3 py-2">
     <div v-if="char_parsed.result" class="flex flex-col">
       <span>
-        <a class="link text-2xl! font-bold" :href="link"
+        <a class="link text-xl! font-bold break-all" :href="link"
           >{{ props.char_name }}
         </a></span
       >

@@ -14,7 +14,7 @@ const DOCS = [
   <Sidebar :width="1200" header="Info">
     <template #sidebar="{ close }">
       <div class="flex flex-col">
-        <span class="px-2 pt-2 pb-1 text-sm text-(--text-muted)">Docs</span>
+        <span class="px-1 pt-2 pb-1 text-sm text-(--text-muted)">Docs</span>
         <RouterLink
           v-for="doc in DOCS"
           :key="doc.name"
@@ -24,7 +24,7 @@ const DOCS = [
         >
           {{ doc.label }}
         </RouterLink>
-        <span class="px-2 pt-4 pb-1 text-sm text-(--text-muted)"
+        <span class="px-1 pt-4 pb-1 text-sm text-(--text-muted)"
           >Change logs</span
         >
         <RouterLink

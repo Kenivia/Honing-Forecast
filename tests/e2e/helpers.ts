@@ -6,7 +6,7 @@ import fs from "node:fs";
 type GridKind = "normal" | "adv";
 const MARKET_FIXTURE = new URL("./fixtures/market.json", import.meta.url);
 
-// a character's card on Roster setup, found by its label; clicking its padding opens the character
+// a character's card on Roster setup, found by its label; open clicks its link button
 export const char_card = (scope: Page | Locator, name: string) =>
   scope.locator(".char-row").filter({
     has: ("page" in scope ? scope.page() : scope).getByLabel(
@@ -15,7 +15,9 @@ export const char_card = (scope: Page | Locator, name: string) =>
     ),
   });
 export const open_char = (scope: Page | Locator, name: string) =>
-  char_card(scope, name).click({ position: { x: 3, y: 3 } });
+  char_card(scope, name)
+    .getByRole("link", { name: `Go to character ${name}`, exact: true })
+    .click();
 
 // a Worker endpoint, deployed or under `pnpm cloudflare-dev`
 export const worker_route = (path: string) =>

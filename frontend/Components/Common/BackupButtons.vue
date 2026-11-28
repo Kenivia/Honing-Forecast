@@ -43,8 +43,8 @@ async function load_backup(event: Event) {
 </script>
 <template>
   <div class="w-full items-center py-1 text-sm">
-    <div class="control-panel-title mt-2">Backup</div>
-    <div class="flex flex-row flex-wrap items-center gap-2 px-2 pt-1">
+    <div class="control-panel-title mt-2 pl-1!">Backup</div>
+    <div class="flex flex-row flex-wrap items-center gap-2 pt-1 pr-2 pl-3.5">
       <button class="generic-button" @click="download_backup">
         Export to file
       </button>
